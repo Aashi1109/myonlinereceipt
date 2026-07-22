@@ -1,0 +1,43 @@
+{
+  "name": "@smarttools/media",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "prepare:vendor": "node scripts/copy-vendor.mjs",
+    "dev": "pnpm run prepare:vendor && next dev -p 3005",
+    "build": "pnpm run prepare:vendor && tsc --noEmit && next build --webpack",
+    "start": "next start -p 3005",
+    "lint": "tsc --noEmit",
+    "test": "node --test --experimental-test-coverage --test-coverage-include='lib/**/*.{ts,mts,mjs}' --test-coverage-include='workers/operations.ts' --test-coverage-include='workers/qpdfAdapter.ts' --test-coverage-include='workers/workerRules.ts' --test-coverage-lines=80 --test-coverage-branches=80 ../../tests/media-*.test.mjs"
+  },
+  "dependencies": {
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "@jsquash/png": "^3.1.1",
+    "@jsquash/resize": "^2.1.1",
+    "@jsquash/webp": "^1.5.0",
+    "@smarttools/auth": "workspace:*",
+    "@smarttools/control-plane": "workspace:*",
+    "@smarttools/tool-catalog": "workspace:*",
+    "@smarttools/ui": "workspace:*",
+    "fflate": "^0.8.3",
+    "heic-to": "1.5.2",
+    "lucide-react": "^1.25.0",
+    "next": "^16.2.10",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200",
+    "qpdf-wasm": "^0.1.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "postcss": "8.5.21",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~7.0.2"
+  }
+}
