@@ -2,6 +2,7 @@ const APP_SUBDOMAINS = new Set([
   "admin",
   "auth",
   "devtools",
+  "media",
   "paperwork",
   "platform",
   "www",

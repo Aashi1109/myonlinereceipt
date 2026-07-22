@@ -158,41 +158,38 @@ export function AuthPanel({
 
   return (
     <Card
-      aria-label="SmartTools account access"
-      className="w-full p-6 shadow-lg sm:p-8"
+      aria-labelledby={`${panelId}-title`}
+      className="w-full max-w-lg rounded-none p-6 shadow-none sm:p-8"
+      role="region"
     >
       {mode !== "forgot" && (
         <div
-          aria-label="Account access"
-          className="-mx-6 -mt-6 mb-7 grid grid-cols-2 border-b border-border sm:-mx-8 sm:-mt-8"
-          role="tablist"
+          aria-label="Account access mode"
+          className="-mx-6 -mt-6 mb-7 grid grid-cols-2 border-b border-border bg-background sm:-mx-8 sm:-mt-8"
+          role="group"
         >
           <button
-            aria-controls={`${panelId}-panel`}
-            aria-selected={mode === "sign-in"}
-            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+            aria-pressed={mode === "sign-in"}
+            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60 ${
               mode === "sign-in"
-                ? "border-primary text-foreground"
+                ? "border-primary bg-card text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            id={`${panelId}-sign-in-tab`}
+            disabled={pending}
             onClick={() => chooseMode("sign-in")}
-            role="tab"
             type="button"
           >
             Sign in
           </button>
           <button
-            aria-controls={`${panelId}-panel`}
-            aria-selected={mode === "sign-up"}
-            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
+            aria-pressed={mode === "sign-up"}
+            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60 ${
               mode === "sign-up"
-                ? "border-primary text-foreground"
+                ? "border-primary bg-card text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            id={`${panelId}-sign-up-tab`}
+            disabled={pending}
             onClick={() => chooseMode("sign-up")}
-            role="tab"
             type="button"
           >
             Create account
@@ -200,18 +197,19 @@ export function AuthPanel({
         </div>
       )}
 
-      <div
-        aria-labelledby={
-          mode === "forgot" ? undefined : `${panelId}-${mode}-tab`
-        }
-        id={`${panelId}-panel`}
-        role={mode === "forgot" ? undefined : "tabpanel"}
-      >
+      <div id={`${panelId}-panel`}>
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            {mode === "forgot" ? "Account recovery" : "Welcome"}
+            {mode === "sign-up"
+              ? "New account"
+              : mode === "forgot"
+                ? "Account recovery"
+                : "Account access"}
           </p>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl">
+          <h2
+            className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl"
+            id={`${panelId}-title`}
+          >
             {mode === "sign-up"
               ? "Create your account"
               : mode === "forgot"
@@ -226,7 +224,7 @@ export function AuthPanel({
         </div>
 
         {feedback && (
-          <AlertBanner className="mt-5" variant={feedback.kind}>
+          <AlertBanner className="mt-5 rounded-none" variant={feedback.kind}>
             {feedback.text}
           </AlertBanner>
         )}
@@ -236,6 +234,7 @@ export function AuthPanel({
             action={
               <Button
                 disabled={pending}
+                className="min-h-11 rounded-none"
                 onClick={resendVerification}
                 size="sm"
                 type="button"
@@ -244,141 +243,163 @@ export function AuthPanel({
                 Resend verification email
               </Button>
             }
-            className="mt-5"
+            className="mt-5 rounded-none"
           >
-            Verification needed for {verificationEmail}
+            Verification needed for{" "}
+            <span className="break-all font-semibold">{verificationEmail}</span>
           </AlertBanner>
         )}
 
         {mode === "forgot" ? (
-          <form className="mt-6 grid gap-4" onSubmit={requestRecovery}>
-            <Field htmlFor={`${panelId}-recovery-email`} label="Email address">
-              <Input
-                autoComplete="email"
-                className="h-12"
-                id={`${panelId}-recovery-email`}
-                name="email"
-                required
-                type="email"
-              />
-            </Field>
-            <Button className="w-full" disabled={pending} size="lg" type="submit">
-              {pending ? "Sending…" : "Send reset link"}
-            </Button>
-            <Button
-              className="justify-self-center"
-              onClick={() => chooseMode("sign-in")}
-              type="button"
-              variant="ghost"
+          <form className="mt-6" onSubmit={requestRecovery}>
+            <fieldset
+              className="grid min-w-0 gap-4 border-0 p-0"
+              disabled={pending}
             >
-              Back to sign in
-            </Button>
+              <legend className="sr-only">Password recovery</legend>
+              <Field htmlFor={`${panelId}-recovery-email`} label="Email address">
+                <Input
+                  autoComplete="email"
+                  className="h-12 rounded-none"
+                  id={`${panelId}-recovery-email`}
+                  name="email"
+                  required
+                  type="email"
+                />
+              </Field>
+              <Button className="w-full rounded-none" size="lg" type="submit">
+                {pending ? "Sending…" : "Send reset link"}
+              </Button>
+              <Button
+                className="min-h-11 justify-self-center rounded-none"
+                onClick={() => chooseMode("sign-in")}
+                type="button"
+                variant="ghost"
+              >
+                Back to sign in
+              </Button>
+            </fieldset>
           </form>
         ) : (
           <>
             <Button
-              className="mt-6 w-full"
+              className="mt-6 w-full rounded-none"
               disabled={pending}
               onClick={signInWithGoogle}
               size="lg"
               type="button"
               variant="outline"
             >
-              <span
-                aria-hidden="true"
-                className="grid size-6 shrink-0 place-items-center rounded-full border border-border bg-white"
-              >
-                <img
-                  alt=""
-                  className="size-4 object-contain"
-                  height="16"
-                  src="/google-g-logo.png"
-                  width="16"
-                />
-              </span>
+              <img
+                alt=""
+                className="size-4 object-contain"
+                height="16"
+                src="/google-g-logo.png"
+                width="16"
+              />
               Continue with Google
             </Button>
-            <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="my-5 flex items-center gap-3 text-xs font-semibold text-muted-foreground">
               <span className="h-px flex-1 bg-border" />
               <span>or use email</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-            <form className="grid gap-4" onSubmit={submitCredentials}>
-              {mode === "sign-up" && (
-                <Field htmlFor={`${panelId}-name`} label="Name">
+            <form onSubmit={submitCredentials}>
+              <fieldset
+                className="grid min-w-0 gap-4 border-0 p-0"
+                disabled={pending}
+              >
+                <legend className="sr-only">
+                  {mode === "sign-up"
+                    ? "Create account with email"
+                    : "Sign in with email"}
+                </legend>
+                {mode === "sign-up" && (
+                  <Field htmlFor={`${panelId}-name`} label="Name">
+                    <Input
+                      autoComplete="name"
+                      className="h-12 rounded-none"
+                      id={`${panelId}-name`}
+                      maxLength={100}
+                      name="name"
+                      required
+                    />
+                  </Field>
+                )}
+                <Field htmlFor={`${panelId}-email`} label="Email address">
                   <Input
-                    autoComplete="name"
-                    className="h-12"
-                    id={`${panelId}-name`}
-                    maxLength={100}
-                    name="name"
+                    autoComplete="email"
+                    className="h-12 rounded-none"
+                    id={`${panelId}-email`}
+                    name="email"
                     required
+                    type="email"
                   />
                 </Field>
-              )}
-              <Field htmlFor={`${panelId}-email`} label="Email address">
-                <Input
-                  autoComplete="email"
-                  className="h-12"
-                  id={`${panelId}-email`}
-                  name="email"
-                  required
-                  type="email"
-                />
-              </Field>
-              <Field
-                description={mode === "sign-up" ? "12–128 characters" : undefined}
-                htmlFor={`${panelId}-password`}
-                label="Password"
-              >
-                <Input
-                  autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-                  className="h-12"
-                  id={`${panelId}-password`}
-                  maxLength={128}
-                  minLength={mode === "sign-up" ? 12 : undefined}
-                  name="password"
-                  required
-                  type="password"
-                />
-              </Field>
-              {mode === "sign-up" && (
                 <Field
-                  htmlFor={`${panelId}-password-confirmation`}
-                  label="Confirm password"
+                  description={mode === "sign-up" ? "12–128 characters" : undefined}
+                  htmlFor={`${panelId}-password`}
+                  label="Password"
                 >
                   <Input
-                    autoComplete="new-password"
-                    className="h-12"
-                    id={`${panelId}-password-confirmation`}
+                    autoComplete={
+                      mode === "sign-up" ? "new-password" : "current-password"
+                    }
+                    className="h-12 rounded-none"
+                    id={`${panelId}-password`}
                     maxLength={128}
-                    minLength={12}
-                    name="passwordConfirmation"
+                    minLength={mode === "sign-up" ? 12 : undefined}
+                    name="password"
                     required
                     type="password"
                   />
                 </Field>
-              )}
-              {mode === "sign-in" && (
+                {mode === "sign-up" && (
+                  <Field
+                    htmlFor={`${panelId}-password-confirmation`}
+                    label="Confirm password"
+                  >
+                    <Input
+                      autoComplete="new-password"
+                      className="h-12 rounded-none"
+                      id={`${panelId}-password-confirmation`}
+                      maxLength={128}
+                      minLength={12}
+                      name="passwordConfirmation"
+                      required
+                      type="password"
+                    />
+                  </Field>
+                )}
+                {mode === "sign-in" && (
+                  <Button
+                    className="min-h-11 justify-self-end rounded-none px-0"
+                    onClick={() => chooseMode("forgot")}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    Forgot password?
+                  </Button>
+                )}
                 <Button
-                  className="justify-self-end px-0"
-                  onClick={() => chooseMode("forgot")}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
+                  className="w-full rounded-none"
+                  size="lg"
+                  type="submit"
                 >
-                  Forgot password?
+                  {pending
+                    ? "Please wait…"
+                    : mode === "sign-up"
+                      ? "Create account"
+                      : "Sign in"}
                 </Button>
-              )}
-              <Button className="w-full" disabled={pending} size="lg" type="submit">
-                {pending ? "Please wait…" : mode === "sign-up" ? "Create account" : "Sign in"}
-              </Button>
+              </fieldset>
             </form>
           </>
         )}
       </div>
 
-      <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
+      <p className="mt-6 text-left text-xs leading-5 text-muted-foreground">
         Authentication cookies are HttpOnly and never stored in browser storage.
       </p>
     </Card>

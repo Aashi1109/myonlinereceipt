@@ -1,13 +1,19 @@
-import { AuthPanel } from "./AuthPanel";
 import { ProductHeader } from "@smarttools/ui";
 import {
   DEFAULT_AUTH_ERROR,
   resolveConfiguredReturnTo,
 } from "../lib/security";
+import { AuthPanel } from "./AuthPanel";
 
 type SearchParams = Promise<
   Record<string, string | string[] | undefined>
 >;
+
+const accountFeatures = [
+  "Sign in across SmartTools",
+  "Recover access by email",
+  "Review active sessions",
+] as const;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -25,10 +31,11 @@ export default async function HomePage({
     ["Platform", process.env.PLATFORM_URL ?? "http://localhost:3000"],
     ["Paperwork", process.env.PAPERWORK_URL ?? "http://localhost:3001"],
     ["Devtools", process.env.DEVTOOLS_URL ?? "http://localhost:3002"],
+    ["Media", process.env.MEDIA_URL ?? "http://localhost:3005"],
   ] as const;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
         actions={
           <nav
@@ -36,12 +43,17 @@ export default async function HomePage({
             className="hidden items-center gap-6 text-sm font-bold text-muted-foreground sm:flex"
           >
             {projects.map(([name, href]) => (
-              <a className="hover:text-foreground" href={href} key={name}>
+              <a
+                className="underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                href={href}
+                key={name}
+              >
                 {name}
               </a>
             ))}
           </nav>
         }
+        className="auth-header sticky top-0 z-50"
         href={projects[0][1]}
         name="SmartTools"
       />
@@ -49,54 +61,52 @@ export default async function HomePage({
       <main>
         <section
           aria-labelledby="welcome-title"
-          className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,30rem)] lg:gap-20 lg:px-8 lg:py-20"
+          className="border-b border-border bg-card"
         >
-          <div className="max-w-2xl">
-          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
-            One account, every SmartTool
-          </p>
-          <h1
-            className="mt-4 max-w-3xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl"
-            id="welcome-title"
-          >
-            Keep your work moving.
-          </h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-            Sign in to manage your account across SmartTools. Public tools stay
-            available without an account.
-          </p>
-          <ul className="mt-8 grid max-w-xl gap-3 text-sm font-semibold text-foreground">
-            <li className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="grid size-9 place-items-center rounded-full border border-border text-xs font-extrabold text-primary"
-              >
-                01
-              </span>
-              Secure parent-domain sessions
-            </li>
-            <li className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="grid size-9 place-items-center rounded-full border border-border text-xs font-extrabold text-primary"
-              >
-                02
-              </span>
-              Verified email recovery
-            </li>
-            <li className="flex items-center gap-3">
-              <span
-                aria-hidden="true"
-                className="grid size-9 place-items-center rounded-full border border-border text-xs font-extrabold text-primary"
-              >
-                03
-              </span>
-              Control every active session
-            </li>
-          </ul>
-          </div>
+          <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl lg:grid-cols-[minmax(0,1.08fr)_minmax(28rem,0.92fr)]">
+            <div className="auth-grid order-1 flex items-center justify-center bg-background px-4 py-12 sm:px-6 sm:py-16 lg:order-2 lg:px-8">
+              <AuthPanel returnTo={returnTo} initialError={initialError} />
+            </div>
 
-          <AuthPanel returnTo={returnTo} initialError={initialError} />
+            <div className="order-2 flex flex-col justify-center border-t border-border px-4 py-12 sm:px-6 sm:py-16 lg:order-1 lg:border-t-0 lg:border-r lg:px-8 lg:py-20">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                SmartTools account
+              </p>
+              <h1
+                className="mt-6 max-w-3xl text-[clamp(3rem,7vw,5.5rem)] leading-[0.88] font-black tracking-[-0.07em]"
+                id="welcome-title"
+              >
+                One <span className="text-primary">account.</span>
+                <br />
+                Every
+                <br />
+                SmartTool.
+              </h1>
+              <p className="mt-8 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+                Sign in to manage your account across SmartTools. Public tools stay
+                available without an account.
+              </p>
+
+              <ol className="mt-12 hidden border border-border sm:grid sm:grid-cols-3">
+                {accountFeatures.map((feature, index) => (
+                  <li
+                    className="border-r border-border p-4 last:border-r-0"
+                    key={feature}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="text-sm font-black text-primary"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="mt-8 block text-sm font-bold leading-5">
+                      {feature}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
         </section>
       </main>
     </div>

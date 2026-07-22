@@ -27,8 +27,12 @@ export const sqlClient = postgres(databaseUrl, {
 
 export const db = drizzle(sqlClient, { schema });
 
+export function isDatabaseConfigured(): boolean {
+  return Boolean(process.env.DATABASE_URL);
+}
+
 export function assertDatabaseConfigured(): void {
-  if (!process.env.DATABASE_URL) {
+  if (!isDatabaseConfigured()) {
     throw new Error("DATABASE_URL is required");
   }
 }

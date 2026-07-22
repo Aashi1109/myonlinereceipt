@@ -14,6 +14,7 @@ import {
   userRolesTable,
 } from "../packages/database/src/index.ts";
 import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
+import { toolManifest } from "../packages/tool-catalog/src/index.ts";
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
@@ -296,6 +297,31 @@ test("tool reordering stores one contiguous app order and one audit event", asyn
   );
 });
 
+test("tool reordering accepts the complete Media registry", async () => {
+  const toolIds = toolManifest
+    .filter((tool) => tool.app === "media")
+    .map((tool) => tool.id)
+    .reverse();
+
+  await withFakeDatabase(
+    [permissionRows({ tools: { edit: true } }), []],
+    async (state) => {
+      await reorderManagedTools("actor", "media", toolIds);
+
+      assert.equal(toolIds.length, 30);
+      assert.deepEqual(
+        toolIds.map((toolId) =>
+          state.inserts.find(
+            ({ table, values }) =>
+              table === managedToolsTable && values.toolId === toolId,
+          ).values.order,
+        ),
+        toolIds.map((_, order) => order),
+      );
+    },
+  );
+});
+
 test("tool reordering rejects incomplete, duplicate, and cross-app orders", async () => {
   const invalidOrders = [
     [],
@@ -360,20 +386,20 @@ test("a saved tool slug is immutable and failed changes are not audited", async 
   );
 });
 
-test("tool enablement requires setup and archiving also disables the tool", async () => {
+test("seeded tools can be toggled before their first override and archiving disables them", async () => {
   await withFakeDatabase(
     [permissionRows({ tools: { toggle: true } }), []],
     async (state) => {
-      await assert.rejects(
-        () =>
-          setManagedToolEnabled(
-            "actor",
-            "devtools.json-formatter",
-            true,
-          ),
-        /needs a slug/,
+      await setManagedToolEnabled(
+        "actor",
+        "devtools.json-formatter",
+        true,
       );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      const write = state.inserts.find(
+        ({ table }) => table === managedToolsTable,
+      );
+      assert.equal(write.values.slug, "json-formatter");
+      assert.equal(write.values.enabled, true);
     },
   );
 

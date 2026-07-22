@@ -70,6 +70,46 @@ final result: blocked
 
 ---
 
+# Design QA — CodeUtilityKit Devtools Parity
+
+Result: passed
+
+## Viewports and states
+
+- Desktop: `1440 × 1200`; homepage top, JSON Viewer example, JSON Validator example, and HTML Viewer example.
+- Mobile: `390 × 844`; the same homepage and tool states, including stacked input/output workbenches.
+- Homepage hierarchy, hero height, search, capped quick tools, statistics, and the start of Popular Tools align with the reference structure.
+- JSON Viewer matches the reference split layout on desktop and stacks cleanly on mobile. Root and first-level containers start expanded; deeper objects start collapsed.
+- JSON Validator and HTML Viewer retain equal desktop columns, consistent headers and actions, and full-width mobile stacking without clipped controls or horizontal overflow.
+
+## Interaction checks
+
+- Desktop and mobile browser consoles reported no errors.
+- Search results rendered their heading; Base64 encoding returned `aGVsbG8=`; JSON↔CSV examples and repair modes returned the expected output.
+- Password generation returned five values at both viewports.
+- JSON Validator returned `Valid JSON` and `Root type: object`.
+- HTML Viewer rendered `Hello` and `Sandboxed preview.` in the sandboxed preview.
+- JSON Viewer example, repair, tree expansion, and nested-object collapse states were verified after the depth correction.
+- Desktop generic workbench panes measured `607 × 541` each. Mobile input/output panes measured `356px` wide and stacked at `y=376` and `y=774`.
+
+## Intentional differences
+
+- SmartTools keeps its own product header, blue theme, typography, controls, borders, and radii instead of copying the reference brand.
+- Third-party launch badges and the reference blog/navigation content are intentionally omitted.
+- External SEO/domain tools remain disabled when their required external services are not configured.
+
+## Evidence
+
+- Homepage reference: `/tmp/codeutilitykit-capture.FXMjWt/desktop-top.png`, `/tmp/codeutilitykit-capture.FXMjWt/mobile-top.png`
+- Homepage implementation: `/tmp/codeutilitykit-capture.FXMjWt/local-desktop-top.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-mobile-top.png`
+- JSON Viewer reference: `/tmp/codeutilitykit-capture.FXMjWt/json-viewer-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/json-viewer-mobile-example.png`
+- JSON Viewer implementation: `/tmp/codeutilitykit-capture.FXMjWt/local-json-viewer-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-json-viewer-mobile-example.png`
+- JSON Validator implementation: `/tmp/codeutilitykit-capture.FXMjWt/local-json-validator-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-json-validator-mobile-example.png`
+- HTML Viewer implementation: `/tmp/codeutilitykit-capture.FXMjWt/local-html-viewer-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-html-viewer-mobile-example.png`
+- Interaction, console, and layout data: `/tmp/codeutilitykit-capture.FXMjWt/local-data.json`
+
+---
+
 # Design QA — Admin Template Editor
 
 ## Visual truth
@@ -157,3 +197,51 @@ final result: blocked
 2. The row hierarchy and configuration actions were refined against the supplied screenshots. Type validation and production compilation passed; browser capture remained unavailable.
 
 final result: blocked
+
+---
+
+# Design QA — Canonical Devtools Workbench Rollout
+
+## Restored-shell result
+
+- The reopened failure is resolved. The initial full-viewport rollout had removed the generic page framing; the implementation now restores the pre-existing site header, breadcrumb, category, title, description, AppContainer sizing and spacing, privacy/help section, and route-specific footer behavior.
+- Source inspection confirms the three workbench entrypoints use the original non-editor markup and classes verbatim. Only the editor area uses the shared square `ToolWorkspace` toolbar/panes/status structure.
+
+## Visual truth
+
+- Workspace reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-uSdbqI.png`.
+- Preserved pre-change shell baselines: `/tmp/codeutilitykit-capture.FXMjWt/local-json-validator-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-json-to-csv-desktop-example.png`, `/tmp/codeutilitykit-capture.FXMjWt/local-json-viewer-desktop-example.png`, and their mobile counterparts.
+- Restored-shell comparisons: `/tmp/codeutilitykit-capture.FXMjWt/restored-shell-json-validator-desktop-comparison.png` (old top, restored bottom) and `/tmp/codeutilitykit-capture.FXMjWt/restored-shell-json-validator-mobile-comparison.png` (old left, restored right).
+- Full restored framing: `/tmp/codeutilitykit-capture.FXMjWt/workbench-word-counter-1512x760-full.png` and `/tmp/codeutilitykit-capture.FXMjWt/workbench-word-counter-1512-full-page.png`.
+- Final refinement captures: `/tmp/devtools-json-to-csv-final.png` and `/tmp/devtools-json-formatter-final.png` (`1280 × 900`).
+
+## Framing and workspace acceptance
+
+- Desktop and mobile header crops for JSON Validator, JSON→CSV, and JSON Viewer are visually identical to the preserved pre-change captures. Automated crop comparison measured `63.13 dB` PSNR on desktop and `63.40 dB` on mobile for all three routes; the remaining delta is capture rasterization-level.
+- At `1280 × 900`, `/word-counter` stays in the original 32px-inset AppContainer: the square workspace is 1216px wide, input/output begin at `x=32` and `x=457.59`, and both panes retain a 444px canvas.
+- At `390 × 844`, the original 16px page inset remains. The 358px-wide input/output panes stack at `y=383` and `y=831` with no overlap.
+- Workspace, toolbar, and content widths match their intended container widths at both viewports; page and workspace horizontal overflow checks pass.
+- Visible breadcrumbs, `Runs locally`, category labels, H1 titles, descriptions, support sections, and exact converter footer text are asserted in the browser. Generic and Viewer routes correctly retain their pre-existing no-footer behavior.
+- The final live JSON→CSV capture confirms the `Runs locally` and category tags sit inline with the H1, the obsolete page-header divider is absent, and the workspace uses a subtle theme border with rounded corners and no visible shadow. The formatter capture confirms the same rounded, bordered workspace treatment without adding the framed-page heading or breadcrumb.
+
+## Interaction and state checks
+
+- The focused Chromium matrix passed desktop and mobile (`2 passed`) across `/json-formatter`, `/json-to-csv`, `/word-counter`, `/text-diff-checker`, `/password-generator`, `/json-validator`, `/html-viewer`, `/qr-code-generator`, and `/json-viewer`.
+- Actions remain tool-specific; copy/download and pristine Clear disabled states enable only after meaningful output exists.
+- Conversion, counting, diffing, generation, validation, and Viewer tree behavior passed. HTML remained sandboxed at both viewports, and QR images rendered at `naturalWidth=320`.
+- Final capture data contains no tool console errors and no failed HTTP responses. The test excludes only the known global `/favicon.ico` 404 and remains strict for every other console or network failure.
+
+## Findings
+
+- P0: none.
+- P1: none; removed page framing was the reopened P1 and is resolved.
+- P2: the unchanged global shell still requests a missing `/favicon.ico`; it does not affect the workbench and remains outside this header-preservation change.
+
+## Evidence and verification
+
+- Route screenshots, full-page framing, measured actions/layouts, and preview data: `/tmp/codeutilitykit-capture.FXMjWt/workbench-*.png` and `/tmp/codeutilitykit-capture.FXMjWt/workbench-qa-data.json`.
+- Focused Playwright matrix — passed (`2 passed`).
+- Standalone strict TypeScript check for `tests/e2e/public-tools.spec.ts` — passed.
+- `git diff --check -- tests/e2e/public-tools.spec.ts design-qa.md` — passed.
+
+final result: passed

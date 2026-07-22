@@ -32,6 +32,7 @@ import {
 import {
   assertToolSlugImmutable,
   isValidToolSlug,
+  seededManagedTools,
   toolManifest,
   type ManagedTool,
   type ToolApp,
@@ -210,15 +211,12 @@ function getToolManifestEntry(toolId: string) {
 
 function getToolFallback(toolId: string): ToolRow {
   const entry = getToolManifestEntry(toolId);
+  const seed = seededManagedTools.find((tool) => tool.toolId === toolId);
+  if (!seed) throw new Error(`Missing tool seed: ${toolId}.`);
+
   return {
-    toolId,
+    ...seed,
     app: entry.app,
-    slug: null,
-    name: entry.defaultName,
-    description: entry.defaultDescription,
-    order: toolManifest.filter((tool) => tool.app === entry.app).indexOf(entry),
-    enabled: false,
-    archived: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -293,6 +291,13 @@ export async function updateManagedTool(
     }
     assertToolSlugImmutable(current.slug, slug ?? null);
 
+    const name = Object.hasOwn(input, "name")
+      ? requiredText(input.name, "Tool name", 160)
+      : current.name;
+    const description = Object.hasOwn(input, "description")
+      ? requiredText(input.description, "Tool description")
+      : current.description;
+
     if (slug !== null) {
       const [duplicate] = await transaction
         .select({ toolId: managedToolsTable.toolId })
@@ -312,12 +317,8 @@ export async function updateManagedTool(
       toolId,
       app: entry.app,
       slug: slug ?? null,
-      name: Object.hasOwn(input, "name")
-        ? requiredText(input.name, "Tool name", 160)
-        : current.name,
-      description: Object.hasOwn(input, "description")
-        ? requiredText(input.description, "Tool description")
-        : current.description,
+      name,
+      description,
       order: current.order,
       enabled: current.enabled,
       archived: current.archived,
@@ -338,13 +339,10 @@ export async function reorderManagedTools(
 ): Promise<void> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    if (app !== "paperwork" && app !== "devtools") {
-      throw new Error("Tool app is invalid.");
-    }
-
     const expectedIds = new Set<string>(
       toolManifest.filter((tool) => tool.app === app).map((tool) => tool.id),
     );
+    if (expectedIds.size === 0) throw new Error("Tool app is invalid.");
     if (
       !Array.isArray(toolIds) ||
       toolIds.length !== expectedIds.size ||

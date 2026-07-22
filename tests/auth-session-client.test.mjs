@@ -23,6 +23,14 @@ test("the auth session client forwards cookies and validates the service respons
     "http://localhost:3004",
   );
   assert.equal(
+    getAuthServiceURL("http://localhost:3005"),
+    "http://localhost:3004",
+  );
+  assert.equal(
+    getAuthServiceURL("https://media.smarttools.test"),
+    "https://auth.smarttools.test",
+  );
+  assert.equal(
     getAuthServiceURL("https://paperwork.smarttools.co.uk"),
     "https://auth.smarttools.co.uk",
   );

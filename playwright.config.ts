@@ -11,11 +11,12 @@ const e2eEnvironment = {
   BETTER_AUTH_URL: "http://localhost:3004",
   AUTH_URL: "http://localhost:3004",
   AUTH_TRUSTED_ORIGINS:
-    "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004",
+    "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005",
   PLATFORM_URL: "http://localhost:3000",
   PAPERWORK_URL: "http://localhost:3001",
   DEVTOOLS_URL: "http://localhost:3002",
   ADMIN_URL: "http://localhost:3003",
+  MEDIA_URL: "http://localhost:3005",
   RESEND_API_KEY: "re_e2e_mock",
   AUTH_EMAIL_FROM: "SmartTools <auth@example.test>",
   GOOGLE_CLIENT_ID: "google-e2e-client",
@@ -82,6 +83,13 @@ export default defineConfig({
     {
       command: "pnpm --filter @smarttools/auth-app dev",
       url: "http://localhost:3004",
+      env: appEnvironment,
+      reuseExistingServer: false,
+      timeout: 180_000,
+    },
+    {
+      command: "pnpm --filter @smarttools/media dev",
+      url: "http://localhost:3005",
       env: appEnvironment,
       reuseExistingServer: false,
       timeout: 180_000,

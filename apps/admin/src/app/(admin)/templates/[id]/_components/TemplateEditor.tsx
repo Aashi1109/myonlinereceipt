@@ -27,6 +27,7 @@ import {
   Textarea,
   buttonVariants,
 } from "@smarttools/ui";
+import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
   Archive,
   ArrowLeft,
@@ -49,7 +50,6 @@ import {
   updateAndPublishTemplateAction,
   updateTemplateAction,
 } from "../../../../actions";
-import { OrderableList } from "../../../_components/OrderableList";
 
 const categories = ["classic", "modern", "simple", "professional", "creative", "service"] as const;
 const layouts = ["classic", "modern", "compact", "bold", "minimal", "service"] as const;

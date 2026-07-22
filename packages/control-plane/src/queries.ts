@@ -11,6 +11,7 @@ import {
   eq,
   featureOverridesTable,
   invoiceTemplatesTable,
+  isDatabaseConfigured,
   managedToolsTable,
   rolesTable,
   userRolesTable,
@@ -40,12 +41,8 @@ export class AuthorizationError extends Error {
 export const featureManifest: readonly FeatureManifestEntry[] = [];
 
 export async function getManagedTools(): Promise<ResolvedTool[]> {
-  try {
-    assertDatabaseConfigured();
-    return mergeToolManifest(await db.select().from(managedToolsTable));
-  } catch {
-    return mergeToolManifest();
-  }
+  if (!isDatabaseConfigured()) return mergeToolManifest();
+  return mergeToolManifest(await db.select().from(managedToolsTable));
 }
 
 export async function getAvailableTools(

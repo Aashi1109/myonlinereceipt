@@ -10,6 +10,7 @@
     "dev:platform": "pnpm --filter @smarttools/platform dev",
     "dev:paperwork": "pnpm --filter @smarttools/paperwork dev",
     "dev:devtools": "pnpm --filter @smarttools/devtools dev",
+    "dev:media": "pnpm --filter @smarttools/media dev",
     "dev:admin": "pnpm --filter @smarttools/admin dev",
     "dev:auth": "pnpm --filter @smarttools/auth-app dev",
     "db:migrate": "pnpm --filter @smarttools/database migrate",
@@ -17,6 +18,7 @@
     "build": "pnpm -r --if-present run build",
     "lint": "pnpm -r --if-present run lint",
     "test": "node --test tests/*.test.mjs",
+    "test:media": "pnpm --filter @smarttools/media test",
     "test:integration": "SMARTTOOLS_INTEGRATION=1 node --test tests/*integration.test.mjs",
     "test:e2e": "playwright test"
   },

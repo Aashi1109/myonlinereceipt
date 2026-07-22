@@ -3,11 +3,12 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const apps = ["admin", "auth", "devtools", "paperwork", "platform"];
+const apps = ["admin", "auth", "devtools", "media", "paperwork", "platform"];
 const stylesheets = {
   admin: "apps/admin/src/app/styles.css",
   auth: "apps/auth/src/app/styles.css",
   devtools: "apps/devtools/src/index.css",
+  media: "apps/media/app/styles.css",
   paperwork: "apps/paperwork/src/index.css",
   platform: "apps/platform/src/app/styles.css",
 };
@@ -98,4 +99,65 @@ test("frontend applications share configuration and theme baselines", async () =
     );
     assert.doesNotMatch(stylesheet, /@theme\s*\{/);
   }
+});
+
+test("Media URL configuration is wired through local apps and browser tests", async () => {
+  const [
+    platformEnvironment,
+    authEnvironment,
+    platformPage,
+    authPage,
+    adminTools,
+    devtoolsPage,
+    devtoolsRuntime,
+    playwright,
+    readme,
+  ] =
+    await Promise.all([
+      readText("apps/platform/.env.example"),
+      readText("apps/auth/.env.example"),
+      readText("apps/platform/src/app/page.tsx"),
+      readText("apps/auth/src/app/page.tsx"),
+      readText("apps/admin/src/app/(admin)/tools/_components/ToolList.tsx"),
+      readText("apps/devtools/src/app/page.tsx"),
+      readText("apps/devtools/src/lib/format-json.ts"),
+      readText("playwright.config.ts"),
+      readText("README.md"),
+    ]);
+
+  for (const source of [platformEnvironment, authEnvironment, platformPage, authPage]) {
+    assert.match(source, /MEDIA_URL/);
+    assert.match(source, /http:\/\/localhost:3005/);
+  }
+  assert.match(
+    authEnvironment,
+    /AUTH_TRUSTED_ORIGINS=[^\n]*http:\/\/localhost:3005/,
+  );
+  assert.match(playwright, /MEDIA_URL:\s*["']http:\/\/localhost:3005["']/);
+  assert.match(playwright, /@smarttools\/media dev/);
+  assert.match(platformPage, /name:\s*["']Media Tools["']/);
+  assert.match(adminTools, /app:\s*["']media["']/);
+  assert.match(devtoolsPage, /Web & Markup Tools/);
+  assert.match(devtoolsRuntime, /Web & Markup Tools/);
+  assert.doesNotMatch(devtoolsPage, /PDF & Document Tools/);
+  assert.doesNotMatch(devtoolsRuntime, /PDF & Document Tools/);
+  assert.match(readme, /apps\/media/);
+  assert.match(readme, /pnpm dev:media/);
+  assert.match(readme, /pnpm test:media/);
+});
+
+test("Media HEIC dependency and corresponding-source notice stay in sync", async () => {
+  const [packageJson, notice] = await Promise.all([
+    readJson("apps/media/package.json"),
+    readText("apps/media/public/licenses/heic-to-NOTICE.txt"),
+  ]);
+  const version = packageJson.dependencies["heic-to"];
+
+  assert.match(version, /^\d+\.\d+\.\d+$/);
+  assert.match(notice, new RegExp(`heic-to ${version.replaceAll(".", "\\.")}`));
+  assert.match(
+    notice,
+    new RegExp(`heic-to-${version.replaceAll(".", "\\.")}\\.tgz`),
+  );
+  assert.match(notice, new RegExp(`/tree/v${version.replaceAll(".", "\\.")}`));
 });

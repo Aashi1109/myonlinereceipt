@@ -6,6 +6,7 @@ import type {
   InputHTMLAttributes,
   ReactElement,
   ReactNode,
+  Ref,
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
@@ -172,19 +173,51 @@ export function ToolPageHeader({
   className,
   description,
   eyebrow,
+  inlineEyebrow = false,
   title,
 }: {
   actions?: ReactNode;
   className?: string;
   description?: ReactNode;
   eyebrow?: ReactNode;
+  inlineEyebrow?: boolean;
   title: ReactNode;
 }) {
+  const titleNode = (
+    <h1
+      className={cn(
+        "text-3xl font-black tracking-tight text-foreground",
+        inlineEyebrow && "min-w-0 break-words",
+      )}
+    >
+      {title}
+    </h1>
+  );
+  const eyebrowNode = eyebrow ? (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-primary",
+        inlineEyebrow ? "max-w-full" : "mb-2",
+      )}
+    >
+      {eyebrow}
+    </div>
+  ) : null;
+
   return (
     <header className={cn("mb-8 flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between", className)}>
-      <div>
-        {eyebrow ? <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-primary">{eyebrow}</div> : null}
-        <h1 className="text-3xl font-black tracking-tight text-foreground">{title}</h1>
+      <div className={cn(inlineEyebrow && "min-w-0")}>
+        {inlineEyebrow ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            {titleNode}
+            {eyebrowNode}
+          </div>
+        ) : (
+          <>
+            {eyebrowNode}
+            {titleNode}
+          </>
+        )}
         {description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -255,15 +288,17 @@ export function buttonVariants({
 
 export function Button({
   className,
+  ref,
   size,
   type = "button",
   variant,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
+  ref?: Ref<HTMLButtonElement>;
   size?: ButtonSize;
   variant?: ButtonVariant;
 }) {
-  return <button className={buttonVariants({ className, size, variant })} type={type} {...props} />;
+  return <button className={buttonVariants({ className, size, variant })} ref={ref} type={type} {...props} />;
 }
 
 const controlClassName =

@@ -1,6 +1,10 @@
 "use client";
 
 import type { ResolvedTool, ToolApp } from "@smarttools/tool-catalog";
+import {
+  OrderableList,
+  type OrderableItemState,
+} from "@smarttools/ui/components/OrderableList";
 import { Switch } from "@smarttools/ui/components/switch";
 import {
   Button,
@@ -30,10 +34,6 @@ import {
   toggleToolAction,
   updateToolAction,
 } from "../../../actions";
-import {
-  OrderableList,
-  type OrderableItemState,
-} from "../../_components/OrderableList";
 
 const TOOL_ICONS: Readonly<Record<string, LucideIcon>> = {
   "1099-nec-tracker": UsersRound,
@@ -60,6 +60,11 @@ const GROUPS: readonly {
     app: "devtools",
     title: "Developer tools",
     description: "Drag to control the order shown in the Devtools catalog.",
+  },
+  {
+    app: "media",
+    title: "Media tools",
+    description: "Drag to control the order shown in the Media catalog.",
   },
 ];
 

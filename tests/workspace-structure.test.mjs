@@ -13,6 +13,7 @@ test("SmartTools workspace contains the agreed applications", async () => {
     "apps/platform/package.json": "@smarttools/platform",
     "apps/paperwork/package.json": "@smarttools/paperwork",
     "apps/devtools/package.json": "@smarttools/devtools",
+    "apps/media/package.json": "@smarttools/media",
     "apps/auth/package.json": "@smarttools/auth-app",
   };
 
@@ -32,7 +33,14 @@ test("pnpm discovers apps, packages, and services", async () => {
 });
 
 test("public tools use server-resolved dynamic slugs", async () => {
-  const [paperworkCatalog, paperworkTool, devtoolsCatalog, devtoolsTool] =
+  const [
+    paperworkCatalog,
+    paperworkTool,
+    devtoolsCatalog,
+    devtoolsTool,
+    mediaCatalog,
+    mediaTool,
+  ] =
     await Promise.all([
       readFile(new URL("apps/paperwork/src/app/page.tsx", root), "utf8"),
       readFile(
@@ -44,6 +52,8 @@ test("public tools use server-resolved dynamic slugs", async () => {
         new URL("apps/devtools/src/app/[slug]/page.tsx", root),
         "utf8",
       ),
+      readFile(new URL("apps/media/app/page.tsx", root), "utf8"),
+      readFile(new URL("apps/media/app/[slug]/page.tsx", root), "utf8"),
     ]);
 
   assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["']\)/);
@@ -54,6 +64,9 @@ test("public tools use server-resolved dynamic slugs", async () => {
   assert.doesNotMatch(devtoolsCatalog, /redirect\(/);
   assert.match(devtoolsTool, /getAvailableToolBySlug\(["']devtools["']/);
   assert.match(devtoolsTool, /notFound\(\)/);
+  assert.match(mediaCatalog, /getAvailableTools\(["']media["']\)/);
+  assert.match(mediaTool, /getAvailableToolBySlug\(["']media["']/);
+  assert.match(mediaTool, /notFound\(\)/);
 
   for (const path of [
     "apps/paperwork/src/app/receipt-generator/page.tsx",
@@ -68,6 +81,19 @@ test("public tools use server-resolved dynamic slugs", async () => {
       code: "ENOENT",
     });
   }
+});
+
+test("root scripts expose the Media application", async () => {
+  const packageJson = await readJson("package.json");
+
+  assert.equal(
+    packageJson.scripts["dev:media"],
+    "pnpm --filter @smarttools/media dev",
+  );
+  assert.equal(
+    packageJson.scripts["test:media"],
+    "pnpm --filter @smarttools/media test",
+  );
 });
 
 test("paperwork page navigation does not use URL hashes", async () => {
@@ -173,8 +199,8 @@ test("Paperwork server persistence checks the owning tool", async () => {
   assert.match(vendors, /requireAnyAvailablePaperworkTool/);
 });
 
-test("admin template sections use the shared accessible drag-and-drop list", async () => {
-  const [editor, orderableList] = await Promise.all([
+test("admin and Media ordering use the shared accessible drag-and-drop list", async () => {
+  const [editor, toolList, mediaWorkbench, orderableList] = await Promise.all([
     readFile(
       new URL(
         "apps/admin/src/app/(admin)/templates/[id]/_components/TemplateEditor.tsx",
@@ -184,9 +210,17 @@ test("admin template sections use the shared accessible drag-and-drop list", asy
     ),
     readFile(
       new URL(
-        "apps/admin/src/app/(admin)/_components/OrderableList.tsx",
+        "apps/admin/src/app/(admin)/tools/_components/ToolList.tsx",
         root,
       ),
+      "utf8",
+    ),
+    readFile(
+      new URL("apps/media/components/MediaWorkbench.tsx", root),
+      "utf8",
+    ),
+    readFile(
+      new URL("packages/ui/src/components/OrderableList.tsx", root),
       "utf8",
     ),
   ]);
@@ -194,6 +228,14 @@ test("admin template sections use the shared accessible drag-and-drop list", asy
   assert.match(editor, /<OrderableList/);
   assert.match(editor, /GripVertical/);
   assert.doesNotMatch(editor, /moveSection|ArrowUp|ArrowDown/);
+  assert.match(toolList, /@smarttools\/ui\/components\/OrderableList/);
+  assert.match(mediaWorkbench, /@smarttools\/ui\/components\/OrderableList/);
+  assert.match(mediaWorkbench, /<OrderableList/);
+  assert.doesNotMatch(
+    mediaWorkbench,
+    /<ArrowUp|<ArrowDown|function moveFile|function movePage/,
+  );
   assert.match(orderableList, /KeyboardSensor/);
+  assert.match(orderableList, /PointerSensor/);
   assert.match(orderableList, /sortableKeyboardCoordinates/);
 });

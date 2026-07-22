@@ -186,7 +186,7 @@ export const managedToolsTable = pgTable(
   "managed_tools",
   {
     toolId: text("tool_id").primaryKey(),
-    app: text("app").$type<"paperwork" | "devtools">().notNull(),
+    app: text("app").$type<"paperwork" | "devtools" | "media">().notNull(),
     slug: text("slug"),
     name: text("name").notNull(),
     description: text("description").notNull(),
@@ -227,4 +227,3 @@ export const auditEventsTable = pgTable(
 );
 
 export const usersTable = anonymousUsersTable;
-

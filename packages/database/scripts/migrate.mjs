@@ -5,14 +5,22 @@ import postgres from "postgres";
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 
-const migration = await readFile(
-  new URL("../drizzle/0001_auth_control_plane.sql", import.meta.url),
-  "utf8",
+const migrations = await Promise.all(
+  ["0001_auth_control_plane.sql", "0002_media_tools.sql"].map(
+    async (name) => [
+      name,
+      await readFile(new URL(`../drizzle/${name}`, import.meta.url), "utf8"),
+    ],
+  ),
 );
 const sql = postgres(databaseUrl, { max: 1 });
 
 try {
-  await sql.unsafe(migration);
+  for (const [name, migration] of migrations) {
+    await sql.unsafe(migration);
+    console.log(`Applied ${name}`);
+  }
+
   const [{ template_count }] = await sql`
     SELECT COUNT(*)::integer AS template_count FROM invoice_templates
   `;
@@ -38,7 +46,6 @@ try {
     });
     console.log(`Seeded ${seedTemplates.length} invoice templates`);
   }
-  console.log("Applied 0001_auth_control_plane.sql");
 } finally {
   await sql.end();
 }
