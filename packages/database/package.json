@@ -1,0 +1,19 @@
+{
+  "name": "@smarttools/database",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "migrate": "node scripts/migrate.mjs",
+    "promote-admin": "node scripts/promote-admin.mjs"
+  },
+  "dependencies": {
+    "@smarttools/authorization": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  }
+}

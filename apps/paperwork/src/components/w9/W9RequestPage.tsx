@@ -1,0 +1,444 @@
+"use client";
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from "react";
+import {
+  Button,
+  Card,
+  Input,
+  Select,
+  StatusBadge,
+  ToolPageHeader
+} from "@smarttools/ui";
+import {
+  FileText,
+  Clock,
+  Printer,
+  FileDown,
+  RefreshCw,
+  Plus,
+  Trash2,
+  Copy,
+  Check,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Download,
+  Percent,
+  CheckCircle,
+  HelpCircle,
+  Info,
+  ChevronRight,
+  Mail,
+  UserCheck,
+  Building,
+  Briefcase
+} from "lucide-react";
+import { DataBridge, DataBridgeKeys, VendorProfile } from "../../lib/shared/dataBridge";
+
+const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"];
+const W9_STATUS_OPTIONS = ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"];
+
+const DEFAULT_VENDORS: VendorProfile[] = [
+  {
+    id: "vendor-1",
+    legalName: "Devon Lane",
+    businessName: "Devon Dev LLC",
+    email: "devon@lanestudio.com",
+    phone: "+1 (555) 441-2820",
+    addressLine1: "192 Silver Maple Ave, Seattle, WA 98101",
+    entityType: "LLC",
+    w9Status: "Received",
+    notes: "Contract Ruby-on-Rails setup milestone developer."
+  }
+];
+
+export default function W9RequestPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
+  const [vendors, setVendors] = useState<VendorProfile[]>(() => {
+    return DataBridge.get<VendorProfile[]>(DataBridgeKeys.W9_VENDORS, DEFAULT_VENDORS);
+  });
+
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("vendor-1");
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Form states for creating/editing vendor
+  const [formName, setFormName] = useState("");
+  const [formBiz, setFormBiz] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formAddress, setFormAddress] = useState("");
+  const [formEntity, setFormEntity] = useState<any>("Individual");
+  const [formStatus, setFormStatus] = useState<any>("Not Requested");
+  const [formNotes, setFormNotes] = useState("");
+
+  const [activeTab, setActiveTab] = useState<"onboarding" | "email">("onboarding");
+
+  // Sync state to memory
+  useEffect(() => {
+    DataBridge.saveW9Vendors(vendors);
+  }, [vendors]);
+
+  // Load details to editor upon selection
+  const activeVendor = vendors.find(v => v.id === selectedVendorId) || vendors[0];
+
+  useEffect(() => {
+    if (activeVendor) {
+      setFormName(activeVendor.legalName);
+      setFormBiz(activeVendor.businessName);
+      setFormEmail(activeVendor.email);
+      setFormPhone(activeVendor.phone);
+      setFormAddress(activeVendor.addressLine1);
+      setFormEntity(activeVendor.entityType);
+      setFormStatus(activeVendor.w9Status);
+      setFormNotes(activeVendor.notes);
+    }
+  }, [selectedVendorId, activeVendor]);
+
+  const handleUpdateVendorDetail = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) {
+      setErrors({ formName: "Contractor Legal Name is required to formulate profiles." });
+      return;
+    }
+    setErrors({});
+
+    const updated = vendors.map(v => {
+      if (v.id === selectedVendorId) {
+        return {
+          ...v,
+          legalName: formName,
+          businessName: formBiz,
+          email: formEmail,
+          phone: formPhone,
+          addressLine1: formAddress,
+          entityType: formEntity,
+          w9Status: formStatus,
+          notes: formNotes
+        };
+      }
+      return v;
+    });
+
+    setVendors(updated);
+    alert("Contractor profile parameters updated!");
+    onTrackClick("w9_vendor_updated");
+  };
+
+  const handleCreateNewVendor = () => {
+    const fresh: VendorProfile = {
+      id: `vendor-${Date.now()}`,
+      legalName: "New Contractor Partner",
+      businessName: "",
+      email: "",
+      phone: "",
+      addressLine1: "",
+      entityType: "Individual",
+      w9Status: "Not Requested",
+      notes: ""
+    };
+
+    setVendors([...vendors, fresh]);
+    setSelectedVendorId(fresh.id);
+    onTrackClick("w9_vendor_created");
+  };
+
+  const handleRemoveVendor = (id: string) => {
+    if (vendors.length <= 1) {
+      alert("Keep at least one contractor listing to maintain profile alignment.");
+      return;
+    }
+    if (confirm("Are you sure you want to remove this contractor from onboarding tracks?")) {
+      const remaining = vendors.filter(v => v.id !== id);
+      setVendors(remaining);
+      setSelectedVendorId(remaining[0].id);
+      onTrackClick("w9_vendor_removed");
+    }
+  };
+
+  // Generate compliance W9 request email blueprint
+  const getEmailSubject = () => {
+    return `W-9 request needed for onboarding verification - ${activeVendor?.businessName || "Contractor Milestone Partners"}`;
+  };
+
+  const getEmailBody = () => {
+    return `Hello ${activeVendor?.legalName || "Contractor Partner"},
+
+We hope you are doing well.
+
+To comply with US Internal Revenue Service regulations and complete your vendor account onboarding file setup, we require a signed IRS Form W-9 (Request for Taxpayer Identification Number and Certification).
+
+Please find instructions below:
+1. Obtain/download a copy of Form W-9 from the official IRS website (irs.gov/pub/irs-pdf/fw9.pdf).
+2. Complete all Sections in Part I and Part II (including Legal Name, Tax Classification LLV/Individual coordinates, EIN/SSN Number, and an authentic Signature).
+3. Safely email a secure PDF copy back to us at your earliest convenience prior to the close of current milestone cycles.
+
+Note: All payments above $600 with independent contractors in our tax year require active W-9 records to process subsequent annual Form 1099-NEC vouchers correctly.
+
+Let us know if you have any questions regarding these compliance items.
+
+Best regards,
+Onboarding & Verification Solutions
+SmartTools Paperwork Toolkit Suite`;
+  };
+
+  const handleCopyEmailText = () => {
+    const copyString = `Subject: ${getEmailSubject()}\n\n${getEmailBody()}`;
+    navigator.clipboard.writeText(copyString);
+    setCopiedEmail(true);
+    setTimeout(() => setCopiedEmail(false), 2500);
+    onTrackClick("w9_email_copied_clicked");
+  };
+
+  return (
+    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="w9-onboarding-wrapper">
+
+      <ToolPageHeader
+        actions={(
+          <Button onClick={handleCreateNewVendor} variant="strong">
+            <Plus className="size-4" />
+            <span>Onboard Contractor</span>
+          </Button>
+        )}
+        description="Maintain compliance folders for self-employed subcontractor entities, track verification status states, and request records."
+        eyebrow={<StatusBadge variant="info">IRS Form 1099 Vendor Verification</StatusBadge>}
+        title="W-9 Request & Onboarding Tracker"
+      />
+
+      {/* Main split panels layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        {/* CONTRACTOR LIST SIDEBAR ROW */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card className="space-y-3">
+            <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1 font-sans">Active Contractor Profiles</span>
+
+            <div className="space-y-1.5 max-h-[350px] overflow-y-auto">
+              {vendors.map((vend) => (
+                <div
+                  key={vend.id}
+                  className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-150 ${selectedVendorId === vend.id ? "border-slate-900/60 bg-slate-50" : "border-slate-200 bg-white"}`}
+                >
+                  <button
+                    aria-pressed={selectedVendorId === vend.id}
+                    className="min-w-0 grow rounded-md text-left text-xs outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => setSelectedVendorId(vend.id)}
+                    type="button"
+                  >
+                    <span className="font-extrabold text-slate-950 block">{vend.legalName}</span>
+                    {vend.businessName && <span className="text-[10px] text-slate-500 block font-semibold">{vend.businessName}</span>}
+                  </button>
+
+                  <div className="flex gap-2 items-center shrink-0">
+                    <StatusBadge variant={
+                      vend.w9Status === "Received" ? "success" :
+                      vend.w9Status === "Requested" ? "warning" :
+                      vend.w9Status === "Needs Review" ? "danger" :
+                      "neutral"
+                    }>
+                      {vend.w9Status}
+                    </StatusBadge>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        handleRemoveVendor(vend.id);
+                      }}
+                      aria-label="Remove contractor profile"
+                      className="text-muted-foreground hover:text-destructive"
+                      size="icon"
+                      title="Remove profile"
+                      variant="ghost"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* EDITOR OR COMPLIANCE EMAIL GENERATION */}
+        <div className="lg:col-span-8 space-y-6">
+
+          {/* Tab sub headers */}
+          <div className="flex bg-slate-200 p-1 rounded-xl border border-slate-200" id="w9-tabs">
+            <button
+              onClick={() => setActiveTab("onboarding")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "onboarding" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
+              type="button"
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>1. Formulate Profile Metadata</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("email")}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "email" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
+              type="button"
+            >
+              <Mail className="w-4 h-4" />
+              <span>2. Copy W-9 compliance request Email</span>
+            </button>
+          </div>
+
+          {activeTab === "onboarding" ? (
+            <form onSubmit={handleUpdateVendorDetail} className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b pb-2">
+                Verification credentials formulation
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</label>
+                  <Input
+                    aria-describedby={errors.formName ? undefined : "w9-legal-name-description"}
+                    aria-errormessage={errors.formName ? "w9-legal-name-error" : undefined}
+                    type="text"
+                    required
+                    aria-invalid={Boolean(errors.formName)}
+                    className="font-bold"
+                    id="w9-legal-name"
+                    value={formName}
+                    onChange={(e) => {
+                      setFormName(e.target.value);
+                      if (errors.formName) setErrors({});
+                    }}
+                  />
+                  {errors.formName ? (
+                    <p className="mt-1 text-[10px] font-bold text-destructive" id="w9-legal-name-error" role="alert">{errors.formName}</p>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 block mt-0.5" id="w9-legal-name-description">As registered on their IRS filing documents.</span>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</label>
+                  <Input
+                    type="text"
+                    className="font-semibold"
+                    id="w9-business-name"
+                    value={formBiz}
+                    onChange={(e) => setFormBiz(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-email">Email Coordinates</label>
+                  <Input
+                    type="email"
+                    className="font-medium"
+                    id="w9-email"
+                    value={formEmail}
+                    onChange={(e) => setFormEmail(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-phone">Support Phone</label>
+                  <Input
+                    id="w9-phone"
+                    type="text"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-address">Street address</label>
+                  <Input
+                    type="text"
+                    className="font-semibold"
+                    id="w9-address"
+                    value={formAddress}
+                    onChange={(e) => setFormAddress(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-entity">Tax Classification Entity</label>
+                  <Select
+                    className="font-bold"
+                    id="w9-entity"
+                    value={formEntity}
+                    onChange={(e) => setFormEntity(e.target.value as any)}
+                  >
+                    {ENTITY_TYPES.map(ent => (
+                      <option key={ent} value={ent}>{ent} / Sole Proprietor</option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-status">W-9 Request compliance status</label>
+                  <Select
+                    className="font-black"
+                    id="w9-status"
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as any)}
+                  >
+                    {W9_STATUS_OPTIONS.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-notes">Notes / Project association description</label>
+                  <Input
+                    id="w9-notes"
+                    type="text"
+                    value={formNotes}
+                    onChange={(e) => setFormNotes(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t text-right">
+                <Button
+                  type="submit"
+                  variant="strong"
+                >
+                  Save Profile updates
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <Card className="space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest leading-none">
+                  Compliance email template generator
+                </h3>
+                <Button
+                  onClick={handleCopyEmailText}
+                  className="select-none"
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  {copiedEmail ? <Check className="size-3.5 animate-pulse text-emerald-600" /> : <Copy className="size-3.5" />}
+                  <span>{copiedEmail ? "CopiedSubjectBody!" : "Copy Subject + Body"}</span>
+                </Button>
+              </div>
+
+              {/* Subject block */}
+              <div className="bg-slate-50 p-3 rounded-lg border text-xs">
+                <span className="block text-[11px] text-slate-400 font-black uppercase mb-1">Email Subject Line</span>
+                <p className="font-extrabold text-slate-900 font-mono select-all">
+                  {getEmailSubject()}
+                </p>
+              </div>
+
+              {/* Body block */}
+              <div className="bg-slate-50 p-4 rounded-lg border text-xs leading-relaxed font-semibold">
+                <span className="block text-[11px] text-slate-400 font-black uppercase mb-1">Email Body Description</span>
+                <p className="whitespace-pre-line text-slate-700 font-mono select-all">
+                  {getEmailBody()}
+                </p>
+              </div>
+            </Card>
+          )}
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

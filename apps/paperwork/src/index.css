@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "@smarttools/ui/theme.css";
+
+/* Paperwork is a desktop-first editing workspace. Keep mobile controls roomy,
+   then use the compact document-tool density from the original UI on desktop. */
+@media (min-width: 640px) {
+  #app-root main input.h-10,
+  #app-root main select.h-10 {
+    height: 2.25rem;
+  }
+
+  #app-root main input.text-sm,
+  #app-root main select.text-sm,
+  #app-root main textarea.text-sm {
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
+  #app-root main textarea.min-h-28 {
+    min-height: 5rem;
+  }
+}
+
+@page {
+  size: letter;
+  margin: 1.5cm;
+}

@@ -1,38 +1,27 @@
 {
-  "name": "my-online-receipt",
+  "name": "smarttools",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.14.0",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "@vitejs/plugin-react": "^5.0.4",
-    "dotenv": "^17.2.3",
-    "drizzle-orm": "^0.45.2",
-    "express": "^4.21.2",
-    "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
-    "postgres": "^3.4.9",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "vite": "^6.2.3",
-    "zod": "^4.4.3"
+    "dev": "pnpm --filter @smarttools/platform dev",
+    "dev:all": "pnpm --parallel --filter '@smarttools/*' dev",
+    "dev:platform": "pnpm --filter @smarttools/platform dev",
+    "dev:paperwork": "pnpm --filter @smarttools/paperwork dev",
+    "dev:devtools": "pnpm --filter @smarttools/devtools dev",
+    "dev:admin": "pnpm --filter @smarttools/admin dev",
+    "dev:auth": "pnpm --filter @smarttools/auth-app dev",
+    "db:migrate": "pnpm --filter @smarttools/database migrate",
+    "admin:promote": "pnpm --filter @smarttools/database promote-admin",
+    "build": "pnpm -r --if-present run build",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "node --test tests/*.test.mjs",
+    "test:integration": "SMARTTOOLS_INTEGRATION=1 node --test tests/*integration.test.mjs",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
-    "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "@playwright/test": "1.61.1",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2"
   }
 }

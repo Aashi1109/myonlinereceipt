@@ -1,0 +1,39 @@
+{
+  "name": "@smarttools/paperwork",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "tsc --noEmit && next build",
+    "start": "next start -p 3001",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.12.0",
+    "@react-pdf/renderer": "^4.5.1",
+    "@smarttools/auth": "workspace:*",
+    "@smarttools/control-plane": "workspace:*",
+    "@smarttools/invoice-templates": "workspace:*",
+    "@smarttools/tool-catalog": "workspace:*",
+    "@smarttools/ui": "workspace:*",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.25.0",
+    "motion": "^12.42.2",
+    "next": "^16.2.10",
+    "postgres": "^3.4.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "postcss": "8.5.21",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~7.0.2"
+  }
+}

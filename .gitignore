@@ -2,7 +2,16 @@ node_modules/
 build/
 dist/
 coverage/
+playwright-report/
+test-results/
 .DS_Store
 *.log
+*.tsbuildinfo
 .env*
 !.env.example
+
+.next/
+next-env.d.ts
+.pnpm-store/
+.codegraph
+.cursor

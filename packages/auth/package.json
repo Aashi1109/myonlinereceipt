@@ -1,0 +1,17 @@
+{
+  "name": "@smarttools/auth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./security": "./src/security.ts",
+    "./session": "./src/session.ts"
+  },
+  "dependencies": {
+    "@smarttools/authorization": "workspace:*",
+    "@smarttools/database": "workspace:*",
+    "better-auth": "1.6.23",
+    "resend": "6.17.2"
+  }
+}
