@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import {
   AlertBanner,
   Button,
@@ -9,10 +9,9 @@ import {
   DangerZone,
   Field,
   Input,
-  SectionCard,
   SectionHeading,
   StatusBadge,
-  ToolPageHeader,
+  buttonVariants,
 } from "@smarttools/ui";
 import { authClient } from "../../lib/authClient";
 import {
@@ -68,6 +67,55 @@ function providerName(providerId: string): string {
   return providerId;
 }
 
+const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_PROFILE_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+const PROFILE_IMAGE_SIZE = 256;
+
+async function prepareProfileImage(file: File): Promise<string> {
+  if (
+    file.size === 0 ||
+    file.size > MAX_PROFILE_IMAGE_FILE_SIZE ||
+    !PROFILE_IMAGE_TYPES.includes(file.type)
+  ) {
+    throw new Error("Choose a JPG, PNG, or WebP image up to 5 MB.");
+  }
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error("That image could not be read.");
+  }
+
+  try {
+    const cropSize = Math.min(bitmap.width, bitmap.height);
+    if (cropSize === 0) throw new Error("That image could not be read.");
+
+    const canvas = document.createElement("canvas");
+    canvas.width = PROFILE_IMAGE_SIZE;
+    canvas.height = PROFILE_IMAGE_SIZE;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("That image could not be prepared.");
+
+    context.drawImage(
+      bitmap,
+      (bitmap.width - cropSize) / 2,
+      (bitmap.height - cropSize) / 2,
+      cropSize,
+      cropSize,
+      0,
+      0,
+      PROFILE_IMAGE_SIZE,
+      PROFILE_IMAGE_SIZE,
+    );
+    const image = normalizeProfileImage(canvas.toDataURL("image/webp", 0.82));
+    if (!image) throw new Error("That image could not be prepared.");
+    return image;
+  } finally {
+    bitmap.close();
+  }
+}
+
 export function ProfileManager({
   initialUser,
   currentSessionId,
@@ -81,6 +129,7 @@ export function ProfileManager({
   const [loadingSecurity, setLoadingSecurity] = useState(true);
   const [pending, setPending] = useState<string>();
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [profileImage, setProfileImage] = useState(initialUser.image);
 
   const user = liveSession?.user ?? initialUser;
   const hasPassword = accounts.some(
@@ -89,6 +138,7 @@ export function ProfileManager({
   const googleAccount = accounts.find(
     (account) => account.providerId === "google",
   );
+  const avatarInitial = user.name.trim().charAt(0).toUpperCase() || "S";
 
   const loadSecurityData = useCallback(async () => {
     setLoadingSecurity(true);
@@ -112,6 +162,27 @@ export function ProfileManager({
     void loadSecurityData();
   }, [loadSecurityData]);
 
+  async function chooseProfileImage(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    setPending("image");
+    setFeedback(null);
+    try {
+      setProfileImage(await prepareProfileImage(file));
+    } catch (error) {
+      setFeedback({
+        kind: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Choose a valid profile image.",
+      });
+    }
+    setPending(undefined);
+  }
+
   async function updateProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -127,7 +198,10 @@ export function ProfileManager({
     } catch (error) {
       setFeedback({
         kind: "error",
-        text: error instanceof Error ? error.message : "Enter a valid image URL.",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Choose a valid profile image.",
       });
       return;
     }
@@ -274,9 +348,60 @@ export function ProfileManager({
 
   return (
     <>
-      <ToolPageHeader
-        actions={
+      <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-14">
+        <aside
+          aria-labelledby="account-overview-label"
+          className="min-w-0 lg:sticky lg:top-24 lg:self-start"
+        >
+          <p
+            className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary"
+            id="account-overview-label"
+          >
+            Account overview
+          </p>
+          <div className="mt-4 flex min-w-0 items-center gap-4 lg:block">
+            <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-xl font-black text-primary-foreground ring-4 ring-accent">
+              {avatarInitial}
+              {profileImage ? (
+                <img
+                  alt=""
+                  className="absolute inset-0 size-full object-cover"
+                  referrerPolicy="no-referrer"
+                  src={profileImage}
+                />
+              ) : null}
+            </div>
+            <div className="min-w-0 lg:mt-4">
+              <p className="truncate font-extrabold text-foreground">{user.name}</p>
+              <p className="mt-1 break-all text-sm leading-5 text-muted-foreground">
+                {user.email}
+              </p>
+            </div>
+          </div>
+
+          <nav
+            aria-label="Profile sections"
+            className="mt-6 hidden gap-1 lg:grid"
+          >
+            {[
+              ["Profile", "#profile"],
+              ["Sign-in methods", "#sign-in-methods"],
+              ["Password", "#password"],
+              ["Active sessions", "#active-sessions"],
+              ["Delete account", "#delete-account"],
+            ].map(([label, href]) => (
+              <a
+                className="flex min-h-10 items-center rounded-lg px-3 text-sm font-bold text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                href={href}
+                key={href}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
           <Button
+            className="mt-6 w-full"
             disabled={Boolean(pending)}
             onClick={signOut}
             type="button"
@@ -284,238 +409,370 @@ export function ProfileManager({
           >
             {pending === "sign-out" ? "Signing out…" : "Sign out"}
           </Button>
-        }
-        className="pt-16"
-        description={user.email}
-        eyebrow="Account center"
-        title="Manage your SmartTools account."
-      />
+        </aside>
 
-      {feedback && (
-        <AlertBanner className="mb-6 max-w-3xl" variant={feedback.kind}>
-          {feedback.text}
-        </AlertBanner>
-      )}
+        <div className="min-w-0">
+          {feedback ? (
+            <AlertBanner className="mb-6" variant={feedback.kind}>
+              {feedback.text}
+            </AlertBanner>
+          ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <SectionCard aria-label="Profile">
-          <SectionHeading
-            description="Your display details across SmartTools."
-            eyebrow="01"
-            title="Profile"
-          />
-          <form className="grid gap-4" onSubmit={updateProfile}>
-            <Field htmlFor="profile-name" label="Name">
-              <Input
-                defaultValue={user.name}
-                id="profile-name"
-                maxLength={100}
-                name="name"
-                required
+          <div className="grid gap-12 sm:gap-14">
+            <section className="scroll-mt-24" id="profile">
+              <SectionHeading
+                description="Shown anywhere your account appears across SmartTools."
+                title="Profile"
               />
-            </Field>
-            <Field htmlFor="profile-image" label="Image URL">
-              <Input
-                defaultValue={user.image ?? ""}
-                id="profile-image"
-                inputMode="url"
-                maxLength={2048}
-                name="image"
-                placeholder="https://example.com/avatar.png"
-                type="url"
-              />
-            </Field>
-            <Button className="w-fit" disabled={Boolean(pending)} type="submit">
-              {pending === "profile" ? "Saving…" : "Save profile"}
-            </Button>
-          </form>
-        </SectionCard>
-
-        <SectionCard aria-label="Sign-in identities">
-          <SectionHeading
-            description="Google and password methods linked to this account."
-            eyebrow="02"
-            title="Sign-in identities"
-          />
-          {loadingSecurity ? (
-            <LoadingState label="Loading identities…" />
-          ) : (
-            <ul className="grid gap-3">
-              {accounts.map((account) => (
-                <li
-                  className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 p-4"
-                  key={account.id}
-                >
-                  <div className="grid min-w-0 gap-1">
-                    <strong className="truncate text-sm">
-                      {providerName(account.providerId)}
-                    </strong>
-                    <span className="text-xs text-muted-foreground">
-                      Connected {formatDate(account.createdAt)}
-                    </span>
+              <form
+                aria-busy={pending === "profile"}
+                className="grid max-w-2xl gap-5"
+                onSubmit={updateProfile}
+              >
+                <Field htmlFor="profile-name" label="Name">
+                  <Input
+                    defaultValue={user.name}
+                    id="profile-name"
+                    maxLength={100}
+                    name="name"
+                    required
+                  />
+                </Field>
+                <input
+                  name="image"
+                  readOnly
+                  type="hidden"
+                  value={profileImage ?? ""}
+                />
+                <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
+                  <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-xl font-black text-primary-foreground">
+                    {avatarInitial}
+                    {profileImage ? (
+                      <img
+                        alt="Profile preview"
+                        className="absolute inset-0 size-full object-cover"
+                        referrerPolicy="no-referrer"
+                        src={profileImage}
+                      />
+                    ) : null}
                   </div>
-                  {account.providerId === "google" && accounts.length > 1 && (
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-extrabold text-foreground">
+                      Profile photo
+                    </p>
+                    <p
+                      className="mt-1 text-xs leading-5 text-muted-foreground"
+                      id="profile-image-help"
+                    >
+                      Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and
+                      compressed in your browser.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <input
+                        accept="image/jpeg,image/png,image/webp"
+                        aria-describedby="profile-image-help"
+                        className="peer sr-only"
+                        disabled={Boolean(pending)}
+                        id="profile-image"
+                        onChange={chooseProfileImage}
+                        type="file"
+                      />
+                      <label
+                        aria-disabled={Boolean(pending)}
+                        className={buttonVariants({
+                          className: `cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${
+                            pending ? "pointer-events-none opacity-50" : ""
+                          }`,
+                          size: "sm",
+                          variant: "outline",
+                        })}
+                        htmlFor="profile-image"
+                      >
+                        {pending === "image"
+                          ? "Preparing…"
+                          : profileImage
+                            ? "Change photo"
+                            : "Choose photo"}
+                      </label>
+                      {profileImage ? (
+                        <Button
+                          disabled={Boolean(pending)}
+                          onClick={() => setProfileImage(null)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          Remove
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  className="w-full sm:w-fit"
+                  disabled={Boolean(pending)}
+                  type="submit"
+                >
+                  {pending === "profile" ? "Saving…" : "Save profile"}
+                </Button>
+              </form>
+            </section>
+
+            <section
+              className="scroll-mt-24"
+              id="sign-in-methods"
+            >
+              <SectionHeading
+                description="Ways you can securely access this account."
+                title="Sign-in methods"
+              />
+              {loadingSecurity ? (
+                <LoadingState label="Loading sign-in methods…" />
+              ) : accounts.length > 0 ? (
+                <ul className="overflow-hidden rounded-xl border border-border">
+                  {accounts.map((account) => (
+                    <li
+                      className="flex min-w-0 flex-col gap-4 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                      key={account.id}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-black text-accent-foreground"
+                        >
+                          {account.providerId === "google" ? "G" : "@"}
+                        </span>
+                        <div className="grid min-w-0 gap-1">
+                          <strong className="break-words text-sm">
+                            {providerName(account.providerId)}
+                          </strong>
+                          <span className="text-xs leading-5 text-muted-foreground">
+                            Connected {formatDate(account.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      {account.providerId === "google" && accounts.length > 1 ? (
+                        <Button
+                          disabled={Boolean(pending)}
+                          onClick={unlinkGoogle}
+                          size="sm"
+                          type="button"
+                          variant="danger-subtle"
+                        >
+                          Unlink
+                        </Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Sign-in methods could not be loaded.
+                  </p>
+                  <Button
+                    onClick={() => void loadSecurityData()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              )}
+              {!loadingSecurity && accounts.length > 0 && !googleAccount ? (
+                <Button
+                  className="mt-4 w-full sm:w-fit"
+                  disabled={Boolean(pending)}
+                  onClick={linkGoogle}
+                  type="button"
+                  variant="outline"
+                >
+                  {pending === "google" ? "Connecting…" : "Link Google account"}
+                </Button>
+              ) : null}
+              {googleAccount && accounts.length === 1 ? (
+                <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                  Add another sign-in method before unlinking your only identity.
+                </p>
+              ) : null}
+            </section>
+
+            <section className="scroll-mt-24" id="password">
+              <SectionHeading
+                description="Changing your password signs out your other devices."
+                title="Password"
+              />
+              {loadingSecurity ? (
+                <LoadingState label="Checking password access…" />
+              ) : accounts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Password settings are unavailable until sign-in methods load.
+                </p>
+              ) : hasPassword ? (
+                <form
+                  aria-busy={pending === "password"}
+                  className="grid max-w-2xl gap-5"
+                  onSubmit={changePassword}
+                >
+                  <Field htmlFor="current-password" label="Current password">
+                    <Input
+                      autoComplete="current-password"
+                      id="current-password"
+                      name="currentPassword"
+                      required
+                      type="password"
+                    />
+                  </Field>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <Field
+                      description="12–128 characters"
+                      htmlFor="profile-new-password"
+                      label="New password"
+                    >
+                      <Input
+                        autoComplete="new-password"
+                        id="profile-new-password"
+                        maxLength={128}
+                        minLength={12}
+                        name="newPassword"
+                        required
+                        type="password"
+                      />
+                    </Field>
+                    <Field
+                      htmlFor="profile-confirm-password"
+                      label="Confirm new password"
+                    >
+                      <Input
+                        autoComplete="new-password"
+                        id="profile-confirm-password"
+                        maxLength={128}
+                        minLength={12}
+                        name="passwordConfirmation"
+                        required
+                        type="password"
+                      />
+                    </Field>
+                  </div>
+                  <Button
+                    className="w-full sm:w-fit"
+                    disabled={Boolean(pending)}
+                    type="submit"
+                  >
+                    {pending === "password" ? "Updating…" : "Change password"}
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  This account currently signs in through Google.
+                </p>
+              )}
+            </section>
+
+            <section
+              className="scroll-mt-24"
+              id="active-sessions"
+            >
+              <SectionHeading
+                action={
+                  sessions.length > 1 ? (
                     <Button
-                      className="text-destructive"
                       disabled={Boolean(pending)}
-                      onClick={unlinkGoogle}
+                      onClick={revokeOtherSessions}
                       size="sm"
                       type="button"
-                      variant="ghost"
+                      variant="danger-subtle"
                     >
-                      Unlink
+                      Revoke others
                     </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {!googleAccount && (
-            <Button
-              className="w-full"
-              disabled={Boolean(pending)}
-              onClick={linkGoogle}
-              type="button"
-              variant="outline"
-            >
-              {pending === "google" ? "Connecting…" : "Link Google account"}
-            </Button>
-          )}
-          {googleAccount && accounts.length === 1 && (
-            <p className="text-xs leading-5 text-muted-foreground">
-              Add another sign-in method before unlinking your only identity.
-            </p>
-          )}
-        </SectionCard>
-
-        <SectionCard aria-label="Password">
-          <SectionHeading
-            description="Changing it signs out your other devices."
-            eyebrow="03"
-            title="Password"
-          />
-          {loadingSecurity ? (
-            <LoadingState label="Checking password access…" />
-          ) : hasPassword ? (
-            <form className="grid gap-4" onSubmit={changePassword}>
-              <Field htmlFor="current-password" label="Current password">
-                <Input
-                  autoComplete="current-password"
-                  id="current-password"
-                  name="currentPassword"
-                  required
-                  type="password"
-                />
-              </Field>
-              <Field
-                description="12–128 characters"
-                htmlFor="profile-new-password"
-                label="New password"
-              >
-                <Input
-                  autoComplete="new-password"
-                  id="profile-new-password"
-                  maxLength={128}
-                  minLength={12}
-                  name="newPassword"
-                  required
-                  type="password"
-                />
-              </Field>
-              <Field
-                htmlFor="profile-confirm-password"
-                label="Confirm new password"
-              >
-                <Input
-                  autoComplete="new-password"
-                  id="profile-confirm-password"
-                  maxLength={128}
-                  minLength={12}
-                  name="passwordConfirmation"
-                  required
-                  type="password"
-                />
-              </Field>
-              <Button className="w-fit" disabled={Boolean(pending)} type="submit">
-                {pending === "password" ? "Updating…" : "Change password"}
-              </Button>
-            </form>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              This account currently signs in through Google.
-            </p>
-          )}
-        </SectionCard>
-
-        <SectionCard aria-label="Active sessions" className="lg:col-span-2">
-          <SectionHeading
-            action={
-              sessions.length > 1 ? (
-                <Button
-                  disabled={Boolean(pending)}
-                  onClick={revokeOtherSessions}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  Revoke others
-                </Button>
-              ) : undefined
-            }
-            description="Review devices with access to your account."
-            eyebrow="04"
-            title="Active sessions"
-          />
-          {loadingSecurity ? (
-            <LoadingState label="Loading sessions…" />
-          ) : (
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {sessions.map((session) => {
-                const isCurrent = session.id === currentSessionId;
-                return (
-                  <li
-                    className="flex min-w-0 items-start justify-between gap-4 rounded-lg border border-border bg-muted/30 p-4"
-                    key={session.id}
-                  >
-                    <div className="grid min-w-0 gap-1">
-                      <strong className="text-sm">
-                        {isCurrent ? "This device" : session.userAgent || "Unknown device"}
-                      </strong>
-                      <span className="break-words text-xs leading-5 text-muted-foreground">
-                        {session.ipAddress || "IP unavailable"} · Started {formatDate(session.createdAt)}
-                      </span>
-                    </div>
-                    {isCurrent ? (
-                      <StatusBadge variant="success">Current</StatusBadge>
-                    ) : (
-                      <Button
-                        className="text-destructive"
-                        disabled={Boolean(pending)}
-                        onClick={() => revokeSession(session)}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
+                  ) : undefined
+                }
+                description="Devices and browsers currently signed in."
+                title="Active sessions"
+              />
+              {loadingSecurity ? (
+                <LoadingState label="Loading sessions…" />
+              ) : sessions.length > 0 ? (
+                <ul className="overflow-hidden rounded-xl border border-border">
+                  {sessions.map((session) => {
+                    const isCurrent = session.id === currentSessionId;
+                    return (
+                      <li
+                        className="flex min-w-0 flex-col gap-4 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between"
+                        key={session.id}
                       >
-                        {pending === `session:${session.id}` ? "Revoking…" : "Revoke"}
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </SectionCard>
+                        <div className="grid min-w-0 gap-1">
+                          <strong className="break-words text-sm">
+                            {isCurrent
+                              ? "This device"
+                              : session.userAgent || "Unknown device"}
+                          </strong>
+                          <span className="break-words text-xs leading-5 text-muted-foreground">
+                            {session.ipAddress || "IP unavailable"} · Started{" "}
+                            {formatDate(session.createdAt)}
+                          </span>
+                        </div>
+                        {isCurrent ? (
+                          <StatusBadge variant="success">Current</StatusBadge>
+                        ) : (
+                          <Button
+                            disabled={Boolean(pending)}
+                            onClick={() => revokeSession(session)}
+                            size="sm"
+                            type="button"
+                            variant="danger-subtle"
+                          >
+                            {pending === `session:${session.id}`
+                              ? "Revoking…"
+                              : "Revoke"}
+                          </Button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Active sessions could not be loaded.
+                  </p>
+                  <Button
+                    onClick={() => void loadSecurityData()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Try again
+                  </Button>
+                </div>
+              )}
+            </section>
+          </div>
 
-        <DangerZone aria-label="Delete account" className="space-y-6 lg:col-span-2">
+          <DangerZone
+            aria-labelledby="delete-account-heading"
+            className="mt-10 space-y-6"
+            id="delete-account"
+          >
           <SectionHeading
             description="Permanently remove your account after email confirmation."
-            eyebrow="05"
             title="Delete account"
           />
-          <form className="grid gap-4" onSubmit={requestDeletion}>
+          {!user.emailVerified ? (
+            <AlertBanner title="Verify your email first" variant="warning">
+              Account deletion stays locked until your email address is verified.
+            </AlertBanner>
+          ) : null}
+          <form
+            aria-busy={pending === "delete"}
+            className="grid gap-4"
+            onSubmit={requestDeletion}
+          >
             <Field
+              description={`Type ${user.email} exactly.`}
               htmlFor="delete-confirmation"
-              label={`Type ${user.email} to continue`}
+              label="Confirm your email address"
             >
               <Input
                 autoComplete="off"
@@ -536,10 +793,11 @@ export function ProfileManager({
               type="submit"
               variant="destructive"
             >
-              {pending === "delete" ? "Sending confirmation…" : "Email deletion confirmation"}
+              {pending === "delete" ? "Sending confirmation…" : "Send deletion email"}
             </Button>
           </form>
-        </DangerZone>
+          </DangerZone>
+        </div>
       </div>
     </>
   );

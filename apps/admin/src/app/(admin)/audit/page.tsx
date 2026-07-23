@@ -35,12 +35,32 @@ export default async function AuditPage() {
                     {event.createdAt.toISOString()}
                   </td>
                   <td className="px-4 py-3">
-                    <code className="break-all font-mono text-xs">{event.actorUserId}</code>
+                    <strong className="block text-foreground">
+                      {event.actorName ?? "Deleted user"}
+                    </strong>
+                    <span className="block break-all text-xs text-muted-foreground">
+                      {event.actorEmail ?? event.actorUserId}
+                    </span>
                   </td>
                   <td className="px-4 py-3 font-semibold text-foreground">{event.action}</td>
                   <td className="px-4 py-3">
-                    {event.targetType}:{" "}
-                    <code className="break-all font-mono text-xs">{event.targetId}</code>
+                    {event.targetType === "user" ? (
+                      <>
+                        <strong className="block text-foreground">
+                          {event.targetUserName ?? "Deleted user"}
+                        </strong>
+                        <span className="block break-all text-xs text-muted-foreground">
+                          {event.targetUserEmail ?? event.targetId}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {event.targetType}:{" "}
+                        <code className="break-all font-mono text-xs">
+                          {event.targetId}
+                        </code>
+                      </>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <code className="break-all font-mono text-xs text-muted-foreground">

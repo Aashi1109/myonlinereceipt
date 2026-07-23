@@ -1,4 +1,6 @@
 import {
+  alias,
+  and,
   auditEventsTable,
   authUser,
   count,
@@ -11,6 +13,9 @@ import {
   rolesTable,
   userRolesTable,
 } from "@smarttools/database";
+
+const auditActor = alias(authUser, "audit_actor");
+const auditTargetUser = alias(authUser, "audit_target_user");
 
 export async function listUsers(search = "") {
   const query = search.trim();
@@ -89,8 +94,31 @@ export async function getTemplate(templateId: string) {
 
 export async function listAuditEvents() {
   return db
-    .select()
+    .select({
+      id: auditEventsTable.id,
+      actorUserId: auditEventsTable.actorUserId,
+      actorName: auditActor.name,
+      actorEmail: auditActor.email,
+      action: auditEventsTable.action,
+      targetType: auditEventsTable.targetType,
+      targetId: auditEventsTable.targetId,
+      targetUserName: auditTargetUser.name,
+      targetUserEmail: auditTargetUser.email,
+      metadata: auditEventsTable.metadata,
+      createdAt: auditEventsTable.createdAt,
+    })
     .from(auditEventsTable)
+    .leftJoin(
+      auditActor,
+      eq(auditActor.id, auditEventsTable.actorUserId),
+    )
+    .leftJoin(
+      auditTargetUser,
+      and(
+        eq(auditEventsTable.targetType, "user"),
+        eq(auditTargetUser.id, auditEventsTable.targetId),
+      ),
+    )
     .orderBy(desc(auditEventsTable.createdAt))
     .limit(200);
 }

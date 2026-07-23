@@ -15,6 +15,7 @@ export {
   or,
   sql,
 } from "drizzle-orm";
+export { alias } from "drizzle-orm/pg-core";
 
 const databaseUrl =
   process.env.DATABASE_URL ?? "postgres://127.0.0.1:1/smarttools_unconfigured";

@@ -48,6 +48,24 @@ export function resolveConfiguredReturnTo(
   });
 }
 
+export function shouldUseBrowserBack(
+  fallbackHref: string,
+  currentHref: string,
+  referrer: string,
+  historyLength: number,
+  modified = false,
+): boolean {
+  if (modified || historyLength <= 1 || !referrer) return false;
+
+  try {
+    return (
+      new URL(referrer).origin === new URL(fallbackHref, currentHref).origin
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function getSafeAuthError(error: unknown): string {
   if (errorCode(error) === "TOO_MANY_REQUESTS") {
     return "Too many attempts. Try again in a few minutes.";
