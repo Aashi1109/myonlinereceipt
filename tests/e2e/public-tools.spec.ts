@@ -248,6 +248,18 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
   await expect(page.getByRole("status")).toContainText("JSON is valid.");
 });
 
+test("JSON formatter skip link focuses the editor", async ({ page }) => {
+  await page.goto(`${DEVTOOLS_URL}/json-formatter`);
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("link", { name: "Skip to JSON input" }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("textbox", { name: "JSON input", exact: true }),
+  ).toBeFocused();
+});
+
 test("developer tool variants share the canonical responsive workspace", async ({
   context,
   page,
@@ -286,56 +298,55 @@ test("developer tool variants share the canonical responsive workspace", async (
     "html-viewer": {
       category: "Web & Markup Tools",
       description: "Preview HTML code",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "HTML Viewer",
     },
     "json-to-csv": {
       category: "JSON Tools",
       description: "Convert JSON to CSV",
-      footer: "Local processing · CSV export · Privacy-first",
-      support: "Your data never leaves this browser",
+      support: "Private by default",
       title: "JSON to CSV",
     },
     "json-formatter": {
       category: "JSON Tools",
       description: "Beautify & format JSON",
-      support: "Your JSON stays on this device",
+      support: "Private by default",
       title: "JSON Formatter",
     },
     "json-validator": {
       category: "JSON Tools",
       description: "Validate JSON syntax",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "JSON Validator",
     },
     "json-viewer": {
       category: "JSON Tools",
       description: "View JSON as tree",
-      support: "Your JSON stays on this device",
+      support: "Private by default",
       title: "JSON Viewer",
     },
     "password-generator": {
       category: "Text Tools",
       description: "Generate secure passwords",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "Password Generator",
     },
     "qr-code-generator": {
       category: "Encoding & Decoding",
       description: "Generate QR codes",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "QR Code Generator",
     },
     "text-diff-checker": {
       category: "Text Tools",
       description: "Compare two texts",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "Text Diff Checker",
     },
     "word-counter": {
       category: "Text Tools",
       description: "Count words & characters",
-      support: "Built for quick browser-side work",
+      support: "Private by default",
       title: "Word Counter",
     },
   };

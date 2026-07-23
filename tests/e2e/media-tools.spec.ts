@@ -58,8 +58,9 @@ test("Media tool pages use the shared outer chrome", async ({ page }) => {
   await expect(main.getByText("Runs locally", { exact: true })).toBeVisible();
   await expect(title).toBeVisible();
   await expect(
-    main.getByRole("heading", { name: "Your files never leave this browser" }),
+    main.getByRole("heading", { name: "Private by default" }),
   ).toBeVisible();
+  await expect(main.getByText("Files never leave your device.", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Media Tools footer" }),
   ).toContainText("All Media Tools");
@@ -91,6 +92,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
   await expect(page.getByRole("list", { name: "Selected files" })).toContainText(
     "local-fixture.jpg",
   );
+  await expect(page.getByRole("button", { name: "Add files", exact: true })).toBeVisible();
 
   const requests: { bodyBytes: number; method: string; url: string }[] = [];
   page.on("request", (request) => {
@@ -109,6 +111,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
   await expect(page.getByRole("heading", { name: "Ready to download" })).toBeVisible({
     timeout: 60_000,
   });
+  await expect(page.getByText(/1 output file ·/)).toBeVisible();
   const link = page.getByRole("link", { name: "Download", exact: true });
   await expect(link).toHaveAttribute("download", "local-fixture-converted.png");
   const downloaded = await readDownload(page, link);
@@ -144,6 +147,11 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   const first = await createJpegFixture(page, 8, 6, "#ef4444");
   const second = await createJpegFixture(page, 8, 6, "#2563eb");
   const dropZone = page.getByRole("button", { name: /Choose or drop local files/ });
+  await expect(
+    page.getByText("JPG · 50 files max · 25 MiB each · 250 MiB total", {
+      exact: true,
+    }),
+  ).toBeVisible();
   await dropZone.focus();
   await expect(dropZone).toBeFocused();
   const chooserPromise = page.waitForEvent("filechooser");
@@ -155,10 +163,25 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   ]);
 
   const files = page.getByRole("list", { name: "Selected files" });
+  await expect(page.locator('input[type="file"]').first()).toHaveValue("");
   await expect(files.getByRole("listitem")).toHaveCount(2);
+  await expect(dropZone).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add files", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Move .* (?:up|down)/ })).toHaveCount(0);
   await dragReorderHandle(page, "Drag second.jpg to reorder", "Drag first.jpg to reorder");
   await expect(files.getByRole("listitem").first()).toContainText("second.jpg");
+
+  const keyboardHandle = page.getByRole("button", {
+    name: "Drag first.jpg to reorder",
+  });
+  await keyboardHandle.focus();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("Space");
+  await expect(files.getByRole("listitem").first()).toContainText("first.jpg");
+  await expect(
+    page.getByText("Dropped first.jpg at position 1 of 2.", { exact: true }),
+  ).toBeVisible();
 
   const overflow = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,

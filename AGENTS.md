@@ -71,6 +71,10 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 - Component and type names use PascalCase; functions and variables use camelCase; constants use `UPPER_SNAKE_CASE`; route directories use kebab-case.
 - Component files use `PascalCase.tsx`; non-component TypeScript files follow the nearby convention and use descriptive names.
 
+## UI Layout
+
+- Design page layouts around content relationships and available space. Keep related headings, filters, actions, and supporting content inline or in responsive grids when that improves scanning and space use; stack them into full-width rows only when the content or viewport requires it. Do not default to a repetitive row-after-row layout.
+
 ## Change and Artifact Hygiene
 
 - Scratch scripts, screenshots, logs, profiling output, and diagnostics go in `/tmp`, not the repository.

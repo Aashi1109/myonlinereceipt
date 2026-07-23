@@ -37,15 +37,38 @@ export function AccountNavigation({
 }: AccountNavigationProps) {
   const target = new URL(user ? "/profile" : "/", authUrl);
   target.searchParams.set("returnTo", returnTo);
+  const accountName = user?.name.trim() || "Account";
 
   return (
     <nav aria-label="Account" className={cn("flex items-center gap-3 text-sm", className)}>
-      <a
-        className="font-bold text-inherit underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        href={target.toString()}
-      >
-        {user ? user.name || "Account" : "Sign in"}
-      </a>
+      {user ? (
+        <a
+          aria-label={`Open profile for ${accountName}`}
+          className="group inline-flex min-h-11 max-w-48 items-center gap-2 rounded-xl border border-border bg-background p-1.5 pr-3 text-foreground no-underline outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          href={target.toString()}
+          title={accountName}
+        >
+          <span
+            aria-hidden="true"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-black text-primary"
+          >
+            {accountName.charAt(0).toUpperCase()}
+          </span>
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-xs font-extrabold">{accountName}</span>
+            <span className="block text-[0.6875rem] font-semibold text-muted-foreground">
+              Profile
+            </span>
+          </span>
+        </a>
+      ) : (
+        <a
+          className="font-bold text-inherit underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          href={target.toString()}
+        >
+          Sign in
+        </a>
+      )}
     </nav>
   );
 }

@@ -1,7 +1,7 @@
 import { InvoiceTemplatePreview } from "@smarttools/invoice-templates/preview";
 import type { InvoiceTemplate } from "@smarttools/invoice-templates";
 import { ToolPageHeader } from "@smarttools/ui";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../../lib/access";
 import { getTemplate } from "../../../../../lib/data";
 
@@ -9,6 +9,9 @@ export default async function TemplatePreviewPage({ params }: { params: Promise<
   await requirePagePermission("templates", "view");
   const template = await getTemplate((await params).id);
   if (!template) notFound();
+  if (template.layoutFamily === "advanced") {
+    redirect(`/templates/${template.id}/advanced`);
+  }
   const preview = {
     ...template,
     description: template.description ?? "",

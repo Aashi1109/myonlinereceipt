@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { isSupportedPageFormat } from "./advancedTemplateDefaults.ts";
 
 const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
 const hexColorSchema = z.string().regex(hexColorRegex, "Must be a valid hex color starting with #");
@@ -200,3 +201,96 @@ export const InvoiceTemplateSchema = z.object({
     });
   }
 });
+
+export const DocumentTypeSchema = z.enum(["invoice", "receipt"]);
+export const PageFormatSchema = z.enum([
+  "A4",
+  "LETTER",
+  "RECEIPT_80MM",
+  "RECEIPT_58MM",
+]);
+
+const nonNegativeNumberSchema = z.number().finite().nonnegative();
+
+const PdfmeSchemaElementSchema = z.object({
+  name: z.string().min(1),
+  type: z.string().min(1),
+  position: z.object({
+    x: z.number().finite().nonnegative(),
+    y: z.number().finite().nonnegative(),
+  }),
+  width: z.number().finite().positive(),
+  height: z.number().finite().positive(),
+}).passthrough();
+
+export const PdfmeBlankBaseSchema = z.object({
+  width: z.number().finite().positive(),
+  height: z.number().finite().positive(),
+  padding: z.tuple([
+    nonNegativeNumberSchema,
+    nonNegativeNumberSchema,
+    nonNegativeNumberSchema,
+    nonNegativeNumberSchema,
+  ]),
+  staticSchema: z.array(PdfmeSchemaElementSchema).optional(),
+}).superRefine((basePdf, ctx) => {
+  if (basePdf.width <= 0 || basePdf.height <= 0) return;
+
+  const [top, right, bottom, left] = basePdf.padding;
+  if (left + right >= basePdf.width) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Horizontal padding must leave printable page width",
+      path: ["padding"],
+    });
+  }
+  if (top + bottom >= basePdf.height) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Vertical padding must leave printable page height",
+      path: ["padding"],
+    });
+  }
+});
+
+export const AdvancedTemplateConfigSchema = z.object({
+  editor: z.literal("pdfme"),
+  pageFormat: PageFormatSchema,
+  template: z.object({
+    basePdf: PdfmeBlankBaseSchema,
+    schemas: z.array(z.array(PdfmeSchemaElementSchema)),
+  }).passthrough(),
+  sampleData: z.record(z.string(), z.string()),
+});
+
+export const AdvancedDocumentTemplateSchema = z.object({
+  id: z.string(),
+  name: z.string().min(2, "Template name must be at least 2 characters"),
+  slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"),
+  description: z.string(),
+  category: z.enum(["simple", "professional", "creative", "service", "modern", "classic"]),
+  status: z.enum(["draft", "published", "archived"]),
+  isDefault: z.boolean(),
+  version: z.number(),
+  documentType: DocumentTypeSchema,
+  layoutFamily: z.literal("advanced"),
+  config: AdvancedTemplateConfigSchema,
+}).superRefine((template, ctx) => {
+  if (
+    !isSupportedPageFormat(
+      template.documentType,
+      template.config.pageFormat,
+    )
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${template.config.pageFormat} is not supported for ${template.documentType} templates`,
+      path: ["config", "pageFormat"],
+    });
+  }
+});
+
+export const DocumentTemplateSchema = z.union([
+  InvoiceTemplateSchema,
+  AdvancedDocumentTemplateSchema,
+]);

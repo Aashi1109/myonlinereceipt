@@ -13,17 +13,16 @@ import {
   Input,
   ProductHeader,
   SectionHeading,
-  StatusBadge,
   buttonVariants,
 } from "@smarttools/ui";
 import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
   Binary,
   Braces,
   CalendarClock,
-  Check,
-  Clock3,
   Code2,
-  Download,
   FileText,
   GitBranch,
   Hash,
@@ -33,15 +32,13 @@ import {
   Search,
   SearchCheck,
   ShieldCheck,
-  Sparkles,
   Table2,
   Type,
   WandSparkles,
-  WifiOff,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { headers } from "next/headers";
+import { CategoryFilter } from "./_components/CategoryFilter";
 
 const TOOL_ICONS: Record<string, LucideIcon> = {
   "json-formatter": Braces,
@@ -71,23 +68,6 @@ const POPULAR_TOOL_KEYS = [
   "jwt-decoder",
   "json-viewer",
   "password-generator",
-  "uuid-generator",
-  "base64-decoder",
-  "bcrypt-generator",
-  "word-counter",
-  "base64-encoder",
-  "timestamp-converter",
-] as const;
-
-const RECENT_TOOL_KEYS = [
-  "json-path-tester",
-  "nanoid-generator",
-  "diagram-generator",
-  "domain-rating-checker",
-  "domain-age-checker",
-  "dns-checker",
-  "meta-tag-generator",
-  "open-graph-preview",
 ] as const;
 
 const CATEGORIES: readonly {
@@ -109,18 +89,8 @@ const CATEGORIES: readonly {
   { name: "SEO & Domain Tools", description: "Inspect domains, DNS, and search metadata.", icon: SearchCheck },
 ];
 
-const BENEFITS: readonly {
-  description: string;
-  icon: LucideIcon;
-  title: string;
-}[] = [
-  { title: "Private by default", description: "Your data stays in this browser while each tool runs.", icon: ShieldCheck },
-  { title: "Instant results", description: "No upload queue, server round trip, or waiting screen.", icon: Zap },
-  { title: "No sign-up required", description: "Open a tool and get the job done immediately.", icon: Check },
-  { title: "Works offline after load", description: "Core transformations do not depend on a remote API.", icon: WifiOff },
-  { title: "Built for repeat work", description: "Clear controls make common developer tasks predictable.", icon: Clock3 },
-  { title: "Easy to export", description: "Copy results or download them in the format you need.", icon: Download },
-];
+const SECTION_HEADING_CLASS =
+  "mb-8 items-end [&_h2]:text-2xl [&_h2]:font-black [&_h2]:tracking-[-0.03em] sm:[&_h2]:text-3xl";
 
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
@@ -141,11 +111,16 @@ function ToolCard({ tool }: { tool: ResolvedTool }) {
 
   return (
     <CatalogCard
-      action="Open tool →"
+      action={
+        <>
+          Open tool
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        </>
+      }
+      className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:nth-child(2)]:text-lg [&>span:nth-child(3)]:text-sm [&>span:nth-child(3)]:leading-6 [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 [&>span:last-child]:text-sm"
       description={tool.description}
       href={`/${tool.slug}`}
       icon={<Icon aria-hidden="true" />}
-      status={<StatusBadge variant="success">Available</StatusBadge>}
       title={tool.name}
     />
   );
@@ -160,15 +135,15 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const category = CATEGORIES.some(({ name }) => name === requestedCategory)
-    ? requestedCategory
-    : "";
   const devtoolsUrl = process.env.DEVTOOLS_URL ?? "http://localhost:3002";
   const [tools, session] = await Promise.all([
     getAvailableTools("devtools"),
     getOptionalSession(requestHeaders, devtoolsUrl),
   ]);
   const platformUrl = process.env.PLATFORM_URL ?? "http://localhost:3000";
+  const category = tools.some((tool) => tool.category === requestedCategory)
+    ? requestedCategory
+    : "";
   const normalizedQuery = query.toLocaleLowerCase();
   const filteredTools = tools.filter(
     (tool) =>
@@ -178,11 +153,39 @@ export default async function HomePage({
           .toLocaleLowerCase()
           .includes(normalizedQuery)),
   );
-  const quickTools = selectTools(tools, QUICK_TOOL_KEYS);
+  const quickTools = selectTools(tools, QUICK_TOOL_KEYS).slice(0, 6);
   const popularTools = selectTools(tools, POPULAR_TOOL_KEYS);
-  const recentTools = selectTools(tools, RECENT_TOOL_KEYS);
+  const availableCategories = CATEGORIES.map((item) => ({
+    ...item,
+    count: tools.filter((tool) => tool.category === item.name).length,
+  })).filter(({ count }) => count > 0);
   const hasFilter = Boolean(query || category);
   const showAllTools = !hasFilter && first(params.view) === "all";
+  const searchForm = (
+    <form
+      className="flex w-full items-center gap-2 rounded-2xl border border-input bg-background p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
+      method="get"
+      role="search"
+    >
+      <div className="relative min-w-0 flex-1">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          aria-label="Search developer tools"
+          className="h-12 border-0 bg-transparent pl-11 shadow-none"
+          defaultValue={query}
+          name="q"
+          placeholder="Search JSON, CSV, JWT…"
+          type="search"
+        />
+      </div>
+      <Button className="h-12 rounded-xl px-5" type="submit">
+        Search
+      </Button>
+    </form>
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -194,89 +197,119 @@ export default async function HomePage({
             user={session ? { name: session.user.name } : null}
           />
         }
+        className="sticky top-0 z-50 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
         href={platformUrl}
         name="Devtools"
       />
 
       <main>
-        <section className="bg-primary text-primary-foreground">
-          <AppContainer className="py-14 text-center sm:flex sm:min-h-[49.5rem] sm:flex-col sm:items-center sm:justify-center sm:py-20">
-            <span className="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.14em]">
-              Fast, private, and free
-            </span>
-            <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-              Free developer tools that run in your browser.
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-primary-foreground/80 sm:text-lg">
-              Format, convert, and inspect working data without accounts, uploads, or waiting.
-            </p>
-
-            <form
-              className="mx-auto mt-8 flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
-              method="get"
-              role="search"
-            >
-              <div className="relative min-w-0 flex-1">
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  aria-label="Search developer tools"
-                  className="border-0 pl-10 shadow-none focus-visible:ring-0"
-                  defaultValue={query}
-                  name="q"
-                  placeholder="Search developer tools…"
-                  type="search"
-                />
+        {hasFilter || showAllTools ? (
+          <section className="border-b border-border bg-card">
+            <AppContainer className="grid gap-6 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(26rem,1.2fr)] lg:items-end">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                  Devtools catalog
+                </p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+                  Find the right tool.
+                </h1>
               </div>
-              <Button type="submit" variant="strong">
-                Search
-              </Button>
-            </form>
+              {searchForm}
+            </AppContainer>
+          </section>
+        ) : (
+          <section className="overflow-hidden border-b border-border bg-card">
+            <AppContainer className="py-12 sm:py-16 lg:py-20">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(26rem,0.88fr)] lg:items-end lg:gap-16">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                    {tools.length} focused tools. No sign-up.
+                  </p>
+                  <h1 className="mt-5 max-w-4xl text-[clamp(3.25rem,7vw,6.75rem)] leading-[0.9] font-black tracking-[-0.065em]">
+                    The useful side of{" "}
+                    <span className="text-primary">your browser.</span>
+                  </h1>
+                </div>
+                <div className="lg:pb-1">
+                  <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+                    Format, convert, inspect, and generate working data without
+                    accounts, uploads, or waiting.
+                  </p>
+                  <div className="mt-7">{searchForm}</div>
+                  <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                    <ShieldCheck aria-hidden="true" className="size-4 text-primary" />
+                    Core tools process your content locally in this browser.
+                  </p>
+                </div>
+              </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-bold">
-              <span className="text-primary-foreground/70">Quick tools:</span>
-              {quickTools.map((tool) =>
-                tool.slug ? (
+              <nav
+                aria-label="Quick tools"
+                className="mt-12 overflow-hidden rounded-2xl border border-border bg-border lg:mt-16"
+              >
+                <div className="flex min-h-12 items-center justify-between gap-4 bg-background px-4">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+                    Popular now
+                  </p>
                   <a
-                    className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                    href={`/${tool.slug}`}
-                    key={tool.id}
+                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-primary outline-none hover:underline focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    href="/?view=all"
                   >
-                    {tool.name}
+                    All tools
+                    <ArrowRight aria-hidden="true" className="size-4" />
                   </a>
-                ) : null,
-              )}
-            </div>
-          </AppContainer>
-        </section>
-
-        <section aria-label="Devtools facts" className="border-b border-border bg-card">
-          <AppContainer className="grid grid-cols-2 divide-x divide-y divide-border py-6 sm:grid-cols-4 sm:divide-y-0">
-            {[
-              [`${tools.length}`, "Available tools"],
-              ["100%", "Browser based"],
-              ["Free", "No paywall"],
-              ["0", "Uploads required"],
-            ].map(([value, label]) => (
-              <div className="px-4 py-3 text-center" key={label}>
-                <strong className="block text-2xl font-black text-primary">{value}</strong>
-                <span className="mt-1 block text-xs font-bold text-muted-foreground">{label}</span>
-              </div>
-            ))}
-          </AppContainer>
-        </section>
+                </div>
+                <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  {quickTools.map((tool, index) =>
+                    tool.slug ? (
+                      <a
+                        className="group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        href={`/${tool.slug}`}
+                        key={tool.id}
+                      >
+                        <span className="text-xs font-bold text-muted-foreground">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <span className="flex items-end justify-between gap-3 text-sm font-extrabold">
+                          {tool.name}
+                          <ArrowUpRight
+                            aria-hidden="true"
+                            className="size-4 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                          />
+                        </span>
+                      </a>
+                    ) : null,
+                  )}
+                </div>
+              </nav>
+            </AppContainer>
+          </section>
+        )}
 
         {hasFilter || showAllTools ? (
-          <section className="py-14 sm:py-16">
+          <section className="py-12 sm:py-16">
             <AppContainer>
+              <a
+                className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                href={category && !query ? "/?view=all" : "/"}
+              >
+                <ArrowLeft aria-hidden="true" className="size-4" />
+                {showAllTools
+                  ? "Back to Devtools"
+                  : category && !query
+                    ? "All tools"
+                    : "Clear search"}
+              </a>
               <SectionHeading
                 action={
-                  <a className={buttonVariants({ size: "sm", variant: "outline" })} href="/">
-                    {showAllTools ? "Back" : "Clear search"}
-                  </a>
+                  showAllTools || category ? (
+                    <CategoryFilter
+                      categories={availableCategories.map(({ name }) => name)}
+                      value={category}
+                    />
+                  ) : null
                 }
+                className={`${SECTION_HEADING_CLASS} flex-col items-stretch sm:flex-row sm:items-end`}
                 description={
                   showAllTools
                     ? "Browse every available developer tool in one place."
@@ -284,10 +317,16 @@ export default async function HomePage({
                     ? `Matching “${query}”${category ? ` in ${category}` : ""}.`
                     : `Tools in ${category}.`
                 }
-                title={showAllTools ? "All Tools" : "Search Results"}
+                title={
+                  showAllTools
+                    ? "All Tools"
+                    : category && !query
+                      ? category
+                      : "Search Results"
+                }
               />
               {filteredTools.length ? (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredTools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
                 </div>
               ) : (
@@ -309,125 +348,110 @@ export default async function HomePage({
           </section>
         ) : (
           <>
-            <section className="py-14 sm:py-16">
+            <section className="py-14 sm:py-20" id="popular-tools">
               <AppContainer>
                 <SectionHeading
                   action={
-                    <a className={buttonVariants({ size: "sm", variant: "outline" })} href="/?view=all">
-                      View all
+                    <a
+                      className={buttonVariants({
+                        className: "h-11",
+                        variant: "outline",
+                      })}
+                      href="/?view=all"
+                    >
+                      View all tools
                     </a>
                   }
-                  description="The fastest path to the utilities developers use most."
+                  className={SECTION_HEADING_CLASS}
+                  description="A short list of dependable utilities for common developer work."
+                  eyebrow="Start here"
                   title="Popular Tools"
                 />
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {popularTools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
                 </div>
               </AppContainer>
             </section>
 
-            <section className="border-y border-border bg-muted/50 py-14 sm:py-16">
+            <section className="border-y border-border bg-card py-14 sm:py-20">
               <AppContainer>
                 <SectionHeading
-                  description="The newest utility available in the Devtools collection."
-                  title="Recently Added Tools"
+                  className={SECTION_HEADING_CLASS}
+                  description="Go straight to the kind of work you need to do."
+                  eyebrow="Tool index"
+                  title="Browse by Category"
                 />
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {recentTools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
+                <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+                  {availableCategories.map(
+                    ({ count, description, icon: Icon, name }) => (
+                      <a
+                        className="group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
+                        href={`/?category=${encodeURIComponent(name)}`}
+                        key={name}
+                      >
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary group-hover:bg-background">
+                          <Icon aria-hidden="true" className="size-5" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <strong className="block text-sm font-extrabold">
+                            {name}
+                          </strong>
+                          <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                            {description}
+                          </span>
+                          <span className="mt-2 block text-xs font-bold text-primary">
+                            {count} {count === 1 ? "tool" : "tools"}
+                          </span>
+                        </span>
+                        <ArrowUpRight
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+                        />
+                      </a>
+                    ),
+                  )}
+                </div>
+              </AppContainer>
+            </section>
+
+            <section className="py-14 sm:py-20">
+              <AppContainer>
+                <div className="flex flex-col gap-8 overflow-hidden rounded-[1.75rem] bg-card-foreground px-6 py-8 text-card sm:px-10 sm:py-10 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex max-w-3xl items-start gap-5">
+                    <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                      <LockKeyhole aria-hidden="true" className="size-6" />
+                    </span>
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+                        Private by default
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] sm:text-3xl">
+                        Your working data stays yours.
+                      </h2>
+                      <p className="mt-3 max-w-2xl text-sm leading-6 text-card/70 sm:text-base sm:leading-7">
+                        Core formatting and conversion happens locally in your
+                        browser. No file upload or account is required.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    className={buttonVariants({ size: "lg" })}
+                    href="/?view=all"
+                  >
+                    Browse all {tools.length} tools
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </a>
                 </div>
               </AppContainer>
             </section>
           </>
         )}
-
-        <section className="py-14 sm:py-16">
-          <AppContainer>
-            <SectionHeading
-              description="Jump straight to the kind of work you need to do."
-              title="Browse by Category"
-            />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {CATEGORIES.map(({ description, icon: Icon, name }) => {
-                const count = tools.filter((tool) => tool.category === name).length;
-                return (
-                  <a
-                    className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    href={`/?category=${encodeURIComponent(name)}`}
-                    key={name}
-                  >
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
-                      <Icon aria-hidden="true" className="size-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <strong className="block text-sm font-extrabold group-hover:text-primary">{name}</strong>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
-                      <span className="mt-2 block text-xs font-bold text-primary">{count} available</span>
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
-          </AppContainer>
-        </section>
-
-        <section className="border-y border-border bg-card py-14 sm:py-16">
-          <AppContainer>
-            <SectionHeading
-              description="Simple utilities should be fast, dependable, and respectful of your data."
-              title="Why use SmartTools?"
-            />
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {BENEFITS.map(({ description, icon: Icon, title }) => (
-                <div className="flex gap-4" key={title}>
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary">
-                    <Icon aria-hidden="true" className="size-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-base font-extrabold">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </AppContainer>
-        </section>
-
-        <section className="py-14 sm:py-16">
-          <AppContainer>
-            <div className="grid overflow-hidden rounded-3xl bg-card-foreground text-card shadow-xl lg:grid-cols-[1.35fr_0.65fr]">
-              <div className="p-8 sm:p-10 lg:p-12">
-                <LockKeyhole aria-hidden="true" className="size-9 text-primary" />
-                <h2 className="mt-6 max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
-                  Your working data stays yours.
-                </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-card/70 sm:text-base">
-                  These tools process content locally in your browser. No file upload is required for the core workflow.
-                </p>
-              </div>
-              <div className="flex items-center border-t border-card/10 bg-primary p-8 sm:p-10 lg:border-t-0 lg:border-l">
-                <div>
-                  <Sparkles aria-hidden="true" className="size-8" />
-                  <h2 className="mt-5 text-2xl font-black tracking-tight">Start with JSON to CSV</h2>
-                  <p className="mt-3 text-sm leading-6 text-primary-foreground/80">
-                    Turn object arrays into clean spreadsheet-ready rows in seconds.
-                  </p>
-                  <a
-                    className={buttonVariants({ className: "mt-6 bg-card text-card-foreground hover:bg-card/90", size: "lg" })}
-                    href="/json-to-csv"
-                  >
-                    Open JSON to CSV
-                  </a>
-                </div>
-              </div>
-            </div>
-          </AppContainer>
-        </section>
       </main>
 
-      <footer className="border-t border-border bg-card py-8 text-sm text-muted-foreground">
+      <footer className="border-t border-border bg-card py-7 text-sm text-muted-foreground">
         <AppContainer className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} SmartTools Devtools</span>
-          <span>Private browser utilities, added one by one.</span>
+          <span>Fast, private browser utilities.</span>
         </AppContainer>
       </footer>
     </div>

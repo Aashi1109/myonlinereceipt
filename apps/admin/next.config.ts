@@ -3,6 +3,11 @@ import { sharedNextConfig } from "../../next.config.shared.mjs";
 
 const nextConfig: NextConfig = {
   ...sharedNextConfig,
+  turbopack: {
+    resolveAlias: {
+      module: { browser: "./src/lib/browserEmptyModule.ts" },
+    },
+  },
   transpilePackages: [
     "@smarttools/auth",
     "@smarttools/authorization",

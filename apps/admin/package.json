@@ -10,6 +10,10 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@pdfme/common": "6.1.11",
+    "@pdfme/generator": "6.1.11",
+    "@pdfme/schemas": "6.1.11",
+    "@pdfme/ui": "6.1.11",
     "@smarttools/auth": "workspace:*",
     "@smarttools/authorization": "workspace:*",
     "@smarttools/control-plane": "workspace:*",

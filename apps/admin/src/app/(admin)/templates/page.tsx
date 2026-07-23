@@ -1,4 +1,7 @@
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
+import type {
+  AdvancedTemplateConfig,
+  InvoiceTemplate,
+} from "@smarttools/invoice-templates";
 import {
   InvoiceTemplatePreview,
   serviceInvoiceSample,
@@ -16,12 +19,13 @@ import {
   ToolPageHeader,
   buttonVariants,
 } from "@smarttools/ui";
-import { EllipsisVertical } from "lucide-react";
+import { EllipsisVertical, FilePenLine } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../lib/access";
 import { listTemplates } from "../../../lib/data";
 import {
   archiveTemplateAction,
+  createAdvancedTemplateAction,
   createTemplateAction,
   defaultTemplateAction,
   duplicateTemplateAction,
@@ -63,8 +67,17 @@ export default async function TemplatesPage() {
               className="rounded-xl"
               popoverTarget="create-template"
               size="lg"
+              variant="secondary"
             >
-              Create template
+              Standard template
+            </Button>
+            <Button
+              className="col-span-2 rounded-xl sm:col-span-1"
+              popoverTarget="create-advanced-template"
+              size="lg"
+            >
+              <FilePenLine aria-hidden="true" size={17} />
+              Advanced designer
             </Button>
           </div>
         }
@@ -72,6 +85,81 @@ export default async function TemplatesPage() {
         description="Layouts and theming presets the invoice tool can render."
         title="Templates"
       />
+
+      <section
+        aria-labelledby="create-advanced-template-title"
+        className={popoverClassName}
+        id="create-advanced-template"
+        popover="auto"
+        role="dialog"
+      >
+        <SectionHeading
+          description="Start with a real pdfme canvas, then freely place, bind, and style every element."
+          title={
+            <span id="create-advanced-template-title">
+              Create an advanced template
+            </span>
+          }
+        />
+        <form action={createAdvancedTemplateAction} className="grid gap-4">
+          <Field htmlFor="advanced-template-name" label="Name" required>
+            <Input id="advanced-template-name" name="name" required />
+          </Field>
+          <Field htmlFor="advanced-template-slug" label="Slug" required>
+            <Input
+              id="advanced-template-slug"
+              name="slug"
+              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              required
+            />
+          </Field>
+          <Field
+            htmlFor="advanced-template-description"
+            label="Description"
+            required
+          >
+            <Textarea
+              id="advanced-template-description"
+              name="description"
+              required
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field htmlFor="advanced-template-starter" label="Document and canvas">
+              <Select id="advanced-template-starter" name="starter">
+                <option value="invoice:A4">Invoice · A4</option>
+                <option value="invoice:LETTER">Invoice · Letter</option>
+                <option value="receipt:RECEIPT_80MM">Receipt · 80 mm</option>
+                <option value="receipt:RECEIPT_58MM">Receipt · 58 mm</option>
+              </Select>
+            </Field>
+            <Field htmlFor="advanced-template-category" label="Category">
+              <Select
+                defaultValue="professional"
+                id="advanced-template-category"
+                name="category"
+              >
+                {categories.map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              popoverTarget="create-advanced-template"
+              popoverTargetAction="hide"
+              variant="ghost"
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              <FilePenLine aria-hidden="true" size={16} />
+              Open designer
+            </Button>
+          </div>
+        </form>
+      </section>
 
       <section
         aria-labelledby="create-template-title"
@@ -158,8 +246,16 @@ export default async function TemplatesPage() {
       {templates.length ? (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {templates.map((template) => {
+            const isAdvanced = template.layoutFamily === "advanced";
             const config = template.config as InvoiceTemplate["config"];
+            const advancedConfig = template.config as AdvancedTemplateConfig;
             const duplicatePopoverId = `duplicate-template-${template.id}`;
+            const editHref = isAdvanced
+              ? `/templates/${template.id}/advanced`
+              : `/templates/${template.id}`;
+            const previewHref = isAdvanced
+              ? editHref
+              : `/templates/${template.id}/preview`;
 
             return (
               <Card
@@ -188,6 +284,16 @@ export default async function TemplatesPage() {
                       Default
                     </StatusBadge>
                   ) : null}
+                  {isAdvanced ? (
+                    <>
+                      <StatusBadge className="min-h-7 px-3 text-xs" variant="info">
+                        Advanced
+                      </StatusBadge>
+                      <StatusBadge className="min-h-7 px-3 text-xs capitalize">
+                        {template.documentType}
+                      </StatusBadge>
+                    </>
+                  ) : null}
                 </div>
 
                 <div
@@ -195,15 +301,32 @@ export default async function TemplatesPage() {
                     template.status === "draft" ? "border-dashed" : "border-border"
                   } ${template.status === "archived" ? "opacity-60" : ""}`}
                 >
-                  <InvoiceTemplatePreview
-                    data={serviceInvoiceSample}
-                    template={{
-                      config,
-                      layoutFamily: template.layoutFamily as InvoiceTemplate["layoutFamily"],
-                      name: template.name,
-                    }}
-                    variant="thumbnail"
-                  />
+                  {isAdvanced ? (
+                    <div className="grid h-full place-items-center rounded-lg bg-background">
+                      <div className="text-center">
+                        <span className="mx-auto grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
+                          <FilePenLine aria-hidden="true" size={24} />
+                        </span>
+                        <p className="mt-3 text-sm font-extrabold capitalize text-foreground">
+                          Freeform {template.documentType}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {advancedConfig.pageFormat.replaceAll("_", " ")} · pdfme
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <InvoiceTemplatePreview
+                      data={serviceInvoiceSample}
+                      template={{
+                        config,
+                        layoutFamily:
+                          template.layoutFamily as InvoiceTemplate["layoutFamily"],
+                        name: template.name,
+                      }}
+                      variant="thumbnail"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-5">
@@ -221,7 +344,26 @@ export default async function TemplatesPage() {
 
                 <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">
                   {template.status === "published" ? (
-                    template.isDefault ? (
+                    isAdvanced ? (
+                      <>
+                        <Link
+                          className={buttonVariants({
+                            className: cardActionClassName,
+                            variant: "secondary",
+                          })}
+                          href={editHref}
+                        >
+                          Edit
+                        </Link>
+                        <Button
+                          className={cardActionClassName}
+                          popoverTarget={duplicatePopoverId}
+                          variant="ghost"
+                        >
+                          Duplicate
+                        </Button>
+                      </>
+                    ) : template.isDefault ? (
                       <>
                         <Button
                           className={cardActionClassName}
@@ -270,7 +412,7 @@ export default async function TemplatesPage() {
                           className: cardActionClassName,
                           variant: "ghost",
                         })}
-                        href={`/templates/${template.id}`}
+                        href={editHref}
                       >
                         Edit
                       </Link>
@@ -291,15 +433,15 @@ export default async function TemplatesPage() {
                     </summary>
                     <div className="absolute bottom-12 right-0 z-10 grid w-44 gap-1 rounded-xl border border-border bg-card p-2 shadow-lg">
                       {template.status === "published" ? (
-                        <Link className={menuActionClassName} href={`/templates/${template.id}`}>
+                        <Link className={menuActionClassName} href={editHref}>
                           Edit
                         </Link>
                       ) : null}
                       <Link
                         className={menuActionClassName}
-                        href={`/templates/${template.id}/preview`}
+                        href={previewHref}
                       >
-                        Preview
+                        {isAdvanced ? "Preview in designer" : "Preview"}
                       </Link>
                       {!(template.status === "published" && template.isDefault) ? (
                         <a

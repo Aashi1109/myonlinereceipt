@@ -245,3 +245,37 @@ final result: blocked
 - `git diff --check -- tests/e2e/public-tools.spec.ts design-qa.md` — passed.
 
 final result: passed
+
+---
+
+# Design QA — Advanced Template Editor Native Panels
+
+## Visual truth
+
+- Selected layout target: `/Users/ashishpal/.codex/generated_images/019f8d92-6935-78a1-b83b-e566638e0544/call_c0fpbBjYLFd7OygbnwTC35Ow.png` (`1487 × 1058`).
+- Regression evidence: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-Wy47UA.png` (`806 × 1416`) and `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-I7ZkL8.png` (`124 × 704`).
+- Intended state: desktop advanced editor, one element selected, pdfme's complete native field-details panel floating within the canvas, and only the SmartTools tool rail visible on the left.
+- Post-fix implementation screenshot: unavailable.
+- Viewport, CSS size, and device density: unavailable from the supplied crops.
+
+## Comparison history
+
+1. User evidence found two P1 regressions: the custom reduced inspector replaced pdfme's complete field controls and overflowed the canvas, while pdfme's separate 45px plugin strip remained beside the SmartTools rail.
+2. The reduced inspector was removed. The pinned pdfme `DetailView` is now the only field inspector, its native sidebar is floated inside the canvas without reducing canvas width, and it appears on the first selection.
+3. The pdfme left plugin strip is hidden and its reserved width is reclaimed. SmartTools' labeled Add panel remains the single add-element surface.
+4. Focused tests, Admin typecheck, the full repository suite, and the Admin production build pass. A same-state browser capture and console/interaction pass could not be completed because the Playwright Chrome permission request was cancelled.
+
+## Fidelity surfaces
+
+- Fonts and typography: native pdfme property controls are preserved; post-fix rendered comparison is blocked.
+- Spacing and layout rhythm: the field panel is inset 16px on all sides of the canvas and no longer extends over the document footer; post-fix rendered comparison is blocked.
+- Colors and tokens: the floating native panel uses the shared card and border tokens; post-fix rendered comparison is blocked.
+- Image quality: no raster assets are introduced by this correction.
+- Copy and content: pdfme's complete native field labels and plugin-specific controls are preserved instead of recreated.
+- Focused region: the two supplied regression crops were inspected, but no post-fix crop exists for a valid paired comparison.
+
+## Findings
+
+- P1 verification blocker: a browser-rendered post-fix screenshot and interaction state are still required to confirm that the native left strip is absent and the native field panel neither clips nor overlaps.
+
+final result: blocked

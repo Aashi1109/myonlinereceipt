@@ -1,5 +1,6 @@
 import type { InvoiceTemplate } from "@smarttools/invoice-templates";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { requirePagePermission } from "../../../../lib/access";
 import { getTemplate } from "../../../../lib/data";
 import TemplateEditor from "./_components/TemplateEditor";
@@ -12,6 +13,9 @@ export default async function TemplatePage({
   await requirePagePermission("templates", "view");
   const template = await getTemplate((await params).id);
   if (!template) notFound();
+  if (template.layoutFamily === "advanced") {
+    redirect(`/templates/${template.id}/advanced`);
+  }
 
   return (
     <TemplateEditor

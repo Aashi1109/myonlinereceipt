@@ -182,7 +182,7 @@ const definitions = [
   {
     slug: "heic-to-jpg",
     title: "HEIC to JPG",
-    description: "Convert a single HEIC image to JPG.",
+    description: "Convert HEIC images to JPG.",
     category: "Image Conversion",
     engine: "image",
     accept: "image/heic,image/heif",
@@ -191,7 +191,7 @@ const definitions = [
   {
     slug: "heic-to-png",
     title: "HEIC to PNG",
-    description: "Convert a single HEIC image to PNG.",
+    description: "Convert HEIC images to PNG.",
     category: "Image Conversion",
     engine: "image",
     accept: "image/heic,image/heif",

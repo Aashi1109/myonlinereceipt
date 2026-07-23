@@ -13,11 +13,15 @@ import {
   rolesTable,
   userRolesTable,
 } from "../packages/database/src/index.ts";
-import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
+import {
+  createAdvancedTemplateConfig,
+  seedTemplates,
+} from "../packages/invoice-templates/src/index.ts";
 import { toolManifest } from "../packages/tool-catalog/src/index.ts";
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
+  createAdvancedDocumentTemplate,
   createCustomRole,
   createInvoiceTemplate,
   deleteCustomRole,
@@ -172,6 +176,34 @@ function templateRow(overrides = {}) {
   };
 }
 
+function advancedTemplateInput(overrides = {}) {
+  return {
+    name: "Advanced invoice",
+    slug: "advanced-invoice",
+    description: "A freely editable PDF template.",
+    category: "professional",
+    documentType: "invoice",
+    pageFormat: "A4",
+    ...overrides,
+  };
+}
+
+function advancedTemplateRow(overrides = {}) {
+  return {
+    ...templateRow(),
+    id: "advanced-template",
+    name: "Advanced invoice",
+    slug: "advanced-invoice",
+    description: "A freely editable PDF template.",
+    status: "draft",
+    isDefault: false,
+    documentType: "invoice",
+    layoutFamily: "advanced",
+    config: createAdvancedTemplateConfig("invoice", "A4"),
+    ...overrides,
+  };
+}
+
 test("every privileged mutation checks its exact PostgreSQL permission", async () => {
   const featureManifest = [
     {
@@ -194,6 +226,7 @@ test("every privileged mutation checks its exact PostgreSQL permission", async (
     ["roles.edit", () => updateCustomRole("actor", "role", {})],
     ["roles.delete", () => deleteCustomRole("actor", "role")],
     ["templates.create", () => createInvoiceTemplate("actor", {})],
+    ["templates.create", () => createAdvancedDocumentTemplate("actor", {})],
     ["templates.create", () => duplicateInvoiceTemplate("actor", "template", { name: "Copy", slug: "copy" })],
     ["templates.create", () => importInvoiceTemplate("actor", {})],
     ["templates.edit", () => updateInvoiceTemplate("actor", "template", {})],
@@ -817,6 +850,49 @@ test("template creation uses shared validation and starts as a non-default draft
   );
 });
 
+test("advanced template creation validates invoice and receipt drafts", async () => {
+  for (const input of [
+    advancedTemplateInput(),
+    advancedTemplateInput({
+      name: "Advanced receipt",
+      slug: "advanced-receipt",
+      documentType: "receipt",
+      pageFormat: "RECEIPT_80MM",
+    }),
+  ]) {
+    await withFakeDatabase(
+      [permissionRows({ templates: { create: true } }), []],
+      async (state) => {
+        await createAdvancedDocumentTemplate("actor", input);
+        const templateWrite = state.inserts.find(
+          ({ table }) => table === invoiceTemplatesTable,
+        );
+        assert.equal(templateWrite.values.status, "draft");
+        assert.equal(templateWrite.values.isDefault, false);
+        assert.equal(templateWrite.values.documentType, input.documentType);
+        assert.equal(templateWrite.values.layoutFamily, "advanced");
+        assert.equal(templateWrite.values.config.editor, "pdfme");
+        assert.equal(templateWrite.values.config.pageFormat, input.pageFormat);
+      },
+    );
+  }
+
+  await withFakeDatabase(
+    [permissionRows({ templates: { create: true } })],
+    async (state) => {
+      await assert.rejects(
+        () =>
+          createAdvancedDocumentTemplate(
+            "actor",
+            advancedTemplateInput({ pageFormat: "RECEIPT_80MM" }),
+          ),
+        /invoice|page format/i,
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    },
+  );
+});
+
 test("template duplicate, import, and edit stay validated and audited", async () => {
   const source = templateRow();
   await withFakeDatabase(
@@ -871,6 +947,57 @@ test("template duplicate, import, and edit stay validated and audited", async ()
         /Template slug cannot be changed/,
       );
       assert.equal(state.updates.length, 0);
+    },
+  );
+});
+
+test("advanced templates can be duplicated, imported, and edited", async () => {
+  const source = advancedTemplateRow();
+
+  await withFakeDatabase(
+    [permissionRows({ templates: { create: true } }), [source], []],
+    async (state) => {
+      await duplicateInvoiceTemplate("actor", source.id, {
+        name: "Advanced copy",
+        slug: "advanced-copy",
+      });
+      const write = state.inserts.find(
+        ({ table }) => table === invoiceTemplatesTable,
+      );
+      assert.equal(write.values.documentType, "invoice");
+      assert.equal(write.values.layoutFamily, "advanced");
+      assert.deepEqual(write.values.config, source.config);
+    },
+  );
+
+  await withFakeDatabase(
+    [permissionRows({ templates: { create: true } }), []],
+    async (state) => {
+      await importInvoiceTemplate("actor", source);
+      const write = state.inserts.find(
+        ({ table }) => table === invoiceTemplatesTable,
+      );
+      assert.equal(write.values.layoutFamily, "advanced");
+      assert.equal(write.values.status, "draft");
+      assert.equal(write.values.isDefault, false);
+    },
+  );
+
+  const nextConfig = structuredClone(source.config);
+  nextConfig.sampleData.documentNumber = "INV-UPDATED";
+  await withFakeDatabase(
+    [permissionRows({ templates: { edit: true } }), [source], []],
+    async (state) => {
+      await updateInvoiceTemplate("actor", source.id, {
+        name: "Advanced updated",
+        config: nextConfig,
+      });
+      const write = state.updates.find(
+        ({ table }) => table === invoiceTemplatesTable,
+      );
+      assert.equal(write.values.name, "Advanced updated");
+      assert.equal(write.values.layoutFamily, "advanced");
+      assert.deepEqual(write.values.config, nextConfig);
     },
   );
 });
@@ -939,6 +1066,33 @@ test("template publication maintains one default and protects it from archival",
       await assert.rejects(
         () => setDefaultInvoiceTemplate("actor", "draft"),
         /Only a published template/,
+      );
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    },
+  );
+});
+
+test("advanced templates publish without taking the legacy invoice default", async () => {
+  const draft = advancedTemplateRow();
+  await withFakeDatabase(
+    [permissionRows({ templates: { publish: true } }), [draft]],
+    async (state) => {
+      await publishInvoiceTemplate("actor", draft.id);
+      const write = state.updates.find(
+        ({ table }) => table === invoiceTemplatesTable,
+      );
+      assert.equal(write.values.status, "published");
+      assert.equal(write.values.isDefault, false);
+    },
+  );
+
+  const published = advancedTemplateRow({ status: "published" });
+  await withFakeDatabase(
+    [permissionRows({ templates: { publish: true } }), [published]],
+    async (state) => {
+      await assert.rejects(
+        () => setDefaultInvoiceTemplate("actor", published.id),
+        /advanced templates cannot be the default/i,
       );
       assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
     },

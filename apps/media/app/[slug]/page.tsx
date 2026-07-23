@@ -1,10 +1,16 @@
 import { getAuthServiceURL, getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableToolBySlug } from "@smarttools/control-plane";
-import { AccountNavigation, AppContainer, ProductHeader } from "@smarttools/ui";
+import {
+  AccountNavigation,
+  AppContainer,
+  ProductHeader,
+  StatusBadge,
+  ToolPageHeader,
+} from "@smarttools/ui";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 import { MediaWorkbench } from "../../components/MediaWorkbench";
 import {
   getMediaToolDefinition,
@@ -23,19 +29,24 @@ function ToolBreadcrumb({
   title: string;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-5 text-xs font-bold text-muted-foreground">
-      <a className="hover:text-primary hover:underline" href="/">
+    <nav
+      aria-label="Breadcrumb"
+      className="mb-5 flex min-w-0 items-center gap-1 text-xs font-bold text-muted-foreground"
+    >
+      <a className="shrink-0 rounded-md px-2 py-1 hover:bg-accent hover:text-primary" href="/">
         All tools
       </a>
-      <span aria-hidden="true" className="mx-2">/</span>
+      <ChevronRight aria-hidden="true" className="size-3.5 shrink-0" />
       <a
-        className="hover:text-primary hover:underline"
+        className="min-w-0 truncate rounded-md px-2 py-1 hover:bg-accent hover:text-primary"
         href={`/?category=${encodeURIComponent(category)}`}
       >
         {category}
       </a>
-      <span aria-hidden="true" className="mx-2">/</span>
-      <span aria-current="page">{title}</span>
+      <ChevronRight aria-hidden="true" className="size-3.5 shrink-0" />
+      <span aria-current="page" className="min-w-0 truncate px-2 text-foreground">
+        {title}
+      </span>
     </nav>
   );
 }
@@ -84,6 +95,13 @@ export default async function ToolPage({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a
+        className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
+        href="#media-workspace"
+      >
+        Skip to tool workspace
+      </a>
+
       <ProductHeader
         actions={
           <AccountNavigation
@@ -92,29 +110,54 @@ export default async function ToolPage({
             user={session ? { name: session.user.name } : null}
           />
         }
+        className="sticky top-0 z-50 border-border/80 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
         href={platformUrl}
         name="Media Tools"
       />
 
       <main>
-        <AppContainer className="py-8 sm:py-10">
-          <ToolBreadcrumb category={definition.category} title={tool.name} />
+        <section className="border-b border-border bg-card">
+          <AppContainer className="max-w-[100rem] py-5 sm:py-7">
+            <ToolBreadcrumb category={definition.category} title={tool.name} />
 
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
+              <ToolPageHeader
+                className="mb-0 border-b-0 pb-0 [&_h1]:text-4xl [&_h1]:tracking-[-0.045em] [&_p]:mt-3 [&_p]:max-w-3xl [&_p]:text-base [&_p]:leading-7 sm:[&_h1]:text-5xl"
+                description={tool.description}
+                eyebrow={
+                  <>
+                    <StatusBadge variant="success">Runs locally</StatusBadge>
+                    <span>{definition.category}</span>
+                  </>
+                }
+                inlineEyebrow
+                title={tool.name}
+              />
+
+              <div className="flex items-center gap-3 lg:mb-1 lg:max-w-xs lg:border-l lg:border-border lg:pl-6">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-primary">
+                  <ShieldCheck aria-hidden="true" className="size-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-extrabold">Private by default</h2>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                    Files never leave your device.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AppContainer>
+        </section>
+
+        <AppContainer
+          className="max-w-[100rem] py-5 outline-none sm:py-7 lg:py-8"
+          id="media-workspace"
+          tabIndex={-1}
+        >
           <MediaWorkbench
             definition={definition}
-            description={tool.description}
             title={tool.name}
           />
-
-          <section className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/20 bg-accent p-5 sm:p-6">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-extrabold">Your files never leave this browser</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Selection, previews, processing, and downloads happen on this device in dedicated workers.
-              </p>
-            </div>
-          </section>
         </AppContainer>
       </main>
 

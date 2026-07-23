@@ -26,8 +26,13 @@ import {
   userRolesTable,
 } from "@smarttools/database";
 import {
-  InvoiceTemplateSchema,
+  createAdvancedTemplateConfig,
+  DocumentTemplateSchema,
+  type AdvancedDocumentTemplate,
+  type DocumentTemplate,
   type InvoiceTemplate,
+  type TemplateDocumentType,
+  type TemplatePageFormat,
 } from "@smarttools/invoice-templates";
 import {
   assertToolSlugImmutable,
@@ -67,6 +72,19 @@ export type InvoiceTemplateContent = Pick<
   InvoiceTemplate,
   "name" | "slug" | "description" | "category" | "layoutFamily" | "config"
 >;
+
+export type DocumentTemplateContent = Pick<
+  DocumentTemplate,
+  "name" | "slug" | "description" | "category" | "layoutFamily" | "config"
+>;
+
+export type AdvancedDocumentTemplateDraft = Pick<
+  AdvancedDocumentTemplate,
+  "name" | "slug" | "description" | "category"
+> & {
+  documentType: TemplateDocumentType;
+  pageFormat: TemplatePageFormat;
+};
 
 const REDACTED = "[REDACTED]";
 const SENSITIVE_KEY_PARTS = new Set([
@@ -804,14 +822,14 @@ export async function deleteCustomRole(
   });
 }
 
-function templateValidationError(input: unknown) {
-  const result = InvoiceTemplateSchema.safeParse(input);
-  if (result.success) return result.data;
+function templateValidationError(input: unknown): DocumentTemplate {
+  const result = DocumentTemplateSchema.safeParse(input);
+  if (result.success) return result.data as DocumentTemplate;
   throw new Error(result.error.issues.map(({ message }) => message).join("; "));
 }
 
 function makeTemplateDraft(
-  input: InvoiceTemplateContent,
+  input: DocumentTemplateContent & Pick<DocumentTemplate, "documentType">,
   id = crypto.randomUUID(),
 ) {
   if (!isRecord(input)) throw new Error("Template input must be an object.");
@@ -824,7 +842,7 @@ function makeTemplateDraft(
     status: "draft",
     isDefault: false,
     version: 1,
-    documentType: "invoice",
+    documentType: input.documentType,
     layoutFamily: input.layoutFamily,
     config: input.config,
   });
@@ -900,7 +918,7 @@ async function getTemplateForUpdate(
 async function insertTemplateDraft(
   transaction: Transaction,
   actorUserId: string,
-  input: InvoiceTemplateContent,
+  input: DocumentTemplateContent & Pick<DocumentTemplate, "documentType">,
   auditAction: "template.create" | "template.duplicate" | "template.import",
 ) {
   const template = makeTemplateDraft(input);
@@ -922,7 +940,38 @@ export async function createInvoiceTemplate(
 ): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "create");
-    return insertTemplateDraft(transaction, actorUserId, input, "template.create");
+    return insertTemplateDraft(
+      transaction,
+      actorUserId,
+      { ...input, documentType: "invoice" },
+      "template.create",
+    );
+  });
+}
+
+export async function createAdvancedDocumentTemplate(
+  actorUserId: string,
+  input: AdvancedDocumentTemplateDraft,
+): Promise<TemplateRow> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "templates", "create");
+    if (!isRecord(input)) {
+      throw new Error("Advanced template input must be an object.");
+    }
+    return insertTemplateDraft(
+      transaction,
+      actorUserId,
+      {
+        name: input.name,
+        slug: input.slug,
+        description: input.description,
+        category: input.category,
+        documentType: input.documentType,
+        layoutFamily: "advanced",
+        config: createAdvancedTemplateConfig(input.documentType, input.pageFormat),
+      },
+      "template.create",
+    );
   });
 }
 
@@ -944,8 +993,9 @@ export async function duplicateInvoiceTemplate(
         slug: requiredText(input.slug, "Template slug", 160),
         description: parsed.description,
         category: parsed.category,
+        documentType: parsed.documentType,
         layoutFamily: parsed.layoutFamily,
-        config: parsed.config as InvoiceTemplate["config"],
+        config: parsed.config,
       },
       "template.duplicate",
     );
@@ -967,8 +1017,9 @@ export async function importInvoiceTemplate(
         slug: imported.slug,
         description: imported.description,
         category: imported.category,
+        documentType: imported.documentType,
         layoutFamily: imported.layoutFamily,
-        config: imported.config as InvoiceTemplate["config"],
+        config: imported.config,
       },
       "template.import",
     );
@@ -978,7 +1029,7 @@ export async function importInvoiceTemplate(
 export async function updateInvoiceTemplate(
   actorUserId: string,
   templateId: string,
-  input: Partial<InvoiceTemplateContent>,
+  input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
   return db.transaction((transaction) =>
     updateInvoiceTemplateInTransaction(transaction, actorUserId, templateId, input),
@@ -989,7 +1040,7 @@ async function updateInvoiceTemplateInTransaction(
   transaction: Transaction,
   actorUserId: string,
   templateId: string,
-  input: Partial<InvoiceTemplateContent>,
+  input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
   await requireTransactionPermission(transaction, actorUserId, "templates", "edit");
   if (!isRecord(input)) throw new Error("Template changes must be an object.");
@@ -1050,19 +1101,22 @@ async function publishInvoiceTemplateInTransaction(
 ): Promise<TemplateRow> {
   await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
   const current = await getTemplateForUpdate(transaction, templateId);
-  templateValidationError(storedTemplateInput(current));
-  const defaults = await transaction
-    .select({ id: invoiceTemplatesTable.id })
-    .from(invoiceTemplatesTable)
-    .where(
-      and(
-        eq(invoiceTemplatesTable.status, "published"),
-        eq(invoiceTemplatesTable.isDefault, true),
-      ),
-    )
-    .for("update");
-  const isDefault =
-    defaults.some(({ id }) => id === templateId) || defaults.length === 0;
+  const template = templateValidationError(storedTemplateInput(current));
+  let isDefault = false;
+  if (template.layoutFamily !== "advanced") {
+    const defaults = await transaction
+      .select({ id: invoiceTemplatesTable.id })
+      .from(invoiceTemplatesTable)
+      .where(
+        and(
+          eq(invoiceTemplatesTable.status, "published"),
+          eq(invoiceTemplatesTable.isDefault, true),
+        ),
+      )
+      .for("update");
+    isDefault =
+      defaults.some(({ id }) => id === templateId) || defaults.length === 0;
+  }
   const [saved] = await transaction
     .update(invoiceTemplatesTable)
     .set({ status: "published", isDefault, updatedAt: new Date() })
@@ -1077,7 +1131,7 @@ async function publishInvoiceTemplateInTransaction(
 export async function updateAndPublishInvoiceTemplate(
   actorUserId: string,
   templateId: string,
-  input: Partial<InvoiceTemplateContent>,
+  input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await updateInvoiceTemplateInTransaction(transaction, actorUserId, templateId, input);
@@ -1112,6 +1166,9 @@ export async function setDefaultInvoiceTemplate(
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
     const current = await getTemplateForUpdate(transaction, templateId);
+    if (current.layoutFamily === "advanced") {
+      throw new Error("Advanced templates cannot be the default.");
+    }
     if (current.status !== "published") {
       throw new Error("Only a published template can be the default.");
     }

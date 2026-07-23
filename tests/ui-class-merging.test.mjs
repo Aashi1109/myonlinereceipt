@@ -19,3 +19,13 @@ test("shared UI class overrides are conflict-aware", async () => {
     "h-9 p-0 text-xs",
   );
 });
+
+test("signed-in account navigation is identifiable as a profile link", async () => {
+  const source = await readFile(
+    new URL("packages/ui/src/index.tsx", root),
+    "utf8",
+  );
+
+  assert.match(source, /Open profile for/);
+  assert.match(source, />\s*Profile\s*</);
+});

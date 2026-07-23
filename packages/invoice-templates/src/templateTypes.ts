@@ -6,6 +6,41 @@
 export type TemplateCategory = "simple" | "professional" | "creative" | "service" | "modern" | "classic";
 export type TemplateStatus = "draft" | "published" | "archived";
 export type LayoutFamily = "classic" | "modern" | "compact" | "bold" | "minimal" | "service";
+export type TemplateLayoutFamily = LayoutFamily | "advanced";
+export type DocumentType = "invoice" | "receipt";
+export type PageFormat = "A4" | "LETTER" | "RECEIPT_80MM" | "RECEIPT_58MM";
+export type TemplateDocumentType = DocumentType;
+export type TemplatePageFormat = PageFormat;
+
+export interface PdfmeSchema {
+  name: string;
+  type: string;
+  position: { x: number; y: number };
+  width: number;
+  height: number;
+  [key: string]: unknown;
+}
+
+export interface PdfmeBlankBase {
+  width: number;
+  height: number;
+  padding: [number, number, number, number];
+  staticSchema?: PdfmeSchema[];
+}
+
+export interface PdfmeTemplate {
+  basePdf: PdfmeBlankBase;
+  schemas: PdfmeSchema[][];
+  pdfmeVersion?: string;
+  [key: string]: unknown;
+}
+
+export interface AdvancedTemplateConfig {
+  editor: "pdfme";
+  pageFormat: PageFormat;
+  template: PdfmeTemplate;
+  sampleData: Record<string, string>;
+}
 
 export interface InvoiceTemplateConfig {
   theme: {
@@ -191,3 +226,14 @@ export interface InvoiceTemplate {
   isPremium?: boolean;
   requiredPlan?: "free" | "pro" | "business";
 }
+
+export interface AdvancedDocumentTemplate extends Omit<
+  InvoiceTemplate,
+  "documentType" | "layoutFamily" | "config"
+> {
+  documentType: DocumentType;
+  layoutFamily: "advanced";
+  config: AdvancedTemplateConfig;
+}
+
+export type DocumentTemplate = InvoiceTemplate | AdvancedDocumentTemplate;

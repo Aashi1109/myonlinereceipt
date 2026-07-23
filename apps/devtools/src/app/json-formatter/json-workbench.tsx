@@ -79,12 +79,13 @@ const JSON_INPUT_EXTENSIONS = [
   EditorView.contentAttributes.of({
     "aria-label": "JSON input",
     autocapitalize: "off",
+    id: "json-input",
     spellcheck: "false",
   }),
 ];
 
 const CODE_EDITOR_CLASS_NAME =
-  "min-h-0 w-full flex-1 overflow-hidden bg-inherit text-slate-900 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring [&_.cm-activeLine]:bg-blue-50 [&_.cm-content]:min-w-max [&_.cm-content]:p-4 [&_.cm-content]:caret-primary [&_.cm-editor]:h-full [&_.cm-editor]:bg-inherit [&_.cm-editor]:text-slate-900 [&_.cm-gutters]:hidden [&_.cm-line]:p-0 [&_.cm-matchingBracket]:bg-blue-100 [&_.cm-matchingBracket]:outline [&_.cm-matchingBracket]:outline-1 [&_.cm-matchingBracket]:outline-blue-600 [&_.cm-placeholder]:text-slate-400 [&_.cm-scroller]:overflow-auto [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[0.8125rem] [&_.cm-scroller]:leading-5 [&_.cm-scroller]:[font-variant-ligatures:none] [&_.cm-scroller]:[tab-size:2]";
+  "min-h-0 w-full flex-1 overflow-hidden bg-inherit text-foreground focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring [&_.cm-activeLine]:bg-accent [&_.cm-content]:min-w-max [&_.cm-content]:p-4 [&_.cm-content]:caret-primary [&_.cm-editor]:h-full [&_.cm-editor]:bg-inherit [&_.cm-editor]:text-foreground [&_.cm-gutters]:hidden [&_.cm-line]:p-0 [&_.cm-matchingBracket]:bg-accent [&_.cm-matchingBracket]:outline [&_.cm-matchingBracket]:outline-1 [&_.cm-matchingBracket]:outline-ring [&_.cm-placeholder]:text-muted-foreground [&_.cm-scroller]:overflow-auto [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[0.8125rem] [&_.cm-scroller]:leading-5 [&_.cm-scroller]:[font-variant-ligatures:none] [&_.cm-scroller]:[tab-size:2]";
 
 type JsonTreePath = readonly (string | number)[];
 type JsonTreeSelection = {
@@ -147,13 +148,16 @@ function ToolWorkspace({
   return (
     <section
       aria-busy={busy || undefined}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground motion-reduce:[&_*]:transition-none max-[54rem]:overflow-visible"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground motion-reduce:[&_*]:transition-none max-[54rem]:overflow-visible"
       data-testid="tool-workspace"
+      id="tool-workspace"
+      tabIndex={-1}
     >
       <div
         aria-label={toolbarLabel}
-        className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-card px-3 py-2 sm:px-4"
+        className="flex min-h-13 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-muted/55 px-3 py-2 sm:px-4"
         data-testid="tool-action-toolbar"
+        role="toolbar"
       >
         {actions}
       </div>
@@ -167,7 +171,7 @@ function ToolWorkspace({
 
       <div
         aria-live="polite"
-        className="flex min-h-8 shrink-0 items-center justify-between gap-4 border-t border-border bg-muted/40 px-4 py-1.5 text-xs text-muted-foreground max-[40rem]:flex-col max-[40rem]:items-start max-[40rem]:gap-1 max-[40rem]:py-2"
+        className="flex min-h-9 shrink-0 items-center justify-between gap-4 border-t border-border bg-card px-4 py-1.5 text-xs text-muted-foreground tabular-nums max-[40rem]:flex-col max-[40rem]:items-start max-[40rem]:gap-1 max-[40rem]:py-2"
         data-testid="tool-status-line"
         role="status"
       >
@@ -185,18 +189,111 @@ function ToolBreadcrumb({
   title: string;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-5 text-xs font-bold text-muted-foreground">
-      <a className="hover:text-primary hover:underline" href="/?view=all">All tools</a>
-      <span aria-hidden="true" className="mx-2">/</span>
+    <nav
+      aria-label="Breadcrumb"
+      className="mb-5 flex min-h-9 flex-wrap items-center gap-1 text-xs font-bold text-muted-foreground"
+    >
       <a
-        className="hover:text-primary hover:underline"
+        className="inline-flex min-h-9 items-center rounded-lg px-2 outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+        href="/?view=all"
+      >
+        All tools
+      </a>
+      <ChevronRight aria-hidden="true" className="size-3.5" />
+      <a
+        className="inline-flex min-h-9 items-center rounded-lg px-2 outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
         href={`/?category=${encodeURIComponent(category)}`}
       >
         {category}
       </a>
-      <span aria-hidden="true" className="mx-2">/</span>
-      <span aria-current="page">{title}</span>
+      <ChevronRight aria-hidden="true" className="size-3.5" />
+      <span aria-current="page" className="px-2 text-foreground">
+        {title}
+      </span>
     </nav>
+  );
+}
+
+function ToolPageFrame({
+  account,
+  category,
+  children,
+  description,
+  online = false,
+  platformUrl,
+  skipHref = "#tool-workspace",
+  title,
+}: {
+  account: AccountNavigationProps;
+  category: string;
+  children: ReactNode;
+  description: string;
+  online?: boolean;
+  platformUrl: string;
+  skipHref?: string;
+  title: string;
+}) {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <a
+        className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
+        href={skipHref}
+      >
+        {skipHref === "#json-input" ? "Skip to JSON input" : "Skip to tool workspace"}
+      </a>
+
+      <ProductHeader
+        actions={<AccountNavigation {...account} />}
+        className="sticky top-0 z-50 border-border/80 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
+        href={platformUrl}
+        name="Devtools"
+      />
+
+      <main>
+        <section className="border-b border-border bg-card">
+          <AppContainer className="max-w-[100rem] py-5 sm:py-7">
+            <ToolBreadcrumb category={category} title={title} />
+
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
+              <ToolPageHeader
+                className="mb-0 border-b-0 pb-0 [&_h1]:text-4xl [&_h1]:tracking-[-0.045em] [&_p]:mt-3 [&_p]:max-w-3xl [&_p]:text-base [&_p]:leading-7 sm:[&_h1]:text-5xl"
+                description={description}
+                eyebrow={
+                  <>
+                    <StatusBadge variant={online ? "warning" : "success"}>
+                      {online ? "Online lookup" : "Runs locally"}
+                    </StatusBadge>
+                    <span>{category}</span>
+                  </>
+                }
+                inlineEyebrow
+                title={title}
+              />
+
+              <div className="flex items-center gap-3 lg:mb-1 lg:max-w-xs lg:border-l lg:border-border lg:pl-6">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-primary">
+                  <ShieldCheck aria-hidden="true" className="size-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-extrabold">
+                    {online ? "Provider-assisted" : "Private by default"}
+                  </h2>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                    {online
+                      ? "This lookup sends the domain to Ahrefs."
+                      : "Your input stays in this browser."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </AppContainer>
+        </section>
+
+        <AppContainer className="max-w-[100rem] py-5 sm:py-7 lg:py-8">
+          {children}
+        </AppContainer>
+      </main>
+    </div>
   );
 }
 
@@ -307,38 +404,15 @@ export default function JsonWorkbench({
         : "Invalid JSON";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <a
-        className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-md bg-primary px-3.5 py-2.5 font-bold text-primary-foreground focus:translate-y-0"
-        href="#json-input"
-      >
-        Skip to JSON input
-      </a>
-
-      <ProductHeader
-        actions={<AccountNavigation {...account} />}
-        href={platformUrl}
-        name="Devtools"
-      />
-
-      <main>
-        <AppContainer className="py-8 sm:py-10">
-          <ToolBreadcrumb category="JSON Tools" title={title} />
-
-          <ToolPageHeader
-            className="border-b-0 pb-0"
-            description={description}
-            eyebrow={
-              <>
-                <StatusBadge variant="success">Runs locally</StatusBadge>
-                <span>JSON Tools</span>
-              </>
-            }
-            inlineEyebrow
-            title={title}
-          />
-
-          <div className="flex min-h-[33rem] flex-col max-[54rem]:block max-[54rem]:min-h-0">
+    <ToolPageFrame
+      account={account}
+      category="JSON Tools"
+      description={description}
+      platformUrl={platformUrl}
+      skipHref="#json-input"
+      title={title}
+    >
+      <div className="flex min-h-[33rem] flex-col max-[54rem]:block max-[54rem]:min-h-0">
             <ToolWorkspace
           actions={
             <>
@@ -379,10 +453,10 @@ export default function JsonWorkbench({
 
           <div className="ml-auto flex min-w-0 items-center gap-2 max-[40rem]:ml-0 max-[40rem]:grid max-[40rem]:w-full max-[40rem]:grid-cols-[minmax(0,1fr)_2.5rem_3rem]">
             <label
-              className="flex min-h-9 w-48 min-w-0 items-center gap-1.5 rounded-md border border-slate-200 bg-slate-100 pl-2 max-[40rem]:w-full"
+              className="flex min-h-9 w-48 min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted pl-2 max-[40rem]:w-full"
               htmlFor="indentation"
             >
-              <span className="text-[0.6875rem] font-extrabold tracking-[0.06em] text-slate-500 uppercase">
+              <span className="text-[0.6875rem] font-extrabold tracking-[0.06em] text-muted-foreground uppercase">
                 Indent:
               </span>
               <Select
@@ -411,7 +485,7 @@ export default function JsonWorkbench({
             >
               <Copy aria-hidden="true" size={18} />
             </Button>
-            <div className="border-l border-slate-200 pl-2">
+            <div className="border-l border-border pl-2">
               <Button
                 aria-label="Clear JSON input"
                 disabled={!input}
@@ -431,7 +505,7 @@ export default function JsonWorkbench({
             <>
               <div className="flex items-center gap-4 max-[40rem]:flex-wrap max-[40rem]:gap-2.5">
                 <span
-                  className={`inline-flex items-center gap-1.5 ${result.ok ? "text-primary" : "text-rose-600"}`}
+                  className={`inline-flex items-center gap-1.5 ${result.ok ? "text-primary" : "text-destructive"}`}
                 >
                   {result.ok ? (
                     <CheckCircle2 aria-hidden="true" size={14} />
@@ -440,7 +514,7 @@ export default function JsonWorkbench({
                   )}
                   {notice || statusLabel}
                 </span>
-                <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                <span aria-hidden="true" className="h-4 w-px bg-border" />
                 <span>Size: {summary ? `${summary.byteSize.toLocaleString()} B` : "—"}</span>
                 <span>Lines: {summary?.lineCount ?? input.split("\n").length}</span>
               </div>
@@ -454,12 +528,17 @@ export default function JsonWorkbench({
         >
           <section
             aria-label="JSON input"
-            className="relative flex min-w-0 flex-[0_0_35%] flex-col overflow-hidden border-r border-slate-200 bg-slate-50 max-[64rem]:flex-[0_0_40%] max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:flex-none max-[54rem]:border-r-0 max-[54rem]:border-b"
+            className="flex min-w-0 flex-[0_0_35%] flex-col overflow-hidden border-r border-border bg-muted/20 max-[64rem]:flex-[0_0_40%] max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:flex-none max-[54rem]:border-r-0 max-[54rem]:border-b"
             data-workspace-panel="input"
           >
-            <span className="absolute top-0 right-0 z-10 rounded-bl-md border-b border-l border-slate-200 bg-slate-100 px-2.5 py-1 text-[0.6875rem] font-extrabold tracking-[0.06em] text-slate-500 uppercase">
-              Input
-            </span>
+            <header className="flex min-h-11 shrink-0 items-center justify-between border-b border-border bg-muted/45 px-4">
+              <h2 className="text-xs font-extrabold tracking-[0.08em] uppercase">
+                Input
+              </h2>
+              <span className="text-[0.6875rem] font-bold tracking-[0.06em] text-muted-foreground uppercase">
+                JSON
+              </span>
+            </header>
             <CodeMirror
               basicSetup={{
                 autocompletion: false,
@@ -475,7 +554,6 @@ export default function JsonWorkbench({
               className={CODE_EDITOR_CLASS_NAME}
               extensions={JSON_INPUT_EXTENSIONS}
               height="100%"
-              id="json-input"
               indentWithTab={false}
               onChange={updateInput}
               onUpdate={(update) => {
@@ -492,24 +570,26 @@ export default function JsonWorkbench({
 
           <section
             aria-label="JSON output"
-            className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-white max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:border-b max-[54rem]:border-slate-200"
+            className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:border-b max-[54rem]:border-border"
             data-workspace-panel="output"
           >
-            <span className="absolute top-0 right-0 z-10 rounded-bl-md border-b border-l border-slate-200 bg-slate-100 px-2.5 py-1 text-[0.6875rem] font-extrabold tracking-[0.06em] text-slate-500 uppercase">
-              Output
-            </span>
-            {!inspectorOpen ? (
-              <Button
-                aria-label="Show inspector"
-                className="absolute top-9 right-2 z-10 bg-white"
-                onClick={() => setInspectorOpen(true)}
-                size="icon"
-                type="button"
-                variant="outline"
-              >
-                <PanelRightOpen aria-hidden="true" size={18} />
-              </Button>
-            ) : null}
+            <header className="flex min-h-11 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+              <h2 className="text-xs font-extrabold tracking-[0.08em] uppercase">
+                Output
+              </h2>
+              {!inspectorOpen ? (
+                <Button
+                  aria-label="Show inspector"
+                  className="size-8"
+                  onClick={() => setInspectorOpen(true)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <PanelRightOpen aria-hidden="true" size={18} />
+                </Button>
+              ) : null}
+            </header>
             {result.ok ? (
               <div className="min-h-0 flex-1 overflow-auto p-4">
                 <div aria-label="JSON tree" className="w-max min-w-full" role="tree">
@@ -525,10 +605,10 @@ export default function JsonWorkbench({
                 </div>
               </div>
             ) : (
-              <div className="m-auto flex max-w-lg items-start gap-3 p-6 text-slate-500">
+              <div className="m-auto flex max-w-lg items-start gap-3 p-6 text-muted-foreground">
                 <Info aria-hidden="true" className="shrink-0" size={20} />
                 <div>
-                  <strong className="text-slate-900">
+                  <strong className="text-foreground">
                     {result.error.kind === "empty" ? "Ready for JSON" : "JSON needs attention"}
                   </strong>
                   <p className="mt-1 text-sm">{result.error.message}</p>
@@ -540,7 +620,7 @@ export default function JsonWorkbench({
           <aside
             aria-hidden={!inspectorOpen}
             aria-label="JSON inspector"
-            className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-white transition-[width,flex-basis,border-color] duration-300 max-[54rem]:min-h-[38rem] max-[54rem]:border-l-0 max-[54rem]:border-b ${
+            className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-[width,flex-basis,border-color] duration-300 max-[54rem]:min-h-[38rem] max-[54rem]:border-l-0 max-[54rem]:border-b ${
               inspectorOpen
                 ? "w-80 basis-80 max-[64rem]:w-72 max-[64rem]:basis-72 max-[54rem]:w-full max-[54rem]:basis-auto"
                 : "invisible w-0 basis-0 border-transparent max-[54rem]:hidden"
@@ -548,9 +628,9 @@ export default function JsonWorkbench({
             data-workspace-panel="details"
             inert={!inspectorOpen ? true : undefined}
           >
-            <section className="flex min-h-0 flex-1 flex-col border-b border-slate-200">
-              <header className="flex min-h-13 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4">
-                <h2 className="flex items-center gap-1.5 text-xs font-extrabold tracking-[0.06em] text-slate-600 uppercase">
+            <section className="flex min-h-0 flex-1 flex-col border-b border-border">
+              <header className="flex min-h-13 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
+                <h2 className="flex items-center gap-1.5 text-xs font-extrabold tracking-[0.06em] text-muted-foreground uppercase">
                   <CheckCircle2 aria-hidden="true" className="text-primary" size={16} />
                   Validation
                 </h2>
@@ -572,14 +652,14 @@ export default function JsonWorkbench({
                 <div
                   className={`mb-4 flex items-start gap-2 rounded-md border p-3 ${
                     result.ok
-                      ? "border-blue-200 bg-blue-50 text-blue-700"
-                      : "border-rose-200 bg-rose-50 text-rose-700"
+                      ? "border-primary/20 bg-accent text-accent-foreground"
+                      : "border-destructive/30 bg-destructive/10 text-destructive"
                   }`}
                 >
                   <Info aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
                   <div>
-                    <strong className="text-sm text-slate-950">{statusLabel}</strong>
-                    <p className="mt-1 text-[0.8125rem] leading-5 text-slate-600">
+                    <strong className="text-sm">{statusLabel}</strong>
+                    <p className="mt-1 text-[0.8125rem] leading-5 text-current/80">
                       {result.ok
                         ? "The document is well-formed and passes structural validation."
                         : result.error.message}
@@ -587,56 +667,56 @@ export default function JsonWorkbench({
                   </div>
                 </div>
                 <dl>
-                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-slate-200 text-[0.8125rem]">
-                    <dt className="text-slate-500">Depth</dt>
-                    <dd className="font-mono text-slate-900">
+                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-border text-[0.8125rem]">
+                    <dt className="text-muted-foreground">Depth</dt>
+                    <dd className="font-mono text-foreground">
                       {summary ? `${summary.depth} levels` : "—"}
                     </dd>
                   </div>
-                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-slate-200 text-[0.8125rem]">
-                    <dt className="text-slate-500">Keys</dt>
-                    <dd className="font-mono text-slate-900">{summary?.keyCount ?? "—"}</dd>
+                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-border text-[0.8125rem]">
+                    <dt className="text-muted-foreground">Keys</dt>
+                    <dd className="font-mono text-foreground">{summary?.keyCount ?? "—"}</dd>
                   </div>
-                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-slate-200 text-[0.8125rem]">
-                    <dt className="text-slate-500">Arrays</dt>
-                    <dd className="font-mono text-slate-900">{summary?.arrayCount ?? "—"}</dd>
+                  <div className="flex min-h-9 items-center justify-between gap-4 border-b border-border text-[0.8125rem]">
+                    <dt className="text-muted-foreground">Arrays</dt>
+                    <dd className="font-mono text-foreground">{summary?.arrayCount ?? "—"}</dd>
                   </div>
                 </dl>
               </div>
             </section>
 
             <section className="flex min-h-0 flex-[1.5] flex-col">
-              <header className="flex min-h-13 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4">
-                <h2 className="text-xs font-extrabold tracking-[0.06em] text-slate-600 uppercase">
+              <header className="flex min-h-13 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
+                <h2 className="text-xs font-extrabold tracking-[0.06em] text-muted-foreground uppercase">
                   Node Metadata
                 </h2>
               </header>
               <div className="min-h-0 flex-1 overflow-auto p-4">
                 <div>
-                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-slate-500 uppercase">
+                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-muted-foreground uppercase">
                     Selected Key
                   </p>
-                  <code className="block rounded-md border border-slate-200 bg-slate-50 p-2.5 font-mono text-[0.8125rem] text-slate-900">
+                  <code className="block rounded-md border border-border bg-muted/30 p-2.5 font-mono text-[0.8125rem] text-foreground">
                     {selectedMetadata ? `"${selectedMetadata.selectedKey}"` : "—"}
                   </code>
                 </div>
                 <div className="mt-4">
-                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-slate-500 uppercase">
+                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-muted-foreground uppercase">
                     Value Type
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 font-mono text-[0.8125rem] text-slate-800">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-[0.8125rem] text-foreground">
                     <i aria-hidden="true" className="size-2 rounded-full bg-primary" />
                     {selectedMetadata?.selectedType ?? "Unknown"}
                   </span>
                 </div>
                 <div className="mt-4">
-                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-slate-500 uppercase">
+                  <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-muted-foreground uppercase">
                     Data Preview
                   </p>
-                  <div className="overflow-hidden rounded-md border border-slate-200 bg-slate-50 font-mono text-xs">
+                  <div className="overflow-hidden rounded-md border border-border bg-muted/20 font-mono text-xs">
                     <table aria-label="Data Preview" className="w-full table-fixed text-left">
                       <thead>
-                        <tr className="border-b border-slate-200 text-slate-500">
+                        <tr className="border-b border-border text-muted-foreground">
                           <th className="w-[40%] px-2.5 py-2 font-normal" scope="col">Key</th>
                           <th className="px-2.5 py-2 font-normal" scope="col">Value</th>
                         </tr>
@@ -644,8 +724,8 @@ export default function JsonWorkbench({
                       <tbody>
                         {selectedMetadata?.preview.length ? (
                           selectedMetadata.preview.map((item) => (
-                            <tr className="border-b border-slate-200 last:border-b-0" key={item.key}>
-                              <th className="px-2.5 py-2 font-normal text-slate-400" scope="row">
+                            <tr className="border-b border-border last:border-b-0" key={item.key}>
+                              <th className="px-2.5 py-2 font-normal text-muted-foreground" scope="row">
                                 {item.key}
                               </th>
                               <td className="px-2.5 py-2">
@@ -655,7 +735,7 @@ export default function JsonWorkbench({
                           ))
                         ) : (
                           <tr>
-                            <td className="p-3 font-sans text-slate-500" colSpan={2}>
+                            <td className="p-3 font-sans text-muted-foreground" colSpan={2}>
                               No value preview available.
                             </td>
                           </tr>
@@ -667,25 +747,13 @@ export default function JsonWorkbench({
               </div>
             </section>
           </aside>
-            </ToolWorkspace>
-          </div>
-
-          <section className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/20 bg-accent p-5 sm:p-6">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-extrabold">Your JSON stays on this device</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Formatting, validation, inspection, and copying all run in this browser.
-              </p>
-            </div>
-          </section>
-        </AppContainer>
-      </main>
+        </ToolWorkspace>
+      </div>
 
       <span className="sr-only">
         Maximum input size is {MAX_JSON_INPUT_CHARS.toLocaleString()} characters.
       </span>
-    </div>
+    </ToolPageFrame>
   );
 }
 
@@ -762,31 +830,14 @@ export function DataConversionWorkbench({
       : result.error.message;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <ProductHeader
-        actions={<AccountNavigation {...account} />}
-        href={platformUrl}
-        name="Devtools"
-      />
-
-      <main>
-        <AppContainer className="py-8 sm:py-10">
-          <ToolBreadcrumb category="JSON Tools" title={title} />
-
-          <ToolPageHeader
-            className="border-b-0 pb-0"
-            description={description}
-            eyebrow={
-              <>
-                <StatusBadge variant="success">Runs locally</StatusBadge>
-                <span>JSON Tools</span>
-              </>
-            }
-            inlineEyebrow
-            title={title}
-          />
-
-          <ToolWorkspace
+    <ToolPageFrame
+      account={account}
+      category="JSON Tools"
+      description={description}
+      platformUrl={platformUrl}
+      title={title}
+    >
+      <ToolWorkspace
             actions={
               <>
                 <Button
@@ -955,27 +1006,8 @@ export function DataConversionWorkbench({
                 value={result.ok ? result.output : ""}
               />
             </section>
-          </ToolWorkspace>
-
-          <section className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/20 bg-accent p-5 sm:p-6">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-extrabold">Your data never leaves this browser</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Conversion, copying, and file creation all happen on this device.
-              </p>
-            </div>
-          </section>
-        </AppContainer>
-      </main>
-
-      <footer className="border-t border-border bg-card py-6 text-xs text-muted-foreground">
-        <AppContainer className="flex flex-wrap items-center justify-between gap-3">
-          <span>© {new Date().getFullYear()} SmartTools Devtools</span>
-          <span>Local processing · {targetFormat} export · Privacy-first</span>
-        </AppContainer>
-      </footer>
-    </div>
+      </ToolWorkspace>
+    </ToolPageFrame>
   );
 }
 
@@ -1291,31 +1323,14 @@ export function JsonViewerWorkbench({
       : result.error.message;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <ProductHeader
-        actions={<AccountNavigation {...account} />}
-        href={platformUrl}
-        name="Devtools"
-      />
-
-      <main>
-        <AppContainer className="py-8 sm:py-10">
-          <ToolBreadcrumb category="JSON Tools" title={title} />
-
-          <ToolPageHeader
-            className="border-b-0 pb-0"
-            description={description}
-            eyebrow={
-              <>
-                <StatusBadge variant="success">Runs locally</StatusBadge>
-                <span>JSON Tools</span>
-              </>
-            }
-            inlineEyebrow
-            title={title}
-          />
-
-          <ToolWorkspace
+    <ToolPageFrame
+      account={account}
+      category="JSON Tools"
+      description={description}
+      platformUrl={platformUrl}
+      title={title}
+    >
+      <ToolWorkspace
             actions={
               <>
                 <Button disabled={!input} onClick={repairInput} size="sm">
@@ -1564,20 +1579,8 @@ export function JsonViewerWorkbench({
                 </div>
               </section>
             ) : null}
-          </ToolWorkspace>
-
-          <section className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/20 bg-accent p-5 sm:p-6">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-extrabold">Your JSON stays on this device</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Parsing, repair, tree rendering, copying, and downloads all run in this browser.
-              </p>
-            </div>
-          </section>
-        </AppContainer>
-      </main>
-    </div>
+      </ToolWorkspace>
+    </ToolPageFrame>
   );
 }
 
@@ -1837,31 +1840,15 @@ export function UtilityToolWorkbench({
             : "Waiting for input.");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <ProductHeader
-        actions={<AccountNavigation {...account} />}
-        href={platformUrl}
-        name="Devtools"
-      />
-
-      <main>
-        <AppContainer className="py-8 sm:py-10">
-          <ToolBreadcrumb category={definition.category} title={title} />
-
-          <ToolPageHeader
-            className="border-b-0 pb-0"
-            description={description}
-            eyebrow={
-              <>
-                <StatusBadge variant="success">Runs locally</StatusBadge>
-                <span>{definition.category}</span>
-              </>
-            }
-            inlineEyebrow
-            title={title}
-          />
-
-          <ToolWorkspace
+    <ToolPageFrame
+      account={account}
+      category={definition.category}
+      description={description}
+      online={Boolean(serverAction)}
+      platformUrl={platformUrl}
+      title={title}
+    >
+      <ToolWorkspace
             actions={
               <>
                 <Button
@@ -2089,19 +2076,7 @@ export function UtilityToolWorkbench({
                 </div>
               </aside>
             ) : null}
-          </ToolWorkspace>
-
-          <section className="mt-8 flex items-start gap-4 rounded-2xl border border-primary/20 bg-accent p-5 sm:p-6">
-            <ShieldCheck aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div>
-              <h2 className="font-extrabold">Built for quick browser-side work</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Inputs stay in this workbench while you transform, inspect, copy, or download the result.
-              </p>
-            </div>
-          </section>
-        </AppContainer>
-      </main>
-    </div>
+      </ToolWorkspace>
+    </ToolPageFrame>
   );
 }

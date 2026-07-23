@@ -3,6 +3,7 @@
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
+  createAdvancedDocumentTemplate,
   createCustomRole,
   createInvoiceTemplate,
   deleteCustomRole,
@@ -20,13 +21,15 @@ import {
   updateFeature,
   updateInvoiceTemplate,
   updateManagedTool,
-  type InvoiceTemplateContent,
+  type DocumentTemplateContent,
 } from "../lib/adminMutations";
 import { featureManifest } from "@smarttools/control-plane";
 import {
   getDefaultTemplateConfigByFamily,
   type LayoutFamily,
   type TemplateCategory,
+  type TemplateDocumentType,
+  type TemplatePageFormat,
 } from "@smarttools/invoice-templates";
 import type { ToolApp } from "@smarttools/tool-catalog";
 import { revalidatePath } from "next/cache";
@@ -167,13 +170,33 @@ export async function createTemplateAction(formData: FormData) {
   redirect(`/templates/${template.id}`);
 }
 
+export async function createAdvancedTemplateAction(formData: FormData) {
+  const [documentType, pageFormat] = text(formData, "starter").split(":");
+  const template = await createAdvancedDocumentTemplate(
+    await getActorUserId(),
+    {
+      name: text(formData, "name"),
+      slug: text(formData, "slug"),
+      description: text(formData, "description"),
+      category: text(formData, "category") as TemplateCategory,
+      documentType: documentType as TemplateDocumentType,
+      pageFormat: pageFormat as TemplatePageFormat,
+    },
+  );
+  redirect(`/templates/${template.id}/advanced`);
+}
+
 export async function duplicateTemplateAction(formData: FormData) {
   const template = await duplicateInvoiceTemplate(
     await getActorUserId(),
     text(formData, "templateId"),
     { name: text(formData, "name"), slug: text(formData, "slug") },
   );
-  redirect(`/templates/${template.id}`);
+  redirect(
+    template.layoutFamily === "advanced"
+      ? `/templates/${template.id}/advanced`
+      : `/templates/${template.id}`,
+  );
 }
 
 export async function importTemplateAction(formData: FormData) {
@@ -181,7 +204,11 @@ export async function importTemplateAction(formData: FormData) {
     await getActorUserId(),
     json(formData, "template", "Template JSON", 500_000),
   );
-  redirect(`/templates/${template.id}`);
+  redirect(
+    template.layoutFamily === "advanced"
+      ? `/templates/${template.id}/advanced`
+      : `/templates/${template.id}`,
+  );
 }
 
 export async function updateTemplateAction(formData: FormData) {
@@ -189,10 +216,16 @@ export async function updateTemplateAction(formData: FormData) {
   await updateInvoiceTemplate(
     await getActorUserId(),
     templateId,
-    json<Partial<InvoiceTemplateContent>>(formData, "template", "Template changes", 200_000),
+    json<Partial<DocumentTemplateContent>>(
+      formData,
+      "template",
+      "Template changes",
+      5_000_000,
+    ),
   );
   revalidatePath("/templates");
   revalidatePath(`/templates/${templateId}`);
+  revalidatePath(`/templates/${templateId}/advanced`);
 }
 
 export async function updateAndPublishTemplateAction(formData: FormData) {
@@ -200,10 +233,16 @@ export async function updateAndPublishTemplateAction(formData: FormData) {
   await updateAndPublishInvoiceTemplate(
     await getActorUserId(),
     templateId,
-    json<Partial<InvoiceTemplateContent>>(formData, "template", "Template changes", 200_000),
+    json<Partial<DocumentTemplateContent>>(
+      formData,
+      "template",
+      "Template changes",
+      5_000_000,
+    ),
   );
   revalidatePath("/templates");
   revalidatePath(`/templates/${templateId}`);
+  revalidatePath(`/templates/${templateId}/advanced`);
   redirect("/templates");
 }
 

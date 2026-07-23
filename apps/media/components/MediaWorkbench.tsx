@@ -8,8 +8,6 @@ import {
   Field,
   Input,
   Select,
-  StatusBadge,
-  ToolPageHeader,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
@@ -98,11 +96,9 @@ const PDF_PAGE_CONTROL_TOOLS = new Set<MediaToolSlug>([
 
 export function MediaWorkbench({
   definition,
-  description,
   title,
 }: {
   definition: MediaToolDefinition;
-  description: string;
   title: string;
 }) {
   const [files, setFiles] = useState<QueuedFile[]>([]);
@@ -195,7 +191,9 @@ export function MediaWorkbench({
       setSelectionError("This tool accepts one file at a time.");
       return;
     }
-    const combinedSizes = [...files.map(({ file }) => file), ...nextFiles];
+    const combinedSizes = definition.multiple
+      ? [...files.map(({ file }) => file), ...nextFiles]
+      : nextFiles;
     const selection = definition.accept.includes("image/")
       ? validateImageSelection(combinedSizes)
       : validatePdfSelection(combinedSizes, { merge: definition.slug === "merge-pdf" });
@@ -632,65 +630,61 @@ export function MediaWorkbench({
   const error = selectionError ?? job.error?.message ?? null;
   const firstPreview = files.find(({ previewUrl }) => previewUrl)?.previewUrl ?? null;
   const isProcessing = job.status === "processing";
+  const isPageControlTool = PDF_PAGE_CONTROL_TOOLS.has(definition.slug);
+  const pageControlsReady = !isPageControlTool || pdfPages.length > 0;
+  const totalSelectedBytes = files.reduce((total, { file }) => total + file.size, 0);
+  const isCompressionTool = ["compress-image", "compress-pdf"].includes(
+    definition.slug,
+  );
   const signedPdfWarning =
     definition.engine === "pdf" &&
     !["pdf-to-jpg", "pdf-to-png"].includes(definition.slug);
 
   return (
     <div>
-      <ToolPageHeader
-        actions={
-          files.length ? (
-            <Button onClick={reset} type="button" variant="outline">
-              <RotateCcw aria-hidden="true" className="size-4" />
-              Reset
-            </Button>
-          ) : undefined
-        }
-        className="border-b-0 pb-0"
-        description={description}
-        eyebrow={
-          <>
-            <StatusBadge variant="success">Runs locally</StatusBadge>
-            <span>{definition.category}</span>
-          </>
-        }
-        inlineEyebrow
-        title={title}
-      />
-
       {signedPdfWarning ? (
-        <AlertBanner className="mt-4" title="Digital signatures" variant="warning">
+        <AlertBanner title="Digital signatures" variant="warning">
           Rewriting a digitally signed PDF invalidates its signatures. Keep the original if signatures matter.
         </AlertBanner>
       ) : null}
       {definition.slug === "crop-pdf" ? (
-        <AlertBanner className="mt-4" variant="warning">
+        <AlertBanner className={signedPdfWarning ? "mt-4" : undefined} variant="warning">
           Cropping changes the visible page box. Hidden content may remain in the PDF file.
         </AlertBanner>
       ) : null}
       {definition.slug === "remove-image-metadata" ? (
-        <AlertBanner className="mt-4" variant="info">
+        <AlertBanner variant="info">
           Images are decoded, oriented, and re-encoded. Metadata is removed, but exact color-profile preservation is not claimed.
         </AlertBanner>
       ) : null}
 
-      <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+      <div
+        className={`grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start ${
+          signedPdfWarning ||
+          definition.slug === "crop-pdf" ||
+          definition.slug === "remove-image-metadata"
+            ? "mt-6"
+            : ""
+        }`}
+      >
         <div className="min-w-0 space-y-6">
-          <Card className="p-5 sm:p-6">
-            <input
-              accept={definition.accept}
-              className="sr-only"
-              disabled={isProcessing}
-              multiple={definition.multiple}
-              onChange={(event) => {
-                if (event.target.files) void addFiles(event.target.files);
-              }}
-              ref={inputRef}
-              type="file"
-            />
+          <input
+            accept={definition.accept}
+            className="sr-only"
+            disabled={isProcessing}
+            multiple={definition.multiple}
+            onChange={(event) => {
+              const selected = event.currentTarget.files;
+              if (selected) void addFiles(selected);
+              event.currentTarget.value = "";
+            }}
+            ref={inputRef}
+            type="file"
+          />
+
+          {!files.length ? (
             <button
-              className="flex min-h-52 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/40 px-6 py-10 text-center outline-none transition hover:border-primary hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="group flex min-h-64 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center shadow-sm outline-none transition hover:border-primary/60 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               disabled={isProcessing}
               onClick={() => inputRef.current?.click()}
               onDragOver={(event) => event.preventDefault()}
@@ -700,31 +694,59 @@ export function MediaWorkbench({
               }}
               type="button"
             >
-              <span className="grid size-12 place-items-center rounded-2xl bg-primary text-primary-foreground">
+              <span className="grid size-12 place-items-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10 transition group-hover:scale-105">
                 <Upload aria-hidden="true" className="size-6" />
               </span>
               <strong className="mt-5 text-lg font-black">Choose or drop local files</strong>
-              <span className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                {definition.multiple ? "Select one or more files." : "Select one file."} Contents are validated by signature inside the processing worker.
+              <span className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+                {definition.multiple ? "Select one or more files." : "Select one file."} Files are checked before processing and never uploaded.
+              </span>
+              <span className="mt-3 text-xs font-bold text-muted-foreground">
+                {selectionHint(definition)}
               </span>
             </button>
-          </Card>
-
-          {files.length ? (
+          ) : (
             <Card className="overflow-hidden">
-              <div className="border-b border-border px-5 py-4 sm:px-6">
-                <h2 className="font-black">Selected files</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {definition.multiple
-                    ? "Processing follows the displayed order. Drag the handles to change it."
-                    : "This file will be processed locally."}
-                </p>
+              <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div>
+                  <h2 className="font-black">Selected files</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {files.length} {files.length === 1 ? "file" : "files"} ·{" "}
+                    {formatBytes(totalSelectedBytes)}
+                    {definition.multiple
+                      ? " · Processing follows this order."
+                      : " · Processed locally."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={isProcessing}
+                    onClick={() => inputRef.current?.click()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Upload aria-hidden="true" className="size-4" />
+                    {definition.multiple ? "Add files" : "Replace file"}
+                  </Button>
+                  <Button
+                    disabled={isProcessing}
+                    onClick={reset}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <RotateCcw aria-hidden="true" className="size-4" />
+                    Reset
+                  </Button>
+                </div>
               </div>
               <OrderableList
                 ariaLabel="Selected files"
                 className="divide-y divide-border"
                 disabled={isProcessing || !definition.multiple || files.length < 2}
                 getId={(item) => item.id}
+                getLabel={(item) => item.file.name}
                 items={files}
                 onReorder={reorderFiles}
                 renderItem={(item, orderable) => (
@@ -764,6 +786,9 @@ export function MediaWorkbench({
                       <p className="mt-0.5 text-xs text-muted-foreground">
                         {formatBytes(item.file.size)}
                         {item.rotation ? ` · ${item.rotation}°` : ""}
+                        {!item.previewUrl && item.mime.includes("hei")
+                          ? " · Preview unavailable"
+                          : ""}
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">
@@ -794,9 +819,9 @@ export function MediaWorkbench({
                 )}
               />
             </Card>
-          ) : null}
+          )}
 
-          {PDF_PAGE_CONTROL_TOOLS.has(definition.slug) && files.length ? (
+          {isPageControlTool && files.length ? (
             isInspectingPdf ? (
               <Card aria-live="polite" className="flex items-center gap-3 p-5 sm:p-6">
                 <LoaderCircle aria-hidden="true" className="size-5 animate-spin text-primary" />
@@ -818,7 +843,27 @@ export function MediaWorkbench({
                 pageValue={text(options.pages)}
                 pages={pdfPages}
               />
-            ) : null
+            ) : (
+              <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div>
+                  <h2 className="font-black">Page previews unavailable</h2>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Retry with the selected PDF; you do not need to choose it again.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setSelectionError(null);
+                    void inspectPdfPages(files[0]);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  Retry page previews
+                </Button>
+              </Card>
+            )
           ) : null}
 
           {definition.slug === "crop-image" && firstPreview ? (
@@ -831,9 +876,14 @@ export function MediaWorkbench({
           ) : null}
         </div>
 
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="p-5 sm:p-6">
             <h2 className="text-lg font-black">Options</h2>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {files.length
+                ? `Configured for ${files.length} selected ${files.length === 1 ? "file" : "files"}.`
+                : "Choose files when you are ready; defaults can be adjusted now."}
+            </p>
             <fieldset className="mt-5 grid gap-4" disabled={isProcessing}>
               <ToolOptions
                 definition={definition}
@@ -848,10 +898,19 @@ export function MediaWorkbench({
 
           {error ? (
             <div ref={errorRef} tabIndex={-1}>
-              <AlertBanner title="Could not process files" variant="error">
+              <AlertBanner
+                title={selectionError ? "Check your setup" : "Could not process files"}
+                variant="error"
+              >
                 {error}
               </AlertBanner>
             </div>
+          ) : null}
+
+          {job.status === "canceled" && !error ? (
+            <AlertBanner title="Processing canceled" variant="info">
+              Your selected files and options are still available.
+            </AlertBanner>
           ) : null}
 
           {job.status === "processing" ? (
@@ -861,7 +920,8 @@ export function MediaWorkbench({
                 <div>
                   <p className="font-black">Processing locally</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {job.progress?.stage ?? "Preparing worker…"}
+                    {job.progress?.stage ?? "Preparing worker…"} ·{" "}
+                    {job.progress?.completed ?? 0} of {job.progress?.total ?? 1}
                   </p>
                 </div>
               </div>
@@ -879,49 +939,93 @@ export function MediaWorkbench({
           ) : (
             <Button
               className="w-full"
-              disabled={!files.length || isInspectingPdf}
+              disabled={!files.length || isInspectingPdf || !pageControlsReady}
               onClick={processFiles}
               size="lg"
               type="button"
             >
-              {job.status === "failed" || job.status === "canceled" ? "Retry" : "Process files"}
+              {job.status === "failed" || job.status === "canceled"
+                ? "Retry"
+                : definition.multiple
+                  ? "Process files"
+                  : `Run ${title}`}
             </Button>
           )}
+        </div>
 
-          {results.length ? (
-            <Card className="overflow-hidden" aria-live="polite">
-              <div className="border-b border-border px-5 py-4 sm:px-6">
+        {results.length ? (
+          <Card className="overflow-hidden lg:col-span-2" aria-live="polite">
+            <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div>
                 <h2 className="font-black">Ready to download</h2>
                 {job.sizes ? (
                   <p className="mt-1 text-xs text-muted-foreground">
+                    {results.length} output {results.length === 1 ? "file" : "files"} ·{" "}
                     {formatBytes(job.sizes.inputBytes)} → {formatBytes(job.sizes.outputBytes)}
-                    {job.sizes.outputBytes >= job.sizes.inputBytes
-                      ? " · Original may already be optimized."
-                      : ` · ${Math.round((1 - job.sizes.outputBytes / job.sizes.inputBytes) * 100)}% smaller`}
+                    {isCompressionTool
+                      ? job.sizes.outputBytes >= job.sizes.inputBytes
+                        ? " · Original was already compact."
+                        : ` · ${Math.round((1 - job.sizes.outputBytes / job.sizes.inputBytes) * 100)}% smaller`
+                      : ""}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {results.length} output {results.length === 1 ? "file" : "files"}
+                  </p>
+                )}
               </div>
-              <ul className="divide-y divide-border">
-                {results.map((result) => (
-                  <li className="flex min-w-0 items-center gap-3 px-5 py-4 sm:px-6" key={result.url}>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold">{result.filename}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(result.size)}</p>
-                    </div>
-                    <a
-                      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      download={result.filename}
-                      href={result.url}
-                    >
-                      <Download aria-hidden="true" className="size-4" />
-                      Download
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-        </div>
+              <Button onClick={reset} size="sm" type="button" variant="outline">
+                <RotateCcw aria-hidden="true" className="size-4" />
+                Start over
+              </Button>
+            </div>
+            <ul
+              className={
+                results.length > 1
+                  ? "grid gap-px bg-border md:grid-cols-2"
+                  : ""
+              }
+            >
+              {results.map((result) => (
+                <li
+                  className="flex min-w-0 items-center gap-3 bg-card px-5 py-4 sm:px-6"
+                  key={result.url}
+                >
+                  {result.mime.startsWith("image/") ? (
+                    <img
+                      alt=""
+                      className="size-12 shrink-0 rounded-lg border border-border bg-muted object-cover"
+                      src={result.url}
+                    />
+                  ) : (
+                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent text-primary">
+                      <FileText aria-hidden="true" className="size-6" />
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold">{result.filename}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatBytes(result.size)}
+                    </p>
+                  </div>
+                  <a
+                    aria-label={
+                      results.length > 1
+                        ? `Download ${result.filename}`
+                        : undefined
+                    }
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    download={result.filename}
+                    href={result.url}
+                  >
+                    <Download aria-hidden="true" className="size-4" />
+                    Download
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
       </div>
     </div>
   );
@@ -982,6 +1086,7 @@ function PdfPageControls({
           className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 sm:p-6"
           disabled={disabled || pages.length < 2}
           getId={(page) => String(page.pageNumber)}
+          getLabel={(page) => `Page ${page.pageNumber}`}
           items={pages}
           layout="grid"
           onReorder={(nextPages) =>
@@ -1094,6 +1199,7 @@ function ToolOptions({
   const lossyInput = files.some(({ mime }) => /jpe?g|webp/i.test(mime));
   const hasHeic = files.some(({ mime }) => /image\/hei[cf]/i.test(mime));
   const outputFormat = text(options.outputFormat, "original");
+  const originalUsesQuality = !files.length || lossyInput || hasHeic;
 
   if (["jpg-to-png", "webp-to-png", "heic-to-png"].includes(slug)) {
     return <p className="text-sm leading-6 text-muted-foreground">Original dimensions are retained. Decoding and re-encoding strips embedded metadata.</p>;
@@ -1276,7 +1382,7 @@ function ToolOptions({
         <Checkbox checked={options.lockAspectRatio === true} label="Lock aspect ratio" onChange={(event) => onChange("lockAspectRatio", event.target.checked)} />
         <Checkbox checked={options.noUpscale === true} label="Do not upscale smaller images" onChange={(event) => onChange("noUpscale", event.target.checked)} />
         <SelectField label="Fit" name="fit" onChange={onChange} options={options} values={[["contain", "Contain"], ["cover", "Cover"], ["stretch", "Stretch"]]} />
-        <OutputFields hasHeic={hasHeic} onChange={onChange} options={options} outputFormat={outputFormat} />
+        <OutputFields hasHeic={hasHeic} onChange={onChange} options={options} originalUsesQuality={originalUsesQuality} outputFormat={outputFormat} />
       </>
     );
   }
@@ -1288,17 +1394,17 @@ function ToolOptions({
         <div className="grid grid-cols-2 gap-3">
           {[["cropX", "X"], ["cropY", "Y"], ["cropWidth", "Width"], ["cropHeight", "Height"]].map(([name, label]) => <NumberField key={name} label={`${label} (px)`} min={0} name={name} onChange={onChange} options={options} />)}
         </div>
-        <OutputFields onChange={onChange} options={options} outputFormat={outputFormat} />
+        <OutputFields onChange={onChange} options={options} originalUsesQuality={originalUsesQuality} outputFormat={outputFormat} />
       </>
     );
   }
 
   if (slug === "rotate-image") {
-    return <><SelectField label="Rotation" name="degrees" onChange={onChange} options={options} values={[["90", "90°"], ["180", "180°"], ["270", "270°"]]} /><OutputFields hasHeic={hasHeic} onChange={onChange} options={options} outputFormat={outputFormat} /></>;
+    return <><SelectField label="Rotation" name="degrees" onChange={onChange} options={options} values={[["90", "90°"], ["180", "180°"], ["270", "270°"]]} /><OutputFields hasHeic={hasHeic} onChange={onChange} options={options} originalUsesQuality={originalUsesQuality} outputFormat={outputFormat} /></>;
   }
 
   if (slug === "flip-image") {
-    return <><SelectField label="Direction" name="axis" onChange={onChange} options={options} values={[["horizontal", "Horizontal"], ["vertical", "Vertical"]]} /><OutputFields hasHeic={hasHeic} onChange={onChange} options={options} outputFormat={outputFormat} /></>;
+    return <><SelectField label="Direction" name="axis" onChange={onChange} options={options} values={[["horizontal", "Horizontal"], ["vertical", "Vertical"]]} /><OutputFields hasHeic={hasHeic} onChange={onChange} options={options} originalUsesQuality={originalUsesQuality} outputFormat={outputFormat} /></>;
   }
 
   if (slug === "combine-images") {
@@ -1332,12 +1438,14 @@ function OutputFields({
   hasHeic = false,
   onChange,
   options,
+  originalUsesQuality = true,
   outputFormat,
 }: {
   allowOriginal?: boolean;
   hasHeic?: boolean;
   onChange(name: string, value: RawOptionValue): void;
   options: RawOptions;
+  originalUsesQuality?: boolean;
   outputFormat: string;
 }) {
   const values = [
@@ -1356,7 +1464,10 @@ function OutputFields({
           HEIC inputs are exported as JPEG because HEIC encoding is not available.
         </p>
       ) : null}
-      {outputFormat !== "png" ? <QualityField onChange={onChange} options={options} /> : null}
+      {outputFormat !== "png" &&
+      (outputFormat !== "original" || originalUsesQuality) ? (
+        <QualityField onChange={onChange} options={options} />
+      ) : null}
     </>
   );
 }
@@ -1584,7 +1695,7 @@ function CropOverlay({
             >
               <button
                 aria-label="Resize crop area"
-                className="absolute -right-2 -bottom-2 size-5 cursor-nwse-resize rounded-full border-2 border-white bg-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute -right-3 -bottom-3 size-6 cursor-nwse-resize rounded-full border-2 border-white bg-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 disabled={disabled}
                 onKeyDown={(event) => {
                   const amount = event.shiftKey ? 10 : 1;
@@ -1846,6 +1957,22 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+}
+
+function selectionHint(definition: MediaToolDefinition) {
+  if (definition.engine === "pdf") {
+    return definition.slug === "merge-pdf"
+      ? `PDF · ${MEDIA_LIMITS.pdfs.maxMergeFiles} files max · 200 MiB each · 250 MiB total`
+      : "PDF · 200 MiB max";
+  }
+  const formats = allowedKinds(definition.accept)
+    .map((kind) =>
+      kind === "jpeg" ? "JPG" : kind === "heic" ? "HEIC / HEIF" : kind.toUpperCase(),
+    )
+    .join(", ");
+  return definition.multiple
+    ? `${formats} · ${MEDIA_LIMITS.images.maxFiles} files max · 25 MiB each · 250 MiB total`
+    : `${formats} · 25 MiB max`;
 }
 
 function allowedKinds(accept: string): readonly MediaKind[] {

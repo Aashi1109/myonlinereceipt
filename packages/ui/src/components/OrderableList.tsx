@@ -35,6 +35,7 @@ type OrderableListProps<Item> = {
   className?: string;
   disabled?: boolean;
   getId: (item: Item) => string;
+  getLabel?: (item: Item) => string;
   items: readonly Item[];
   layout?: "grid" | "vertical";
   onReorder: (items: Item[]) => void;
@@ -85,6 +86,7 @@ export function OrderableList<Item>({
   className,
   disabled = false,
   getId,
+  getLabel,
   items,
   layout = "vertical",
   onReorder,
@@ -95,6 +97,16 @@ export function OrderableList<Item>({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const ids = items.map(getId);
+  const labels = new Map(
+    items.map((item) => {
+      const id = getId(item);
+      return [id, getLabel?.(item) ?? id];
+    }),
+  );
+
+  function itemLabel(id: string | number) {
+    return labels.get(String(id)) ?? String(id);
+  }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return;
@@ -106,6 +118,21 @@ export function OrderableList<Item>({
 
   return (
     <DndContext
+      accessibility={{
+        announcements: {
+          onDragStart: ({ active }) => `Picked up ${itemLabel(active.id)}.`,
+          onDragOver: ({ active, over }) =>
+            over
+              ? `${itemLabel(active.id)} is over position ${ids.indexOf(String(over.id)) + 1} of ${ids.length}.`
+              : `${itemLabel(active.id)} is no longer over a valid position.`,
+          onDragEnd: ({ active, over }) =>
+            over
+              ? `Dropped ${itemLabel(active.id)} at position ${ids.indexOf(String(over.id)) + 1} of ${ids.length}.`
+              : `Dropped ${itemLabel(active.id)}. Its position did not change.`,
+          onDragCancel: ({ active }) =>
+            `Reordering canceled. ${itemLabel(active.id)} returned to its original position.`,
+        },
+      }}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
       sensors={sensors}
