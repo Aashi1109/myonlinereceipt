@@ -35,6 +35,10 @@ const mediaSecurityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
 ];
 
+const workerIsolationHeaders = [
+  { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+];
+
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: appRoot,
@@ -91,7 +95,13 @@ const nextConfig: NextConfig = {
     "qpdf-wasm",
   ],
   async headers() {
-    return [{ source: "/media/:path*", headers: mediaSecurityHeaders }];
+    return [
+      { source: "/media/:path*", headers: mediaSecurityHeaders },
+      {
+        source: "/_next/static/chunks/:path*",
+        headers: workerIsolationHeaders,
+      },
+    ];
   },
 };
 

@@ -206,6 +206,19 @@ test("workbench cleanup invalidates async continuations before releasing resourc
   );
 });
 
+test("media workers use the classic runtime emitted by the production build", async () => {
+  const source = await readFile(
+    new URL(
+      "../app/media/components/MediaWorkbench.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.equal((source.match(/new Worker\(/g) ?? []).length, 3);
+  assert.doesNotMatch(source, /type:\s*["']module["']/);
+});
+
 test("preset mappings preserve the product defaults and engine values", () => {
   assert.deepEqual(IMAGE_COMPRESSION_PRESETS, {
     best: { quality: 0.9 },

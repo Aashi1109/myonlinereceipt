@@ -352,11 +352,9 @@ export function MediaWorkbench({
     return definition.engine === "image"
       ? new Worker(new URL("../_workers/image.worker.ts", import.meta.url), {
           name: "smarttools-image-worker",
-          type: "module",
         })
       : new Worker(new URL("../_workers/pdf.worker.ts", import.meta.url), {
           name: "smarttools-pdf-worker",
-          type: "module",
         });
   }
 
@@ -384,7 +382,6 @@ export function MediaWorkbench({
       const message = createInspectPdfMessage(jobId, input, 180);
       const worker = new Worker(new URL("../_workers/pdf.worker.ts", import.meta.url), {
         name: "smarttools-pdf-inspection-worker",
-        type: "module",
       });
       workerRef.current = worker;
       worker.onmessage = (event: MessageEvent<WorkerResponseMessage>) => {

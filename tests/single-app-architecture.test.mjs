@@ -58,12 +58,16 @@ test("domain APIs are namespaced in the unified application", async () => {
   }
 });
 
-test("media security headers are scoped to media pages", async () => {
+test("media isolation headers cover pages and their worker bundles", async () => {
   const source = await readFile(
     new URL("next.config.ts", root),
     "utf8",
   );
 
   assert.match(source, /source:\s*["']\/media\/:path\*["']/);
+  assert.match(
+    source,
+    /source:\s*["']\/_next\/static\/chunks\/:path\*["']/,
+  );
   assert.doesNotMatch(source, /source:\s*["']\/\(\.\*\)["']/);
 });
