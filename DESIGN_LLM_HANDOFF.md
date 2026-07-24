@@ -4,8 +4,6 @@ Status: implementation-grounded brief for the current working tree on 2026-07-18
 
 Audience: a design LLM creating the complete responsive product experience.
 
-Companion foundation: [Paperwork Design Baseline](apps/paperwork/DESIGN_BASELINE.md). Treat that file as the visual source, token, responsive, accessibility, and Figma-library evidence; use the shared UI package only for components already consumed across apps.
-
 ## Non-negotiable visual rule
 
 Paperwork is the only visual and layout source of truth.
@@ -14,12 +12,12 @@ Paperwork is the only visual and layout source of truth.
 - Do not copy the current Auth, Admin, Platform, or Devtools styling. Those surfaces were exploratory/vibecoded.
 - Rebuild every surface with Paperwork's visual language: Inter, blue/slate neutrals, white cards, subtle borders, restrained shadows, rounded controls, uppercase micro-labels, tool-first layouts, clear split panes, and calm professional copy.
 - Reuse the canonical SmartTools icon through `BrandLockup` from `@smarttools/ui`; its asset lives at `packages/ui/src/assets/smarttools-icon.png`.
-- Keep one brand system. Each app may vary density, but it must still feel like Paperwork.
+- Keep one brand system. Each route scope may vary density, but it must still feel like Paperwork.
 - Do not invent a new logo, palette, type system, illustration style, or decorative motif.
 
 ## Prompt to the design LLM
 
-Design a complete responsive SmartTools product experience using this document as the product contract. First create the shared Paperwork-based design system, then produce the Auth and Admin flows in full. Also include enough Platform, Paperwork, and Devtools context to make cross-app navigation and return journeys coherent.
+Design a complete responsive SmartTools product experience using this document as the product contract. First create the shared Paperwork-based design system, then produce the Auth and Admin flows in full. Also include enough home, Paperwork, and Devtools context to make cross-scope navigation and return journeys coherent.
 
 Do not silently add product scope. Clearly label any proposed improvement that is not implemented today.
 
@@ -32,7 +30,7 @@ Current products:
 - Paperwork: invoices, receipts, expense reports, mileage logs, quarterly tax estimates, W-9 onboarding, and 1099 payment tracking.
 - Devtools: privacy-oriented developer utilities; currently only a JSON formatter and validator.
 - Platform: a lightweight project chooser for Paperwork and Devtools.
-- Auth: one optional account and security center shared across all apps.
+- Auth: one optional account and security center shared across all route scopes.
 - Admin: a permission-gated control plane for tools, invoice templates, feature flags, users, roles, and audit history.
 
 Primary audiences:
@@ -54,32 +52,32 @@ Public tools remain usable without an account. Authentication is optional unless
 
 ~~~mermaid
 flowchart LR
-  Visitor[Anonymous visitor] --> Platform[Platform project chooser]
-  Platform --> Paperwork[Paperwork tools]
-  Platform --> Devtools[Devtools tools]
+  Visitor[Anonymous visitor] --> Home[SmartTools catalog /]
+  Home --> Paperwork[Paperwork /paperwork]
+  Home --> Devtools[Devtools /devtools]
   Paperwork --> Auth[Shared Auth and account center]
   Devtools --> Auth
-  Platform --> Auth
-  Auth -->|shared parent-domain session| Platform
-  Auth -->|shared parent-domain session| Paperwork
-  Auth -->|shared parent-domain session| Devtools
+  Home --> Auth
+  Auth -->|same-origin session| Home
+  Auth -->|same-origin session| Paperwork
+  Auth -->|same-origin session| Devtools
   Auth -->|admin.enter plus exact permission| Admin[Admin control plane]
   Admin -->|tool names, slugs, order and availability| Paperwork
   Admin -->|tool names, slugs, order and availability| Devtools
   Admin -->|published and default invoice template| Invoice[Invoice generator]
 ~~~
 
-`apps/auth` is the only Better Auth server runtime. Platform, Paperwork, Devtools, and Admin derive `auth.<parent-domain>` from their own application URL and read the shared session by forwarding the incoming cookie through the flat `@smarttools/auth/session` client; they do not load authentication environment variables, secrets, or provider configuration.
+The root Next.js application owns the Better Auth server runtime at `/api/auth/*`. Home, Paperwork, Devtools, Auth, and Admin read the same-origin session in-process through `@smarttools/auth`; authentication secrets and provider configuration remain server-only.
 
-App entry points in local development:
+Route entry points in local development:
 
-| App | Entry | Purpose |
+| Scope | Entry | Purpose |
 | --- | --- | --- |
-| Platform | port 3000, / | Choose Paperwork or Devtools |
-| Paperwork | port 3001, / | Browse and use seven public paperwork tools |
-| Devtools | port 3002, / | Browse and use developer tools |
-| Admin | port 3003, /tools | Operate tools, templates, features, users, roles, and audit |
-| Auth | port 3004, / | Sign in, create an account, recover access, and manage the account |
+| Home | `http://localhost:3000/` | Choose Paperwork or Devtools |
+| Paperwork | `http://localhost:3000/paperwork` | Browse and use seven public paperwork tools |
+| Devtools | `http://localhost:3000/devtools` | Browse and use developer tools |
+| Admin | `http://localhost:3000/admin/tools` | Operate tools, templates, features, users, roles, and audit |
+| Auth | `http://localhost:3000/auth` | Sign in, create an account, recover access, and manage the account |
 
 ## 3. Paperwork visual source of truth
 
@@ -166,20 +164,20 @@ Behavior:
 - Destructive confirmations name the object and consequence.
 - Never communicate Enabled, Suspended, Published, Archived, or Error by color alone.
 
-## 4. Global navigation and cross-app behavior
+## 4. Global navigation and cross-scope behavior
 
-### Public apps
+### Public route scopes
 
 - Show the Paperwork-style brand lockup.
 - Show the current product name and “by SmartTools.”
 - Signed out: Account action says “Sign in.”
 - Signed in: show the user's name and link to the Auth profile.
-- Preserve the originating app as returnTo through sign-in, sign-up verification, and password recovery.
+- Preserve the originating path as `returnTo` through sign-in, sign-up verification, and password recovery.
 - Public tools must never look locked behind sign-in.
 
 ### Auth
 
-- Header links back to Platform, Paperwork, and Devtools.
+- Header links back to Home, Paperwork, and Devtools.
 - On mobile, replace desktop links with a compact project menu; do not hide navigation entirely.
 
 ### Admin
@@ -187,7 +185,7 @@ Behavior:
 - Brand: “SmartTools Admin” using the same Paperwork lockup.
 - Navigation order: Tools, Templates, Features, Users, Roles, Audit.
 - There is no dashboard. Admin root redirects to Tools.
-- Account action links to the separate Auth profile.
+- Account action links to the Auth profile.
 - Hide sections the user cannot view.
 - If the user can view a section but cannot mutate it, render an intentional read-only page instead of showing controls that fail after click.
 
@@ -195,15 +193,15 @@ Behavior:
 
 ### Journey A: anonymous utility use
 
-Platform → Paperwork or Devtools → choose a tool → enter data → see live result → print/copy/export → optionally sign in.
+Home → Paperwork or Devtools → choose a tool → enter data → see live result → print/copy/export → optionally sign in.
 
 ### Journey B: account creation
 
-Originating app → Auth Create account → submit name/email/password → verification-required state → verification email → return to the originating app as signed in.
+Originating path → Auth Create account → submit name/email/password → verification-required state → verification email → return to the originating path as signed in.
 
 ### Journey C: returning sign-in
 
-Originating app → Auth Sign in → email/password or Google → safe return to the originating app.
+Originating path → Auth Sign in → email/password or Google → safe return to the originating path.
 
 Unverified email must lead to a verification panel with the submitted email and a resend action.
 
@@ -244,25 +242,25 @@ Admin Templates → create/import draft → edit configuration → preview → p
 
 | Route | Screen |
 | --- | --- |
-| Platform / | Project chooser |
-| Paperwork / | Paperwork tool catalog |
-| Paperwork /invoice-generator | Invoice builder and live preview |
-| Paperwork /receipt-generator | Receipt builder and preview |
-| Paperwork /expense-report | Expense and reimbursement report |
-| Paperwork /mileage-log | Mileage and fuel tracker |
-| Paperwork /quarterly-tax-estimator | Live tax estimate and quarterly vouchers |
-| Paperwork /w9-request | Contractor onboarding and request-email copy |
-| Paperwork /1099-nec-tracker | Contractor payment threshold ledger |
-| Devtools / | Developer tool catalog |
-| Devtools /json-formatter | JSON input, output, validation, and inspector |
+| `/` | Project chooser |
+| `/paperwork` | Paperwork tool catalog |
+| `/paperwork/invoice-generator` | Invoice builder and live preview |
+| `/paperwork/receipt-generator` | Receipt builder and preview |
+| `/paperwork/expense-report` | Expense and reimbursement report |
+| `/paperwork/mileage-log` | Mileage and fuel tracker |
+| `/paperwork/quarterly-tax-estimator` | Live tax estimate and quarterly vouchers |
+| `/paperwork/w9-request` | Contractor onboarding and request-email copy |
+| `/paperwork/1099-nec-tracker` | Contractor payment threshold ledger |
+| `/devtools` | Developer tool catalog |
+| `/devtools/json-formatter` | JSON input, output, validation, and inspector |
 
 ### Auth
 
 | Route | Screen |
 | --- | --- |
-| Auth / | Sign in, Create account, and Forgot password modes in one screen |
-| Auth /reset-password | Invalid link, reset form, error, pending, and success |
-| Auth /profile | Profile, identities, password, sessions, sign out, and deletion |
+| `/auth` | Sign in, Create account, and Forgot password modes in one screen |
+| `/auth/reset-password` | Invalid link, reset form, error, pending, and success |
+| `/auth/profile` | Profile, identities, password, sessions, sign out, and deletion |
 
 Do not create separate sign-in, sign-up, forgot-password, verification, settings, or sessions routes unless explicitly labeled as a proposed architecture change.
 
@@ -270,17 +268,17 @@ Do not create separate sign-in, sign-up, forgot-password, verification, settings
 
 | Route | Screen |
 | --- | --- |
-| Admin / | Redirect only; no dashboard |
-| Admin /tools | Managed tool configuration |
-| Admin /templates | Create/import and template lifecycle list |
-| Admin /templates/[id] | Template editor |
-| Admin /templates/[id]/preview | Invoice template preview |
-| Admin /features | Feature flags; empty in the current product |
-| Admin /users?q= | User search, roles, suspension/reactivation |
-| Admin /roles | Create and list roles |
-| Admin /roles/[id] | Custom role permission editor |
-| Admin /audit | Latest privileged mutations |
-| Admin /denied | Access denied |
+| `/admin` | Redirect only; no dashboard |
+| `/admin/tools` | Managed tool configuration |
+| `/admin/templates` | Create/import and template lifecycle list |
+| `/admin/templates/[id]` | Template editor |
+| `/admin/templates/[id]/preview` | Invoice template preview |
+| `/admin/features` | Feature flags; empty in the current product |
+| `/admin/users?q=` | User search, roles, suspension/reactivation |
+| `/admin/roles` | Create and list roles |
+| `/admin/roles/[id]` | Custom role permission editor |
+| `/admin/audit` | Latest privileged mutations |
+| `/admin/denied` | Access denied |
 
 ## 7. Public screen context
 
@@ -963,7 +961,7 @@ Produce:
 2. A sitemap and the nine end-to-end journeys above.
 3. All Auth screens and state variants.
 4. All Admin screens and the three permission modes.
-5. Platform, Paperwork, and Devtools context screens sufficient to demonstrate cross-app navigation.
+5. Home, Paperwork, and Devtools context screens sufficient to demonstrate cross-scope navigation.
 6. Desktop, tablet, and mobile frames for every primary route.
 7. Clickable prototypes for account creation, recovery, account security, Admin access, tool lifecycle, and template lifecycle.
 8. An annotation layer distinguishing:
@@ -979,21 +977,22 @@ Start with the shared Paperwork system, then Auth, then Admin. Do not start with
 Primary visual references:
 
 - .impeccable.md
-- apps/paperwork/src/app/page.tsx
-- apps/paperwork/src/App.tsx
-- apps/paperwork/src/components/InvoiceForm.tsx
-- apps/paperwork/src/components/receipt/ReceiptGeneratorPage.tsx
-- apps/paperwork/src/components/w9/W9RequestPage.tsx
-- apps/paperwork/src/index.css
+- app/paperwork/page.tsx
+- app/paperwork/components/App.tsx
+- app/paperwork/components/InvoiceForm.tsx
+- app/paperwork/components/receipt/ReceiptGeneratorPage.tsx
+- app/paperwork/components/w9/W9RequestPage.tsx
+- app/globals.css
 - packages/ui/src/assets/smarttools-icon.png
 
 Behavior references:
 
 - README.md
-- apps/auth/src/app
+- app/auth
+- app/api/auth
 - packages/auth/src
-- apps/admin/src/app
-- apps/admin/src/lib
+- app/admin
+- lib/admin
 - packages/authorization/src/index.ts
 - packages/control-plane/src
 - packages/database/src/schema.ts
@@ -1007,4 +1006,4 @@ Visual QA note:
 
 Working-tree note:
 
-- The repository is in a monorepo migration with the old root Vite app deleted and the current apps/packages tree present as working-tree changes. This handoff describes the current filesystem, not the last committed legacy app.
+- The repository uses one root Next.js runtime with path-scoped products and workspace packages. This handoff describes the current filesystem.

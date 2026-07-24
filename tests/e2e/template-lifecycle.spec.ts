@@ -12,7 +12,7 @@ test("an Admin publishes a template that Paperwork can consume", async ({
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
-    "http://localhost:3003/templates",
+    "http://localhost:3000/admin/templates",
   );
   const create = page.locator("section").filter({ hasText: "Create template" });
   await create.getByLabel("Name").fill(name);
@@ -23,14 +23,14 @@ test("an Admin publishes a template that Paperwork can consume", async ({
   await create.getByRole("button", { name: "Create draft" }).click();
   await expect(page).toHaveURL(/\/templates\/[a-f0-9-]+$/);
 
-  await page.goto("http://localhost:3003/templates");
+  await page.goto("http://localhost:3000/admin/templates");
   const card = page.locator("article").filter({ hasText: name });
   await card.getByRole("button", { name: "Publish" }).click();
   await expect(card).toContainText("published");
   await card.getByRole("button", { name: "Set default" }).click();
   await expect(card).toContainText("Default");
 
-  await page.goto("http://localhost:3001/invoice-generator");
+  await page.goto("http://localhost:3000/paperwork/invoice-generator");
   await expect(
     page.getByRole("heading", {
       name: `Invoice theme: ${name}`,
@@ -50,7 +50,7 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
-    "http://localhost:3003/templates",
+    "http://localhost:3000/admin/templates",
   );
   await page.getByRole("button", { name: "Advanced designer" }).click();
   const create = page.getByRole("dialog", {
@@ -121,11 +121,11 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   await preview.close();
 
   await page.getByRole("button", { name: "Publish", exact: true }).click();
-  await expect(page).toHaveURL("http://localhost:3003/templates", {
+  await expect(page).toHaveURL("http://localhost:3000/admin/templates", {
     timeout: 60_000,
   });
 
-  await page.goto("http://localhost:3001/expense-report");
+  await page.goto("http://localhost:3000/paperwork/expense-report");
   await expect(
     page.getByRole("option", { name, exact: true }),
   ).toBeAttached();
@@ -164,6 +164,6 @@ test("an Admin publishes a dynamic expense form with bound custom fields", async
   expect(mobileField!.x).toBeGreaterThanOrEqual(0);
   expect(mobileField!.x + mobileField!.width).toBeLessThanOrEqual(390);
 
-  await page.goto("http://localhost:3001/mileage-log");
+  await page.goto("http://localhost:3000/paperwork/mileage-log");
   await expect(page.getByText(name, { exact: true })).toHaveCount(0);
 });

@@ -1,17 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 const root = new URL("../", import.meta.url);
-const apps = ["admin", "auth", "devtools", "media", "paperwork", "platform"];
-const stylesheets = {
-  admin: "apps/admin/src/app/styles.css",
-  auth: "apps/auth/src/app/styles.css",
-  devtools: "apps/devtools/src/index.css",
-  media: "apps/media/app/styles.css",
-  paperwork: "apps/paperwork/src/index.css",
-  platform: "apps/platform/src/app/styles.css",
-};
 
 async function readJson(path) {
   return JSON.parse(await readFile(new URL(path, root), "utf8"));
@@ -21,135 +12,191 @@ async function readText(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("frontend applications share configuration and theme baselines", async () => {
-  const [sharedNext, sharedPostcss, sharedTypescript, uiPackage, theme] =
-    await Promise.all([
-      readText("next.config.shared.mjs"),
-      readText("postcss.config.mjs"),
-      readJson("tsconfig.base.json"),
-      readJson("packages/ui/package.json"),
-      readText("packages/ui/src/theme.css"),
-    ]);
+test("the root-owned frontend has one manifest and merged Next.js configuration", async () => {
+  const [
+    baseTypescript,
+    uiPackage,
+    theme,
+    packageJson,
+    nextConfig,
+    postcssConfig,
+    tsconfig,
+  ] = await Promise.all([
+    readJson("tsconfig.base.json"),
+    readJson("packages/ui/package.json"),
+    readText("packages/ui/src/theme.css"),
+    readJson("package.json"),
+    readText("next.config.ts"),
+    readText("postcss.config.mjs"),
+    readJson("tsconfig.json"),
+  ]);
 
-  assert.match(sharedNext, /reactStrictMode:\s*true/);
-  assert.match(sharedNext, /outputFileTracingRoot/);
-  assert.match(sharedPostcss, /["']@tailwindcss\/postcss["']/);
-  assert.equal(sharedTypescript.compilerOptions.strict, true);
+  assert.equal(packageJson.name, "smarttools");
+  assert.equal(packageJson.private, true);
+  assert.equal(baseTypescript.compilerOptions.strict, true);
   assert.equal(uiPackage.exports["./theme.css"], "./src/theme.css");
   assert.match(theme, /@source\s+["']\.["'];/);
   assert.match(theme, /@theme\s*\{/);
 
-  const baselinePackage = await readJson("apps/paperwork/package.json");
-  const sharedVersions = {
-    next: baselinePackage.dependencies.next,
-    react: baselinePackage.dependencies.react,
-    reactDom: baselinePackage.dependencies["react-dom"],
-    tailwind: baselinePackage.devDependencies.tailwindcss,
-    tailwindPostcss: baselinePackage.devDependencies["@tailwindcss/postcss"],
-    postcss: baselinePackage.devDependencies.postcss,
-    typescript: baselinePackage.devDependencies.typescript,
-  };
-
-  for (const [dependency, version] of Object.entries(sharedVersions)) {
-    assert.equal(typeof version, "string", `${dependency} baseline is missing`);
+  for (const dependency of [
+    "@smarttools/auth",
+    "@smarttools/authorization",
+    "@smarttools/control-plane",
+    "@smarttools/database",
+    "@smarttools/invoice-templates",
+    "@smarttools/tool-catalog",
+    "@smarttools/ui",
+    "@jsquash/jpeg",
+    "@pdfme/generator",
+    "@react-pdf/renderer",
+    "@uiw/react-codemirror",
+    "better-auth",
+    "heic-to",
+    "next",
+    "pdfjs-dist",
+    "qpdf-wasm",
+    "react",
+    "react-dom",
+  ]) {
+    assert.equal(
+      typeof packageJson.dependencies[dependency],
+      "string",
+      `${dependency} must belong to the root application`,
+    );
+  }
+  for (const dependency of [
+    "@tailwindcss/postcss",
+    "postcss",
+    "tailwindcss",
+    "typescript",
+  ]) {
+    assert.equal(
+      typeof packageJson.devDependencies[dependency],
+      "string",
+      `${dependency} must belong to the root application`,
+    );
   }
 
-  for (const app of apps) {
-    const [packageJson, nextConfig, postcssConfig, tsconfig, stylesheet] =
-      await Promise.all([
-        readJson(`apps/${app}/package.json`),
-        readText(`apps/${app}/next.config.ts`),
-        readText(`apps/${app}/postcss.config.mjs`),
-        readJson(`apps/${app}/tsconfig.json`),
-        readText(stylesheets[app]),
-      ]);
-
-    assert.equal(packageJson.dependencies["@smarttools/ui"], "workspace:*");
-    assert.equal(packageJson.dependencies.next, sharedVersions.next);
-    assert.equal(packageJson.dependencies.react, sharedVersions.react);
-    assert.equal(packageJson.dependencies["react-dom"], sharedVersions.reactDom);
-    assert.equal(packageJson.devDependencies.tailwindcss, sharedVersions.tailwind);
-    assert.equal(
-      packageJson.devDependencies["@tailwindcss/postcss"],
-      sharedVersions.tailwindPostcss,
-    );
-    assert.equal(packageJson.devDependencies.postcss, sharedVersions.postcss);
-    assert.equal(packageJson.devDependencies.typescript, sharedVersions.typescript);
-
-    assert.match(nextConfig, /from\s+["']\.\.\/\.\.\/next\.config\.shared\.mjs["']/);
-    assert.match(nextConfig, /sharedNextConfig/);
-    assert.doesNotMatch(nextConfig, /fileURLToPath/);
-    assert.equal(
-      postcssConfig.trim(),
-      'export { default } from "../../postcss.config.mjs";',
-    );
-    assert.equal(tsconfig.extends, "../../tsconfig.base.json");
-
-    const allowedCompilerOverrides =
-      app === "paperwork" ? ["paths", "strict"] : app === "devtools" ? ["paths"] : [];
-    assert.deepEqual(
-      Object.keys(tsconfig.compilerOptions ?? {}).sort(),
-      allowedCompilerOverrides,
-      `${app} should contain only genuine TypeScript exceptions`,
-    );
-
-    assert.match(
-      stylesheet,
-      /^@import "tailwindcss";\n@import "@smarttools\/ui\/theme\.css";/,
-    );
-    assert.doesNotMatch(stylesheet, /@theme\s*\{/);
+  assert.match(nextConfig, /output:\s*["']standalone["']/);
+  assert.match(nextConfig, /outputFileTracingRoot:\s*appRoot/);
+  assert.match(nextConfig, /reactStrictMode:\s*true/);
+  assert.doesNotMatch(nextConfig, /next\.config\.shared/);
+  assert.match(nextConfig, /bodySizeLimit:\s*["']6mb["']/);
+  assert.match(nextConfig, /module:\s*\{\s*browser:/);
+  assert.match(nextConfig, /transpilePackages:\s*\[/);
+  for (const dependency of [
+    "@smarttools/auth",
+    "@smarttools/ui",
+    "@jsquash/jpeg",
+    "heic-to",
+    "pdfjs-dist",
+    "qpdf-wasm",
+  ]) {
+    assert.match(nextConfig, new RegExp(`["']${dependency}["']`));
   }
+  assert.match(nextConfig, /source:\s*["']\/media\/:path\*["']/);
+  assert.doesNotMatch(nextConfig, /source:\s*["']\/\(\.\*\)["']/);
+
+  assert.match(postcssConfig, /["']@tailwindcss\/postcss["']/);
+  assert.equal(tsconfig.extends, "./tsconfig.base.json");
+  assert.deepEqual(tsconfig.compilerOptions, {
+    paths: {
+      "@/*": ["./*"],
+    },
+  });
 });
 
-test("Media URL configuration is wired through local apps and browser tests", async () => {
+test("Tailwind and the shared theme are imported once at the root layout", async () => {
+  const stylesheetPaths = (
+    await readdir(new URL("app/", root), { recursive: true })
+  ).filter((path) => path.endsWith(".css"));
+  const stylesheets = await Promise.all(
+    stylesheetPaths.map(async (path) => ({
+      path,
+      source: await readText(`app/${path}`),
+    })),
+  );
+  const rootStyles = stylesheets.find(({ path }) => path === "globals.css");
+  const layout = await readText("app/layout.tsx");
+
+  assert.ok(rootStyles);
+  assert.match(
+    rootStyles.source,
+    /^@import "tailwindcss";\n@import "@smarttools\/ui\/theme\.css";/,
+  );
+  assert.equal(
+    stylesheets.reduce(
+      (count, { source }) =>
+        count + (source.match(/@import ["']tailwindcss["'];/g) ?? []).length,
+      0,
+    ),
+    1,
+  );
+  assert.equal(
+    stylesheets.reduce(
+      (count, { source }) =>
+        count +
+        (
+          source.match(
+            /@import ["']@smarttools\/ui\/theme\.css["'];/g,
+          ) ?? []
+        ).length,
+      0,
+    ),
+    1,
+  );
+  assert.match(layout, /import ["']\.\/globals\.css["']/);
+});
+
+test("frontend navigation and browser tests use one origin with scoped paths", async () => {
   const [
-    platformEnvironment,
-    authEnvironment,
+    environment,
     platformPage,
     authPage,
     adminTools,
     devtoolsPage,
     devtoolsRuntime,
     playwright,
-    readme,
-  ] =
-    await Promise.all([
-      readText("apps/platform/.env.example"),
-      readText("apps/auth/.env.example"),
-      readText("apps/platform/src/app/page.tsx"),
-      readText("apps/auth/src/app/page.tsx"),
-      readText("apps/admin/src/app/(admin)/tools/_components/ToolList.tsx"),
-      readText("apps/devtools/src/app/page.tsx"),
-      readText("apps/devtools/src/lib/format-json.ts"),
-      readText("playwright.config.ts"),
-      readText("README.md"),
-    ]);
+  ] = await Promise.all([
+    readText(".env.example"),
+    readText("app/page.tsx"),
+    readText("app/auth/page.tsx"),
+    readText(
+      "app/admin/(protected)/tools/components/ToolList.tsx",
+    ),
+    readText("app/devtools/page.tsx"),
+    readText("lib/devtools/format-json.ts"),
+    readText("playwright.config.ts"),
+  ]);
 
-  for (const source of [platformEnvironment, authEnvironment, platformPage, authPage]) {
-    assert.match(source, /MEDIA_URL/);
-    assert.match(source, /http:\/\/localhost:3005/);
-  }
-  assert.match(
-    authEnvironment,
-    /AUTH_TRUSTED_ORIGINS=[^\n]*http:\/\/localhost:3005/,
+  assert.match(environment, /^APP_URL=http:\/\/localhost:3000$/m);
+  assert.doesNotMatch(
+    environment,
+    /(?:PLATFORM|PAPERWORK|DEVTOOLS|MEDIA)_URL=/,
   );
-  assert.match(playwright, /MEDIA_URL:\s*["']http:\/\/localhost:3005["']/);
-  assert.match(playwright, /@smarttools\/media dev/);
-  assert.match(platformPage, /name:\s*["']Media Tools["']/);
+  for (const source of [platformPage, authPage]) {
+    assert.doesNotMatch(source, /http:\/\/localhost:300[1-9]/);
+  }
+  for (const path of ["/paperwork", "/devtools", "/media"]) {
+    assert.match(platformPage, new RegExp(`["']${path}["']`));
+    assert.match(authPage, new RegExp(`["']${path}["']`));
+  }
   assert.match(adminTools, /app:\s*["']media["']/);
   assert.match(devtoolsPage, /Web & Markup Tools/);
   assert.match(devtoolsRuntime, /Web & Markup Tools/);
   assert.doesNotMatch(devtoolsPage, /PDF & Document Tools/);
   assert.doesNotMatch(devtoolsRuntime, /PDF & Document Tools/);
-  assert.match(readme, /apps\/media/);
-  assert.match(readme, /pnpm dev:media/);
-  assert.match(readme, /pnpm test:media/);
+  assert.match(playwright, /APP_URL:\s*["']http:\/\/localhost:3000["']/);
+  assert.match(playwright, /webServer:\s*\{/);
+  assert.match(playwright, /command:\s*["']pnpm dev["']/);
+  assert.doesNotMatch(playwright, /@smarttools\/platform/);
+  assert.doesNotMatch(playwright, /localhost:300[1-9]/);
 });
 
 test("Media HEIC dependency and corresponding-source notice stay in sync", async () => {
   const [packageJson, notice] = await Promise.all([
-    readJson("apps/media/package.json"),
-    readText("apps/media/public/licenses/heic-to-NOTICE.txt"),
+    readJson("package.json"),
+    readText("public/media/licenses/heic-to-NOTICE.txt"),
   ]);
   const version = packageJson.dependencies["heic-to"];
 

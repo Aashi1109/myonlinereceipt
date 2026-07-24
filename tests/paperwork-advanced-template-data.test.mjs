@@ -5,7 +5,7 @@ import {
   applyTemplateFormatting,
   getInvoiceTemplateInputs,
   getReceiptTemplateInputs,
-} from "../apps/paperwork/src/lib/advancedTemplateData.ts";
+} from "../lib/paperwork/advancedTemplateData.ts";
 
 test("advanced inputs preserve text configured around sample values", () => {
   const template = {

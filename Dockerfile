@@ -16,13 +16,9 @@ FROM dependencies AS migrator
 CMD ["pnpm", "db:migrate"]
 
 FROM dependencies AS builder
-ARG APP
-ARG WORKSPACE
-RUN test -n "${APP}" && test -n "${WORKSPACE}"
-RUN mkdir -p "apps/${APP}/public" && pnpm --filter "${WORKSPACE}" build
+RUN mkdir -p public && pnpm build
 
 FROM node:${NODE_VERSION} AS runner
-ARG APP
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME="0.0.0.0"
@@ -32,11 +28,10 @@ RUN groupadd --system --gid 1001 nodejs \
     && useradd --system --uid 1001 --gid nodejs nextjs
 
 WORKDIR /app
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP}/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP}/.next/static ./apps/${APP}/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/${APP}/public ./apps/${APP}/public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
-WORKDIR /app/apps/${APP}
 EXPOSE 3000
 CMD ["node", "server.js"]

@@ -6,18 +6,23 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const PLATFORM_ORIGIN = process.env.PLATFORM_E2E_ORIGIN ?? "http://localhost:3000";
-const MEDIA_ORIGIN = process.env.MEDIA_E2E_ORIGIN ?? "http://localhost:3005";
+const MEDIA_URL = process.env.MEDIA_E2E_URL ?? `${PLATFORM_ORIGIN}/media`;
 const requireFromMedia = createRequire(
-  new URL("../../apps/media/package.json", import.meta.url),
+  new URL("../../package.json", import.meta.url),
 );
 const pdfWorkerAvailable = existsSync(
-  fileURLToPath(new URL("../../apps/media/workers/pdf.worker.ts", import.meta.url)),
+  fileURLToPath(
+    new URL(
+      "../../app/media/_workers/pdf.worker.ts",
+      import.meta.url,
+    ),
+  ),
 );
 
 test("Media Tools is discoverable and unknown routes fail closed", async ({ page }) => {
   await page.goto(PLATFORM_ORIGIN);
   await page.getByRole("link", { name: "Open Media Tools", exact: true }).click();
-  await expect(page).toHaveURL(`${MEDIA_ORIGIN}/`);
+  await expect(page).toHaveURL(MEDIA_URL);
   await expect(
     page.getByRole("heading", { name: "Edit media without sending it anywhere." }),
   ).toBeVisible();
@@ -25,18 +30,18 @@ test("Media Tools is discoverable and unknown routes fail closed", async ({ page
   await page.getByRole("searchbox", { name: "Search media tools" }).fill("JPG to PNG");
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("link", { name: /JPG to PNG/ }).click();
-  await expect(page).toHaveURL(`${MEDIA_ORIGIN}/jpg-to-png`);
+  await expect(page).toHaveURL(`${MEDIA_URL}/jpg-to-png`);
   await expect(page.getByRole("heading", { level: 1, name: "JPG to PNG" })).toBeVisible();
   await expect(page.getByText("Files never leave your device.")).toBeVisible();
 
-  const unknown = await page.goto(`${MEDIA_ORIGIN}/not-a-media-tool`);
+  const unknown = await page.goto(`${MEDIA_URL}/not-a-media-tool`);
   expect(unknown?.status()).toBe(404);
-  const reserved = await page.goto(`${MEDIA_ORIGIN}/api`);
+  const reserved = await page.goto(`${MEDIA_URL}/api`);
   expect(reserved?.status()).toBe(404);
 });
 
 test("Media tool pages use the shared outer chrome", async ({ page }) => {
-  await page.goto(`${MEDIA_ORIGIN}/jpg-to-png`);
+  await page.goto(`${MEDIA_URL}/jpg-to-png`);
 
   const siteHeader = page.locator("header").first();
   const main = page.locator("main");
@@ -82,7 +87,7 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
 }, testInfo) => {
   test.skip(testInfo.project.name.includes("mobile"), "Desktop covers worker processing.");
   test.setTimeout(90_000);
-  await page.goto(`${MEDIA_ORIGIN}/jpg-to-png`);
+  await page.goto(`${MEDIA_URL}/jpg-to-png`);
   const jpeg = await createJpegFixture(page, 1024, 768);
   await page.locator('input[type="file"]').first().setInputFiles({
     name: "local-fixture.jpg",
@@ -131,7 +136,11 @@ test("JPG to PNG can cancel, retry, and download without an upload request", asy
     "local-fixture-converted.png",
   );
 
-  expect(requests.some(({ url }) => new URL(url).origin !== MEDIA_ORIGIN)).toBe(false);
+  expect(
+    requests.some(
+      ({ url }) => new URL(url).origin !== new URL(MEDIA_URL).origin,
+    ),
+  ).toBe(false);
   expect(requests.filter(({ method }) => !["GET", "HEAD"].includes(method))).toEqual([]);
   expect(requests.filter(({ bodyBytes }) => bodyBytes > 0)).toEqual([]);
   expect(requests.some(({ url }) => new URL(url).pathname.startsWith("/api/"))).toBe(
@@ -143,7 +152,7 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`${MEDIA_ORIGIN}/jpg-to-png`);
+  await page.goto(`${MEDIA_URL}/jpg-to-png`);
   const first = await createJpegFixture(page, 8, 6, "#ef4444");
   const second = await createJpegFixture(page, 8, 6, "#2563eb");
   const dropZone = page.getByRole("button", { name: /Choose or drop local files/ });
@@ -192,7 +201,7 @@ test("file selection and drag ordering work without arrow controls or mobile ove
 
 test("structural PDF merge follows the displayed file order", async ({ page }) => {
   test.setTimeout(90_000);
-  await page.goto(`${MEDIA_ORIGIN}/merge-pdf`);
+  await page.goto(`${MEDIA_URL}/merge-pdf`);
   const first = await createMultiPagePdfFixture([
     { height: 310, width: 210 },
     { height: 320, width: 220 },
@@ -232,7 +241,7 @@ test("structural PDF merge follows the displayed file order", async ({ page }) =
 
 test("PDF page ordering uses drag handles without arrow controls", async ({ page }) => {
   test.setTimeout(90_000);
-  await page.goto(`${MEDIA_ORIGIN}/reorder-pdf-pages`);
+  await page.goto(`${MEDIA_URL}/reorder-pdf-pages`);
   const source = await createMultiPagePdfFixture([
     { height: 310, width: 210 },
     { height: 320, width: 220 },
@@ -255,7 +264,7 @@ test("PDF page ordering uses drag handles without arrow controls", async ({ page
 
 test("PDF to PNG renders selected pages into a zero-padded ZIP", async ({ page }) => {
   test.setTimeout(90_000);
-  await page.goto(`${MEDIA_ORIGIN}/pdf-to-png`);
+  await page.goto(`${MEDIA_URL}/pdf-to-png`);
   const source = await createMultiPagePdfFixture([
     { height: 72, width: 72 },
     { height: 72, width: 144 },
@@ -296,7 +305,7 @@ test("PDF to PNG renders selected pages into a zero-padded ZIP", async ({ page }
 test("Media responses enforce security headers and serve qpdf locally", async ({
   request,
 }) => {
-  const response = await request.get(`${MEDIA_ORIGIN}/compress-pdf`);
+  const response = await request.get(`${MEDIA_URL}/compress-pdf`);
   expect(response.status()).toBe(200);
   const headers = response.headers();
   const csp = headers["content-security-policy"];
@@ -317,8 +326,8 @@ test("Media responses enforce security headers and serve qpdf locally", async ({
   }
 
   const [script, wasm] = await Promise.all([
-    request.get(`${MEDIA_ORIGIN}/vendor/qpdf/qpdf.js`),
-    request.get(`${MEDIA_ORIGIN}/vendor/qpdf/qpdf.wasm`),
+    request.get(`${MEDIA_URL}/vendor/qpdf/qpdf.js`),
+    request.get(`${MEDIA_URL}/vendor/qpdf/qpdf.wasm`),
   ]);
   expect(script.status()).toBe(200);
   expect((await script.text()).length).toBeGreaterThan(1_000);
@@ -339,7 +348,7 @@ test("Preserve Document runs through qpdf and returns an openable PDF", async ({
     }
   });
 
-  await page.goto(`${MEDIA_ORIGIN}/compress-pdf`);
+  await page.goto(`${MEDIA_URL}/compress-pdf`);
   await expect(page.getByLabel("Compression mode")).toHaveValue("preserve");
   await page.locator('input[type="file"]').first().setInputFiles({
     name: "local-document.pdf",

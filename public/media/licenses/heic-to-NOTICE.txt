@@ -1,0 +1,18 @@
+heic-to 1.5.2
+
+Copyright belongs to the heic-to, libheif, and codec contributors identified in
+their corresponding source distributions.
+
+License: GNU Lesser General Public License, version 3 or later.
+Full license: /media/vendor/licenses/heic-to-LGPL-3.0.txt
+License information: https://www.gnu.org/licenses/lgpl-3.0.html
+
+Exact package source archive:
+https://registry.npmjs.org/heic-to/-/heic-to-1.5.2.tgz
+
+Upstream source repository:
+https://github.com/hoppergee/heic-to/tree/v1.5.2
+
+This application uses the unmodified heic-to/csp entry point. To relink with a
+modified, API-compatible build, replace the heic-to package and rebuild the
+Media Tools application.

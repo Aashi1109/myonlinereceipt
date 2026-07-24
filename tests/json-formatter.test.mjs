@@ -12,10 +12,10 @@ import {
   summarizeJson,
   transformJson,
   utilityToolDefinitions,
-} from "../apps/devtools/src/lib/format-json.ts";
+} from "../lib/devtools/format-json.ts";
 
 const requireFromDevtools = createRequire(
-  new URL("../apps/devtools/package.json", import.meta.url),
+  new URL("../package.json", import.meta.url),
 );
 
 test("formats valid JSON with the selected indentation", () => {

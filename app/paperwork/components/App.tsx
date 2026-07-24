@@ -1,0 +1,915 @@
+"use client";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import {
+  CheckCircle2,
+  Clock,
+  Eye,
+  FileDown,
+  Grid,
+  PenLine,
+  Printer,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  AccountNavigation,
+  type AccountNavigationProps,
+  AlertBanner,
+  AppContainer,
+  BrandLockup,
+  Button,
+  Card,
+  Field,
+  Input,
+  PageHero,
+  StatusBadge,
+  ToolNav,
+} from "@smarttools/ui";
+import {
+  seedTemplates,
+  type DocumentTemplate,
+} from "@smarttools/invoice-templates";
+import type { ResolvedTool } from "@smarttools/tool-catalog";
+import AdvancedTemplateWorkspace from "./AdvancedTemplateWorkspace";
+import ExpenseReportPage from "./expense/ExpenseReportPage";
+import FAQSection from "./FAQSection";
+import InvoiceForm from "./InvoiceForm";
+import InvoicePreviewRenderer from "./InvoicePreviewRenderer";
+import MileageLogPage from "./mileage/MileageLogPage";
+import NecTrackerPage from "./nec1099/NecTrackerPage";
+import QuarterlyTaxEstimatorPage from "./tax/QuarterlyTaxEstimatorPage";
+import ReceiptGeneratorPage from "./receipt/ReceiptGeneratorPage";
+import RelatedTools from "./RelatedTools";
+import SEOContent from "./SEOContent";
+import TemplateSelector from "./TemplateSelector";
+import W9RequestPage from "./w9/W9RequestPage";
+import { invoiceAdapter } from "@/lib/paperwork/documentAdapters";
+import type { InvoiceData } from "@/lib/paperwork/types";
+import { validateInvoiceData } from "@/lib/paperwork/utils/invoiceValidation";
+import { getInitialBlankInvoice, getSampleInvoice } from "@/lib/paperwork/utils/sampleData";
+
+function trackEvent(eventName: string, payload: Record<string, unknown> = {}) {
+  console.log(`[Analytics Event] "${eventName}" tracked:`, payload);
+}
+
+const TOOL_COMPONENTS: Record<
+  string,
+  ComponentType<{
+    onTrackClick: (itemName: string) => void;
+    templates?: readonly DocumentTemplate[];
+  }>
+> = {
+  "expense-report": ExpenseReportPage,
+  "mileage-log": MileageLogPage,
+  "quarterly-tax-estimator": QuarterlyTaxEstimatorPage,
+  "w9-request": W9RequestPage,
+  "1099-nec-tracker": NecTrackerPage,
+};
+
+const TOOL_NAV_LABELS: Readonly<Record<string, string>> = {
+  "invoice-generator": "Invoice",
+  "receipt-generator": "Receipt",
+  "expense-report": "Expenses",
+  "mileage-log": "Mileage",
+  "quarterly-tax-estimator": "Tax",
+  "w9-request": "W-9",
+  "1099-nec-tracker": "1099",
+};
+
+type DialogName = "clear" | "sample" | "upgrade";
+type ToastMessage = { message: string; tone: "error" | "success" };
+
+function AppDialog({
+  children,
+  labelledBy,
+  onClose,
+  open,
+}: {
+  children: ReactNode;
+  labelledBy: string;
+  onClose: () => void;
+  open: boolean;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  return (
+    <dialog
+      aria-labelledby={labelledBy}
+      className="m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-3xl border border-border bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-foreground/55 backdrop:backdrop-blur-xs"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      ref={dialogRef}
+    >
+      {children}
+    </dialog>
+  );
+}
+
+function defaultTemplate(templates: readonly DocumentTemplate[]) {
+  const published = templates.filter(
+    (template) =>
+      template.status === "published" && template.documentType === "invoice",
+  );
+  const fallback = seedTemplates.filter(
+    (template) => template.status === "published",
+  );
+  const template =
+    published.find((candidate) => candidate.isDefault) ??
+    published[0] ??
+    fallback.find((candidate) => candidate.isDefault) ??
+    fallback[0];
+  if (!template) throw new Error("A published invoice template is required.");
+  return template;
+}
+
+export default function App({
+  account,
+  componentKey,
+  templates,
+  tools,
+}: {
+  account: AccountNavigationProps;
+  componentKey: string;
+  templates: readonly DocumentTemplate[];
+  tools: readonly ResolvedTool[];
+}) {
+  const isInvoice = componentKey === "invoice-generator";
+  const isReceipt = componentKey === "receipt-generator";
+  const ToolComponent = TOOL_COMPONENTS[componentKey];
+  const formSectionRef = useRef<HTMLDivElement>(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>(
+    getInitialBlankInvoice(),
+  );
+  const [selectedTemplate, setSelectedTemplate] = useState(() =>
+    defaultTemplate(templates),
+  );
+  const [templateSelectionReady, setTemplateSelectionReady] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pdfAction, setPdfAction] = useState<"download" | "print" | null>(null);
+  const [pdfError, setPdfError] = useState("");
+  const [activeDialog, setActiveDialog] = useState<DialogName | null>(null);
+  const [activeMobileTab, setActiveMobileTab] = useState<"edit" | "preview">("edit");
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistError, setWaitlistError] = useState("");
+  const toastTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    const storedTemplateId = localStorage.getItem(
+      "paperworkkit.advanced-template.invoice.selected",
+    );
+    const storedTemplate = templates.find(
+      (template) =>
+        template.id === storedTemplateId && template.status === "published",
+    );
+    if (storedTemplate) setSelectedTemplate(storedTemplate);
+    setTemplateSelectionReady(true);
+  }, [templates]);
+
+  useEffect(() => {
+    if (!templateSelectionReady) return;
+    localStorage.setItem(
+      "paperworkkit.advanced-template.invoice.selected",
+      selectedTemplate.id,
+    );
+  }, [selectedTemplate.id, templateSelectionReady]);
+
+  function showToast(message: string, tone: ToastMessage["tone"] = "success") {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ message, tone });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 3500);
+  }
+
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!isInvoice) return;
+    try {
+      const saved = localStorage.getItem("paperwork_kit_invoice_draft");
+      if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          "business" in parsed &&
+          "client" in parsed &&
+          "invoice" in parsed &&
+          "lineItems" in parsed &&
+          Array.isArray(parsed.lineItems)
+        ) {
+          setInvoiceData(parsed as InvoiceData);
+          showToast("Previous invoice draft restored from this browser.");
+        }
+      }
+    } catch (error) {
+      console.error("Failed to restore the local invoice draft", error);
+      showToast("The saved draft could not be restored. Start with a new invoice.", "error");
+    }
+  }, [isInvoice]);
+
+  useEffect(() => {
+    if (!isInvoice) return;
+    setSaveStatus("saving");
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          "paperwork_kit_invoice_draft",
+          JSON.stringify(invoiceData),
+        );
+        setSaveStatus("saved");
+      } catch (error) {
+        console.error("Failed to save the local invoice draft", error);
+        setSaveStatus("saved");
+        showToast("This draft could not be saved in your browser.", "error");
+      }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [invoiceData, isInvoice]);
+
+  function validateInvoice() {
+    const nextErrors = validateInvoiceData(invoiceData);
+    setErrors(nextErrors);
+    const errorCount = Object.keys(nextErrors).length;
+    if (errorCount) {
+      setActiveMobileTab("edit");
+      showToast(
+        `Review ${errorCount} highlighted ${errorCount === 1 ? "field" : "fields"} before exporting.`,
+        "error",
+      );
+      window.requestAnimationFrame(() => {
+        formSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+      });
+      return false;
+    }
+    return true;
+  }
+
+  async function generateInvoicePdf(action: "download" | "print") {
+    if (selectedTemplate.layoutFamily === "advanced") return;
+    if (!validateInvoice()) return;
+
+    const printWindow =
+      action === "print" ? window.open("about:blank", "_blank") : null;
+    if (action === "print" && !printWindow) {
+      setPdfError("Allow pop-ups to open the printable PDF.");
+      showToast("Your browser blocked the printable PDF. Allow pop-ups and try again.", "error");
+      return;
+    }
+    if (printWindow) printWindow.opener = null;
+
+    setPdfAction(action);
+    setPdfError("");
+    const invoiceNumber = invoiceData.invoice.invoiceNumber
+      .trim()
+      .replace(/[^a-z0-9_-]+/gi, "-");
+    const fileName = `invoice-${invoiceNumber || "draft"}.pdf`;
+
+    try {
+      const [{ pdf }, { default: InvoicePdfDocument }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("./InvoicePdfDocument"),
+      ]);
+      const blob = await pdf(
+        <InvoicePdfDocument data={invoiceData} template={selectedTemplate} />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+
+      if (action === "print" && printWindow) {
+        printWindow.location.href = url;
+        trackEvent("invoice_print_clicked");
+        showToast("Printable invoice opened in a new tab.");
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        trackEvent("invoice_pdf_downloaded");
+        showToast("Invoice PDF downloaded.");
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      printWindow?.close();
+      console.error("Failed to generate the invoice PDF", error);
+      setPdfError("The PDF could not be generated. Please try again.");
+      showToast("The PDF could not be generated. Please try again.", "error");
+    } finally {
+      setPdfAction(null);
+    }
+  }
+
+  function loadSampleInvoice() {
+    setInvoiceData(getSampleInvoice());
+    setErrors({});
+    setPdfError("");
+    setActiveDialog(null);
+    setActiveMobileTab("edit");
+    trackEvent("sample_invoice_loaded");
+    showToast("Sample invoice loaded. Replace the example details with your own.");
+  }
+
+  function clearInvoice() {
+    try {
+      localStorage.removeItem("paperwork_kit_invoice_draft");
+    } catch (error) {
+      console.error("Failed to remove the local invoice draft", error);
+    }
+    setInvoiceData(getInitialBlankInvoice());
+    setErrors({});
+    setPdfError("");
+    setShowTemplates(true);
+    setActiveDialog(null);
+    setActiveMobileTab("edit");
+    trackEvent("invoice_draft_cleared");
+    showToast("Invoice draft cleared from this browser.");
+  }
+
+  function handleTrackClick(eventName: string) {
+    if (eventName === "upgrade_pro_clicked" || eventName.includes("pro_only")) {
+      setWaitlistError("");
+      setActiveDialog("upgrade");
+      trackEvent("upgrade_prompt_clicked", { item: eventName });
+      return;
+    }
+    trackEvent(eventName);
+  }
+
+  function joinWaitlist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setWaitlistError("");
+
+    try {
+      localStorage.setItem(
+        "paperwork_pro_waitlist_interest",
+        JSON.stringify({ email: waitlistEmail.trim(), savedAt: new Date().toISOString() }),
+      );
+    } catch (error) {
+      console.error("Failed to save Paperwork Pro interest", error);
+      setWaitlistError("Your browser could not save this email. Check storage permissions and try again.");
+      return;
+    }
+
+    setActiveDialog(null);
+    setWaitlistEmail("");
+    trackEvent("upgrade_waitlist_interest_saved");
+    showToast("Paperwork Pro interest saved in this browser.");
+  }
+
+  function showMobileTab(tab: "edit" | "preview") {
+    setActiveMobileTab(tab);
+    window.requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+  }
+
+  function handleMobileTabKey(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const nextTab = activeMobileTab === "edit" ? "preview" : "edit";
+    setActiveMobileTab(nextTab);
+    document.getElementById(`mobile-${nextTab}-tab`)?.focus();
+  }
+
+  return (
+    <div
+      className="flex min-h-screen flex-col bg-background text-foreground selection:bg-foreground selection:text-primary-foreground"
+      id="app-root"
+    >
+      <header
+        className="sticky top-0 z-40 border-b border-border bg-card print:hidden"
+        id="app-header-nav"
+      >
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-2 px-4 sm:gap-x-4 sm:px-6 md:h-16 md:flex-nowrap lg:px-8">
+          <div className="flex h-16 shrink-0 items-center">
+            <BrandLockup href="/paperwork" name="Paperwork" />
+          </div>
+
+          <ToolNav
+            className="order-3 w-full border-t border-border py-2 md:order-none md:min-w-0 md:flex-1 md:border-0 md:py-0"
+            items={tools.flatMap((tool) =>
+              tool.slug
+                ? [{
+                    current: tool.componentKey === componentKey,
+                    href: `/paperwork/${tool.slug}`,
+                    label: TOOL_NAV_LABELS[tool.componentKey] ?? tool.name,
+                  }]
+                : [],
+            )}
+          />
+
+          <div className="order-2 ml-auto flex h-16 shrink-0 items-center gap-2 md:order-none md:ml-0">
+            {isInvoice ? (
+              <>
+                <span className="hidden items-center gap-1 text-xs text-muted-foreground md:flex">
+                  <Clock className="h-3.5 w-3.5" />
+                  {saveStatus === "saving" ? "Saving…" : "Draft saved in browser"}
+                </span>
+                <Button
+                  aria-label="Clear invoice draft"
+                  onClick={() => setActiveDialog("clear")}
+                  size="sm"
+                  variant="danger-subtle"
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" />
+                  <span className="hidden sm:inline">Clear</span>
+                </Button>
+              </>
+            ) : null}
+            <AccountNavigation {...account} />
+          </div>
+        </div>
+      </header>
+
+      <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
+        {isReceipt ? (
+          <ReceiptGeneratorPage
+            onTrackClick={handleTrackClick}
+            templates={templates}
+          />
+        ) : ToolComponent ? (
+          <ToolComponent
+            onTrackClick={handleTrackClick}
+            templates={templates}
+          />
+        ) : isInvoice ? (
+          <>
+            <PageHero
+              actions={
+                <>
+                  <Button
+                    onClick={() =>
+                      formSectionRef.current?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    size="lg"
+                  >
+                    Start invoice
+                  </Button>
+                  {selectedTemplate.layoutFamily !== "advanced" ? (
+                    <Button
+                      onClick={() => setActiveDialog("sample")}
+                      size="lg"
+                      variant="secondary"
+                    >
+                      <RefreshCw className="mr-1 inline h-4 w-4" />
+                      Load sample
+                    </Button>
+                  ) : null}
+                </>
+              }
+              align="center"
+              className="border-b border-border bg-card print:hidden"
+              compact
+              description="Create, preview, and download a professional PDF invoice. No signup required; drafts stay in this browser."
+              eyebrow="US-focused small business toolkit"
+              title="Free Invoice Generator for Contractors & Small Businesses"
+            />
+
+          <div id="invoice-generator" ref={formSectionRef}>
+            <AppContainer className="py-8">
+              {Object.keys(errors).length ? (
+                <AlertBanner
+                  className="mb-6 print:hidden"
+                  title={`${Object.keys(errors).length} invoice ${Object.keys(errors).length === 1 ? "field needs" : "fields need"} attention`}
+                  variant="warning"
+                >
+                  Review the highlighted seller, client, invoice, line-item, and date details. Correct them before downloading or printing the PDF.
+                </AlertBanner>
+              ) : null}
+
+              {selectedTemplate.layoutFamily !== "advanced" ? (
+                <div
+                  aria-label="Invoice workspace view"
+                  className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1 print:hidden lg:hidden"
+                  id="mobile-view-tabs"
+                  role="tablist"
+                >
+                  <button
+                    aria-controls="editor-panel"
+                    aria-selected={activeMobileTab === "edit"}
+                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeMobileTab === "edit"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    id="mobile-edit-tab"
+                    onClick={() => showMobileTab("edit")}
+                    onKeyDown={handleMobileTabKey}
+                    role="tab"
+                    tabIndex={activeMobileTab === "edit" ? 0 : -1}
+                    type="button"
+                  >
+                    <PenLine aria-hidden="true" className="size-4" />
+                    Edit details
+                  </button>
+                  <button
+                    aria-controls="preview-panel"
+                    aria-selected={activeMobileTab === "preview"}
+                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeMobileTab === "preview"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    id="mobile-preview-tab"
+                    onClick={() => showMobileTab("preview")}
+                    onKeyDown={handleMobileTabKey}
+                    role="tab"
+                    tabIndex={activeMobileTab === "preview" ? 0 : -1}
+                    type="button"
+                  >
+                    <Eye aria-hidden="true" className="size-4" />
+                    Live preview
+                  </button>
+                </div>
+              ) : null}
+
+              {selectedTemplate.layoutFamily === "advanced" ? (
+                <div className="grid gap-6">
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Grid
+                          aria-hidden="true"
+                          className="size-5 shrink-0 text-primary"
+                        />
+                        <div className="min-w-0">
+                          <h2 className="text-sm font-extrabold">
+                            Invoice theme: {selectedTemplate.name}
+                          </h2>
+                          <p className="text-xs text-muted-foreground">
+                            Published templates are managed centrally.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setShowTemplates((shown) => !shown)}
+                        size="sm"
+                      >
+                        {showTemplates ? "Hide themes" : "Change theme"}
+                      </Button>
+                    </div>
+                    {showTemplates ? (
+                      <div className="mt-4">
+                        <TemplateSelector
+                          documentLabel="invoice"
+                          onSelect={(nextTemplate) => {
+                            setSelectedTemplate(nextTemplate);
+                            setInvoiceData((current) => ({
+                              ...current,
+                              template: nextTemplate.slug,
+                            }));
+                            showToast(
+                              `Invoice theme changed to ${nextTemplate.name}.`,
+                            );
+                          }}
+                          selectedTemplateId={selectedTemplate.id}
+                          templates={templates}
+                        />
+                      </div>
+                    ) : null}
+                  </Card>
+                  <AdvancedTemplateWorkspace
+                    adapter={invoiceAdapter}
+                    draft={invoiceData}
+                    onDraftChange={setInvoiceData}
+                    onTrackClick={handleTrackClick}
+                    templates={[selectedTemplate]}
+                  />
+                </div>
+              ) : (
+              <div className="grid items-start gap-8 lg:grid-cols-12">
+                <div
+                  aria-labelledby="mobile-edit-tab"
+                  className={`space-y-6 print:hidden lg:col-span-7 lg:block ${
+                    activeMobileTab === "edit" ? "block" : "hidden"
+                  }`}
+                  id="editor-panel"
+                  role="tabpanel"
+                >
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
+                        <div className="min-w-0">
+                          <h2 className="text-sm font-extrabold">
+                            Invoice theme: {selectedTemplate.name}
+                          </h2>
+                          <p className="text-xs text-muted-foreground">
+                            Published templates are managed centrally.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setShowTemplates((shown) => !shown)}
+                        size="sm"
+                      >
+                        {showTemplates ? "Hide themes" : "Change theme"}
+                      </Button>
+                    </div>
+                    {showTemplates ? (
+                      <div className="mt-4">
+                        <TemplateSelector
+                          onSelect={(template) => {
+                            setSelectedTemplate(template);
+                            setInvoiceData((current) => ({
+                              ...current,
+                              template: template.slug,
+                            }));
+                            showToast(`Invoice theme changed to ${template.name}.`);
+                          }}
+                          selectedTemplateId={selectedTemplate.id}
+                          templates={templates}
+                        />
+                      </div>
+                    ) : null}
+                  </Card>
+                  <InvoiceForm
+                    data={invoiceData}
+                    errors={errors}
+                    onChange={setInvoiceData}
+                  />
+                </div>
+                <div
+                  aria-labelledby="mobile-preview-tab"
+                  className={`space-y-4 lg:sticky lg:top-20 lg:col-span-5 lg:block ${
+                    activeMobileTab === "preview" ? "block" : "hidden"
+                  }`}
+                  id="preview-panel"
+                  role="tabpanel"
+                >
+                  <Card className="space-y-3 p-4 print:hidden">
+                    <div className="flex items-center justify-between border-b border-border pb-2 text-[11px] font-bold text-muted-foreground">
+                      <span>PDF ACTIONS</span>
+                      <StatusBadge variant="success">Ready to export</StatusBadge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        disabled={pdfAction !== null}
+                        onClick={() => void generateInvoicePdf("download")}
+                        variant="strong"
+                      >
+                        <FileDown className="mr-1 inline h-4 w-4" />
+                        {pdfAction === "download" ? "Generating…" : "Download PDF"}
+                      </Button>
+                      <Button
+                        disabled={pdfAction !== null}
+                        onClick={() => void generateInvoicePdf("print")}
+                        variant="secondary"
+                      >
+                        <Printer className="mr-1 inline h-4 w-4" />
+                        {pdfAction === "print" ? "Opening…" : "Print PDF"}
+                      </Button>
+                    </div>
+                    {pdfError ? (
+                      <p className="text-sm font-medium text-destructive" role="alert">
+                        {pdfError}
+                      </p>
+                    ) : null}
+                    <p className="text-center text-[11px] leading-4 text-muted-foreground">
+                      Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
+                    </p>
+                  </Card>
+                  <Card className="overflow-hidden p-0 shadow-xl">
+                    <InvoicePreviewRenderer
+                      data={invoiceData}
+                      template={selectedTemplate}
+                    />
+                  </Card>
+                </div>
+              </div>
+              )}
+            </AppContainer>
+            </div>
+          </>
+        ) : null}
+      </main>
+
+      <footer className="mt-auto border-t border-border bg-card py-12 print:hidden">
+        {isInvoice ? (
+          <>
+            <SEOContent />
+            <FAQSection />
+          </>
+        ) : null}
+        <RelatedTools
+          currentComponentKey={componentKey}
+          onTrackClick={handleTrackClick}
+          tools={tools}
+        />
+        <div className="mx-auto mt-10 max-w-7xl space-y-4 border-t border-border px-4 pt-8 text-center text-xs text-muted-foreground sm:px-6 lg:px-8">
+          <p>© {new Date().getFullYear()} SmartTools Paperwork Toolkit.</p>
+          <nav aria-label="Paperwork information" className="flex flex-wrap justify-center gap-x-6 gap-y-3 font-semibold">
+            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/about">
+              About
+            </a>
+            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/privacy">
+              Privacy
+            </a>
+            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/terms">
+              Terms
+            </a>
+            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/contact">
+              Contact
+            </a>
+          </nav>
+        </div>
+      </footer>
+
+      {isInvoice && selectedTemplate.layoutFamily !== "advanced" ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-border bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur-sm print:hidden lg:hidden"
+          id="mobile-invoice-actions"
+        >
+          <Button
+            className="min-h-11"
+            onClick={() => showMobileTab(activeMobileTab === "edit" ? "preview" : "edit")}
+            variant="secondary"
+          >
+            {activeMobileTab === "edit" ? (
+              <Eye aria-hidden="true" className="size-4" />
+            ) : (
+              <PenLine aria-hidden="true" className="size-4" />
+            )}
+            {activeMobileTab === "edit" ? "Preview invoice" : "Edit invoice"}
+          </Button>
+          <Button
+            className="min-h-11"
+            disabled={pdfAction !== null}
+            onClick={() => void generateInvoicePdf("download")}
+            variant="strong"
+          >
+            <FileDown aria-hidden="true" className="size-4" />
+            {pdfAction === "download" ? "Generating…" : "Download PDF"}
+          </Button>
+        </div>
+      ) : null}
+
+      {toast ? (
+        <div
+          aria-atomic="true"
+          aria-live={toast.tone === "error" ? "assertive" : "polite"}
+          className={`fixed right-4 bottom-24 z-50 flex max-w-sm items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-xl lg:bottom-6 ${
+            toast.tone === "error"
+              ? "border-destructive/30 bg-card text-destructive"
+              : "border-border bg-foreground text-background"
+          }`}
+          role={toast.tone === "error" ? "alert" : "status"}
+        >
+          <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <span>{toast.message}</span>
+        </div>
+      ) : null}
+
+      <AppDialog
+        labelledBy="sample-dialog-title"
+        onClose={() => setActiveDialog(null)}
+        open={activeDialog === "sample"}
+      >
+        <div className="space-y-5 p-6">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+              <RefreshCw aria-hidden="true" className="size-5" />
+            </div>
+            <h2 className="text-lg font-extrabold" id="sample-dialog-title">
+              Load sample invoice?
+            </h2>
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">
+            This replaces every current invoice field with fictional example data. Download anything you need before continuing.
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={() => setActiveDialog(null)} variant="secondary">
+              Keep editing
+            </Button>
+            <Button onClick={loadSampleInvoice} variant="strong">
+              Load sample invoice
+            </Button>
+          </div>
+        </div>
+      </AppDialog>
+
+      <AppDialog
+        labelledBy="clear-dialog-title"
+        onClose={() => setActiveDialog(null)}
+        open={activeDialog === "clear"}
+      >
+        <div className="space-y-5 p-6">
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 shrink-0 place-items-center rounded-full border border-destructive/20 bg-destructive/10 text-destructive">
+              <Trash2 aria-hidden="true" className="size-5" />
+            </div>
+            <h2 className="text-lg font-extrabold" id="clear-dialog-title">
+              Clear this invoice draft?
+            </h2>
+          </div>
+          <p className="text-sm leading-6 text-muted-foreground">
+            This permanently removes the current invoice from this browser. There is no undo.
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button onClick={() => setActiveDialog(null)} variant="secondary">
+              Keep invoice
+            </Button>
+            <Button onClick={clearInvoice} variant="destructive">
+              Clear invoice draft
+            </Button>
+          </div>
+        </div>
+      </AppDialog>
+
+      <AppDialog
+        labelledBy="upgrade-dialog-title"
+        onClose={() => setActiveDialog(null)}
+        open={activeDialog === "upgrade"}
+      >
+        <div className="relative space-y-6 p-6 sm:p-8">
+          <button
+            aria-label="Close waitlist dialog"
+            className="absolute top-4 right-4 grid size-10 place-items-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => setActiveDialog(null)}
+            type="button"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+          <div className="space-y-3 pr-10">
+            <div className="grid size-11 place-items-center rounded-xl bg-foreground text-background shadow-sm">
+              <Sparkles aria-hidden="true" className="size-5" />
+            </div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+              Paperwork Pro early access
+            </p>
+            <h2 className="text-xl font-black tracking-tight" id="upgrade-dialog-title">
+              Join the Paperwork Pro waitlist
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Save your interest locally for upcoming cloud backups, client delivery, and status tracking. No email is sent from this preview.
+            </p>
+          </div>
+          <form className="space-y-4" onSubmit={joinWaitlist}>
+            <Field
+              description="Stored only in this browser until remote enrollment is available."
+              error={waitlistError || undefined}
+              htmlFor="waitlist-email"
+              label="Email address"
+              required
+            >
+              <Input
+                autoComplete="email"
+                id="waitlist-email"
+                onChange={(event) => setWaitlistEmail(event.target.value)}
+                placeholder="you@example.com"
+                required
+                type="email"
+                value={waitlistEmail}
+              />
+            </Field>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button onClick={() => setActiveDialog(null)} variant="secondary">
+                Not now
+              </Button>
+              <Button type="submit" variant="strong">
+                Join waiting list
+              </Button>
+            </div>
+          </form>
+        </div>
+      </AppDialog>
+    </div>
+  );
+}

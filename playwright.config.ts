@@ -5,18 +5,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 const e2eEnvironment = {
+  APP_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ??
     "e2e-only-secret-that-is-at-least-32-characters",
-  BETTER_AUTH_URL: "http://localhost:3004",
-  AUTH_URL: "http://localhost:3004",
-  AUTH_TRUSTED_ORIGINS:
-    "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005",
-  PLATFORM_URL: "http://localhost:3000",
-  PAPERWORK_URL: "http://localhost:3001",
-  DEVTOOLS_URL: "http://localhost:3002",
-  ADMIN_URL: "http://localhost:3003",
-  MEDIA_URL: "http://localhost:3005",
   RESEND_API_KEY: "re_e2e_mock",
   AUTH_EMAIL_FROM: "SmartTools <auth@example.test>",
   GOOGLE_CLIENT_ID: "google-e2e-client",
@@ -51,48 +43,11 @@ export default defineConfig({
       use: { ...devices["Pixel 7"], channel: "chrome" },
     },
   ],
-  webServer: [
-    {
-      command: "pnpm --filter @smarttools/platform dev",
-      url: "http://localhost:3000",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-    {
-      command: "pnpm --filter @smarttools/paperwork dev",
-      url: "http://localhost:3001",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-    {
-      command: "pnpm --filter @smarttools/devtools dev",
-      url: "http://localhost:3002",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-    {
-      command: "pnpm --filter @smarttools/admin dev",
-      url: "http://localhost:3003/denied",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-    {
-      command: "pnpm --filter @smarttools/auth-app dev",
-      url: "http://localhost:3004",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-    {
-      command: "pnpm --filter @smarttools/media dev",
-      url: "http://localhost:3005",
-      env: appEnvironment,
-      reuseExistingServer: false,
-      timeout: 180_000,
-    },
-  ],
+  webServer: {
+    command: "pnpm dev",
+    url: "http://localhost:3000",
+    env: appEnvironment,
+    reuseExistingServer: false,
+    timeout: 180_000,
+  },
 });

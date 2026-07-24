@@ -40,7 +40,7 @@ import {
   updateFeature,
   updateInvoiceTemplate,
   updateManagedTool,
-} from "../apps/admin/src/lib/adminMutations.ts";
+} from "../lib/admin/adminMutations.ts";
 
 function permissionRows(access) {
   return [

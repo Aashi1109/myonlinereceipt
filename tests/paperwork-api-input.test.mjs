@@ -6,7 +6,7 @@ import {
   assertJsonPayloadSize,
   assertRequestContentLength,
   normalizeVendorPayload,
-} from "../apps/paperwork/src/app/api/_lib/input.ts";
+} from "../app/api/paperwork/_lib/input.ts";
 
 test("Paperwork API payloads have a bounded serialized size", () => {
   assert.doesNotThrow(() => assertJsonPayloadSize({ value: "small" }));

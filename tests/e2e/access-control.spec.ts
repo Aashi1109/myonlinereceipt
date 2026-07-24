@@ -6,11 +6,11 @@ test("a regular account shares its session but cannot enter Admin", async ({ pag
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.user.email,
     E2E_PASSWORD,
-    "http://localhost:3003",
+    "http://localhost:3000/admin",
   );
-  await expect(page).toHaveURL("http://localhost:3003/denied");
+  await expect(page).toHaveURL("http://localhost:3000/admin/denied");
 
-  await page.goto("http://localhost:3001");
+  await page.goto("http://localhost:3000/paperwork");
   await expect(
     page.getByRole("link", { name: E2E_ACCOUNTS.user.name }),
   ).toBeVisible();
@@ -20,19 +20,19 @@ test("a custom role combines explicit grants and denies missing ones", async ({ 
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.viewer.email,
     E2E_PASSWORD,
-    "http://localhost:3003/tools",
+    "http://localhost:3000/admin/tools",
   );
   await expect(page.getByRole("heading", { name: "Tools" })).toBeVisible();
 
-  await page.goto("http://localhost:3003/roles");
-  await expect(page).toHaveURL("http://localhost:3003/denied");
+  await page.goto("http://localhost:3000/admin/roles");
+  await expect(page).toHaveURL("http://localhost:3000/admin/denied");
 });
 
 test("the Admin header highlights the current section", async ({ page }) => {
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
-    "http://localhost:3003/templates",
+    "http://localhost:3000/admin/templates",
   );
 
   const navigation = page.getByRole("navigation", { name: "Admin sections" });
@@ -45,7 +45,7 @@ test("the Admin header highlights the current section", async ({ page }) => {
   );
 
   await navigation.getByRole("link", { name: "Roles" }).click();
-  await expect(page).toHaveURL("http://localhost:3003/roles");
+  await expect(page).toHaveURL("http://localhost:3000/admin/roles");
   await expect(navigation.getByRole("link", { name: "Roles" })).toHaveAttribute(
     "aria-current",
     "page",
@@ -63,7 +63,7 @@ test("an Admin can disable a tool and its direct route is blocked", async ({
   await new AuthPage(page).signIn(
     E2E_ACCOUNTS.admin.email,
     E2E_PASSWORD,
-    "http://localhost:3003/tools",
+    "http://localhost:3000/admin/tools",
   );
   const tool = page.locator("article").filter({ hasText: "JSON Formatter" });
   await expect(tool).toBeVisible();
@@ -71,10 +71,10 @@ test("an Admin can disable a tool and its direct route is blocked", async ({
   try {
     await tool.getByRole("button", { name: "Disable" }).click();
     await expect(tool.getByRole("button", { name: "Enable" })).toBeVisible();
-    const blocked = await page.goto("http://localhost:3002/json-formatter");
+    const blocked = await page.goto("http://localhost:3000/devtools/json-formatter");
     expect(blocked?.status()).toBe(404);
   } finally {
-    await page.goto("http://localhost:3003/tools");
+    await page.goto("http://localhost:3000/admin/tools");
     const currentTool = page
       .locator("article")
       .filter({ hasText: "JSON Formatter" });

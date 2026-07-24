@@ -4,24 +4,24 @@ import test from "node:test";
 import {
   calculateMileageSummary,
   getMileageRate,
-} from "../apps/paperwork/src/lib/mileageRules.ts";
+} from "../lib/paperwork/mileageRules.ts";
 import {
   calculateExpenseTotals,
   normalizeExpenseRows,
-} from "../apps/paperwork/src/lib/expenseReportRules.ts";
+} from "../lib/paperwork/expenseReportRules.ts";
 import {
   calculateNecSummary,
   createEmptyRecipientAdjustment,
   createW9Request,
   get1099ReportingRule,
   maskTinReference,
-} from "../apps/paperwork/src/lib/contractorTaxRules.ts";
+} from "../lib/paperwork/contractorTaxRules.ts";
 import {
   DEFAULT_QUARTERLY_TAX_DRAFT,
   QUARTERLY_TAX_RULES_2026,
   calculateQuarterlyTax,
   normalizeQuarterlyTaxDraft,
-} from "../apps/paperwork/src/lib/quarterlyTaxRules.ts";
+} from "../lib/paperwork/quarterlyTaxRules.ts";
 
 test("mileage uses the 2026 effective-date schedule", () => {
   assert.equal(getMileageRate("irs-standard", 2026, "2026-06-30", 0), 0.725);

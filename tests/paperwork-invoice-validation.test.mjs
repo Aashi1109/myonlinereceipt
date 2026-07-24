@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateInvoiceData } from "../apps/paperwork/src/utils/invoiceValidation.ts";
+import { validateInvoiceData } from "../lib/paperwork/utils/invoiceValidation.ts";
 
 function validInvoice() {
   return {

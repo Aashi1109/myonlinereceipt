@@ -1,0 +1,98 @@
+import type { NextConfig } from "next";
+import { fileURLToPath } from "node:url";
+
+const appRoot = fileURLToPath(new URL(".", import.meta.url));
+const browserEmptyModule = fileURLToPath(
+  new URL("./lib/paperwork/browserEmptyModule.ts", import.meta.url),
+);
+const development = process.env.NODE_ENV !== "production";
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${development ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' blob: data:",
+  "font-src 'self'",
+  `connect-src 'self'${development ? " ws: http:" : ""}`,
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+const mediaSecurityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
+  { key: "Cross-Origin-Embedder-Policy", value: "require-corp" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "Referrer-Policy", value: "no-referrer" },
+  {
+    key: "Permissions-Policy",
+    value:
+      "camera=(), display-capture=(), geolocation=(), microphone=(), payment=(), usb=()",
+  },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "DENY" },
+];
+
+const nextConfig: NextConfig = {
+  output: "standalone",
+  outputFileTracingRoot: appRoot,
+  reactStrictMode: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
+  turbopack: {
+    resolveAlias: {
+      "@": appRoot,
+      module: { browser: "./lib/paperwork/browserEmptyModule.ts" },
+    },
+  },
+  webpack(config, { isServer, webpack }) {
+    config.resolve.alias["@"] = appRoot;
+    if (!isServer) {
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^node:/,
+          (resource: { request: string }) => {
+            resource.request = resource.request.replace(/^node:/, "");
+          },
+        ),
+      );
+      Object.assign(config.resolve.alias, {
+        "fs/promises": browserEmptyModule,
+        module: browserEmptyModule,
+        url: browserEmptyModule,
+        zlib: browserEmptyModule,
+      });
+    }
+    return config;
+  },
+  transpilePackages: [
+    "@jsquash/jpeg",
+    "@jsquash/oxipng",
+    "@jsquash/png",
+    "@jsquash/resize",
+    "@jsquash/webp",
+    "@smarttools/auth",
+    "@smarttools/authorization",
+    "@smarttools/control-plane",
+    "@smarttools/database",
+    "@smarttools/invoice-templates",
+    "@smarttools/tool-catalog",
+    "@smarttools/ui",
+    "heic-to",
+    "pdfjs-dist",
+    "qpdf-wasm",
+  ],
+  async headers() {
+    return [{ source: "/media/:path*", headers: mediaSecurityHeaders }];
+  },
+};
+
+export default nextConfig;

@@ -10,12 +10,12 @@ import {
   PDF_WORKER_OPERATIONS,
   isImageWorkerOperation,
   isPdfWorkerOperation,
-} from "../apps/media/workers/operations.ts";
+} from "../app/media/_workers/operations.ts";
 import {
   QpdfAdapterError,
   buildQpdfArguments,
   preservePdfWithQpdf,
-} from "../apps/media/workers/qpdfAdapter.ts";
+} from "../app/media/_workers/qpdfAdapter.ts";
 import {
   PdfPreflightError,
   assertStructuralPdfInspection,
@@ -25,7 +25,7 @@ import {
   hasTransparentPixels,
   inspectPdfBeforeStructuralRewrite,
   processStructuralPages,
-} from "../apps/media/workers/workerRules.ts";
+} from "../app/media/_workers/workerRules.ts";
 
 import {
   IMAGE_COMPRESSION_PRESETS,
@@ -36,7 +36,7 @@ import {
   STRONG_PDF_COMPRESSION_PRESETS,
   getMediaToolDefinition,
   mediaToolDefinitions,
-} from "../apps/media/lib/tools.ts";
+} from "../app/media/_lib/tools.ts";
 import {
   calculateResizeDimensions,
   fitRect,
@@ -44,7 +44,7 @@ import {
   normalizeCropRect,
   readExifOrientation,
   rotatedDimensions,
-} from "../apps/media/lib/geometry.ts";
+} from "../app/media/_lib/geometry.ts";
 import {
   MEDIA_LIMITS,
   createOutputFilename,
@@ -59,7 +59,7 @@ import {
   validateImageSelection,
   validateMediaSignature,
   validatePdfSelection,
-} from "../apps/media/lib/validation.ts";
+} from "../app/media/_lib/validation.ts";
 import {
   beginWorkerJob,
   createInspectPdfMessage,
@@ -71,7 +71,7 @@ import {
   getPdfInspectionTransferables,
   getStartTransferables,
   reduceWorkerJobState,
-} from "../apps/media/lib/workerProtocol.ts";
+} from "../app/media/_lib/workerProtocol.ts";
 
 const EXPECTED_TOOLS_BY_CATEGORY = {
   "PDF Conversion": ["image-to-pdf", "pdf-to-jpg", "pdf-to-png"],
@@ -113,7 +113,7 @@ const EXPECTED_TOOLS_BY_CATEGORY = {
 };
 
 const requireFromMedia = createRequire(
-  new URL("../apps/media/package.json", import.meta.url),
+  new URL("../package.json", import.meta.url),
 );
 
 test("the Media runtime defines exactly the 30 public tool routes", () => {
@@ -182,7 +182,10 @@ test("crop rejects HEIC at the public input boundary", () => {
 
 test("workbench cleanup invalidates async continuations before releasing resources", async () => {
   const source = await readFile(
-    new URL("../apps/media/components/MediaWorkbench.tsx", import.meta.url),
+    new URL(
+      "../app/media/components/MediaWorkbench.tsx",
+      import.meta.url,
+    ),
     "utf8",
   );
   const cleanup = source.indexOf("return () => {");

@@ -14,28 +14,11 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { sendAuthEmail } from "./email.ts";
 import {
-  getTrustedOrigins,
   normalizeAccountName,
   normalizeProfileImage,
 } from "./security.ts";
 
-const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3004";
-const trustedOrigins = [
-  ...new Set([
-    new URL(baseURL).origin,
-    ...getTrustedOrigins(process.env.AUTH_TRUSTED_ORIGINS),
-  ]),
-];
-const cookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
-
-if (
-  cookieDomain &&
-  !/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i.test(cookieDomain)
-) {
-  throw new Error(
-    "AUTH_COOKIE_DOMAIN must be a parent domain without a protocol or path",
-  );
-}
+const baseURL = process.env.APP_URL ?? "http://localhost:3000";
 
 async function assertAccountCanBeDeleted(userId: string): Promise<void> {
   const assignments = await db
@@ -85,7 +68,7 @@ export const auth = betterAuth({
     schema: { authUser, authSession, authAccount, authVerification },
     transaction: true,
   }),
-  trustedOrigins,
+  trustedOrigins: [new URL(baseURL).origin],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -214,10 +197,6 @@ export const auth = betterAuth({
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-    },
-    crossSubDomainCookies: {
-      enabled: Boolean(cookieDomain),
-      ...(cookieDomain ? { domain: cookieDomain } : {}),
     },
   },
 });

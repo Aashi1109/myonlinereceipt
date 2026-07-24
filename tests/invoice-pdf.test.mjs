@@ -6,16 +6,19 @@ const root = new URL("../", import.meta.url);
 
 test("invoice action generates React PDF while the live preview stays HTML", async () => {
   const [app, preview, pdfDocument] = await Promise.all([
-    readFile(new URL("apps/paperwork/src/App.tsx", root), "utf8"),
+    readFile(new URL("app/paperwork/components/App.tsx", root), "utf8"),
     readFile(
       new URL(
-        "apps/paperwork/src/components/InvoicePreviewRenderer.tsx",
+        "app/paperwork/components/InvoicePreviewRenderer.tsx",
         root,
       ),
       "utf8",
     ),
     readFile(
-      new URL("apps/paperwork/src/components/InvoicePdfDocument.tsx", root),
+      new URL(
+        "app/paperwork/components/InvoicePdfDocument.tsx",
+        root,
+      ),
       "utf8",
     ),
   ]);
@@ -60,7 +63,10 @@ test("invoice action generates React PDF while the live preview stays HTML", asy
 
 test("invoice PDF lets each text size calculate its own line height", async () => {
   const pdfDocument = await readFile(
-    new URL("apps/paperwork/src/components/InvoicePdfDocument.tsx", root),
+    new URL(
+      "app/paperwork/components/InvoicePdfDocument.tsx",
+      root,
+    ),
     "utf8",
   );
 

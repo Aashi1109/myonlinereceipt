@@ -29,7 +29,7 @@ export default async function globalSetup(_config: FullConfig) {
             password: E2E_PASSWORD,
             callbackURL: "http://localhost:3000",
           },
-          headers: new Headers({ origin: "http://localhost:3004" }),
+          headers: new Headers({ origin: "http://localhost:3000" }),
         });
       }
     }

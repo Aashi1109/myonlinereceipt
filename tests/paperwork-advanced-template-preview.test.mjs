@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const previewPath =
-  "apps/paperwork/src/components/AdvancedDocumentPreview.tsx";
+  "app/paperwork/components/AdvancedDocumentPreview.tsx";
 
 test("Paperwork advanced template preview owns the complete pdfme lifecycle", async () => {
   const source = await readFile(previewPath, "utf8");
@@ -54,7 +54,7 @@ test("Paperwork advanced template preview owns the complete pdfme lifecycle", as
 test("Paperwork advanced preview fills its container and anchors controls at the bottom", async () => {
   const [source, styles] = await Promise.all([
     readFile(previewPath, "utf8"),
-    readFile("apps/paperwork/src/index.css", "utf8"),
+    readFile("app/globals.css", "utf8"),
   ]);
 
   assert.match(source, /className="pdfme-preview-surface size-full"/);

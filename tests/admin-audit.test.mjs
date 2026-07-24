@@ -6,9 +6,9 @@ const root = new URL("../", import.meta.url);
 
 test("admin audit history shows readable users without losing deleted-user events", async () => {
   const [data, page] = await Promise.all([
-    readFile(new URL("apps/admin/src/lib/data.ts", root), "utf8"),
+    readFile(new URL("lib/admin/data.ts", root), "utf8"),
     readFile(
-      new URL("apps/admin/src/app/(admin)/audit/page.tsx", root),
+      new URL("app/admin/(protected)/audit/page.tsx", root),
       "utf8",
     ),
   ]);

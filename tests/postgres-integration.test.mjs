@@ -12,7 +12,7 @@ import {
   setManagedToolEnabled,
   setUserStatus,
   updateCustomRole,
-} from "../apps/admin/src/lib/adminMutations.ts";
+} from "../lib/admin/adminMutations.ts";
 import {
   getAvailableToolBySlug,
   getUserAuthorization,

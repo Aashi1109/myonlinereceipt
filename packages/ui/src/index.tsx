@@ -23,20 +23,17 @@ export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElem
 }
 
 export type AccountNavigationProps = {
-  authUrl: string;
   className?: string;
   returnTo: string;
   user: { name: string } | null;
 };
 
 export function AccountNavigation({
-  authUrl,
   className,
   returnTo,
   user,
 }: AccountNavigationProps) {
-  const target = new URL(user ? "/profile" : "/", authUrl);
-  target.searchParams.set("returnTo", returnTo);
+  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
 
   return (
@@ -45,7 +42,7 @@ export function AccountNavigation({
         <a
           aria-label={`Open profile for ${accountName}`}
           className="group inline-flex min-h-11 max-w-48 items-center gap-2 rounded-xl border border-border bg-background p-1.5 pr-3 text-foreground no-underline outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          href={target.toString()}
+          href={target}
           title={accountName}
         >
           <span
@@ -64,7 +61,7 @@ export function AccountNavigation({
       ) : (
         <a
           className="font-bold text-inherit underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          href={target.toString()}
+          href={target}
         >
           Sign in
         </a>

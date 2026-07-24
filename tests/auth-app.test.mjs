@@ -11,24 +11,22 @@ import {
   normalizeProfileImage,
   resolveReturnTo,
   shouldUseBrowserBack,
-} from "../apps/auth/src/lib/security.ts";
+} from "../app/auth/_lib/security.ts";
 
 const redirectPolicy = {
-  baseURL: "https://auth.smarttools.test",
-  trustedOrigins:
-    "https://platform.smarttools.test,https://paperwork.smarttools.test",
-  fallback: "https://platform.smarttools.test",
+  baseURL: "https://smarttools.test",
+  fallback: "/",
 };
 
 test("profile keeps the auth theme and returns through the validated origin", async () => {
   const [page, backLink] = await Promise.all([
     readFile(
-      new URL("../apps/auth/src/app/profile/page.tsx", import.meta.url),
+      new URL("../app/auth/profile/page.tsx", import.meta.url),
       "utf8",
     ),
     readFile(
       new URL(
-        "../apps/auth/src/app/profile/_components/ProfileBackLink.tsx",
+        "../app/auth/profile/components/ProfileBackLink.tsx",
         import.meta.url,
       ),
       "utf8",
@@ -49,14 +47,14 @@ test("profile keeps the auth theme and returns through the validated origin", as
 });
 
 test("profile uses browser history only for the validated return origin", () => {
-  const fallback = "https://admin.smarttools.test";
-  const current = "https://auth.smarttools.test/profile";
+  const fallback = "/admin";
+  const current = "https://smarttools.test/auth/profile";
 
   assert.equal(
     shouldUseBrowserBack(
       fallback,
       current,
-      "https://admin.smarttools.test/audit",
+      "https://smarttools.test/admin/audit",
       2,
     ),
     true,
@@ -75,7 +73,7 @@ test("profile uses browser history only for the validated return origin", () => 
     shouldUseBrowserBack(
       fallback,
       current,
-      "https://admin.smarttools.test/audit",
+      "https://smarttools.test/admin/audit",
       1,
     ),
     false,
@@ -84,7 +82,7 @@ test("profile uses browser history only for the validated return origin", () => 
     shouldUseBrowserBack(
       fallback,
       current,
-      "https://admin.smarttools.test/audit",
+      "https://smarttools.test/admin/audit",
       2,
       true,
     ),
@@ -95,7 +93,7 @@ test("profile uses browser history only for the validated return origin", () => 
 test("profile photo uses a native image picker instead of a URL field", async () => {
   const source = await readFile(
     new URL(
-      "../apps/auth/src/app/profile/ProfileManager.tsx",
+      "../app/auth/profile/ProfileManager.tsx",
       import.meta.url,
     ),
     "utf8",
@@ -106,26 +104,27 @@ test("profile photo uses a native image picker instead of a URL field", async ()
   assert.doesNotMatch(source, /type=["']url["']/);
 });
 
-test("auth return URLs allow local paths and exact configured origins only", () => {
-  assert.equal(resolveReturnTo("/profile", redirectPolicy), "/profile");
+test("auth return URLs keep navigation inside the unified application", () => {
   assert.equal(
-    resolveReturnTo(
-      "https://paperwork.smarttools.test/invoice-generator",
-      redirectPolicy,
-    ),
-    "https://paperwork.smarttools.test/invoice-generator",
+    resolveReturnTo("/auth/profile", redirectPolicy),
+    "/auth/profile",
+  );
+  assert.equal(
+    resolveReturnTo("/paperwork/invoice-generator", redirectPolicy),
+    "/paperwork/invoice-generator",
+  );
+  assert.equal(
+    resolveReturnTo("https://smarttools.test/devtools/json-formatter", redirectPolicy),
+    "https://smarttools.test/devtools/json-formatter",
   );
 
   for (const unsafe of [
     "//evil.test",
     "/%2fevil.test",
-    "https://paperwork.smarttools.test.evil.test/",
-    "https://user@paperwork.smarttools.test/",
+    "https://smarttools.test.evil.test/",
+    "https://user@smarttools.test/",
   ]) {
-    assert.equal(
-      resolveReturnTo(unsafe, redirectPolicy),
-      "https://platform.smarttools.test/",
-    );
+    assert.equal(resolveReturnTo(unsafe, redirectPolicy), "/");
   }
 });
 

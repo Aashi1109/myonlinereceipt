@@ -4,7 +4,7 @@
 
 - Reference: Stitch screen `JSON Formatter - Hybrid Split (Reader Focused)` (`projects/17074302042339625225/screens/9b5a2f8091ef4058aa2894b9d8f98b76`)
 - Reference capture: `/tmp/stitch-json-reader-focused-s0.png`
-- Implementation route: `http://localhost:3002/json-formatter`
+- Implementation route: `http://localhost:3000/devtools/json-formatter`
 - Final desktop capture: `/tmp/devtools-json-reader-1280-final.png`
 - Responsive capture: `/tmp/devtools-json-reader-500-final.png`
 - Comparison viewport: `1280 × 1024`, default valid Project Apollo JSON, inspector open
@@ -40,7 +40,7 @@ Previous result: passed
 - Selected mark: `/Users/ashishpal/.codex/generated_images/019f8862-4202-7032-97f4-65c16a4d1a40/exec-a0b4afb5-d728-4c3a-8f6e-a17f5a756b3d.png` (`1692 × 949`).
 - Lockup reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-LMbgan.png` (`458 × 124`).
 - Shared implementation: `packages/ui/src/index.tsx` and `packages/ui/src/assets/smarttools-icon.png` (`256 × 256`, RGBA).
-- Live routes: `http://127.0.0.1:3000`, `http://127.0.0.1:3001`, and `http://127.0.0.1:3002`.
+- Live routes: `http://127.0.0.1:3000/`, `http://127.0.0.1:3000/paperwork`, and `http://127.0.0.1:3000/devtools`.
 - Intended comparison state: desktop product header, default theme, 32 CSS px icon, product title above the fixed `by SmartTools` line.
 
 ## Evidence
@@ -116,7 +116,7 @@ Result: passed
 
 - Reference implementation: `/Users/ashishpal/Downloads/paperworkkit/src/components/admin/TemplateEditor.tsx` and its `FormGroups.tsx`/`InvoicePreviewRenderer.tsx` dependencies.
 - Reference capture: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-co2Iqe.png` (`1256 × 1620`).
-- Implementation route: `http://localhost:3003/templates/[id]`.
+- Implementation route: `http://localhost:3000/admin/templates/[id]`.
 - Intended state: authenticated admin editing a populated template with Property fields selected and the Standard maintenance sample loaded.
 - Implementation screenshot: unavailable because neither configured browser surface is available in this session.
 
@@ -133,9 +133,9 @@ Result: passed
 
 ## Verification
 
-- All five app TypeScript checks pass.
+- The root application TypeScript check passes.
 - All 77 repository tests pass (75 passed, 2 integration tests skipped by environment).
-- All five Next.js production builds pass.
+- The root Next.js production build passes.
 
 final result: blocked
 
@@ -146,7 +146,7 @@ final result: blocked
 ## Visual truth
 
 - Reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-QzssGS.png` (`1926 × 610`).
-- Implementation route: `http://localhost:3003/templates`.
+- Implementation route: `http://localhost:3000/admin/templates`.
 - Intended state: authenticated admin, populated template catalog, desktop layout.
 - Implementation screenshot: unavailable; the in-app browser is unavailable and the unauthenticated HTTP request redirects to the auth app.
 
@@ -176,7 +176,7 @@ final result: blocked
 
 - List reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-oZUBIl.png` (`1938 × 600`).
 - Configuration reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-3gRu8e.png` (`2048 × 771`).
-- Implementation: `http://localhost:3003/tools`.
+- Implementation: `http://localhost:3000/admin/tools`.
 - Intended state: compact rows with a left drag handle, slug badge beside the name, status, shadcn switch, and actions; configured slugs are not rendered as inputs and Archive shares the configuration action row.
 
 ## Evidence

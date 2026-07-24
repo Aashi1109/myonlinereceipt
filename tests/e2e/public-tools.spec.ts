@@ -6,7 +6,7 @@ import {
   toolManifest,
 } from "../../packages/tool-catalog/src/index";
 
-const DEVTOOLS_URL = "http://localhost:3002";
+const DEVTOOLS_URL = "http://localhost:3000/devtools";
 const AVAILABLE_DEVTOOL_HREFS = seededManagedTools
   .filter(
     (tool) =>
@@ -24,13 +24,13 @@ const DEVTOOLS_CATEGORY_COUNT = new Set(
 
 test("domain rating checker is wired to an Ahrefs server action", async () => {
   const [routeSource, workbenchSource] = await Promise.all([
-    readFile(
-      new URL("../../apps/devtools/src/app/[slug]/page.tsx", import.meta.url),
+  readFile(
+      new URL("../../app/devtools/[slug]/page.tsx", import.meta.url),
       "utf8",
     ),
     readFile(
       new URL(
-        "../../apps/devtools/src/app/json-formatter/json-workbench.tsx",
+        "../../app/devtools/json-formatter/json-workbench.tsx",
         import.meta.url,
       ),
       "utf8",
@@ -83,7 +83,7 @@ test.describe("Devtools catalog navigation", () => {
     await viewAll.click();
 
     await expect(page).toHaveURL((url) =>
-      url.pathname === "/" && url.searchParams.get("view") === "all",
+      url.pathname === "/devtools" && url.searchParams.get("view") === "all",
     );
     await expect(
       page.getByRole("heading", { name: "All Tools", exact: true }),
@@ -149,7 +149,7 @@ test.describe("Devtools catalog navigation", () => {
 
       await allTools.click();
       await expect(page).toHaveURL((url) =>
-        url.pathname === "/" &&
+        url.pathname === "/devtools" &&
         url.searchParams.get("view") === "all" &&
         !url.searchParams.has("category"),
       );
@@ -163,7 +163,7 @@ test.describe("Devtools catalog navigation", () => {
         .getByRole("link", { name: category, exact: true })
         .click();
       await expect(page).toHaveURL((url) =>
-        url.pathname === "/" &&
+        url.pathname === "/devtools" &&
         !url.searchParams.has("view") &&
         url.searchParams.get("category") === category,
       );
@@ -179,19 +179,19 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 
-  await page.goto("http://localhost:3001");
+  await page.goto("http://localhost:3000/paperwork");
   await expect(
     page.getByRole("heading", { name: "Choose the paperwork tool for the job." }),
   ).toBeVisible();
   await page.getByRole("link", { name: /Invoice Generator/ }).click();
-  await expect(page).toHaveURL("http://localhost:3001/invoice-generator");
+  await expect(page).toHaveURL("http://localhost:3000/paperwork/invoice-generator");
   await expect(
     page.getByRole("heading", {
       name: "Free Invoice Generator for Contractors & Small Businesses",
     }),
   ).toBeVisible();
 
-  await page.goto("http://localhost:3002");
+  await page.goto("http://localhost:3000/devtools");
   await expect(
     page.getByRole("heading", { name: "Free developer tools that run in your browser." }),
   ).toBeVisible();
@@ -201,21 +201,21 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
   await expect(page.getByRole("heading", { name: "Browse by Category" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Why use SmartTools?" })).toBeVisible();
   await page.getByRole("link", { name: /JSON to CSV/ }).first().click();
-  await expect(page).toHaveURL("http://localhost:3002/json-to-csv");
+  await expect(page).toHaveURL("http://localhost:3000/devtools/json-to-csv");
   await page.getByRole("button", { name: "Load example" }).click();
   await expect(page.getByRole("textbox", { name: "CSV output" })).toHaveValue(
     "id,name\n1,Alice\n2,Bob",
   );
 
-  await page.goto("http://localhost:3002/csv-to-json");
+  await page.goto("http://localhost:3000/devtools/csv-to-json");
   await page.getByRole("button", { name: "Load example" }).click();
   await expect(page.getByRole("textbox", { name: "JSON output" })).toHaveValue(
     '[\n  {\n    "id": "1",\n    "name": "Alice"\n  },\n  {\n    "id": "2",\n    "name": "Bob"\n  }\n]',
   );
 
-  await page.goto("http://localhost:3002/json-viewer");
+  await page.goto("http://localhost:3000/devtools/json-viewer");
   await context.grantPermissions(["clipboard-read", "clipboard-write"], {
-    origin: "http://localhost:3002",
+    origin: "http://localhost:3000",
   });
   await page.getByRole("button", { name: "Load example" }).click();
   const jsonTree = page.getByRole("region", { name: "JSON tree" });
@@ -239,7 +239,7 @@ test("anonymous visitors can discover and use the public tools", async ({ contex
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toBe('"CodeUtilityKit"');
 
-  await page.goto("http://localhost:3002/json-formatter");
+  await page.goto("http://localhost:3000/devtools/json-formatter");
   await page.getByRole("button", { name: "Clear JSON input" }).click();
   await page
     .getByRole("textbox", { name: "JSON input", exact: true })
@@ -385,7 +385,7 @@ test("developer tool variants share the canonical responsive workspace", async (
   }
 
   async function openWorkspace(slug: string, dense = false) {
-    await page.goto(`http://localhost:3002/${slug}`);
+    await page.goto(`http://localhost:3000/devtools/${slug}`);
     const workspace = page.getByTestId("tool-workspace");
     const toolbar = workspace.getByTestId("tool-action-toolbar");
     const content = workspace.getByTestId("tool-workspace-content");
@@ -578,7 +578,7 @@ test("developer tool variants share the canonical responsive workspace", async (
   await test.step("canonical JSON formatter", async () => {
     const { content, toolbar, workspace } = await openWorkspace("json-formatter");
     await context.grantPermissions(["clipboard-read", "clipboard-write"], {
-      origin: DEVTOOLS_URL,
+      origin: "http://localhost:3000",
     });
     for (const name of ["Format", "Minify", "Validate"]) {
       await expect(toolbar.getByRole("button", { name, exact: true })).toBeVisible();
@@ -829,7 +829,7 @@ test("developer tool variants share the canonical responsive workspace", async (
 test("invoice workflow exposes protected actions and supporting content", async ({
   page,
 }, testInfo) => {
-  await page.goto("http://localhost:3001/invoice-generator");
+  await page.goto("http://localhost:3000/paperwork/invoice-generator");
 
   await expect(
     page.getByRole("heading", { name: "Frequently Asked Questions" }),

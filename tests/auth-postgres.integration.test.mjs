@@ -18,9 +18,7 @@ test(
   async (context) => {
     process.env.BETTER_AUTH_SECRET =
       "integration-only-secret-that-is-at-least-32-characters";
-    process.env.BETTER_AUTH_URL = "http://localhost:3004";
-    process.env.AUTH_TRUSTED_ORIGINS =
-      "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:3004";
+    process.env.APP_URL = "http://localhost:3000";
     process.env.RESEND_API_KEY = "re_test_integration";
     process.env.AUTH_EMAIL_FROM = "SmartTools <auth@example.test>";
     process.env.GOOGLE_CLIENT_ID = "google-integration-client";
@@ -50,14 +48,14 @@ test(
     const email = `auth-${suffix}@example.test`;
     const password = "initial-password-123";
     const nextPassword = "replacement-password-456";
-    const headers = new Headers({ origin: "http://localhost:3004" });
+    const headers = new Headers({ origin: "http://localhost:3000" });
 
     const signup = await auth.api.signUpEmail({
       body: {
         name: "  Auth Integration User  ",
         email,
         password,
-        callbackURL: "http://localhost:3000",
+        callbackURL: "http://localhost:3000/",
       },
       headers,
     });
@@ -72,7 +70,7 @@ test(
     const verificationResponse = await auth.api.verifyEmail({
       query: {
         token: verificationToken,
-        callbackURL: "http://localhost:3000",
+        callbackURL: "http://localhost:3000/",
       },
       headers,
       asResponse: true,
@@ -90,7 +88,11 @@ test(
     assert.deepEqual(assignments.map(({ role_id }) => role_id), ["user"]);
 
     const signIn = await auth.api.signInEmail({
-      body: { email, password, callbackURL: "http://localhost:3001" },
+      body: {
+        email,
+        password,
+        callbackURL: "http://localhost:3000/paperwork",
+      },
       headers,
     });
     assert.ok(signIn.token);
@@ -98,18 +100,18 @@ test(
     const google = await auth.api.signInSocial({
       body: {
         provider: "google",
-        callbackURL: "http://localhost:3000",
+        callbackURL: "http://localhost:3000/",
       },
       headers,
     });
     assert.equal(google.redirect, true);
     assert.match(google.url, /^https:\/\/accounts\.google\.com\//);
     const unsafeOAuth = await auth.handler(
-      new Request("http://localhost:3004/api/auth/sign-in/social", {
+      new Request("http://localhost:3000/api/auth/sign-in/social", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          origin: "http://localhost:3004",
+          origin: "http://localhost:3000",
         },
         body: JSON.stringify({
           provider: "google",
@@ -123,7 +125,7 @@ test(
     await auth.api.requestPasswordReset({
       body: {
         email,
-        redirectTo: "http://localhost:3004/reset-password",
+        redirectTo: "http://localhost:3000/auth/reset-password",
       },
       headers,
     });

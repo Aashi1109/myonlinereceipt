@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const workspacePath =
-  "apps/paperwork/src/components/AdvancedTemplateWorkspace.tsx";
-const adaptersPath = "apps/paperwork/src/lib/documentAdapters.ts";
+  "app/paperwork/components/AdvancedTemplateWorkspace.tsx";
+const adaptersPath = "lib/paperwork/documentAdapters.ts";
 const editorPath =
-  "apps/admin/src/app/(editor)/templates/[id]/advanced/_components/AdvancedTemplateEditor.tsx";
+  "app/admin/(protected)/templates/[id]/advanced/components/AdvancedTemplateEditor.tsx";
 
 test("Paperwork exposes one typed adapter and component mapping for every document kind", async () => {
   const source = await readFile(adaptersPath, "utf8");
@@ -77,7 +77,10 @@ test("the admin fields panel is registry-driven and edits ordered form sections"
 });
 
 test("advanced invoices use only the shared pdfme workspace export path", async () => {
-  const source = await readFile("apps/paperwork/src/App.tsx", "utf8");
+  const source = await readFile(
+    "app/paperwork/components/App.tsx",
+    "utf8",
+  );
 
   assert.match(source, /<AdvancedTemplateWorkspace/);
   assert.match(
@@ -89,7 +92,7 @@ test("advanced invoices use only the shared pdfme workspace export path", async 
 
 test("every enabled Paperwork component key loads its matching templates", async () => {
   const source = await readFile(
-    "apps/paperwork/src/app/[slug]/page.tsx",
+    "app/paperwork/[slug]/page.tsx",
     "utf8",
   );
 
@@ -112,9 +115,9 @@ test("every enabled Paperwork component key loads its matching templates", async
 
 test("document template publishing validates and renders outside its final transaction", async () => {
   const [mutations, actions, nextConfig] = await Promise.all([
-    readFile("apps/admin/src/lib/adminMutations.ts", "utf8"),
-    readFile("apps/admin/src/app/actions.ts", "utf8"),
-    readFile("apps/admin/next.config.ts", "utf8"),
+    readFile("lib/admin/adminMutations.ts", "utf8"),
+    readFile("app/admin/actions.ts", "utf8"),
+    readFile("next.config.ts", "utf8"),
   ]);
 
   for (const name of [

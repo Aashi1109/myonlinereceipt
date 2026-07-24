@@ -204,7 +204,7 @@ test("published template query keeps the seed fallback and applies its filter", 
 test("templates API validates its document type and defaults to invoices", async () => {
   const route = await readFile(
     new URL(
-      "../apps/paperwork/src/app/api/templates/route.ts",
+      "../app/api/paperwork/templates/route.ts",
       import.meta.url,
     ),
     "utf8",
