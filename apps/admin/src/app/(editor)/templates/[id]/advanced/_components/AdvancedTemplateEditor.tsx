@@ -5,15 +5,21 @@ import type {
   Schema,
   Template,
 } from "@pdfme/common";
-import type {
-  AdvancedDocumentTemplate,
-  PdfmeBlankBase,
-  PdfmeSchema,
+import {
+  getDocumentDefinition,
+  resizeAdvancedTemplateConfig,
+  validateAdvancedTemplateConfig,
+  type AdvancedDocumentTemplate,
+  type AdvancedTemplateConfig,
+  type PageFormat,
+  type PdfmeBlankBase,
+  type PdfmeSchema,
 } from "@smarttools/invoice-templates";
 import {
   BrandLockup,
   Button,
   Input,
+  Select,
   StatusBadge,
   buttonVariants,
 } from "@smarttools/ui";
@@ -83,6 +89,17 @@ type LayerItem = {
   index: number;
   schema: Schema;
 };
+type HistoryEntry = {
+  pageFormat: PageFormat;
+  template: Template;
+};
+type TemplateFormSection =
+  AdvancedTemplateConfig["form"]["sections"][number];
+type TemplateFormEntry = TemplateFormSection["entries"][number];
+type CustomTemplateFormEntry = Exclude<
+  TemplateFormEntry,
+  { kind: "builtin" }
+>;
 type AddTool = {
   description: string;
   group: "Content" | "Layout" | "Fields" | "Codes";
@@ -92,6 +109,26 @@ type AddTool = {
 };
 
 const HISTORY_LIMIT = 40;
+const MAX_RUNTIME_REPEATER_ROWS = 500;
+const PAGE_FORMAT_LABELS: Record<PageFormat, string> = {
+  A4: "A4",
+  LETTER: "Letter",
+  RECEIPT_80MM: "80 mm",
+  RECEIPT_58MM: "58 mm",
+};
+const CUSTOM_FIELD_CONTROLS = [
+  "text",
+  "textarea",
+  "email",
+  "phone",
+  "number",
+  "currency",
+  "percent",
+  "date",
+  "time",
+  "select",
+  "checkbox",
+] as const;
 const ADD_TOOL_GROUPS = ["Content", "Layout", "Fields", "Codes"] as const;
 const ADD_TOOLS: AddTool[] = [
   {
@@ -274,11 +311,21 @@ function panelButtonClass(active: boolean) {
   ].join(" ");
 }
 
+function schemaBindingType(type: string): "text" | "table" | "image" {
+  if (type === "table") return "table";
+  if (type === "image" || type === "signature") return "image";
+  return "text";
+}
+
 export default function AdvancedTemplateEditor({
   template,
 }: {
   template: AdvancedDocumentTemplate;
 }) {
+  const definition = getDocumentDefinition(template.documentType);
+  const fieldDefinitions = new Map(
+    definition.fields.map((field) => [field.key, field]),
+  );
   const initialTemplate = useRef(
     cloneTemplate(template.config.template as Template),
   );
@@ -286,7 +333,13 @@ export default function AdvancedTemplateEditor({
   const designerRef = useRef<Designer | null>(null);
   const pluginsRef = useRef<Plugins | null>(null);
   const currentTemplateRef = useRef(initialTemplate.current);
-  const historyRef = useRef<Template[]>([cloneTemplate(initialTemplate.current)]);
+  const pageFormatRef = useRef(template.config.pageFormat);
+  const historyRef = useRef<HistoryEntry[]>([
+    {
+      pageFormat: template.config.pageFormat,
+      template: cloneTemplate(initialTemplate.current),
+    },
+  ]);
   const historyIndexRef = useRef(0);
   const restoringHistoryRef = useRef(false);
   const saveFromDesignerRef = useRef<(next: Template) => void>(() => {});
@@ -305,13 +358,24 @@ export default function AdvancedTemplateEditor({
   const [pageCount, setPageCount] = useState(
     initialTemplate.current.schemas.length,
   );
+  const [pageFormat, setPageFormat] = useState(template.config.pageFormat);
   const [sampleData, setSampleData] = useState(template.config.sampleData);
+  const [form, setForm] = useState(template.config.form);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [selection, setSelection] = useState<DesignerSelection | null>(null);
   const [templateRevision, setTemplateRevision] = useState(0);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const [zoom, setZoom] = useState(0.85);
 
   const selectedSchema = selection?.schemas[0] ?? null;
+  const selectedPdfmeSchema = selectedSchema
+    ? currentTemplateRef.current.schemas[selectedSchema.pageIndex]?.[
+        selectedSchema.schemaIndex
+      ]
+    : undefined;
+  const selectedBindingType = selectedPdfmeSchema
+    ? schemaBindingType(selectedPdfmeSchema.type)
+    : null;
   const schemas = currentTemplateRef.current.schemas[currentPage] ?? [];
   const staticSchemas = blankBase(currentTemplateRef.current).staticSchema ?? [];
   const repeatingHeaderCount = staticSchemas.filter(
@@ -339,11 +403,19 @@ export default function AdvancedTemplateEditor({
 
     if (restoringHistoryRef.current) return;
     const previous =
-      historyRef.current[historyIndexRef.current] ?? initialTemplate.current;
-    if (JSON.stringify(previous) === JSON.stringify(next)) return;
+      historyRef.current[historyIndexRef.current] ?? historyRef.current[0];
+    if (
+      previous.pageFormat === pageFormatRef.current &&
+      JSON.stringify(previous.template) === JSON.stringify(next)
+    ) {
+      return;
+    }
 
     const history = historyRef.current.slice(0, historyIndexRef.current + 1);
-    history.push(cloneTemplate(next));
+    history.push({
+      pageFormat: pageFormatRef.current,
+      template: cloneTemplate(next),
+    });
     if (history.length > HISTORY_LIMIT) history.shift();
     historyRef.current = history;
     historyIndexRef.current = history.length - 1;
@@ -361,6 +433,28 @@ export default function AdvancedTemplateEditor({
         return;
       }
 
+      const nextConfig: AdvancedTemplateConfig = {
+        ...template.config,
+        schemaVersion: 2,
+        pageFormat,
+        template:
+          nextTemplate as unknown as AdvancedTemplateConfig["template"],
+        sampleData,
+        form,
+      };
+      const validation = validateAdvancedTemplateConfig(
+        nextConfig,
+        template.documentType,
+        publish ? "publish" : "draft",
+      );
+      setWarnings(validation.warnings.map(({ message }) => message));
+      if (!validation.valid) {
+        setError(
+          validation.errors.map(({ message }) => message).join(" "),
+        );
+        return;
+      }
+
       setError("");
       setIsSaving(true);
       const formData = new FormData();
@@ -369,11 +463,7 @@ export default function AdvancedTemplateEditor({
         "template",
         JSON.stringify({
           name: name.trim(),
-          config: {
-            ...template.config,
-            template: nextTemplate,
-            sampleData,
-          },
+          config: nextConfig,
         }),
       );
 
@@ -391,7 +481,7 @@ export default function AdvancedTemplateEditor({
         setIsSaving(false);
       }
     },
-    [name, sampleData, template.config, template.id],
+    [form, name, pageFormat, sampleData, template.config, template.id],
   );
 
   saveFromDesignerRef.current = (next) => {
@@ -461,17 +551,42 @@ export default function AdvancedTemplateEditor({
 
   function restoreHistory(direction: -1 | 1) {
     const nextIndex = historyIndexRef.current + direction;
-    const next = historyRef.current[nextIndex];
-    if (!next) return;
+    const entry = historyRef.current[nextIndex];
+    if (!entry) return;
     restoringHistoryRef.current = true;
     historyIndexRef.current = nextIndex;
     setHistoryIndex(nextIndex);
-    currentTemplateRef.current = cloneTemplate(next);
-    setPageCount(next.schemas.length);
-    designerRef.current?.updateTemplate(cloneTemplate(next));
+    pageFormatRef.current = entry.pageFormat;
+    setPageFormat(entry.pageFormat);
+    currentTemplateRef.current = cloneTemplate(entry.template);
+    setPageCount(entry.template.schemas.length);
+    designerRef.current?.updateTemplate(cloneTemplate(entry.template));
     restoringHistoryRef.current = false;
     setIsDirty(true);
     setTemplateRevision((revision) => revision + 1);
+  }
+
+  function changePageFormat(nextPageFormat: PageFormat) {
+    if (nextPageFormat === pageFormatRef.current) return;
+    const resized = resizeAdvancedTemplateConfig(
+      {
+        ...template.config,
+        schemaVersion: 2,
+        pageFormat: pageFormatRef.current,
+        template:
+          currentTemplateRef.current as unknown as AdvancedTemplateConfig["template"],
+        sampleData,
+        form,
+      },
+      template.documentType,
+      nextPageFormat,
+    );
+    const nextTemplate = resized.template as unknown as Template;
+    pageFormatRef.current = nextPageFormat;
+    setPageFormat(nextPageFormat);
+    setSelection(null);
+    rememberTemplate(nextTemplate);
+    designerRef.current?.updateTemplate(cloneTemplate(nextTemplate));
   }
 
   function updateZoom(next: number) {
@@ -592,12 +707,188 @@ export default function AdvancedTemplateEditor({
   function bindSelection(name: string) {
     const selected = selection?.schemas[0];
     if (!selected) return;
+    const selectedPdfmeSchema =
+      currentTemplateRef.current.schemas[selected.pageIndex]?.[
+        selected.schemaIndex
+      ];
+    if (!selectedPdfmeSchema) return;
+    const definitionField = fieldDefinitions.get(name);
+    const formEntry = form.sections
+      .flatMap((section) => section.entries)
+      .find((entry) => entry.key === name);
+    const bindingType = schemaBindingType(selectedPdfmeSchema.type);
+    const isCompatible = definitionField
+      ? definitionField.allowedBindingTypes.includes(bindingType)
+      : formEntry?.kind === "repeater"
+        ? bindingType === "table"
+        : bindingType === "text";
+    if (!isCompatible) {
+      setError(
+        `${name} cannot be bound to a ${selectedPdfmeSchema.type} element.`,
+      );
+      return;
+    }
     const next = cloneTemplate(currentTemplateRef.current);
     const schema = next.schemas[selected.pageIndex]?.[selected.schemaIndex];
     if (!schema) return;
     schema.name = name;
     schema.content = sampleData[name] ?? "";
     applyTemplate(next);
+  }
+
+  function setFormSections(sections: TemplateFormSection[]) {
+    setForm({ sections });
+    setIsDirty(true);
+  }
+
+  function updateSection(
+    sectionId: string,
+    update: (section: TemplateFormSection) => TemplateFormSection,
+  ) {
+    setFormSections(
+      form.sections.map((section) =>
+        section.id === sectionId ? update(section) : section,
+      ),
+    );
+  }
+
+  function updateFormEntry(
+    sectionId: string,
+    key: string,
+    update: (entry: TemplateFormEntry) => TemplateFormEntry,
+  ) {
+    updateSection(sectionId, (section) => ({
+      ...section,
+      entries: section.entries.map((entry) =>
+        entry.key === key ? update(entry) : entry,
+      ),
+    }));
+  }
+
+  function uniqueCustomKey(base: string) {
+    const used = new Set(
+      form.sections.flatMap((section) =>
+        section.entries.map((entry) => entry.key),
+      ),
+    );
+    let key = `custom.${base}`;
+    let suffix = 2;
+    while (used.has(key)) {
+      key = `custom.${base}-${suffix}`;
+      suffix += 1;
+    }
+    return key;
+  }
+
+  function addCustomSection() {
+    setFormSections([
+      ...form.sections,
+      {
+        id: `custom-section-${crypto.randomUUID()}`,
+        label: "Custom section",
+        entries: [],
+      },
+    ]);
+  }
+
+  function addCustomEntry(
+    sectionId: string,
+    kind: CustomTemplateFormEntry["kind"],
+  ) {
+    const isRepeater = kind === "repeater";
+    const key = uniqueCustomKey(isRepeater ? "table" : "field");
+    const entry: CustomTemplateFormEntry = isRepeater
+      ? {
+          kind: "repeater",
+          key,
+          label: "Custom table",
+          helpText: "",
+          required: false,
+          enabled: true,
+          minRows: 0,
+          columns: [
+            {
+              key: "value",
+              label: "Value",
+              control: "text",
+              required: false,
+            },
+          ],
+        }
+      : {
+          kind: "custom",
+          key,
+          label: "Custom field",
+          helpText: "",
+          required: false,
+          enabled: true,
+          control: "text",
+        };
+    updateSection(sectionId, (section) => ({
+      ...section,
+      entries: [...section.entries, entry],
+    }));
+    setSampleData((current) => ({ ...current, [key]: isRepeater ? "[]" : "" }));
+  }
+
+  function removeCustomEntry(sectionId: string, key: string) {
+    updateSection(sectionId, (section) => ({
+      ...section,
+      entries: section.entries.filter((entry) => entry.key !== key),
+    }));
+  }
+
+  function moveFormEntry(
+    sourceSectionId: string,
+    targetSectionId: string,
+    key: string,
+  ) {
+    if (sourceSectionId === targetSectionId) return;
+    const entry = form.sections
+      .find((section) => section.id === sourceSectionId)
+      ?.entries.find((candidate) => candidate.key === key);
+    if (!entry) return;
+    setFormSections(
+      form.sections.map((section) => {
+        if (section.id === sourceSectionId) {
+          return {
+            ...section,
+            entries: section.entries.filter(
+              (candidate) => candidate.key !== key,
+            ),
+          };
+        }
+        if (section.id === targetSectionId) {
+          return { ...section, entries: [...section.entries, entry] };
+        }
+        return section;
+      }),
+    );
+  }
+
+  function addRepeaterColumn(sectionId: string, entryKey: string) {
+    updateFormEntry(sectionId, entryKey, (entry) => {
+      if (entry.kind !== "repeater") return entry;
+      const used = new Set(entry.columns.map((column) => column.key));
+      let key = "column";
+      let suffix = 2;
+      while (used.has(key)) {
+        key = `column-${suffix}`;
+        suffix += 1;
+      }
+      return {
+        ...entry,
+        columns: [
+          ...entry.columns,
+          {
+            key,
+            label: "Column",
+            control: "text",
+            required: false,
+          },
+        ],
+      };
+    });
   }
 
   function moveSelectionToRegion(region: Region) {
@@ -681,10 +972,18 @@ export default function AdvancedTemplateEditor({
     if (!activePanel) return null;
 
     return (
-      <aside className="absolute inset-y-4 left-4 z-30 flex w-80 flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+      <aside
+        className={`absolute inset-y-4 left-4 z-30 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl ${
+          activePanel === "data" ? "w-[30rem]" : "w-80"
+        }`}
+      >
         <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <h2 className="text-sm font-extrabold capitalize">
-            {activePanel === "add" ? "Add elements" : activePanel}
+            {activePanel === "add"
+              ? "Add elements"
+              : activePanel === "data"
+                ? "Fields & data"
+                : activePanel}
           </h2>
           <button
             aria-label={`Close ${activePanel} panel`}
@@ -804,36 +1103,632 @@ export default function AdvancedTemplateEditor({
         {activePanel === "data" ? (
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             <p className="mb-3 text-xs leading-5 text-muted-foreground">
-              Edit preview values or bind the selected element to a field.
+              Bind canvas elements, edit safe sample values, and define the
+              published end-user form.
             </p>
-            <div className="grid gap-3">
-              {Object.entries(sampleData).map(([key, value]) => (
-                <label className="grid gap-1.5" key={key}>
-                  <span className="flex items-center justify-between gap-2 text-xs font-bold">
-                    <span className="truncate">{key}</span>
+            <details className="rounded-xl border border-border bg-background" open>
+              <summary className="cursor-pointer px-3 py-2 text-xs font-extrabold">
+                Canvas bindings
+              </summary>
+              <div className="grid gap-4 border-t border-border p-3">
+                {Array.from(
+                  new Set(definition.fields.map((field) => field.section)),
+                ).map((fieldSection) => (
+                  <section className="grid gap-2" key={fieldSection}>
+                    <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                      {fieldSection}
+                    </h3>
+                    {definition.fields
+                      .filter((field) => field.section === fieldSection)
+                      .map((field) => {
+                        const readOnly = field.source !== "user";
+                        const compatible =
+                          selectedBindingType !== null &&
+                          field.allowedBindingTypes.includes(
+                            selectedBindingType,
+                          );
+                        return (
+                          <div
+                            className="grid gap-2 rounded-lg border border-border p-2.5"
+                            key={field.key}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-extrabold">
+                                  {field.label}
+                                </p>
+                                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                                  {field.description}
+                                </p>
+                              </div>
+                              <button
+                                className="rounded-md px-2 py-1 text-[10px] font-extrabold text-primary outline-none hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                                disabled={!selectedSchema || !compatible}
+                                onClick={() => bindSelection(field.key)}
+                                type="button"
+                              >
+                                Bind
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              <StatusBadge className="text-[9px]">
+                                {field.source}
+                              </StatusBadge>
+                              <StatusBadge className="text-[9px]">
+                                {field.valueType}
+                              </StatusBadge>
+                              <span className="truncate text-[9px] text-muted-foreground">
+                                {field.key}
+                              </span>
+                            </div>
+                            <textarea
+                              aria-label={`${field.label} sample value`}
+                              className="min-h-14 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                              onChange={(event) => {
+                                if (readOnly) return;
+                                setSampleData((values) => ({
+                                  ...values,
+                                  [field.key]: event.target.value,
+                                }));
+                                setIsDirty(true);
+                              }}
+                              readOnly={readOnly}
+                              value={
+                                sampleData[field.key] ??
+                                String(field.sampleValue ?? "")
+                              }
+                            />
+                          </div>
+                        );
+                      })}
+                  </section>
+                ))}
+              </div>
+            </details>
+
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-black">Published form</h3>
+                <p className="text-[10px] text-muted-foreground">
+                  Drag handles work with pointer and keyboard.
+                </p>
+              </div>
+              <Button
+                onClick={addCustomSection}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                <Plus aria-hidden="true" size={14} />
+                Section
+              </Button>
+            </div>
+
+            <OrderableList
+              ariaLabel="Form sections"
+              className="mt-3 grid gap-3"
+              getId={(section) => section.id}
+              getLabel={(section) => section.label}
+              items={form.sections}
+              onReorder={setFormSections}
+              renderItem={(section, sectionOrderState) => (
+                <section className="rounded-xl border border-border bg-background p-3">
+                  <div className="flex items-center gap-2">
                     <button
-                      className="rounded-md px-2 py-1 text-[10px] font-extrabold text-primary outline-none hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                      disabled={!selectedSchema}
-                      onClick={() => bindSelection(key)}
+                      {...sectionOrderState.attributes}
+                      {...sectionOrderState.listeners}
+                      aria-label={`Reorder ${section.label} section`}
+                      className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      ref={sectionOrderState.setActivatorNodeRef}
                       type="button"
                     >
-                      Bind
+                      <GripVertical aria-hidden="true" size={15} />
                     </button>
-                  </span>
-                  <textarea
-                    className="min-h-16 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onChange={(event) => {
-                      setSampleData((values) => ({
-                        ...values,
-                        [key]: event.target.value,
-                      }));
-                      setIsDirty(true);
+                    <Input
+                      aria-label="Section label"
+                      className="h-8 text-xs font-extrabold"
+                      onChange={(event) =>
+                        updateSection(section.id, (current) => ({
+                          ...current,
+                          label: event.target.value,
+                        }))
+                      }
+                      value={section.label}
+                    />
+                    {section.entries.every(
+                      (entry) => entry.kind !== "builtin",
+                    ) ? (
+                      <button
+                        aria-label={`Remove ${section.label} section`}
+                        className={buttonVariants({
+                          size: "icon",
+                          variant: "ghost",
+                        })}
+                        onClick={() =>
+                          setFormSections(
+                            form.sections.filter(
+                              (candidate) => candidate.id !== section.id,
+                            ),
+                          )
+                        }
+                        type="button"
+                      >
+                        <X aria-hidden="true" size={14} />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <OrderableList
+                    ariaLabel={`Fields in ${section.label}`}
+                    className="mt-3 grid gap-2"
+                    getId={(entry) => entry.key}
+                    getLabel={(entry) => entry.label}
+                    items={section.entries}
+                    onReorder={(entries) =>
+                      updateSection(section.id, (current) => ({
+                        ...current,
+                        entries,
+                      }))
+                    }
+                    renderItem={(entry, entryOrderState) => {
+                      const definitionField =
+                        entry.kind === "builtin"
+                          ? fieldDefinitions.get(entry.key)
+                          : undefined;
+                      const coreField = Boolean(
+                        definitionField?.required ||
+                          definitionField?.computationRequired,
+                      );
+                      const compatible =
+                        selectedBindingType !== null &&
+                        (definitionField
+                          ? definitionField.allowedBindingTypes.includes(
+                              selectedBindingType,
+                            )
+                          : entry.kind === "repeater"
+                            ? selectedBindingType === "table"
+                            : selectedBindingType === "text");
+                      return (
+                        <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              {...entryOrderState.attributes}
+                              {...entryOrderState.listeners}
+                              aria-label={`Reorder ${entry.label}`}
+                              className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                              ref={entryOrderState.setActivatorNodeRef}
+                              type="button"
+                            >
+                              <GripVertical aria-hidden="true" size={14} />
+                            </button>
+                            <Input
+                              aria-label={`${entry.key} label`}
+                              className="h-8 min-w-0 text-xs font-bold"
+                              onChange={(event) =>
+                                updateFormEntry(
+                                  section.id,
+                                  entry.key,
+                                  (current) => ({
+                                    ...current,
+                                    label: event.target.value,
+                                  }),
+                                )
+                              }
+                              value={entry.label}
+                            />
+                            <button
+                              className="rounded-md px-2 py-1 text-[10px] font-extrabold text-primary outline-none hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                              disabled={!selectedSchema || !compatible}
+                              onClick={() => bindSelection(entry.key)}
+                              type="button"
+                            >
+                              Bind
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 text-[10px]">
+                            <StatusBadge className="text-[9px]">
+                              {entry.kind === "builtin"
+                                ? definitionField?.source
+                                : "custom"}
+                            </StatusBadge>
+                            <span className="max-w-48 truncate text-muted-foreground">
+                              {entry.key}
+                            </span>
+                            <label className="ml-auto flex items-center gap-1">
+                              <input
+                                checked={entry.enabled}
+                                disabled={coreField}
+                                onChange={(event) =>
+                                  updateFormEntry(
+                                    section.id,
+                                    entry.key,
+                                    (current) => ({
+                                      ...current,
+                                      enabled: event.target.checked,
+                                    }),
+                                  )
+                                }
+                                type="checkbox"
+                              />
+                              Enabled
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <input
+                                checked={entry.required}
+                                disabled={coreField}
+                                onChange={(event) =>
+                                  updateFormEntry(
+                                    section.id,
+                                    entry.key,
+                                    (current) => ({
+                                      ...current,
+                                      required: event.target.checked,
+                                    }),
+                                  )
+                                }
+                                type="checkbox"
+                              />
+                              Required
+                            </label>
+                          </div>
+
+                          <Input
+                            aria-label={`${entry.label} help text`}
+                            className="h-8 text-xs"
+                            onChange={(event) =>
+                              updateFormEntry(
+                                section.id,
+                                entry.key,
+                                (current) => ({
+                                  ...current,
+                                  helpText: event.target.value,
+                                }),
+                              )
+                            }
+                            placeholder="Optional help text"
+                            value={entry.helpText ?? ""}
+                          />
+
+                          <label className="grid gap-1 text-[10px] font-bold">
+                            Move to section
+                            <Select
+                              className="h-8 text-xs"
+                              onChange={(event) =>
+                                moveFormEntry(
+                                  section.id,
+                                  event.target.value,
+                                  entry.key,
+                                )
+                              }
+                              value={section.id}
+                            >
+                              {form.sections.map((candidate) => (
+                                <option
+                                  key={candidate.id}
+                                  value={candidate.id}
+                                >
+                                  {candidate.label}
+                                </option>
+                              ))}
+                            </Select>
+                          </label>
+
+                          {entry.kind === "custom" ? (
+                            <>
+                              <label className="grid gap-1 text-[10px] font-bold">
+                                Control
+                                <Select
+                                  className="h-8 text-xs"
+                                  onChange={(event) =>
+                                    updateFormEntry(
+                                      section.id,
+                                      entry.key,
+                                      (current) =>
+                                        current.kind === "custom"
+                                          ? {
+                                              ...current,
+                                              control: event.target
+                                                .value as typeof current.control,
+                                            }
+                                          : current,
+                                    )
+                                  }
+                                  value={entry.control}
+                                >
+                                  {CUSTOM_FIELD_CONTROLS.map((control) => (
+                                    <option key={control}>{control}</option>
+                                  ))}
+                                </Select>
+                              </label>
+                              {entry.control === "select" ? (
+                                <Input
+                                  aria-label={`${entry.label} select options`}
+                                  className="h-8 text-xs"
+                                  onChange={(event) =>
+                                    updateFormEntry(
+                                      section.id,
+                                      entry.key,
+                                      (current) =>
+                                        current.kind === "custom"
+                                          ? {
+                                              ...current,
+                                              options: event.target.value
+                                                .split(",")
+                                                .map((value) => value.trim())
+                                                .filter(Boolean),
+                                            }
+                                          : current,
+                                    )
+                                  }
+                                  placeholder="Option one, option two"
+                                  value={entry.options?.join(", ") ?? ""}
+                                />
+                              ) : null}
+                            </>
+                          ) : null}
+
+                          {entry.kind === "repeater" ? (
+                            <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
+                              <label className="grid gap-1 text-[10px] font-bold">
+                                Minimum rows
+                                <Input
+                                  className="h-8 text-xs"
+                                  max={MAX_RUNTIME_REPEATER_ROWS}
+                                  min={0}
+                                  onChange={(event) =>
+                                    updateFormEntry(
+                                      section.id,
+                                      entry.key,
+                                      (current) =>
+                                        current.kind === "repeater"
+                                          ? {
+                                              ...current,
+                                              minRows: Number(
+                                                event.target.value || 0,
+                                              ),
+                                            }
+                                          : current,
+                                    )
+                                  }
+                                  type="number"
+                                  value={entry.minRows ?? 0}
+                                />
+                              </label>
+                              <OrderableList
+                                ariaLabel={`${entry.label} columns`}
+                                className="grid gap-1.5"
+                                getId={(column) => column.key}
+                                getLabel={(column) => column.label}
+                                items={entry.columns}
+                                onReorder={(columns) =>
+                                  updateFormEntry(
+                                    section.id,
+                                    entry.key,
+                                    (current) =>
+                                      current.kind === "repeater"
+                                        ? { ...current, columns }
+                                        : current,
+                                  )
+                                }
+                                renderItem={(column, columnOrderState) => (
+                                  <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
+                                    <button
+                                      {...columnOrderState.attributes}
+                                      {...columnOrderState.listeners}
+                                      aria-label={`Reorder ${column.label} column`}
+                                      className="grid size-8 touch-none place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                                      ref={
+                                        columnOrderState.setActivatorNodeRef
+                                      }
+                                      type="button"
+                                    >
+                                      <GripVertical
+                                        aria-hidden="true"
+                                        size={13}
+                                      />
+                                    </button>
+                                    <Input
+                                      aria-label={`${column.key} column label`}
+                                      className="h-8 text-xs"
+                                      onChange={(event) =>
+                                        updateFormEntry(
+                                          section.id,
+                                          entry.key,
+                                          (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns:
+                                                    current.columns.map(
+                                                      (candidate) =>
+                                                        candidate.key ===
+                                                        column.key
+                                                          ? {
+                                                              ...candidate,
+                                                              label:
+                                                                event.target
+                                                                  .value,
+                                                            }
+                                                          : candidate,
+                                                    ),
+                                                }
+                                              : current,
+                                        )
+                                      }
+                                      value={column.label}
+                                    />
+                                    <Select
+                                      aria-label={`${column.label} control`}
+                                      className="h-8 text-xs"
+                                      onChange={(event) =>
+                                        updateFormEntry(
+                                          section.id,
+                                          entry.key,
+                                          (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns:
+                                                    current.columns.map(
+                                                      (candidate) =>
+                                                        candidate.key ===
+                                                        column.key
+                                                          ? {
+                                                              ...candidate,
+                                                              control: event
+                                                                .target
+                                                                .value as typeof candidate.control,
+                                                            }
+                                                          : candidate,
+                                                    ),
+                                                }
+                                              : current,
+                                        )
+                                      }
+                                      value={column.control}
+                                    >
+                                      {CUSTOM_FIELD_CONTROLS.map((control) => (
+                                        <option key={control}>{control}</option>
+                                      ))}
+                                    </Select>
+                                    <button
+                                      aria-label={`Remove ${column.label} column`}
+                                      className={buttonVariants({
+                                        size: "icon",
+                                        variant: "ghost",
+                                      })}
+                                      disabled={entry.columns.length === 1}
+                                      onClick={() =>
+                                        updateFormEntry(
+                                          section.id,
+                                          entry.key,
+                                          (current) =>
+                                            current.kind === "repeater"
+                                              ? {
+                                                  ...current,
+                                                  columns:
+                                                    current.columns.filter(
+                                                      (candidate) =>
+                                                        candidate.key !==
+                                                        column.key,
+                                                    ),
+                                                }
+                                              : current,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      <X aria-hidden="true" size={13} />
+                                    </button>
+                                    {column.control === "select" ? (
+                                      <Input
+                                        aria-label={`${column.label} options`}
+                                        className="col-span-4 h-8 text-xs"
+                                        onChange={(event) =>
+                                          updateFormEntry(
+                                            section.id,
+                                            entry.key,
+                                            (current) =>
+                                              current.kind === "repeater"
+                                                ? {
+                                                    ...current,
+                                                    columns:
+                                                      current.columns.map(
+                                                        (candidate) =>
+                                                          candidate.key ===
+                                                          column.key
+                                                            ? {
+                                                                ...candidate,
+                                                                options:
+                                                                  event.target.value
+                                                                    .split(",")
+                                                                    .map(
+                                                                      (value) =>
+                                                                        value.trim(),
+                                                                    )
+                                                                    .filter(
+                                                                      Boolean,
+                                                                    ),
+                                                              }
+                                                            : candidate,
+                                                      ),
+                                                  }
+                                                : current,
+                                          )
+                                        }
+                                        placeholder="Option one, option two"
+                                        value={column.options?.join(", ") ?? ""}
+                                      />
+                                    ) : null}
+                                  </div>
+                                )}
+                              />
+                              <Button
+                                onClick={() =>
+                                  addRepeaterColumn(section.id, entry.key)
+                                }
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <Plus aria-hidden="true" size={13} />
+                                Column
+                              </Button>
+                            </div>
+                          ) : null}
+
+                          <textarea
+                            aria-label={`${entry.label} sample value`}
+                            className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onChange={(event) => {
+                              setSampleData((values) => ({
+                                ...values,
+                                [entry.key]: event.target.value,
+                              }));
+                              setIsDirty(true);
+                            }}
+                            value={sampleData[entry.key] ?? ""}
+                          />
+
+                          {entry.kind !== "builtin" ? (
+                            <Button
+                              onClick={() =>
+                                removeCustomEntry(section.id, entry.key)
+                              }
+                              size="sm"
+                              type="button"
+                              variant="ghost"
+                            >
+                              Remove custom field
+                            </Button>
+                          ) : null}
+                        </div>
+                      );
                     }}
-                    value={value}
                   />
-                </label>
-              ))}
-            </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={() => addCustomEntry(section.id, "custom")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Add custom field
+                    </Button>
+                    <Button
+                      onClick={() => addCustomEntry(section.id, "repeater")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Add repeatable table
+                    </Button>
+                  </div>
+                </section>
+              )}
+            />
           </div>
         ) : null}
 
@@ -1016,10 +1911,24 @@ export default function AdvancedTemplateEditor({
           >
             {template.status}
           </StatusBadge>
-          <span className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-bold">
+          <span className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-background pl-3 text-xs font-bold">
             <FileText aria-hidden="true" size={14} />
-            {template.documentType === "invoice" ? "Invoice" : "Receipt"} ·{" "}
-            {template.config.pageFormat.replaceAll("_", " ")}
+            {definition.label}
+            <Select
+              aria-label="Page size"
+              className="h-8 w-24 border-0 bg-transparent px-2 text-xs shadow-none"
+              disabled={!designerReady || isSaving}
+              onChange={(event) =>
+                changePageFormat(event.target.value as PageFormat)
+              }
+              value={pageFormat}
+            >
+              {definition.allowedPageFormats.map((format) => (
+                <option key={format} value={format}>
+                  {PAGE_FORMAT_LABELS[format]}
+                </option>
+              ))}
+            </Select>
           </span>
 
           <div className="ml-auto flex min-w-0 items-center gap-1">
@@ -1049,7 +1958,7 @@ export default function AdvancedTemplateEditor({
               variant="ghost"
             >
               <Database aria-hidden="true" size={15} />
-              Sample data
+              Fields & data
             </Button>
             <Button
               disabled={!designerReady || isPreviewing}
@@ -1132,6 +2041,19 @@ export default function AdvancedTemplateEditor({
             </button>
           </div>
         ) : null}
+        {warnings.length ? (
+          <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+            <summary className="cursor-pointer font-bold">
+              {warnings.length} non-blocking publish{" "}
+              {warnings.length === 1 ? "warning" : "warnings"}
+            </summary>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
 
         <div className="flex min-h-0 flex-1">
           {!focusMode ? (
@@ -1170,7 +2092,7 @@ export default function AdvancedTemplateEditor({
                 type="button"
               >
                 <Database aria-hidden="true" size={19} />
-                Data
+                Fields
               </button>
               <button
                 className={panelButtonClass(activePanel === "pages")}

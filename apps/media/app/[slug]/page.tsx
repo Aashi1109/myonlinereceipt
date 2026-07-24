@@ -94,7 +94,7 @@ export default async function ToolPage({
   const platformUrl = process.env.PLATFORM_URL ?? "http://localhost:3000";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <a
         className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
         href="#media-workspace"
@@ -115,7 +115,7 @@ export default async function ToolPage({
         name="Media Tools"
       />
 
-      <main>
+      <main className="flex-1">
         <section className="border-b border-border bg-card">
           <AppContainer className="max-w-[100rem] py-5 sm:py-7">
             <ToolBreadcrumb category={definition.category} title={tool.name} />

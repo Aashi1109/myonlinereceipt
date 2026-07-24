@@ -1,25 +1,25 @@
 "use server";
 
 import {
-  archiveInvoiceTemplate,
+  archiveDocumentTemplate,
   assignUserRoles,
   createAdvancedDocumentTemplate,
   createCustomRole,
   createInvoiceTemplate,
   deleteCustomRole,
-  duplicateInvoiceTemplate,
-  importInvoiceTemplate,
-  publishInvoiceTemplate,
+  duplicateDocumentTemplate,
+  importDocumentTemplate,
+  publishDocumentTemplate,
   reorderManagedTools,
-  setDefaultInvoiceTemplate,
+  setDefaultDocumentTemplate,
   setFeatureEnabled,
   setManagedToolArchived,
   setManagedToolEnabled,
   setUserStatus,
-  updateAndPublishInvoiceTemplate,
+  updateAndPublishDocumentTemplate,
   updateCustomRole,
   updateFeature,
-  updateInvoiceTemplate,
+  updateDocumentTemplate,
   updateManagedTool,
   type DocumentTemplateContent,
 } from "../lib/adminMutations";
@@ -187,7 +187,7 @@ export async function createAdvancedTemplateAction(formData: FormData) {
 }
 
 export async function duplicateTemplateAction(formData: FormData) {
-  const template = await duplicateInvoiceTemplate(
+  const template = await duplicateDocumentTemplate(
     await getActorUserId(),
     text(formData, "templateId"),
     { name: text(formData, "name"), slug: text(formData, "slug") },
@@ -200,9 +200,9 @@ export async function duplicateTemplateAction(formData: FormData) {
 }
 
 export async function importTemplateAction(formData: FormData) {
-  const template = await importInvoiceTemplate(
+  const template = await importDocumentTemplate(
     await getActorUserId(),
-    json(formData, "template", "Template JSON", 500_000),
+    json(formData, "template", "Template JSON", 5_000_000),
   );
   redirect(
     template.layoutFamily === "advanced"
@@ -213,7 +213,7 @@ export async function importTemplateAction(formData: FormData) {
 
 export async function updateTemplateAction(formData: FormData) {
   const templateId = text(formData, "templateId");
-  await updateInvoiceTemplate(
+  await updateDocumentTemplate(
     await getActorUserId(),
     templateId,
     json<Partial<DocumentTemplateContent>>(
@@ -230,7 +230,7 @@ export async function updateTemplateAction(formData: FormData) {
 
 export async function updateAndPublishTemplateAction(formData: FormData) {
   const templateId = text(formData, "templateId");
-  await updateAndPublishInvoiceTemplate(
+  await updateAndPublishDocumentTemplate(
     await getActorUserId(),
     templateId,
     json<Partial<DocumentTemplateContent>>(
@@ -255,13 +255,13 @@ async function templateStateAction(
 }
 
 export async function publishTemplateAction(formData: FormData) {
-  return templateStateAction(formData, publishInvoiceTemplate);
+  return templateStateAction(formData, publishDocumentTemplate);
 }
 
 export async function archiveTemplateAction(formData: FormData) {
-  return templateStateAction(formData, archiveInvoiceTemplate);
+  return templateStateAction(formData, archiveDocumentTemplate);
 }
 
 export async function defaultTemplateAction(formData: FormData) {
-  return templateStateAction(formData, setDefaultInvoiceTemplate);
+  return templateStateAction(formData, setDefaultDocumentTemplate);
 }

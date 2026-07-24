@@ -1005,7 +1005,13 @@ test("advanced templates can be duplicated, imported, and edited", async () => {
 test("template publication maintains one default and protects it from archival", async () => {
   const draft = templateRow({ status: "draft", isDefault: false });
   await withFakeDatabase(
-    [permissionRows({ templates: { publish: true } }), [draft], []],
+    [
+      permissionRows({ templates: { publish: true } }),
+      [draft],
+      permissionRows({ templates: { publish: true } }),
+      [draft],
+      [],
+    ],
     async (state) => {
       await publishInvoiceTemplate("actor", draft.id);
       const write = state.updates.find(
@@ -1072,10 +1078,16 @@ test("template publication maintains one default and protects it from archival",
   );
 });
 
-test("advanced templates publish without taking the legacy invoice default", async () => {
+test("advanced templates publish and use defaults within their document kind", async () => {
   const draft = advancedTemplateRow();
   await withFakeDatabase(
-    [permissionRows({ templates: { publish: true } }), [draft]],
+    [
+      permissionRows({ templates: { publish: true } }),
+      [draft],
+      permissionRows({ templates: { publish: true } }),
+      [draft],
+      [{ id: seedTemplates[0].id }],
+    ],
     async (state) => {
       await publishInvoiceTemplate("actor", draft.id);
       const write = state.updates.find(
@@ -1088,18 +1100,24 @@ test("advanced templates publish without taking the legacy invoice default", asy
 
   const published = advancedTemplateRow({ status: "published" });
   await withFakeDatabase(
-    [permissionRows({ templates: { publish: true } }), [published]],
+    [
+      permissionRows({ templates: { publish: true } }),
+      [published],
+      [{ id: seedTemplates[0].id }],
+    ],
     async (state) => {
-      await assert.rejects(
-        () => setDefaultInvoiceTemplate("actor", published.id),
-        /advanced templates cannot be the default/i,
+      await setDefaultInvoiceTemplate("actor", published.id);
+      const templateUpdates = state.updates.filter(
+        ({ table }) => table === invoiceTemplatesTable,
       );
-      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      assert.equal(templateUpdates.length, 2);
+      assert.equal(templateUpdates[0].values.isDefault, false);
+      assert.equal(templateUpdates[1].values.isDefault, true);
     },
   );
 });
 
-test("template update and publish commit through one mutation transaction", async () => {
+test("template update and publish use a version-gated publication transaction", async () => {
   const source = templateRow({ status: "draft", isDefault: false });
   const updated = templateRow({
     ...source,

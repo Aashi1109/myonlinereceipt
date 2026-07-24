@@ -1,0 +1,138 @@
+name: smarttools
+
+x-public-urls: &public-urls
+  PLATFORM_URL: "https://platform.${DOMAIN:?Set DOMAIN in .env}"
+  PAPERWORK_URL: "https://paperwork.${DOMAIN:?Set DOMAIN in .env}"
+  DEVTOOLS_URL: "https://devtools.${DOMAIN:?Set DOMAIN in .env}"
+  ADMIN_URL: "https://admin.${DOMAIN:?Set DOMAIN in .env}"
+  MEDIA_URL: "https://media.${DOMAIN:?Set DOMAIN in .env}"
+
+x-database: &database
+  DATABASE_URL: "postgres://${POSTGRES_USER:-smarttools}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-smarttools}"
+
+x-next-app: &next-app
+  init: true
+  restart: unless-stopped
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-smarttools}"
+      POSTGRES_USER: "${POSTGRES_USER:-smarttools}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    environment:
+      <<: *database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  platform:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: platform
+        WORKSPACE: "@smarttools/platform"
+    environment:
+      <<: *public-urls
+    ports:
+      - "3000:3000"
+
+  paperwork:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: paperwork
+        WORKSPACE: "@smarttools/paperwork"
+    environment:
+      <<: [*public-urls, *database]
+      APP_URL: "https://paperwork.${DOMAIN:?Set DOMAIN in .env}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      SUPPORT_EMAIL: "${SUPPORT_EMAIL:-}"
+    ports:
+      - "3001:3000"
+
+  devtools:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: devtools
+        WORKSPACE: "@smarttools/devtools"
+    environment:
+      <<: [*public-urls, *database]
+      AHREFS_API_KEY: "${AHREFS_API_KEY:-}"
+    ports:
+      - "3002:3000"
+
+  admin:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: admin
+        WORKSPACE: "@smarttools/admin"
+    environment:
+      <<: [*public-urls, *database]
+    ports:
+      - "3003:3000"
+
+  auth:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: auth
+        WORKSPACE: "@smarttools/auth-app"
+    environment:
+      <<: [*public-urls, *database]
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}"
+      BETTER_AUTH_URL: "https://auth.${DOMAIN:?Set DOMAIN in .env}"
+      AUTH_TRUSTED_ORIGINS: "https://platform.${DOMAIN:?Set DOMAIN in .env},https://paperwork.${DOMAIN:?Set DOMAIN in .env},https://devtools.${DOMAIN:?Set DOMAIN in .env},https://admin.${DOMAIN:?Set DOMAIN in .env},https://auth.${DOMAIN:?Set DOMAIN in .env},https://media.${DOMAIN:?Set DOMAIN in .env}"
+      AUTH_COOKIE_DOMAIN: "${DOMAIN:?Set DOMAIN in .env}"
+      RESEND_API_KEY: "${RESEND_API_KEY:?Set RESEND_API_KEY in .env}"
+      AUTH_EMAIL_FROM: "${AUTH_EMAIL_FROM:?Set AUTH_EMAIL_FROM in .env}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
+    ports:
+      - "3004:3000"
+
+  media:
+    <<: *next-app
+    build:
+      context: .
+      target: runner
+      args:
+        APP: media
+        WORKSPACE: "@smarttools/media"
+    environment:
+      <<: [*public-urls, *database]
+    ports:
+      - "3005:3000"
+
+volumes:
+  postgres_data:

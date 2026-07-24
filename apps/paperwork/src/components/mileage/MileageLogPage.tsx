@@ -5,7 +5,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   AlertBanner,
   Button,
@@ -39,8 +40,14 @@ import {
   Fuel
 } from "lucide-react";
 import { DataBridge, DataBridgeKeys, MileageEntry } from "../../lib/shared/dataBridge";
+import {
+  calculateMileageSummary,
+  MileageRateMode,
+} from "../../lib/mileageRules";
+import { mileageLogAdapter } from "../../lib/documentAdapters";
+import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
-interface FuelRecord {
+export interface MileageFuelRecord {
   id: string;
   date: string;
   gallons: number;
@@ -49,81 +56,124 @@ interface FuelRecord {
   odometer: number;
 }
 
-interface MileageTrackerData {
-  taxYear: number;
-  businessRate: number; // e.g. 0.67
-  vehicleModel: string;
-  trips: MileageEntry[];
-  fuelRecords: FuelRecord[];
+export interface MileageLogTrip extends MileageEntry {
+  parking: number;
+  tolls: number;
 }
 
-const DEFAULT_MILEAGE: MileageTrackerData = {
+export interface MileageLogDraft {
+  taxYear: number;
+  rateMode: MileageRateMode;
+  customRate: number;
+  vehicleModel: string;
+  trips: MileageLogTrip[];
+  fuelRecords: MileageFuelRecord[];
+  notes: string;
+}
+
+export const DEFAULT_MILEAGE_DRAFT: MileageLogDraft = {
   taxYear: 2026,
-  businessRate: 0.67, // IRS standard rate
+  rateMode: "irs-standard",
+  customRate: 0.725,
   vehicleModel: "2024 Tesla Model Y / Hybrid Utility",
   trips: [
-    { id: "trip-1", date: new Date().toISOString().substring(0, 10), purpose: "Consulting onsite sprint", startLocation: "Asheville Office", destination: "CLT Innovation hub", startOdometer: 14200, endOdometer: 14310, miles: 110, rate: 0.67, amount: 73.70 }
+    { id: "trip-1", date: new Date().toISOString().substring(0, 10), purpose: "Consulting onsite sprint", startLocation: "Asheville Office", destination: "CLT Innovation hub", startOdometer: 14200, endOdometer: 14310, miles: 110, rate: 0, amount: 0, parking: 0, tolls: 0 }
   ],
   fuelRecords: [
     { id: "fuel-1", date: new Date(Date.now() - 5*24*60*60*1000).toISOString().substring(0, 10), gallons: 11.2, cost: 38.50, merchant: "Shell Station 412", odometer: 14190 }
-  ]
+  ],
+  notes: "Fuel records are informational and do not increase the standard-mileage deduction.",
 };
 
-const SAMPLE_MILEAGE: MileageTrackerData = {
+export const SAMPLE_MILEAGE_DRAFT: MileageLogDraft = {
   taxYear: 2026,
-  businessRate: 0.67,
+  rateMode: "irs-standard",
+  customRate: 0.725,
   vehicleModel: "2024 Ford Maverick Hybrid",
   trips: [
-    { id: "trip-1", date: "2026-04-12", purpose: "Client pitch review meeting", startLocation: "Asheville HQ", destination: "Broad St Retail Lab", startOdometer: 19120, endOdometer: 19175, miles: 55, rate: 0.67, amount: 36.85 },
-    { id: "trip-2", date: "2026-04-15", purpose: "Picked up printed flyer blueprints", startLocation: "Asheville HQ", destination: "FedEx Print Center CLT", startOdometer: 19175, endOdometer: 19290, miles: 115, rate: 0.67, amount: 77.05 },
-    { id: "trip-3", date: "2026-04-20", purpose: "Site inspection post development sign-off", startLocation: "Charlotte Tech Park", destination: "Corporate Center North", startOdometer: 19290, endOdometer: 19325, miles: 35, rate: 0.67, amount: 23.45 }
+    { id: "trip-1", date: "2026-04-12", purpose: "Client pitch review meeting", startLocation: "Asheville HQ", destination: "Broad St Retail Lab", startOdometer: 19120, endOdometer: 19175, miles: 55, rate: 0.725, amount: 39.88, parking: 8, tolls: 0 },
+    { id: "trip-2", date: "2026-07-15", purpose: "Picked up printed flyer blueprints", startLocation: "Asheville HQ", destination: "FedEx Print Center CLT", startOdometer: 19175, endOdometer: 19290, miles: 115, rate: 0.76, amount: 91.4, parking: 0, tolls: 4 },
+    { id: "trip-3", date: "2026-07-20", purpose: "Site inspection post development sign-off", startLocation: "Charlotte Tech Park", destination: "Corporate Center North", startOdometer: 19290, endOdometer: 19325, miles: 35, rate: 0.76, amount: 26.6, parking: 0, tolls: 0 }
   ],
   fuelRecords: [
     { id: "fuel-1", date: "2026-04-10", gallons: 12.0, cost: 42.00, merchant: "Shell Asheville Gas", odometer: 19050 },
     { id: "fuel-2", date: "2026-04-18", gallons: 11.5, cost: 40.25, merchant: "Chevron CLT Airport", odometer: 19220 }
-  ]
+  ],
+  notes: "Parking and tolls are tracked separately from the mileage rate.",
 };
 
-export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
-  const [data, setData] = useState<MileageTrackerData>(() => {
-    return DataBridge.get<MileageTrackerData>(DataBridgeKeys.MILEAGE_DRAFT, DEFAULT_MILEAGE);
+export function normalizeMileageLogDraft(
+  draft: Partial<MileageLogDraft> & { businessRate?: number },
+): MileageLogDraft {
+  return {
+    ...DEFAULT_MILEAGE_DRAFT,
+    ...draft,
+    rateMode: draft.rateMode === "custom" ? "custom" : "irs-standard",
+    customRate: Number(
+      draft.customRate ?? draft.businessRate ?? DEFAULT_MILEAGE_DRAFT.customRate,
+    ),
+    trips: (draft.trips || DEFAULT_MILEAGE_DRAFT.trips).map((trip) => ({
+      ...trip,
+      parking: Number(trip.parking || 0),
+      tolls: Number(trip.tolls || 0),
+    })),
+    fuelRecords: draft.fuelRecords || DEFAULT_MILEAGE_DRAFT.fuelRecords,
+    notes: String(draft.notes || ""),
+  };
+}
+
+export default function MileageLogPage({
+  onTrackClick,
+  templates = [],
+}: {
+  onTrackClick?: (item: string) => void;
+  templates?: readonly DocumentTemplate[];
+}) {
+  const [data, setData] = useState<MileageLogDraft>(() => {
+    return normalizeMileageLogDraft(
+      DataBridge.get(DataBridgeKeys.MILEAGE_DRAFT, DEFAULT_MILEAGE_DRAFT),
+    );
   });
 
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [copied, setCopied] = useState(false);
+  const mileageSummary = useMemo(
+    () =>
+      calculateMileageSummary({
+        taxYear: data.taxYear,
+        rateMode: data.rateMode,
+        customRate: data.customRate,
+        trips: data.trips,
+        fuelRecords: data.fuelRecords,
+      }),
+    [data],
+  );
 
   // Synchronize draft states
   useEffect(() => {
-    // Calculate and trigger individual trip auto-amounts prior to save
-    const updatedTrips = data.trips.map(t => ({
-      ...t,
-      amount: Number(t.miles || 0) * Number(data.businessRate || 0.67)
-    }));
-
     // Save to localStorage
     try {
       localStorage.setItem(DataBridgeKeys.MILEAGE_DRAFT, JSON.stringify({
         ...data,
-        trips: updatedTrips
+        trips: mileageSummary.trips
       }));
     } catch (e) {
       console.error(e);
     }
 
     // Bridge details for Quarterly tax calculation
-    const totalMileageValue = updatedTrips.reduce((acc, curr) => acc + curr.amount, 0);
-    const totalMileageMiles = updatedTrips.reduce((acc, curr) => acc + Number(curr.miles || 0), 0);
-
     DataBridge.set(DataBridgeKeys.MILEAGE_SUMMARY, {
       year: data.taxYear,
-      totalMiles: totalMileageMiles,
-      totalAmount: totalMileageValue
+      totalMiles: mileageSummary.totalMiles,
+      standardMileageDeduction: mileageSummary.standardMileageDeduction,
+      parkingAndTolls: mileageSummary.parkingAndTolls,
+      totalAmount: mileageSummary.totalDeduction
     });
-  }, [data]);
+  }, [data, mileageSummary]);
 
   const handleAddTrip = () => {
     const lastOdo = data.trips.length > 0 ? (data.trips[data.trips.length - 1].endOdometer || 0) : 0;
-    const newTrip: MileageEntry = {
+    const newTrip: MileageLogTrip = {
       id: `trip-${Date.now()}`,
       date: new Date().toISOString().substring(0, 10),
       purpose: "",
@@ -132,8 +182,10 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
       startOdometer: lastOdo || undefined,
       endOdometer: lastOdo ? lastOdo + 10 : undefined,
       miles: 0,
-      rate: data.businessRate,
-      amount: 0
+      rate: 0,
+      amount: 0,
+      parking: 0,
+      tolls: 0
     };
     setData({
       ...data,
@@ -150,12 +202,18 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
     onTrackClick("mileage_trip_removed");
   };
 
-  const handleTripChange = (id: string, field: keyof MileageEntry, val: any) => {
+  const handleTripChange = (id: string, field: keyof MileageLogTrip, val: any) => {
     const updated = data.trips.map(t => {
       if (t.id === id) {
+        const isNumeric =
+          field === "startOdometer" ||
+          field === "endOdometer" ||
+          field === "miles" ||
+          field === "parking" ||
+          field === "tolls";
         const u = {
           ...t,
-          [field]: field === "startOdometer" || field === "endOdometer" || field === "miles" ? (val === "" ? "" : Number(val)) : val
+          [field]: isNumeric ? (val === "" ? "" : Number(val)) : val
         };
         // Auto reconcile miles if start & end odometers are updated
         if (field === "startOdometer" || field === "endOdometer") {
@@ -165,7 +223,6 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
             u.miles = end - start;
           }
         }
-        u.amount = Number(u.miles || 0) * Number(data.businessRate);
         return u;
       }
       return t;
@@ -174,7 +231,7 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
   };
 
   const handleAddFuel = () => {
-    const newFuel: FuelRecord = {
+    const newFuel: MileageFuelRecord = {
       id: `fuel-${Date.now()}`,
       date: new Date().toISOString().substring(0, 10),
       gallons: 0,
@@ -197,7 +254,7 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
     onTrackClick("mileage_fuel_removed");
   };
 
-  const handleFuelChange = (id: string, field: keyof FuelRecord, val: any) => {
+  const handleFuelChange = (id: string, field: keyof MileageFuelRecord, val: any) => {
     const updated = data.fuelRecords.map(f => {
       if (f.id === id) {
         return {
@@ -211,60 +268,34 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
   };
 
   const handleLoadSample = () => {
-    setData(SAMPLE_MILEAGE);
+    setData(SAMPLE_MILEAGE_DRAFT);
     onTrackClick("mileage_sample_loaded");
   };
 
   const handleClearDraft = () => {
     if (confirm("Are you sure you want to clear mileage log history?")) {
-      setData(DEFAULT_MILEAGE);
+      setData(DEFAULT_MILEAGE_DRAFT);
       onTrackClick("mileage_draft_cleared");
     }
   };
 
-  // Stats calculation
-  const calculateStats = () => {
-    const tripsCount = data.trips.length;
-    const totalMiles = data.trips.reduce((acc, current) => acc + Number(current.miles || 0), 0);
-    const totalDue = totalMiles * Number(data.businessRate || 0.67);
-    const avgMiles = tripsCount > 0 ? (totalMiles / tripsCount).toFixed(1) : "0";
-
-    const totalFuelCost = data.fuelRecords.reduce((acc, current) => acc + Number(current.cost || 0), 0);
-    const totalGallons = data.fuelRecords.reduce((acc, current) => acc + Number(current.gallons || 0), 0);
-
-    // Simple MPG estimation over odometer ranges of fuel fills
-    let fuelEconomy = "N/A";
-    if (data.fuelRecords.length > 1 && totalGallons > 0) {
-      const sortedFuelLogs = [...data.fuelRecords].sort((a,b) => a.odometer - b.odometer);
-      const minOdo = sortedFuelLogs[0].odometer;
-      const maxOdo = sortedFuelLogs[sortedFuelLogs.length - 1].odometer;
-      const odoDelta = maxOdo - minOdo;
-      if (odoDelta > 0) {
-        // Gallons filled except the first tank to compute correct mileage
-        const computationGallons = sortedFuelLogs.slice(1).reduce((acc, c) => acc + Number(c.gallons || 0), 0);
-        if (computationGallons > 0) {
-          fuelEconomy = (odoDelta / computationGallons).toFixed(1);
-        }
-      }
-    }
-
-    return {
-      tripsCount,
-      totalMiles,
-      totalDue,
-      avgMiles,
-      totalFuelCost,
-      fuelEconomy
-    };
+  const stats = {
+    totalMiles: mileageSummary.totalMiles,
+    totalDue: mileageSummary.totalDeduction,
+    avgMiles: data.trips.length
+      ? (mileageSummary.totalMiles / data.trips.length).toFixed(1)
+      : "0",
+    fuelEconomy:
+      mileageSummary.fuelEconomy === null
+        ? "N/A"
+        : mileageSummary.fuelEconomy.toFixed(1),
   };
-
-  const stats = calculateStats();
 
   const handleExportCSV = () => {
     onTrackClick("mileage_csv_exported");
-    let content = "Date,Business Purpose,Start Location,Destination,Start Odometer,End Odometer,Miles,Rate,Amount Due\n";
-    data.trips.forEach((t) => {
-      content += `"${t.date}","${t.purpose.replace(/"/g, '""')}","${t.startLocation.replace(/"/g, '""')}","${t.destination.replace(/"/g, '""')}",${t.startOdometer || ""},${t.endOdometer || ""},${t.miles},${data.businessRate},${(t.miles * data.businessRate).toFixed(2)}\n`;
+    let content = "Date,Business Purpose,Start Location,Destination,Start Odometer,End Odometer,Miles,Effective Rate,Mileage Deduction,Parking,Tolls,Total Deduction\n";
+    mileageSummary.trips.forEach((t) => {
+      content += `"${t.date}","${t.purpose.replace(/"/g, '""')}","${t.startLocation.replace(/"/g, '""')}","${t.destination.replace(/"/g, '""')}",${t.startOdometer || ""},${t.endOdometer || ""},${t.miles},${t.rate},${t.mileageAmount.toFixed(2)},${t.parking},${t.tolls},${t.amount.toFixed(2)}\n`;
     });
 
     if (data.fuelRecords.length > 0) {
@@ -310,6 +341,20 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
         eyebrow={<StatusBadge variant="success">IRS Audit-Compliant Mileage Format</StatusBadge>}
         title="Mileage Log Tracker"
       />
+
+      <AdvancedTemplateWorkspace
+        adapter={mileageLogAdapter}
+        draft={data}
+        onDraftChange={setData}
+        onTrackClick={onTrackClick}
+        templates={templates}
+      />
+
+      {mileageSummary.errors.length > 0 && (
+        <AlertBanner title="Mileage rules need attention" variant="warning">
+          {mileageSummary.errors.join(" ")}
+        </AlertBanner>
+      )}
 
       {/* Metrics Dashboard Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 print:hidden" id="mileage-stats-grid">
@@ -377,7 +422,7 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
               <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
                 1. Vehicle Parameters
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-tax-year">Tax Filing Year</label>
                   <Select
@@ -386,20 +431,34 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                     value={data.taxYear}
                     onChange={(e) => setData({ ...data, taxYear: Number(e.target.value) })}
                   >
-                    <option value={2026}>Tax Year 2026 ($.67/mi)</option>
-                    <option value={2025}>Tax Year 2025 ($.67/mi)</option>
+                    <option value={2026}>Tax Year 2026 (date-based)</option>
+                    <option value={2025}>Tax Year 2025 ($.70/mi)</option>
                     <option value={2024}>Tax Year 2024 ($.67/mi)</option>
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-deduction-rate">Deduction rate ($/mile) *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-rate-mode">Rate mode</label>
+                  <Select
+                    className="font-bold"
+                    id="mileage-rate-mode"
+                    value={data.rateMode}
+                    onChange={(e) => setData({ ...data, rateMode: e.target.value as MileageRateMode })}
+                  >
+                    <option value="irs-standard">IRS standard by trip date</option>
+                    <option value="custom">Custom rate</option>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-deduction-rate">Custom rate ($/mile)</label>
                   <Input
                     type="number"
-                    step="0.01"
+                    min="0"
+                    step="0.001"
                     className="font-black"
+                    disabled={data.rateMode !== "custom"}
                     id="mileage-deduction-rate"
-                    value={data.businessRate}
-                    onChange={(e) => setData({ ...data, businessRate: Math.max(0, Number(e.target.value)) })}
+                    value={data.customRate}
+                    onChange={(e) => setData({ ...data, customRate: Math.max(0, Number(e.target.value)) })}
                   />
                 </div>
                 <div>
@@ -480,7 +539,7 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[10px] font-medium text-slate-500">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1 text-[10px] font-medium text-slate-500">
                       <div>
                         <Input
                           aria-label={`Trip ${idx + 1} start location`}
@@ -499,7 +558,29 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                           onChange={(e) => handleTripChange(trip.id, "destination", e.target.value)}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div>
+                        <Input
+                          aria-label={`Trip ${idx + 1} parking cost`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Parking"
+                          value={trip.parking || ""}
+                          onChange={(e) => handleTripChange(trip.id, "parking", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          aria-label={`Trip ${idx + 1} toll cost`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Tolls"
+                          value={trip.tolls || ""}
+                          onChange={(e) => handleTripChange(trip.id, "tolls", e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-2 grid grid-cols-2 gap-1.5">
                         <Input
                           aria-label={`Trip ${idx + 1} starting odometer`}
                           type="number"
@@ -685,7 +766,9 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                     LOG-M-{data.taxYear}
                   </div>
                   <span className="block text-[11px] text-slate-500 font-bold font-mono mt-2">
-                    RATE COMPLIANT: ${data.businessRate}/mi
+                    {data.rateMode === "custom"
+                      ? `CUSTOM RATE: $${data.customRate}/mi`
+                      : "IRS RATE: EFFECTIVE ON EACH TRIP DATE"}
                   </span>
                 </div>
               </div>
@@ -714,7 +797,7 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                     </tr>
                   </thead>
                   <tbody>
-                    {data.trips.map((t, idx) => (
+                    {mileageSummary.trips.map((t, idx) => (
                       <tr key={t.id || idx} className="border-b last:border-b-0 border-slate-200">
                         <td className="py-3 px-3 font-mono text-slate-500">{t.date}</td>
                         <td className="py-3 px-3 font-bold text-slate-900 leading-snug">
@@ -729,12 +812,17 @@ export default function MileageLogPage({ onTrackClick }: { onTrackClick?: (item:
                               Odometer Readings: {t.startOdometer} → {t.endOdometer}
                             </span>
                           )}
+                          {(t.parking > 0 || t.tolls > 0) && (
+                            <span className="block text-[11px] text-slate-500 font-mono leading-none pt-0.5">
+                              Parking ${t.parking.toFixed(2)} · Tolls ${t.tolls.toFixed(2)}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-3 text-center font-bold text-slate-500 font-mono">
                           {t.miles} mi
                         </td>
                         <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
-                          ${(t.miles * data.businessRate).toFixed(2)}
+                          ${t.amount.toFixed(2)}
                         </td>
                       </tr>
                     ))}

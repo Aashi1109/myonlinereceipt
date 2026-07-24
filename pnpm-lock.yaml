@@ -297,6 +297,18 @@ importers:
       '@google/genai':
         specifier: ^2.12.0
         version: 2.12.0
+      '@pdfme/common':
+        specifier: 6.1.11
+        version: 6.1.11
+      '@pdfme/generator':
+        specifier: 6.1.11
+        version: 6.1.11(@pdfme/common@6.1.11)(@pdfme/schemas@6.1.11(@pdfme/common@6.1.11))
+      '@pdfme/schemas':
+        specifier: 6.1.11
+        version: 6.1.11(@pdfme/common@6.1.11)
+      '@pdfme/ui':
+        specifier: 6.1.11
+        version: 6.1.11(@pdfme/common@6.1.11)(@pdfme/schemas@6.1.11(@pdfme/common@6.1.11))(@types/react@19.2.17)(date-fns@4.4.0)
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@19.2.7)

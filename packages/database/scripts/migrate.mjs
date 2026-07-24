@@ -6,7 +6,11 @@ const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
 
 const migrations = await Promise.all(
-  ["0001_auth_control_plane.sql", "0002_media_tools.sql"].map(
+  [
+    "0001_auth_control_plane.sql",
+    "0002_media_tools.sql",
+    "0003_document_template_kinds.sql",
+  ].map(
     async (name) => [
       name,
       await readFile(new URL(`../drizzle/${name}`, import.meta.url), "utf8"),

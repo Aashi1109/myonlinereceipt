@@ -6,6 +6,10 @@
  */
 
 import React, { useState, useEffect } from "react";
+import type {
+  AdvancedDocumentTemplate,
+  DocumentTemplate,
+} from "@smarttools/invoice-templates";
 import {
   AlertBanner,
   Button,
@@ -36,150 +40,54 @@ import {
   Info,
   ChevronRight
 } from "lucide-react";
-import { DataBridge, DataBridgeKeys, BusinessProfile, ClientProfile, ReceiptSummary } from "../../lib/shared/dataBridge";
+import {
+  AdvancedDocumentPreview,
+  downloadAdvancedDocumentPdf,
+} from "../AdvancedDocumentPreview";
+import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
+import { getReceiptTemplateInputs } from "../../lib/advancedTemplateData";
+import { receiptAdapter } from "../../lib/documentAdapters";
+import {
+  calculateReceiptTotals,
+  DEFAULT_RECEIPT_DATA,
+  SAMPLE_RECEIPT_DATA,
+  type ReceiptData,
+  type ReceiptItem,
+} from "../../lib/receiptDocument";
+import {
+  DataBridge,
+  DataBridgeKeys,
+  type ReceiptSummary,
+} from "../../lib/shared/dataBridge";
 
-interface ReceiptItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  taxable: boolean;
-}
-
-interface ReceiptData {
-  business: BusinessProfile;
-  customer: ClientProfile;
-  receiptNumber: string;
-  receiptDate: string;
-  receiptTime: string;
-  relatedInvoiceNumber: string;
-  transactionId: string;
-  paymentStatus: "Paid" | "Partially Paid" | "Refunded";
-  receiptType: "Service" | "Product" | "Rent" | "Contractor" | "Deposit" | "Refund";
-  lineItems: ReceiptItem[];
-  discountType: "none" | "percent" | "fixed";
-  discountValue: number;
-  salesTaxRate: number;
-  salesTaxLabel: string;
-  tip: number;
-  additionalFee: number;
-  amountRefunded: number;
-  paymentMethod: string;
-  paymentNote: string;
-  receivedBy: string;
-  notes: string;
-  thankYouMessage: string;
-}
-
-const DEFAULT_RECEIPT_DATA: ReceiptData = {
-  business: {
-    name: "",
-    contactName: "",
-    email: "",
-    phone: "",
-    website: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "US",
-    taxId: ""
-  },
-  customer: {
-    name: "",
-    company: "",
-    email: "",
-    phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    zipCode: "",
-    country: "US"
-  },
-  receiptNumber: `RCP-${new Date().getFullYear()}-001`,
-  receiptDate: new Date().toISOString().substring(0, 10),
-  receiptTime: "12:00",
-  relatedInvoiceNumber: "",
-  transactionId: "",
-  paymentStatus: "Paid",
-  receiptType: "Service",
-  lineItems: [
-    { id: "item-1", description: "Design Consulting Consult", quantity: 1, unitPrice: 150.00, taxable: false }
-  ],
-  discountType: "none",
-  discountValue: 0,
-  salesTaxRate: 0,
-  salesTaxLabel: "State Sales Tax",
-  tip: 0,
-  additionalFee: 0,
-  amountRefunded: 0,
-  paymentMethod: "Card",
-  paymentNote: "",
-  receivedBy: "",
-  notes: "Thank you for supporting small businesses!",
-  thankYouMessage: "Paid in full. We appreciate your prompt payment."
+export {
+  calculateReceiptTotals,
+  DEFAULT_RECEIPT_DATA,
+  SAMPLE_RECEIPT_DATA,
 };
+export type { ReceiptData, ReceiptItem };
 
-const SAMPLE_RECEIPT_DATA: ReceiptData = {
-  business: {
-    name: "Blue Ridge Web Studio",
-    contactName: "Alex Mercer",
-    email: "billing@blueridgeweb.com",
-    phone: "+1 (555) 789-1234",
-    website: "www.blueridgeweb.com",
-    addressLine1: "404 Ridge Point Lane",
-    addressLine2: "Suite 300",
-    city: "Asheville",
-    state: "NC",
-    zipCode: "28801",
-    country: "US",
-    taxId: "81-4492318"
-  },
-  customer: {
-    name: "Sarah Jenkins",
-    company: "Acme Retail Co.",
-    email: "sarah.j@acmeretail.com",
-    phone: "+1 (555) 123-0099",
-    addressLine1: "822 Broad Street",
-    addressLine2: "Apt B",
-    city: "Charlotte",
-    state: "NC",
-    zipCode: "28202",
-    country: "US"
-  },
-  receiptNumber: `RCP-2026-618`,
-  receiptDate: new Date().toISOString().substring(0, 10),
-  receiptTime: "14:15",
-  relatedInvoiceNumber: "INV-2026-441",
-  transactionId: "TXN-881249A",
-  paymentStatus: "Paid",
-  receiptType: "Service",
-  lineItems: [
-    { id: "item-1", description: "Vite Bundler Configuration Service", quantity: 1, unitPrice: 400.00, taxable: false },
-    { id: "item-2", description: "Inter font typography setup and components integration", quantity: 3, unitPrice: 75.00, taxable: false }
-  ],
-  discountType: "percent",
-  discountValue: 10,
-  salesTaxRate: 4.75,
-  salesTaxLabel: "North Carolina Sales Tax",
-  tip: 50.00,
-  additionalFee: 5.00,
-  amountRefunded: 0,
-  paymentMethod: "Zelle",
-  paymentNote: "Transferred from Sarah Chase Account",
-  receivedBy: "Alex Mercer",
-  notes: "Standard web project milestones signed off by development partners.",
-  thankYouMessage: "Thank you for your business!"
-};
-
-export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
+export default function ReceiptGeneratorPage({
+  onTrackClick,
+  templates = [],
+}: {
+  onTrackClick?: (item: string) => void;
+  templates?: readonly DocumentTemplate[];
+}) {
+  const advancedTemplates = templates.filter(
+    (template): template is AdvancedDocumentTemplate =>
+      template.documentType === "receipt" &&
+      template.layoutFamily === "advanced",
+  );
   const [data, setData] = useState<ReceiptData>(() => {
     return DataBridge.get<ReceiptData>(DataBridgeKeys.RECEIPT_DRAFT, DEFAULT_RECEIPT_DATA);
   });
 
   const [selectedTheme, setSelectedTheme] = useState<"classic" | "modern" | "compact" | "rent" | "contractor">("classic");
+  const [selectedAdvancedTemplateId, setSelectedAdvancedTemplateId] =
+    useState("");
+  const [pdfAction, setPdfAction] = useState(false);
+  const [pdfError, setPdfError] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
@@ -190,6 +98,26 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
   useEffect(() => {
     DataBridge.set(DataBridgeKeys.RECEIPT_DRAFT, data);
   }, [data]);
+
+  useEffect(() => {
+    if (!advancedTemplates.length) return;
+    const stored = localStorage.getItem(
+      "paperworkkit.advanced-template.receipt.selected",
+    );
+    const selected =
+      advancedTemplates.find((template) => template.id === stored) ??
+      advancedTemplates.find((template) => template.isDefault) ??
+      advancedTemplates[0];
+    setSelectedAdvancedTemplateId(selected.id);
+  }, [templates]);
+
+  useEffect(() => {
+    if (!selectedAdvancedTemplateId) return;
+    localStorage.setItem(
+      "paperworkkit.advanced-template.receipt.selected",
+      selectedAdvancedTemplateId,
+    );
+  }, [selectedAdvancedTemplateId]);
 
   // Check if Invoice Draft is present
   useEffect(() => {
@@ -296,66 +224,57 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
     setData({ ...data, lineItems: updated });
   };
 
-  // Calculations
-  const calculateTotals = () => {
-    const subtotal = data.lineItems.reduce((acc, current) => {
-      return acc + (Number(current.quantity || 0) * Number(current.unitPrice || 0));
-    }, 0);
-
-    let discountAmount = 0;
-    if (data.discountType === "percent") {
-      discountAmount = (subtotal * Number(data.discountValue || 0)) / 100;
-    } else if (data.discountType === "fixed") {
-      discountAmount = Number(data.discountValue || 0);
-    }
-
-    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-
-    // Tax is calculated on taxable subtotal items
-    const taxableSubtotal = data.lineItems.reduce((acc, current) => {
-      if (current.taxable) {
-        const itemLine = Number(current.quantity || 0) * Number(current.unitPrice || 0);
-        return acc + itemLine;
-      }
-      return acc;
-    }, 0);
-    // Adjusted taxable portion for discounts proportionally
-    const discountRatio = subtotal > 0 ? (subtotal - discountAmount) / subtotal : 1;
-    const adjustedTaxableTotal = taxableSubtotal * discountRatio;
-    const taxAmount = (adjustedTaxableTotal * Number(data.salesTaxRate || 0)) / 100;
-
-    const total = discountedSubtotal + taxAmount + Number(data.tip || 0) + Number(data.additionalFee || 0);
-
-    const balanceDue = data.paymentStatus === "Partially Paid" ? Math.max(0, total - data.amountRefunded) : 0;
-
-    return {
-      subtotal,
-      discountAmount,
-      taxAmount,
-      total,
-      balanceDue
-    };
-  };
-
-  const totals = calculateTotals();
+  const totals = calculateReceiptTotals(data);
+  const selectedAdvancedTemplate = advancedTemplates.find(
+    (template) => template.id === selectedAdvancedTemplateId,
+  );
+  const advancedTemplateInputs = selectedAdvancedTemplate
+    ? getReceiptTemplateInputs(
+        data,
+        totals,
+        selectedAdvancedTemplate.config.sampleData,
+      )
+    : null;
 
   const validateReceipt = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!data.business.name.trim()) {
       newErrors["business.name"] = "Seller / Provider Name is required to generate receipts.";
     }
-    if (!data.customer.name.trim()) {
-      newErrors["customer.name"] = "Client / Payer Name is required.";
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Validate fields prior to print or download
-  const handlePrint = () => {
-    onTrackClick("receipt_print_clicked");
+  const handlePrint = async () => {
+    onTrackClick?.(
+      selectedAdvancedTemplate
+        ? "receipt_pdf_downloaded"
+        : "receipt_print_clicked",
+    );
     if (validateReceipt()) {
-      window.print();
+      if (!selectedAdvancedTemplate || !advancedTemplateInputs) {
+        window.print();
+        return;
+      }
+
+      setPdfAction(true);
+      setPdfError("");
+      try {
+        const receiptNumber = data.receiptNumber
+          .trim()
+          .replace(/[^a-z0-9_-]+/gi, "-");
+        await downloadAdvancedDocumentPdf({
+          template: selectedAdvancedTemplate,
+          data: advancedTemplateInputs,
+          fileName: `receipt-${receiptNumber || "draft"}.pdf`,
+        });
+      } catch (error) {
+        console.error("Failed to generate the receipt PDF", error);
+        setPdfError("The PDF could not be generated. Please try again.");
+      } finally {
+        setPdfAction(false);
+      }
     } else {
       const el = document.getElementById("receipt-mobile-tabs") || document.getElementById("receipt-seo-section");
       el?.scrollIntoView({ behavior: "smooth" });
@@ -368,7 +287,7 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
     navigator.clipboard.writeText(summary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-    onTrackClick("receipt_copy_summary_clicked");
+    onTrackClick?.("receipt_copy_summary_clicked");
   };
 
   return (
@@ -410,6 +329,42 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
         title="Receipt Generator"
       />
 
+      {advancedTemplates.length ? (
+        <Card className="mb-6 grid gap-2 p-4 print:hidden">
+          <label
+            className="text-xs font-black uppercase tracking-wider text-muted-foreground"
+            htmlFor="receipt-template-mode"
+          >
+            Receipt template
+          </label>
+          <Select
+            id="receipt-template-mode"
+            onChange={(event) => {
+              setSelectedAdvancedTemplateId(event.target.value);
+              setPdfError("");
+            }}
+            value={selectedAdvancedTemplateId}
+          >
+            <option value="">Use a built-in receipt layout</option>
+            {advancedTemplates.map((advancedTemplate) => (
+              <option key={advancedTemplate.id} value={advancedTemplate.id}>
+                {advancedTemplate.name}
+              </option>
+            ))}
+          </Select>
+        </Card>
+      ) : null}
+
+      {selectedAdvancedTemplate ? (
+        <AdvancedTemplateWorkspace
+          adapter={receiptAdapter}
+          draft={data}
+          onDraftChange={setData}
+          onTrackClick={onTrackClick}
+          templates={[selectedAdvancedTemplate]}
+        />
+      ) : null}
+
       {/* 2. Notification Overlay if Importing Invoice */}
       {showImportConfirm && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -445,7 +400,7 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
       )}
 
       {/* 3. Mobile tab switcher */}
-      <div className="flex md:hidden bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200/50 print:hidden" id="receipt-mobile-tabs">
+      <div className={`${selectedAdvancedTemplate ? "hidden" : "flex"} md:hidden bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200/50 print:hidden`} id="receipt-mobile-tabs">
         <button
           type="button"
           className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${activeTab === "edit" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
@@ -463,7 +418,7 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
       </div>
 
       {/* 4. Split Screen Editor & Live Rendered Frame */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}>
 
         {/* Editor Fields Column */}
         <div className={`lg:col-span-7 space-y-6 ${activeTab === "edit" ? "block" : "hidden md:block"} print:hidden`}>
@@ -963,7 +918,9 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
             <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold border-b border-slate-100 pb-2">
               <span>RECEIPT VISUAL LAYOUT</span>
-              <StatusBadge variant="success">Ready in US-Format</StatusBadge>
+              <StatusBadge variant="success">
+                {selectedAdvancedTemplate?.name ?? "Built-in layout"}
+              </StatusBadge>
             </div>
 
             {/* Design preset layout options */}
@@ -977,7 +934,11 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
               ].map((themeOpt) => (
                 <button
                   key={themeOpt.key}
-                  onClick={() => setSelectedTheme(themeOpt.key as any)}
+                  onClick={() => {
+                    setSelectedTheme(themeOpt.key as typeof selectedTheme);
+                    setSelectedAdvancedTemplateId("");
+                    setPdfError("");
+                  }}
                   className={`py-1.5 rounded-lg border uppercase transition-colors font-extrabold ${selectedTheme === themeOpt.key ? "bg-slate-900 border-slate-900 text-white" : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600"}`}
                   type="button"
                 >
@@ -986,14 +947,51 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
               ))}
             </div>
 
+            {advancedTemplates.length ? (
+              <div>
+                <label
+                  className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500"
+                  htmlFor="receipt-published-template"
+                >
+                  Published custom template
+                </label>
+                <Select
+                  id="receipt-published-template"
+                  onChange={(event) => {
+                    setSelectedAdvancedTemplateId(event.target.value);
+                    setPdfError("");
+                  }}
+                  value={selectedAdvancedTemplateId}
+                >
+                  <option value="">Use a built-in layout</option>
+                  {advancedTemplates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-2 pt-2">
               <Button
                 className="w-full"
-                onClick={handlePrint}
+                disabled={pdfAction}
+                onClick={() => void handlePrint()}
                 type="button"
               >
-                <Printer className="w-4 h-4" />
-                <span>Print / Save PDF</span>
+                {selectedAdvancedTemplate ? (
+                  <FileDown className="w-4 h-4" />
+                ) : (
+                  <Printer className="w-4 h-4" />
+                )}
+                <span>
+                  {pdfAction
+                    ? "Generating…"
+                    : selectedAdvancedTemplate
+                      ? "Download PDF"
+                      : "Print / Save PDF"}
+                </span>
               </Button>
               <Button
                 className="w-full"
@@ -1005,12 +1003,27 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
                 <span>{copied ? "Copied!" : "Copy Summary"}</span>
               </Button>
             </div>
+            {pdfError ? (
+              <p className="text-xs font-bold text-destructive" role="alert">
+                {pdfError}
+              </p>
+            ) : null}
             <p className="text-[10px] text-slate-500 font-medium text-center">
-              Print outputs generate vector-scalable standard Letter size paper versions immediately.
+              {selectedAdvancedTemplate
+                ? "The downloaded PDF uses your published custom layout and current receipt data."
+                : "Print outputs generate vector-scalable standard Letter size paper versions immediately."}
             </p>
           </Card>
 
           {/* Letter layout block preview */}
+          {selectedAdvancedTemplate && advancedTemplateInputs ? (
+            <AdvancedDocumentPreview
+              className="shadow-2xl"
+              data={advancedTemplateInputs}
+              onError={setPdfError}
+              template={selectedAdvancedTemplate}
+            />
+          ) : (
           <div className="relative group transition-all duration-200 shadow-2xl rounded-2xl border border-slate-200">
             <div className={`p-8 bg-white min-h-[750px] font-sans text-slate-800 ${selectedTheme === "compact" ? "max-w-md mx-auto" : ""}`} id="receipt-print-area">
 
@@ -1219,6 +1232,7 @@ export default function ReceiptGeneratorPage({ onTrackClick }: { onTrackClick?: 
 
             </div>
           </div>
+          )}
 
         </div>
 

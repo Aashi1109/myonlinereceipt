@@ -179,9 +179,9 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Space");
   await expect(files.getByRole("listitem").first()).toContainText("first.jpg");
-  await expect(
-    page.getByText("Dropped first.jpg at position 1 of 2.", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator('[role="status"]')).toContainText(
+    "Dropped first.jpg at position 1 of 2.",
+  );
 
   const overflow = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,

@@ -6,6 +6,7 @@ import {
 } from "@smarttools/authorization";
 import {
   assertDatabaseConfigured,
+  and,
   authUser,
   db,
   eq,
@@ -17,9 +18,11 @@ import {
   userRolesTable,
 } from "@smarttools/database";
 import {
-  InvoiceTemplateSchema,
+  DocumentTemplateSchema,
   seedTemplates,
-  type InvoiceTemplate,
+  type DocumentTemplate,
+  type DocumentType,
+  validateAdvancedTemplateConfig,
 } from "@smarttools/invoice-templates";
 import {
   findAvailableToolBySlug,
@@ -74,28 +77,72 @@ export async function getFeatures(
 
 function mapTemplate(
   row: typeof invoiceTemplatesTable.$inferSelect,
-): InvoiceTemplate | undefined {
-  const template = {
-    ...row,
-    description: row.description ?? "",
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  } as InvoiceTemplate;
-  return InvoiceTemplateSchema.safeParse(template).success
-    ? template
-    : undefined;
+): DocumentTemplate | undefined {
+  try {
+    const template = {
+      ...row,
+      description: row.description ?? "",
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    } as DocumentTemplate;
+    const result = DocumentTemplateSchema.safeParse(template);
+    if (result.success) {
+      const parsed = result.data as DocumentTemplate;
+      if (
+        parsed.layoutFamily === "advanced" &&
+        !validateAdvancedTemplateConfig(
+          parsed.config,
+          parsed.documentType,
+          (parsed.documentType === "invoice" ||
+            parsed.documentType === "receipt") &&
+            row.config &&
+            typeof row.config === "object" &&
+            !Array.isArray(row.config) &&
+            !("schemaVersion" in row.config)
+            ? "draft"
+            : "publish",
+        ).valid
+      ) {
+        throw new Error("Published advanced template failed validation.");
+      }
+      return { ...template, ...parsed } as DocumentTemplate;
+    }
+  } catch {}
+  console.error("Skipping invalid published document template", row.id);
+  return undefined;
 }
 
-export async function getPublishedTemplates(): Promise<InvoiceTemplate[]> {
+function filterTemplates(
+  templates: DocumentTemplate[],
+  documentType?: DocumentType,
+): DocumentTemplate[] {
+  return documentType
+    ? templates.filter((template) => template.documentType === documentType)
+    : templates;
+}
+
+export async function getPublishedTemplates(
+  documentType?: DocumentType,
+): Promise<DocumentTemplate[]> {
   try {
     assertDatabaseConfigured();
     const rows = await db
       .select()
       .from(invoiceTemplatesTable)
-      .where(eq(invoiceTemplatesTable.status, "published"));
+      .where(
+        and(
+          eq(invoiceTemplatesTable.status, "published"),
+          documentType
+            ? eq(invoiceTemplatesTable.documentType, documentType)
+            : undefined,
+        ),
+      );
     return rows.flatMap((row) => mapTemplate(row) ?? []);
   } catch {
-    return seedTemplates.filter((template) => template.status === "published");
+    return filterTemplates(
+      seedTemplates.filter((template) => template.status === "published"),
+      documentType,
+    );
   }
 }
 

@@ -2,6 +2,7 @@ import type { Access } from "@smarttools/authorization";
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -62,7 +63,18 @@ export const invoiceTemplatesTable = pgTable(
     status: text("status").notNull(),
     isDefault: boolean("is_default").default(false).notNull(),
     version: integer("version").default(1).notNull(),
-    documentType: text("document_type").default("invoice").notNull(),
+    documentType: text("document_type")
+      .$type<
+        | "invoice"
+        | "receipt"
+        | "expense-report"
+        | "mileage-log"
+        | "quarterly-tax-estimator"
+        | "w9-request"
+        | "1099-nec-tracker"
+      >()
+      .default("invoice")
+      .notNull(),
     layoutFamily: text("layout_family").notNull(),
     config: jsonb("config").notNull(),
     isPremium: boolean("is_premium").default(false).notNull(),
@@ -72,9 +84,26 @@ export const invoiceTemplatesTable = pgTable(
   },
   (table) => [
     uniqueIndex("invoice_templates_slug_unique").on(table.slug),
-    uniqueIndex("invoice_templates_published_default_unique")
-      .on(table.isDefault)
+    check(
+      "invoice_templates_document_type_check",
+      sql`${table.documentType} IN ('invoice', 'receipt', 'expense-report', 'mileage-log', 'quarterly-tax-estimator', 'w9-request', '1099-nec-tracker')`,
+    ),
+    check(
+      "invoice_templates_advanced_document_type_check",
+      sql`${table.layoutFamily} = 'advanced' OR ${table.documentType} = 'invoice'`,
+    ),
+    check(
+      "invoice_templates_default_published_check",
+      sql`${table.isDefault} = false OR ${table.status} = 'published'`,
+    ),
+    uniqueIndex(
+      "invoice_templates_published_default_by_document_type_unique",
+    )
+      .on(table.documentType)
       .where(sql`${table.isDefault} = true AND ${table.status} = 'published'`),
+    index("invoice_templates_published_document_type_updated_idx")
+      .on(table.documentType, table.updatedAt.desc())
+      .where(sql`${table.status} = 'published'`),
   ],
 );
 

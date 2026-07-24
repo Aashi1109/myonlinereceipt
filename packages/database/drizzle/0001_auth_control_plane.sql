@@ -204,7 +204,7 @@ ON CONFLICT (tool_id) DO NOTHING;
 CREATE UNIQUE INDEX IF NOT EXISTS invoice_templates_slug_unique
   ON invoice_templates(slug);
 CREATE UNIQUE INDEX IF NOT EXISTS invoice_templates_published_default_unique
-  ON invoice_templates(is_default)
+  ON invoice_templates(document_type)
   WHERE is_default = TRUE AND status = 'published';
 
 CREATE OR REPLACE FUNCTION prevent_system_role_changes()

@@ -28,6 +28,8 @@ import {
 import {
   createAdvancedTemplateConfig,
   DocumentTemplateSchema,
+  normalizeAdvancedTemplateConfig,
+  validateAdvancedTemplateForPublish,
   type AdvancedDocumentTemplate,
   type DocumentTemplate,
   type InvoiceTemplate,
@@ -828,6 +830,62 @@ function templateValidationError(input: unknown): DocumentTemplate {
   throw new Error(result.error.issues.map(({ message }) => message).join("; "));
 }
 
+async function renderAdvancedTemplateForPublication(
+  template: AdvancedDocumentTemplate,
+) {
+  const config = normalizeAdvancedTemplateConfig(
+    template.config,
+    template.documentType,
+  );
+  const validation = validateAdvancedTemplateForPublish(
+    config,
+    template.documentType,
+  );
+  if (!validation.valid) {
+    throw new Error(
+      `Publication blocked: ${validation.errors
+        .map((issue) => issue.message)
+        .join("; ")}`,
+    );
+  }
+  if (validation.warnings.length) {
+    console.warn(
+      "Advanced template publication warnings",
+      template.id,
+      validation.warnings.map((issue) => issue.message),
+    );
+  }
+
+  const [{ generate }, schemas] = await Promise.all([
+    import("@pdfme/generator"),
+    import("@pdfme/schemas"),
+  ]);
+  await generate({
+    template: config.template,
+    inputs: [config.sampleData],
+    plugins: {
+      text: schemas.text,
+      multiVariableText: schemas.multiVariableText,
+      list: schemas.list,
+      image: schemas.image,
+      signature: schemas.signature,
+      svg: schemas.svg,
+      line: schemas.line,
+      rectangle: schemas.rectangle,
+      ellipse: schemas.ellipse,
+      table: schemas.table,
+      dateTime: schemas.dateTime,
+      date: schemas.date,
+      time: schemas.time,
+      select: schemas.select,
+      radioGroup: schemas.radioGroup,
+      checkbox: schemas.checkbox,
+      circleMark: schemas.circleMark,
+      ...schemas.barcodes,
+    },
+  });
+}
+
 function makeTemplateDraft(
   input: DocumentTemplateContent & Pick<DocumentTemplate, "documentType">,
   id = crypto.randomUUID(),
@@ -975,7 +1033,7 @@ export async function createAdvancedDocumentTemplate(
   });
 }
 
-export async function duplicateInvoiceTemplate(
+export async function duplicateDocumentTemplate(
   actorUserId: string,
   sourceTemplateId: string,
   input: { name: string; slug: string },
@@ -1002,7 +1060,7 @@ export async function duplicateInvoiceTemplate(
   });
 }
 
-export async function importInvoiceTemplate(
+export async function importDocumentTemplate(
   actorUserId: string,
   input: unknown,
 ): Promise<TemplateRow> {
@@ -1026,17 +1084,17 @@ export async function importInvoiceTemplate(
   });
 }
 
-export async function updateInvoiceTemplate(
+export async function updateDocumentTemplate(
   actorUserId: string,
   templateId: string,
   input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
   return db.transaction((transaction) =>
-    updateInvoiceTemplateInTransaction(transaction, actorUserId, templateId, input),
+    updateDocumentTemplateInTransaction(transaction, actorUserId, templateId, input),
   );
 }
 
-async function updateInvoiceTemplateInTransaction(
+async function updateDocumentTemplateInTransaction(
   transaction: Transaction,
   actorUserId: string,
   templateId: string,
@@ -1085,38 +1143,72 @@ async function updateInvoiceTemplateInTransaction(
   return saved;
 }
 
-export async function publishInvoiceTemplate(
+async function prepareDocumentTemplatePublication(
+  actorUserId: string,
+  templateId: string,
+): Promise<DocumentTemplate> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(
+      transaction,
+      actorUserId,
+      "templates",
+      "publish",
+    );
+    const current = await getTemplateForUpdate(transaction, templateId);
+    return templateValidationError(storedTemplateInput(current));
+  });
+}
+
+export async function publishDocumentTemplate(
   actorUserId: string,
   templateId: string,
 ): Promise<TemplateRow> {
+  const template = await prepareDocumentTemplatePublication(
+    actorUserId,
+    templateId,
+  );
+  if (template.layoutFamily === "advanced") {
+    await renderAdvancedTemplateForPublication(template);
+  }
   return db.transaction((transaction) =>
-    publishInvoiceTemplateInTransaction(transaction, actorUserId, templateId),
+    publishDocumentTemplateInTransaction(
+      transaction,
+      actorUserId,
+      templateId,
+      template.version,
+    ),
   );
 }
 
-async function publishInvoiceTemplateInTransaction(
+async function publishDocumentTemplateInTransaction(
   transaction: Transaction,
   actorUserId: string,
   templateId: string,
+  expectedVersion: number,
 ): Promise<TemplateRow> {
   await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
   const current = await getTemplateForUpdate(transaction, templateId);
-  const template = templateValidationError(storedTemplateInput(current));
-  let isDefault = false;
-  if (template.layoutFamily !== "advanced") {
-    const defaults = await transaction
-      .select({ id: invoiceTemplatesTable.id })
-      .from(invoiceTemplatesTable)
-      .where(
-        and(
-          eq(invoiceTemplatesTable.status, "published"),
-          eq(invoiceTemplatesTable.isDefault, true),
-        ),
-      )
-      .for("update");
-    isDefault =
-      defaults.some(({ id }) => id === templateId) || defaults.length === 0;
+  if (current.version !== expectedVersion) {
+    throw new Error(
+      "The template changed while its publication preview was rendering. Review and publish again.",
+    );
   }
+  const template = templateValidationError(storedTemplateInput(current));
+  const defaults = await transaction
+    .select({ id: invoiceTemplatesTable.id })
+    .from(invoiceTemplatesTable)
+    .where(
+      and(
+        eq(invoiceTemplatesTable.documentType, template.documentType),
+        eq(invoiceTemplatesTable.status, "published"),
+        eq(invoiceTemplatesTable.isDefault, true),
+      ),
+    )
+    .for("update");
+  const isDefault =
+    current.isDefault ||
+    defaults.some(({ id }) => id === templateId) ||
+    defaults.length === 0;
   const [saved] = await transaction
     .update(invoiceTemplatesTable)
     .set({ status: "published", isDefault, updatedAt: new Date() })
@@ -1128,18 +1220,33 @@ async function publishInvoiceTemplateInTransaction(
   return saved;
 }
 
-export async function updateAndPublishInvoiceTemplate(
+export async function updateAndPublishDocumentTemplate(
   actorUserId: string,
   templateId: string,
   input: Partial<DocumentTemplateContent>,
 ): Promise<TemplateRow> {
-  return db.transaction(async (transaction) => {
-    await updateInvoiceTemplateInTransaction(transaction, actorUserId, templateId, input);
-    return publishInvoiceTemplateInTransaction(transaction, actorUserId, templateId);
-  });
+  const updated = await updateDocumentTemplate(
+    actorUserId,
+    templateId,
+    input,
+  );
+  const template = templateValidationError(
+    storedTemplateInput({ ...updated, id: templateId }),
+  );
+  if (template.layoutFamily === "advanced") {
+    await renderAdvancedTemplateForPublication(template);
+  }
+  return db.transaction((transaction) =>
+    publishDocumentTemplateInTransaction(
+      transaction,
+      actorUserId,
+      templateId,
+      updated.version,
+    ),
+  );
 }
 
-export async function archiveInvoiceTemplate(
+export async function archiveDocumentTemplate(
   actorUserId: string,
   templateId: string,
 ): Promise<TemplateRow> {
@@ -1159,28 +1266,35 @@ export async function archiveInvoiceTemplate(
   });
 }
 
-export async function setDefaultInvoiceTemplate(
+export async function setDefaultDocumentTemplate(
   actorUserId: string,
   templateId: string,
 ): Promise<TemplateRow> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "templates", "publish");
     const current = await getTemplateForUpdate(transaction, templateId);
-    if (current.layoutFamily === "advanced") {
-      throw new Error("Advanced templates cannot be the default.");
-    }
     if (current.status !== "published") {
       throw new Error("Only a published template can be the default.");
     }
     await transaction
       .select({ id: invoiceTemplatesTable.id })
       .from(invoiceTemplatesTable)
-      .where(eq(invoiceTemplatesTable.isDefault, true))
+      .where(
+        and(
+          eq(invoiceTemplatesTable.documentType, current.documentType),
+          eq(invoiceTemplatesTable.isDefault, true),
+        ),
+      )
       .for("update");
     await transaction
       .update(invoiceTemplatesTable)
       .set({ isDefault: false, updatedAt: new Date() })
-      .where(eq(invoiceTemplatesTable.isDefault, true));
+      .where(
+        and(
+          eq(invoiceTemplatesTable.documentType, current.documentType),
+          eq(invoiceTemplatesTable.isDefault, true),
+        ),
+      );
     const [saved] = await transaction
       .update(invoiceTemplatesTable)
       .set({ isDefault: true, updatedAt: new Date() })
@@ -1190,3 +1304,13 @@ export async function setDefaultInvoiceTemplate(
     return saved;
   });
 }
+
+// Standard-invoice callers are a public compatibility surface.
+export const duplicateInvoiceTemplate = duplicateDocumentTemplate;
+export const importInvoiceTemplate = importDocumentTemplate;
+export const updateInvoiceTemplate = updateDocumentTemplate;
+export const publishInvoiceTemplate = publishDocumentTemplate;
+export const updateAndPublishInvoiceTemplate =
+  updateAndPublishDocumentTemplate;
+export const archiveInvoiceTemplate = archiveDocumentTemplate;
+export const setDefaultInvoiceTemplate = setDefaultDocumentTemplate;

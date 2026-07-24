@@ -2,6 +2,7 @@ import type {
   AdvancedTemplateConfig,
   InvoiceTemplate,
 } from "@smarttools/invoice-templates";
+import { DOCUMENT_DEFINITIONS } from "@smarttools/invoice-templates";
 import {
   InvoiceTemplatePreview,
   serviceInvoiceSample,
@@ -45,6 +46,12 @@ const popoverClassName =
 const cardActionClassName = "rounded-lg";
 const menuActionClassName =
   "flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-bold text-secondary-foreground outline-none hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring";
+const pageFormatLabels = {
+  A4: "A4",
+  LETTER: "Letter",
+  RECEIPT_80MM: "80 mm",
+  RECEIPT_58MM: "58 mm",
+} as const;
 
 export default async function TemplatesPage() {
   await requirePagePermission("templates", "view");
@@ -82,7 +89,7 @@ export default async function TemplatesPage() {
           </div>
         }
         className="mb-8 border-none pb-0"
-        description="Layouts and theming presets the invoice tool can render."
+        description="Layouts and form presets for Paperwork documents."
         title="Templates"
       />
 
@@ -127,10 +134,16 @@ export default async function TemplatesPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field htmlFor="advanced-template-starter" label="Document and canvas">
               <Select id="advanced-template-starter" name="starter">
-                <option value="invoice:A4">Invoice · A4</option>
-                <option value="invoice:LETTER">Invoice · Letter</option>
-                <option value="receipt:RECEIPT_80MM">Receipt · 80 mm</option>
-                <option value="receipt:RECEIPT_58MM">Receipt · 58 mm</option>
+                {DOCUMENT_DEFINITIONS.flatMap((definition) =>
+                  definition.allowedPageFormats.map((format) => (
+                    <option
+                      key={`${definition.documentType}:${format}`}
+                      value={`${definition.documentType}:${format}`}
+                    >
+                      {definition.label} · {pageFormatLabels[format]}
+                    </option>
+                  )),
+                )}
               </Select>
             </Field>
             <Field htmlFor="advanced-template-category" label="Category">
@@ -228,7 +241,7 @@ export default async function TemplatesPage() {
             <Textarea
               className="min-h-64 font-mono"
               id="import-template-json"
-              maxLength={500_000}
+              maxLength={5_000_000}
               name="template"
               placeholder="Paste an exported template"
               required
@@ -362,6 +375,22 @@ export default async function TemplatesPage() {
                         >
                           Duplicate
                         </Button>
+                        {!template.isDefault ? (
+                          <form action={defaultTemplateAction}>
+                            <input
+                              name="templateId"
+                              type="hidden"
+                              value={template.id}
+                            />
+                            <Button
+                              className={cardActionClassName}
+                              type="submit"
+                              variant="ghost"
+                            >
+                              Set default
+                            </Button>
+                          </form>
+                        ) : null}
                       </>
                     ) : template.isDefault ? (
                       <>

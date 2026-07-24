@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   AlertBanner,
   Button,
@@ -39,26 +40,58 @@ import {
   UserCheck
 } from "lucide-react";
 import { DataBridge, DataBridgeKeys, VendorProfile, PaymentItem } from "../../lib/shared/dataBridge";
+import {
+  NEC_INTERNAL_REPORT_DISCLAIMER,
+  RecipientAnnualAdjustment,
+  calculateNecSummary,
+  createEmptyRecipientAdjustment,
+  maskTinReference,
+} from "../../lib/contractorTaxRules";
+import { nec1099Adapter } from "../../lib/documentAdapters";
+import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
-interface TrackerData1099 {
+export interface NecTrackerDraft {
   reportingYear: number;
+  payerName: string;
+  payerAddress: string;
+  payerEmail: string;
+  filingStatus: string;
   payments: PaymentItem[];
+  recipientAdjustments: RecipientAnnualAdjustment[];
 }
 
-const DEFAULT_NEC: TrackerData1099 = {
+export const DEFAULT_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   reportingYear: 2026,
+  payerName: "",
+  payerAddress: "",
+  payerEmail: "",
+  filingStatus: "Review required",
   payments: [
     { id: "pay-1", date: new Date().toISOString().substring(0, 10), vendorId: "vendor-1", amount: 1500.00, paymentMethod: "Zelle", category: "Services", description: "Design Consulting Consult", includeIn1099: true }
-  ]
+  ],
+  recipientAdjustments: [createEmptyRecipientAdjustment("vendor-1")],
 };
 
-const SAMPLE_NEC: TrackerData1099 = {
+export const SAMPLE_NEC_TRACKER_DRAFT: NecTrackerDraft = {
   reportingYear: 2026,
+  payerName: "Northstar Studio LLC",
+  payerAddress: "42 Market Street, Austin, TX 78701",
+  payerEmail: "accounts@northstar.example",
+  filingStatus: "Ready for preparer",
   payments: [
     { id: "pay-1", date: "2026-02-15", vendorId: "vendor-1", amount: 450.00, paymentMethod: "Zelle", category: "Services", description: "Design Consult Setup", includeIn1099: true },
     { id: "pay-2", date: "2026-05-18", vendorId: "vendor-1", amount: 1200.00, paymentMethod: "ACH", category: "Services", description: "Figma Typography milestones", includeIn1099: true },
     { id: "pay-3", date: "2026-08-20", vendorId: "vendor-new", amount: 50.00, paymentMethod: "Cash", category: "Rent", description: "Desk rent AVL Office block", includeIn1099: false }
-  ]
+  ],
+  recipientAdjustments: [{
+    ...createEmptyRecipientAdjustment("vendor-1"),
+    cashTips: 125,
+    occupationCodes: "101",
+    qualifiedOvertime: 240,
+    maskedTinReference: "•••• 4821",
+    state: "NC",
+    stateIncome: 1650,
+  }],
 };
 
 const FALLBACK_VENDOR: VendorProfile = {
@@ -73,17 +106,65 @@ const FALLBACK_VENDOR: VendorProfile = {
   notes: "Ruby-on-Rails setup developer."
 };
 
-export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
-  const [data, setData] = useState<TrackerData1099>(() => {
-    return DataBridge.get<TrackerData1099>(DataBridgeKeys.NEC_DRAFT, DEFAULT_NEC);
+export function normalizeNecTrackerDraft(
+  draft: Partial<NecTrackerDraft>,
+): NecTrackerDraft {
+  return {
+    reportingYear: Number(
+      draft.reportingYear || DEFAULT_NEC_TRACKER_DRAFT.reportingYear,
+    ),
+    payerName: String(draft.payerName || ""),
+    payerAddress: String(draft.payerAddress || ""),
+    payerEmail: String(draft.payerEmail || ""),
+    filingStatus: String(
+      draft.filingStatus || DEFAULT_NEC_TRACKER_DRAFT.filingStatus,
+    ),
+    payments: (draft.payments || DEFAULT_NEC_TRACKER_DRAFT.payments).map(
+      (payment) => ({
+        id: String(payment.id || `payment-${Date.now()}`),
+        date: String(payment.date || ""),
+        vendorId: String(payment.vendorId || ""),
+        amount: Number(payment.amount || 0),
+        paymentMethod: payment.paymentMethod || "Other",
+        category: payment.category || "Other",
+        description: String(payment.description || ""),
+        includeIn1099: Boolean(payment.includeIn1099),
+        invoiceReference: payment.invoiceReference
+          ? String(payment.invoiceReference)
+          : undefined,
+      }),
+    ),
+    recipientAdjustments: (draft.recipientAdjustments || []).map((adjustment) => ({
+      vendorId: String(adjustment.vendorId || ""),
+      cashTips: Number(adjustment.cashTips || 0),
+      occupationCodes: String(adjustment.occupationCodes || ""),
+      qualifiedOvertime: Number(adjustment.qualifiedOvertime || 0),
+      federalWithholding: Number(adjustment.federalWithholding || 0),
+      state: String(adjustment.state || ""),
+      stateIncome: Number(adjustment.stateIncome || 0),
+      stateWithholding: Number(adjustment.stateWithholding || 0),
+      maskedTinReference: maskTinReference(adjustment.maskedTinReference || ""),
+    })),
+  };
+}
+
+export default function NecTrackerPage({
+  onTrackClick,
+  templates = [],
+}: {
+  onTrackClick?: (item: string) => void;
+  templates?: readonly DocumentTemplate[];
+}) {
+  const [data, setData] = useState<NecTrackerDraft>(() => {
+    return normalizeNecTrackerDraft(
+      DataBridge.get(DataBridgeKeys.NEC_DRAFT, DEFAULT_NEC_TRACKER_DRAFT),
+    );
   });
 
   const [vendors] = useState<VendorProfile[]>(() => {
     const loaded = DataBridge.getW9Vendors();
     return loaded.length > 0 ? loaded : [FALLBACK_VENDOR];
   });
-  const [activeTab, setActiveTab] = useState<"ledger" | "verification">("ledger");
-
   // Seed the shared vendor list so 1099 rows always resolve on first render.
   useEffect(() => {
     if (DataBridge.getW9Vendors().length === 0) {
@@ -94,30 +175,18 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
   // Save payments draft
   useEffect(() => {
     DataBridge.set(DataBridgeKeys.NEC_DRAFT, data);
-
-    // Compute stats for tax estimators
-    const totalPayments = data.payments.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-    // Unique contractors count
-    const activeContIds = new Set(data.payments.map(p => p.vendorId));
-
-    // Check threshold counts
-    let thresholdCrossed = 0;
-    activeContIds.forEach(id => {
-      const vendorSums = data.payments
-        .filter(p => p.vendorId === id && p.includeIn1099)
-        .reduce((sum, current) => sum + Number(current.amount || 0), 0);
-      if (vendorSums >= 600) {
-        thresholdCrossed++;
-      }
-    });
+    const summary = calculateNecSummary(data, vendors.map((vendor) => vendor.id));
 
     DataBridge.set(DataBridgeKeys.NEC_SUMMARY, {
       year: data.reportingYear,
-      totalPayments,
-      contractorsCount: activeContIds.size,
-      aboveThresholdCount: thresholdCrossed
+      totalPayments: summary.totalPayments,
+      reportablePayments: summary.reportablePayments,
+      contractorsCount: summary.contractorsCount,
+      aboveThresholdCount: summary.aboveThresholdCount,
+      issues: summary.issues,
+      boxTotals: summary.boxTotals,
     });
-  }, [data]);
+  }, [data, vendors]);
 
   const handleAddPayment = () => {
     const newPay: PaymentItem = {
@@ -159,47 +228,51 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
   };
 
   const handleLoadSample = () => {
-    setData(SAMPLE_NEC);
+    setData(SAMPLE_NEC_TRACKER_DRAFT);
     onTrackClick("nec_sample_loaded");
   };
 
   const handleClearDraft = () => {
     if (confirm("Are you sure you want to clear payment tracking history?")) {
-      setData(DEFAULT_NEC);
+      setData(DEFAULT_NEC_TRACKER_DRAFT);
       onTrackClick("nec_draft_cleared");
     }
   };
 
-  // Reconciled stats
-  const getTotalsByVendor = () => {
-    const sums: Record<string, number> = {};
-    data.payments.forEach(p => {
-      if (p.includeIn1099) {
-        sums[p.vendorId] = (sums[p.vendorId] || 0) + Number(p.amount || 0);
-      }
+  const stats = calculateNecSummary(data, vendors.map((vendor) => vendor.id));
+  const reportingThreshold = stats.rule.supported ? stats.rule.threshold : null;
+
+  const handleAdjustmentChange = (
+    vendorId: string,
+    field: keyof RecipientAnnualAdjustment,
+    value: string,
+  ) => {
+    const numericFields: Array<keyof RecipientAnnualAdjustment> = [
+      "cashTips",
+      "qualifiedOvertime",
+      "federalWithholding",
+      "stateIncome",
+      "stateWithholding",
+    ];
+    const current =
+      data.recipientAdjustments.find((adjustment) => adjustment.vendorId === vendorId) ||
+      createEmptyRecipientAdjustment(vendorId);
+    const nextValue =
+      field === "maskedTinReference"
+        ? maskTinReference(value)
+        : numericFields.includes(field)
+          ? Math.max(0, Number(value))
+          : value;
+    setData({
+      ...data,
+      recipientAdjustments: [
+        ...data.recipientAdjustments.filter(
+          (adjustment) => adjustment.vendorId !== vendorId,
+        ),
+        { ...current, [field]: nextValue },
+      ],
     });
-    return sums;
   };
-
-  const vendorSumsIn1099 = getTotalsByVendor();
-
-  const getStats = () => {
-    const totalsSum = data.payments.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-    const in1099Sum = data.payments.filter(p => p.includeIn1099).reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
-
-    const activeContIds = new Set(data.payments.map(p => p.vendorId));
-    const listCrossed = Object.entries(vendorSumsIn1099).filter(([id, val]) => val >= 600).map(([id]) => id);
-
-    return {
-      totalsSum,
-      in1099Sum,
-      contractorsCount: activeContIds.size,
-      aboveThresholdCount: listCrossed.length,
-      listCrossedIds: listCrossed
-    };
-  };
-
-  const stats = getStats();
 
   const handleExportCSV = () => {
     onTrackClick("nec_csv_exported");
@@ -208,6 +281,12 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
       const v = vendors.find(vend => vend.id === item.vendorId);
       const name = v ? v.legalName : "Unknown Contractor";
       content += `"${item.date}","${name.replace(/"/g, '""')}",${item.amount},"${item.paymentMethod}","${item.category}","${item.description.replace(/"/g, '""')}",${item.includeIn1099 ? "Yes" : "No"}\n`;
+    });
+    content += "\nANNUAL RECIPIENT ADJUSTMENTS\n";
+    content += "Contractor,Masked TIN Reference,Cash Tips,Occupation Codes,Qualified Overtime,Federal Withholding,State,State Income,State Withholding\n";
+    data.recipientAdjustments.forEach((adjustment) => {
+      const vendor = vendors.find((item) => item.id === adjustment.vendorId);
+      content += `"${vendor?.legalName || "Missing vendor"}","${adjustment.maskedTinReference}",${adjustment.cashTips},"${adjustment.occupationCodes}",${adjustment.qualifiedOvertime},${adjustment.federalWithholding},"${adjustment.state}",${adjustment.stateIncome},${adjustment.stateWithholding}\n`;
     });
 
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
@@ -246,16 +325,32 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
         title="1099-NEC Contractor Payments Tracker"
       />
 
+      <AdvancedTemplateWorkspace
+        adapter={nec1099Adapter}
+        draft={data}
+        onDraftChange={setData}
+        onTrackClick={onTrackClick}
+        templates={templates}
+      />
+
+      {stats.issues.length > 0 && (
+        <AlertBanner title="1099 tracking issues" variant="warning">
+          {stats.issues.join(" ")}
+        </AlertBanner>
+      )}
+
       {/* Threshold stats alerts row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 print:hidden">
         <div className="bg-white p-5 border border-slate-200 rounded-2xl">
           <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total payments ledger</span>
-          <p className="text-2xl font-black text-slate-900">${stats.totalsSum.toLocaleString()}</p>
+          <p className="text-2xl font-black text-slate-900">${stats.totalPayments.toLocaleString()}</p>
         </div>
 
         <div className="bg-white p-5 border border-slate-200 rounded-2xl flex justify-between items-center">
           <div>
-            <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Crossing IRS $600 threshold</span>
+            <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">
+              {reportingThreshold === null ? "Rules update required" : `At or above $${reportingThreshold.toLocaleString()} threshold`}
+            </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-amber-600">{stats.aboveThresholdCount}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">contractors</span>
@@ -270,7 +365,7 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
 
         <div className="bg-white p-5 border border-slate-200 rounded-2xl">
           <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 font-sans">Eligible 1099 payouts</span>
-          <p className="text-2xl font-black text-emerald-600">${stats.in1099Sum.toLocaleString()}</p>
+          <p className="text-2xl font-black text-emerald-600">${stats.reportablePayments.toLocaleString()}</p>
         </div>
       </div>
 
@@ -299,6 +394,18 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
                 <Plus className="size-3.5" />
                 <span>Log Payment</span>
               </Button>
+            </div>
+
+            <div className="max-w-48">
+              <label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor="nec-reporting-year">Reporting year</label>
+              <Select
+                id="nec-reporting-year"
+                value={data.reportingYear}
+                onChange={(event) => setData({ ...data, reportingYear: Number(event.target.value) })}
+              >
+                <option value={2026}>2026 ($2,000)</option>
+                <option value={2025}>2025 ($600)</option>
+              </Select>
             </div>
 
             <div className="space-y-4">
@@ -390,10 +497,65 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
             </div>
           </Card>
 
+          <Card className="space-y-4">
+            <div className="border-b pb-2">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Annual recipient adjustments
+              </h3>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Store only a masked last-four reference here, never a full TIN.
+              </p>
+            </div>
+            {vendors.map((vendor) => {
+              const adjustment =
+                data.recipientAdjustments.find((item) => item.vendorId === vendor.id) ||
+                createEmptyRecipientAdjustment(vendor.id);
+              return (
+                <div key={vendor.id} className="space-y-3 rounded-xl border bg-slate-50 p-4">
+                  <p className="text-xs font-black text-slate-900">{vendor.legalName}</p>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    {([
+                      ["cashTips", "Cash tips", "number"],
+                      ["occupationCodes", "Occupation codes", "text"],
+                      ["qualifiedOvertime", "Qualified overtime", "number"],
+                      ["federalWithholding", "Federal withholding", "number"],
+                      ["state", "State", "text"],
+                      ["stateIncome", "State income", "number"],
+                      ["stateWithholding", "State withholding", "number"],
+                    ] as const).map(([field, label, type]) => (
+                      <div key={field}>
+                        <label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-${field}`}>{label}</label>
+                        <Input
+                          id={`nec-${vendor.id}-${field}`}
+                          min={type === "number" ? "0" : undefined}
+                          type={type}
+                          value={adjustment[field]}
+                          onChange={(event) => handleAdjustmentChange(vendor.id, field, event.target.value)}
+                        />
+                      </div>
+                    ))}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-masked-tin`}>Masked TIN reference</label>
+                      <Input
+                        id={`nec-${vendor.id}-masked-tin`}
+                        inputMode="numeric"
+                        placeholder="Last four only"
+                        value={adjustment.maskedTinReference}
+                        onChange={(event) => handleAdjustmentChange(vendor.id, "maskedTinReference", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+
           {/* Compliance notice block */}
           <AlertBanner title="IRS 1099-NEC Threshold warnings" variant="warning">
             <p>
-              Under IRC rules, paying any non-incorporated contractor (Sole proprietors, Single-Member LLCs) $600 or more during a fiscal year requires filing Form 1099-NEC with both the IRS and the contractor by January 31st of the following calendar year.
+              {"error" in stats.rule
+                ? stats.rule.error
+                : `The general Form 1099-NEC reporting threshold for ${data.reportingYear} is $${stats.rule.threshold.toLocaleString()}. Confirm recipient and payment eligibility in your filing workflow.`}
             </p>
           </AlertBanner>
 
@@ -405,7 +567,7 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
           <Card className="space-y-3 p-4 print:hidden">
             <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold border-b pb-2">
               <span>REPORT EXPORT BAR</span>
-              <StatusBadge variant="warning">IRS compliant format</StatusBadge>
+              <StatusBadge variant="warning">Internal report — not Copy A</StatusBadge>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -437,10 +599,10 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
               <div className="border-b-2 border-slate-900 pb-4 mb-6">
                 <span className="text-[11px] font-black text-slate-400 block uppercase font-mono tracking-wider">ANNUAL CONTRACTOR COMPLIANCE VERIFICATIONS</span>
                 <h1 className="text-lg font-black text-slate-950 leading-tight">
-                  FORM 1099-NEC REPORTING AUDIT LEDGER
+                  1099-NEC INTERNAL REPORTING LEDGER
                 </h1>
                 <p className="text-[10px] text-slate-400 font-bold font-mono">
-                  TAX YEAR COMPLIANT REPORTING PERIOD {data.reportingYear}
+                  INTERNAL REVIEW PERIOD {data.reportingYear}
                 </p>
               </div>
 
@@ -448,7 +610,7 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-slate-50 border rounded-lg p-3 text-xs">
                   <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">Eligible 1099 payments</span>
-                  <p className="text-slate-900 font-black font-mono text-sm mt-0.5">${stats.in1099Sum.toLocaleString()}</p>
+                  <p className="text-slate-900 font-black font-mono text-sm mt-0.5">${stats.reportablePayments.toLocaleString()}</p>
                 </div>
                 <div className="bg-slate-50 border rounded-lg p-3 text-xs text-right">
                   <span className="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold block">Threshold filers alert</span>
@@ -456,10 +618,25 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
                 </div>
               </div>
 
+              <div className="mb-6 grid grid-cols-2 gap-2 text-[10px] md:grid-cols-3">
+                {([
+                  ["Cash tips", stats.boxTotals.cashTips],
+                  ["Qualified overtime", stats.boxTotals.qualifiedOvertime],
+                  ["Federal withholding", stats.boxTotals.federalWithholding],
+                  ["State income", stats.boxTotals.stateIncome],
+                  ["State withholding", stats.boxTotals.stateWithholding],
+                ] as const).map(([label, value]) => (
+                  <div key={label} className="rounded-lg border bg-slate-50 p-2">
+                    <span className="block font-black uppercase text-slate-400">{label}</span>
+                    <span className="font-mono font-black text-slate-900">${value.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* Threshold alerts contractors listing table */}
               <div className="border border-slate-200 rounded-xl overflow-hidden text-xs mb-6">
                 <div className="bg-slate-100/50 px-3 py-2 border-b text-[11px] font-black text-slate-900 uppercase">
-                  Contractor annual payout sums (Crossing $600 IRS Cap)
+                  Contractor annual payout sums {reportingThreshold === null ? "(rules update required)" : `(threshold $${reportingThreshold.toLocaleString()})`}
                 </div>
 
                 <table className="w-full text-left">
@@ -472,14 +649,14 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
                   </thead>
                   <tbody>
                     {vendors.map(vend => {
-                      const sum = vendorSumsIn1099[vend.id] || 0;
+                      const sum = stats.vendorTotals[vend.id] || 0;
                       return (
                         <tr key={vend.id} className="border-b last:border-0 border-slate-100">
                           <td className="py-3 px-3 font-extrabold text-slate-950">
                             {vend.legalName}
-                            {sum >= 600 && (
+                            {reportingThreshold !== null && sum >= reportingThreshold && (
                               <span className="block text-[11px] text-amber-600 font-bold uppercase tracking-wide pt-0.5">
-                                ⚠ filing Required (Exceeds $600 Cap)
+                                ⚠ threshold reached
                               </span>
                             )}
                           </td>
@@ -531,23 +708,11 @@ export default function NecTrackerPage({ onTrackClick }: { onTrackClick?: (item:
                 </table>
               </div>
 
-              {/* Declarations Sign-offs */}
               <div className="border-t pt-6 mt-12 text-center text-xs text-slate-600 leading-relaxed font-semibold">
-                <p className="font-extrabold text-slate-900 uppercase">Form 1099-NEC Reconciliations declaration</p>
-                <p className="text-[10px] text-slate-400 max-w-xl mx-auto pt-2">
-                  I hereby certify that this summary ledger is consistent with registered bank disbursements paid to contracted personnel in compliance with IRS Form 1099-NEC threshold definitions.
+                <p className="font-extrabold text-slate-900 uppercase">Internal report disclaimer</p>
+                <p className="text-[10px] text-slate-500 max-w-xl mx-auto pt-2">
+                  {NEC_INTERNAL_REPORT_DISCLAIMER}
                 </p>
-
-                <div className="grid grid-cols-2 gap-8 mt-8 max-w-sm mx-auto">
-                  <div className="space-y-1">
-                    <div className="border-b border-slate-300 h-8" />
-                    <span className="block text-[11px] uppercase font-bold text-slate-400">Payer Signature</span>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="border-b border-slate-350 h-8" />
-                    <span className="block text-[11px] uppercase font-bold text-slate-400 font-mono">reconciled date</span>
-                  </div>
-                </div>
               </div>
 
             </div>

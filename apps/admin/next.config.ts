@@ -3,6 +3,11 @@ import { sharedNextConfig } from "../../next.config.shared.mjs";
 
 const nextConfig: NextConfig = {
   ...sharedNextConfig,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
   turbopack: {
     resolveAlias: {
       module: { browser: "./src/lib/browserEmptyModule.ts" },

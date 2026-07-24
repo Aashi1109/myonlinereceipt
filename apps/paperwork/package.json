@@ -11,6 +11,10 @@
   },
   "dependencies": {
     "@google/genai": "^2.12.0",
+    "@pdfme/common": "6.1.11",
+    "@pdfme/generator": "6.1.11",
+    "@pdfme/schemas": "6.1.11",
+    "@pdfme/ui": "6.1.11",
     "@react-pdf/renderer": "^4.5.1",
     "@smarttools/auth": "workspace:*",
     "@smarttools/control-plane": "workspace:*",

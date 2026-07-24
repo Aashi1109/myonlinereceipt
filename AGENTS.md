@@ -71,9 +71,15 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 - Component and type names use PascalCase; functions and variables use camelCase; constants use `UPPER_SNAKE_CASE`; route directories use kebab-case.
 - Component files use `PascalCase.tsx`; non-component TypeScript files follow the nearby convention and use descriptive names.
 
-## UI Layout
+## UI and Design-System Rules
 
 - Design page layouts around content relationships and available space. Keep related headings, filters, actions, and supporting content inline or in responsive grids when that improves scanning and space use; stack them into full-width rows only when the content or viewport requires it. Do not default to a repetitive row-after-row layout.
+- Before creating or redesigning UI, inspect the existing reusable components and design tokens in the relevant codebase or `.pen` document.
+- Reuse existing design-system components through real component instances or references. Do not create hand-built visual lookalikes for an available header, footer, button, input, select, textarea, toggle, checkbox, alert, badge, card, table row, navigation item, workbench, or other reusable component.
+- When the same meaningful UI pattern appears three or more times, extract or extend a reusable design-system component before creating more copies. Document it in the component library and build subsequent uses as instances with page-specific overrides.
+- A shared workbench or component-family overview does not replace page coverage. When the task requires every implemented route or tool page, create and clearly label a separate complete page design for each route, while instancing the shared family component inside each page.
+- Preserve all previously created designs. Do not delete an existing page, screen, state, workbench, component, or design section unless the user explicitly requests deletion. Refactor in place or add new coverage instead.
+- Page-specific content, controls, states, and results must remain tailored to the implemented feature even when pages share the same reusable shell.
 
 ## Change and Artifact Hygiene
 
@@ -86,6 +92,8 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 ## Testing and Verification
 
 Tests use `node:test` and `node:assert`; name repository tests `tests/*.test.mjs`. Add one focused regression test for non-trivial bug fixes and architecture rules.
+
+Use TDD only for non-trivial business logic, complex behavior, or regression-prone bug fixes where a test adds real value. Otherwise, use the relevant build, lint, typecheck, or validation command.
 
 For code changes:
 

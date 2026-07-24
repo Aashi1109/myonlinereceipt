@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   AlertBanner,
   Button,
@@ -40,8 +41,15 @@ import {
   MapPin
 } from "lucide-react";
 import { DataBridge, DataBridgeKeys, BusinessProfile, ClientProfile, ExpenseRow, MileageEntry } from "../../lib/shared/dataBridge";
+import {
+  calculateExpenseTotals,
+  getExpenseLineTotal,
+  normalizeExpenseRows,
+} from "../../lib/expenseReportRules";
+import { expenseReportAdapter } from "../../lib/documentAdapters";
+import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
-interface ExpenseReportData {
+export interface ExpenseReportDraft {
   reportNumber: string;
   title: string;
   reportDate: string;
@@ -65,9 +73,12 @@ interface ExpenseReportData {
   expenses: ExpenseRow[];
   mileageRows: MileageEntry[];
   advanceReceived: number;
+  evidenceSummary: string;
+  certification: boolean;
+  approverName: string;
 }
 
-const DEFAULT_REPORT: ExpenseReportData = {
+export const DEFAULT_EXPENSE_REPORT_DRAFT: ExpenseReportDraft = {
   reportNumber: `EXP-${new Date().getFullYear()}-001`,
   title: "Monthly Operating Expenses",
   reportDate: new Date().toISOString().substring(0, 10),
@@ -92,10 +103,13 @@ const DEFAULT_REPORT: ExpenseReportData = {
     { id: "row-1", date: new Date().toISOString().substring(0, 10), merchant: "Amazon Business", category: "Office supplies", description: "Heavy duty USB hubs & desk adapters", paymentMethod: "Card", amount: 89.90, tax: 6.20, tip: 0, reimbursable: true, billable: false, receiptAttached: true, receiptName: "amazon_usb_invoice_cover.png" }
   ],
   mileageRows: [],
-  advanceReceived: 0
+  advanceReceived: 0,
+  evidenceSummary: "",
+  certification: false,
+  approverName: "",
 };
 
-const SAMPLE_REPORT: ExpenseReportData = {
+export const SAMPLE_EXPENSE_REPORT_DRAFT: ExpenseReportDraft = {
   reportNumber: `EXP-2026-039`,
   title: "Seattle Client Pitch Sprint",
   reportDate: new Date().toISOString().substring(0, 10),
@@ -123,14 +137,50 @@ const SAMPLE_REPORT: ExpenseReportData = {
     { id: "row-4", date: "2026-05-19", merchant: "Figma Inc", category: "Software", description: "Pro plan subscription premium tier add-on", paymentMethod: "Personal funds", amount: 15.00, tax: 0, tip: 0, reimbursable: false, billable: false, receiptAttached: false }
   ],
   mileageRows: [
-    { id: "mil-1", date: "2026-05-17", purpose: "Drive Asheville office to CLT Airport terminal", startLocation: "Asheville Office", destination: "CLT Airport Parking", miles: 110, rate: 0.67, amount: 73.70 }
+    { id: "mil-1", date: "2026-05-17", purpose: "Drive Asheville office to CLT Airport terminal", startLocation: "Asheville Office", destination: "CLT Airport Parking", miles: 110, rate: 0.725, amount: 79.75 }
   ],
-  advanceReceived: 150.00
+  advanceReceived: 150.00,
+  evidenceSummary: "Three receipts attached",
+  certification: true,
+  approverName: "Jordan Lee",
 };
 
-export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
-  const [data, setData] = useState<ExpenseReportData>(() => {
-    return DataBridge.get<ExpenseReportData>(DataBridgeKeys.EXPENSE_DRAFT, DEFAULT_REPORT);
+export function normalizeExpenseReportDraft(
+  draft: Partial<ExpenseReportDraft>,
+): ExpenseReportDraft {
+  return {
+    ...DEFAULT_EXPENSE_REPORT_DRAFT,
+    ...draft,
+    submitter: {
+      ...DEFAULT_EXPENSE_REPORT_DRAFT.submitter,
+      ...draft.submitter,
+    },
+    client: {
+      ...DEFAULT_EXPENSE_REPORT_DRAFT.client,
+      ...draft.client,
+    },
+    expenses: normalizeExpenseRows(
+      draft.expenses || DEFAULT_EXPENSE_REPORT_DRAFT.expenses,
+    ) as ExpenseRow[],
+    mileageRows: draft.mileageRows || [],
+    advanceReceived: Number(draft.advanceReceived || 0),
+    evidenceSummary: String(draft.evidenceSummary || ""),
+    certification: Boolean(draft.certification),
+    approverName: String(draft.approverName || ""),
+  };
+}
+
+export default function ExpenseReportPage({
+  onTrackClick,
+  templates = [],
+}: {
+  onTrackClick?: (item: string) => void;
+  templates?: readonly DocumentTemplate[];
+}) {
+  const [data, setData] = useState<ExpenseReportDraft>(() => {
+    return normalizeExpenseReportDraft(
+      DataBridge.get(DataBridgeKeys.EXPENSE_DRAFT, DEFAULT_EXPENSE_REPORT_DRAFT),
+    );
   });
 
   const [selectedTheme, setSelectedTheme] = useState<"classic" | "client" | "travel" | "contractor" | "monthly">("classic");
@@ -147,19 +197,25 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
 
   // Sync with Quarterly Tax Estimator (deductible expenses aggregate)
   useEffect(() => {
-    const totalDeductible = data.expenses.reduce((acc, current) => {
-      // All business expenses are generally deductible regardless of client billing status, if they are self-employed expenses
-      return acc + Number(current.amount || 0);
-    }, 0);
-    const milAmount = data.mileageRows.reduce((acc, current) => acc + (Number(current.miles || 0) * Number(current.rate || 0)), 0);
+    const summary = calculateExpenseTotals(
+      data.expenses,
+      data.mileageRows,
+      data.advanceReceived,
+    );
 
     // Save to shared expense summary key
     DataBridge.set("paperworkkit.expenseReport.summary", {
       reportNumber: data.reportNumber,
       title: data.title,
       dateRange: `${data.startDate} to ${data.endDate}`,
-      totalAmount: totalDeductible + milAmount,
-      reimbursableAmount: data.expenses.filter(e => e.reimbursable).reduce((acc, curr) => acc + curr.amount, 0)
+      baseAmount: summary.baseAmount,
+      taxAmount: summary.taxAmount,
+      tipAmount: summary.tipAmount,
+      mileageAmount: summary.mileageTotal,
+      totalAmount: summary.reportTotal,
+      reimbursableAmount: summary.reimbursableTotal,
+      billableAmount: summary.billableTotal,
+      amountDue: summary.amountDue
     });
   }, [data]);
 
@@ -185,7 +241,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
       startOdometer: trip.startOdometer,
       endOdometer: trip.endOdometer,
       miles: Number(trip.miles || 0),
-      rate: Number(trip.rate || 0.67),
+      rate: Number(trip.rate || 0),
       amount: Number(trip.amount || 0)
     }));
 
@@ -199,13 +255,13 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
   };
 
   const handleLoadSample = () => {
-    setData(SAMPLE_REPORT);
+    setData(SAMPLE_EXPENSE_REPORT_DRAFT);
     onTrackClick("expense_sample_loaded");
   };
 
   const handleClearDraft = () => {
     if (confirm("Are you sure you want to clear this expense board?")) {
-      setData(DEFAULT_REPORT);
+      setData(DEFAULT_EXPENSE_REPORT_DRAFT);
       onTrackClick("expense_draft_cleared");
     }
   };
@@ -240,7 +296,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
       startLocation: "",
       destination: "",
       miles: 0,
-      rate: 0.67,
+      rate: 0,
       amount: 0
     };
     setData({
@@ -294,44 +350,21 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
     setData({ ...data, mileageRows: updated });
   };
 
-  // Calculations
-  const calculateTotals = () => {
-    const totalExpenses = data.expenses.reduce((acc, current) => acc + Number(current.amount || 0), 0);
-    const totalReimbursable = data.expenses.filter(e => e.reimbursable).reduce((acc, current) => acc + Number(current.amount || 0), 0);
-    const totalBillable = data.expenses.filter(e => e.billable).reduce((acc, current) => acc + Number(current.amount || 0), 0);
-
-    // Mileage total
-    const totalMileageAmount = data.mileageRows.reduce((acc, current) => acc + Number(current.amount || 0), 0);
-    const totalMiles = data.mileageRows.reduce((acc, current) => acc + Number(current.miles || 0), 0);
-
-    const checkCount = data.expenses.filter(e => e.receiptAttached).length;
-    const totalsByCat: Record<string, number> = {};
-    data.expenses.forEach(e => {
-      totalsByCat[e.category] = (totalsByCat[e.category] || 0) + Number(e.amount || 0);
-    });
-
-    const netAmountDue = totalReimbursable + totalMileageAmount - Number(data.advanceReceived || 0);
-
-    return {
-      totalExpenses,
-      totalReimbursable,
-      totalBillable,
-      totalMileageAmount,
-      totalMiles,
-      receiptCount: checkCount,
-      netAmountDue,
-      categoryGroups: totalsByCat
-    };
+  const totals = {
+    ...calculateExpenseTotals(
+      data.expenses,
+      data.mileageRows,
+      data.advanceReceived,
+    ),
+    receiptCount: data.expenses.filter((expense) => expense.receiptAttached).length,
   };
-
-  const totals = calculateTotals();
 
   // Export CSV Action
   const handleExportCSV = () => {
     onTrackClick("expense_csv_exported");
-    let content = "Date,Merchant,Category,Description,Payment Method,Amount,Tax,Tip,Reimbursable,Billable,Receipt Attached\n";
+    let content = "Date,Merchant,Category,Description,Payment Method,Base Amount,Tax,Tip,Line Total,Reimbursable,Billable,Receipt Attached\n";
     data.expenses.forEach((item) => {
-      content += `"${item.date}","${item.merchant.replace(/"/g, '""')}","${item.category}","${item.description.replace(/"/g, '""')}","${item.paymentMethod}",${item.amount},${item.tax},${item.tip},${item.reimbursable ? "Yes" : "No"},${item.billable ? "Yes" : "No"},${item.receiptAttached ? "Yes" : "No"}\n`;
+      content += `"${item.date}","${item.merchant.replace(/"/g, '""')}","${item.category}","${item.description.replace(/"/g, '""')}","${item.paymentMethod}",${item.amount},${item.tax},${item.tip},${getExpenseLineTotal(item)},${item.reimbursable ? "Yes" : "No"},${item.billable ? "Yes" : "No"},${item.receiptAttached ? "Yes" : "No"}\n`;
     });
 
     if (data.mileageRows.length > 0) {
@@ -408,6 +441,14 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
         description="Categorize corporate purchases, reconcile item logs, and formulate reimbursable parameters."
         eyebrow={<StatusBadge variant="info">Corporate Reimbursement Track</StatusBadge>}
         title="Expense Report Generator"
+      />
+
+      <AdvancedTemplateWorkspace
+        adapter={expenseReportAdapter}
+        draft={data}
+        onDraftChange={setData}
+        onTrackClick={onTrackClick}
+        templates={templates}
       />
 
       {/* 2. Import Dialog Popup overlay */}
@@ -693,6 +734,37 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>Tax ($)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          id={`expense-row-${row.id}-tax`}
+                          value={row.tax}
+                          onChange={(e) => handleExpenseRowChange(row.id, "tax", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>Tip ($)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          id={`expense-row-${row.id}-tip`}
+                          value={row.tip}
+                          onChange={(e) => handleExpenseRowChange(row.id, "tip", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <span className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Line total</span>
+                        <output className="flex min-h-10 items-center font-mono text-sm font-black text-slate-900">
+                          ${getExpenseLineTotal(row).toFixed(2)}
+                        </output>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1">
                       <div className="md:col-span-6">
                         <Input
@@ -765,7 +837,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                     5. Driven Mileage Rows
                   </h3>
                   <StatusBadge className="font-mono" variant="neutral">
-                    $.67 / mi
+                    Per-row rate
                   </StatusBadge>
                 </div>
                 <Button
@@ -795,7 +867,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                         <Trash2 className="w-4 h-4" />
                       </button>
 
-                      <div className="grow grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
                           <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-date`}>Date</label>
                           <Input
@@ -826,6 +898,18 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                             id={`expense-mileage-${mRow.id}-miles`}
                             value={mRow.miles}
                             onChange={(e) => handleMileageRowChange(mRow.id, "miles", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-rate`}>Rate / mile</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.001"
+                            className="text-xs font-black"
+                            id={`expense-mileage-${mRow.id}-rate`}
+                            value={mRow.rate}
+                            onChange={(e) => handleMileageRowChange(mRow.id, "rate", e.target.value)}
                           />
                         </div>
                       </div>
@@ -968,7 +1052,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                           </span>
                         </td>
                         <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
-                          ${Number(row.amount || 0).toFixed(2)}
+                          ${getExpenseLineTotal(row).toFixed(2)}
                         </td>
                       </tr>
                     ))}
@@ -997,7 +1081,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                           <td className="py-2 px-3 font-mono text-slate-500">{mRow.date}</td>
                           <td className="py-2 px-3 font-semibold text-slate-800 leading-snug">{mRow.purpose}</td>
                           <td className="py-2 px-3 text-center font-bold text-slate-500 font-mono">{mRow.miles} mi</td>
-                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">${mRow.amount.toFixed(2)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-slate-900">${(Number(mRow.miles || 0) * Number(mRow.rate || 0)).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1011,7 +1095,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                 {/* Category breakdown summaries block */}
                 <div className="col-span-6 space-y-1">
                   <span className="text-[11px] uppercase tracking-widest text-slate-400 font-extrabold block mb-1">Expenses Sub-Category Groupings</span>
-                  {Object.entries(totals.categoryGroups).map(([cat, val]) => (
+                  {Object.entries(totals.categoryTotals).map(([cat, val]) => (
                     <div key={cat} className="flex justify-between text-[10px] font-bold text-slate-500 max-w-xs">
                       <span>{cat}:</span>
                       <span className="font-mono">${val.toFixed(2)}</span>
@@ -1020,7 +1104,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                   {totals.totalMiles > 0 && (
                     <div className="flex justify-between text-[10px] font-bold text-emerald-600 max-w-xs pt-1 border-t border-dashed">
                       <span>Mileage Log Credit:</span>
-                      <span className="font-mono">${totals.totalMileageAmount.toFixed(2)}</span>
+                      <span className="font-mono">${totals.mileageTotal.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -1028,13 +1112,25 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                 {/* Subtotals Block */}
                 <div className="col-span-6 text-right space-y-2 text-xs font-semibold">
                   <div className="flex justify-between font-mono">
-                    <span className="text-slate-500">Receipts Total:</span>
-                    <span className="text-slate-800">${totals.totalExpenses.toFixed(2)}</span>
+                    <span className="text-slate-500">Base amount:</span>
+                    <span className="text-slate-800">${totals.baseAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-slate-500">Tax:</span>
+                    <span className="text-slate-800">${totals.taxAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-slate-500">Tip:</span>
+                    <span className="text-slate-800">${totals.tipAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-mono">
+                    <span className="text-slate-500">Expense total:</span>
+                    <span className="text-slate-800">${totals.expenseTotal.toFixed(2)}</span>
                   </div>
                   {totals.totalMiles > 0 && (
                     <div className="flex justify-between font-mono">
                       <span className="text-slate-500">Mileage Reconciled:</span>
-                      <span className="text-slate-800">${totals.totalMileageAmount.toFixed(2)}</span>
+                      <span className="text-slate-800">${totals.mileageTotal.toFixed(2)}</span>
                     </div>
                   )}
                   {data.advanceReceived > 0 && (
@@ -1047,7 +1143,7 @@ export default function ExpenseReportPage({ onTrackClick }: { onTrackClick?: (it
                   <div className="flex justify-between items-center border-t border-slate-200 pt-2.5 mt-2">
                     <span className="text-xs uppercase font-black text-slate-900">Reimbursement Due</span>
                     <span className="text-lg font-black text-slate-950 font-mono">
-                      ${totals.netAmountDue.toFixed(2)}
+                      ${totals.amountDue.toFixed(2)}
                     </span>
                   </div>
                 </div>

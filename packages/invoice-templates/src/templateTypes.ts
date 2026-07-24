@@ -7,10 +7,49 @@ export type TemplateCategory = "simple" | "professional" | "creative" | "service
 export type TemplateStatus = "draft" | "published" | "archived";
 export type LayoutFamily = "classic" | "modern" | "compact" | "bold" | "minimal" | "service";
 export type TemplateLayoutFamily = LayoutFamily | "advanced";
-export type DocumentType = "invoice" | "receipt";
+export type DocumentType =
+  | "invoice"
+  | "receipt"
+  | "expense-report"
+  | "mileage-log"
+  | "quarterly-tax-estimator"
+  | "w9-request"
+  | "1099-nec-tracker";
 export type PageFormat = "A4" | "LETTER" | "RECEIPT_80MM" | "RECEIPT_58MM";
 export type TemplateDocumentType = DocumentType;
 export type TemplatePageFormat = PageFormat;
+export type TemplateScalarControl =
+  | "text"
+  | "textarea"
+  | "email"
+  | "phone"
+  | "number"
+  | "currency"
+  | "percent"
+  | "date"
+  | "time"
+  | "select"
+  | "checkbox";
+export type DocumentFieldValueType =
+  | "text"
+  | "number"
+  | "boolean"
+  | "date"
+  | "time"
+  | "table"
+  | "image";
+export type DocumentFieldSource =
+  | "user"
+  | "computed"
+  | "system"
+  | "reference";
+export type PdfmeBindingType = "text" | "table" | "image";
+export type SensitiveDataClassification =
+  | "none"
+  | "contact"
+  | "financial"
+  | "tax"
+  | "masked-tax-id";
 
 export interface PdfmeSchema {
   name: string;
@@ -35,13 +74,123 @@ export interface PdfmeTemplate {
   [key: string]: unknown;
 }
 
-export interface AdvancedTemplateConfig {
+export interface TemplateFormEntryBase {
+  key: string;
+  label: string;
+  helpText?: string;
+  required: boolean;
+  enabled: boolean;
+}
+
+export interface BuiltInTemplateFormEntry extends TemplateFormEntryBase {
+  kind: "builtin";
+}
+
+export interface CustomScalarTemplateFormEntry extends TemplateFormEntryBase {
+  kind: "custom";
+  control: TemplateScalarControl;
+  options?: string[];
+}
+
+export interface CustomRepeaterColumn {
+  key: string;
+  label: string;
+  control: TemplateScalarControl;
+  required: boolean;
+  options?: string[];
+}
+
+export interface CustomRepeaterTemplateFormEntry
+  extends TemplateFormEntryBase {
+  kind: "repeater";
+  columns: CustomRepeaterColumn[];
+  minRows?: number;
+}
+
+export type TemplateFormEntry =
+  | BuiltInTemplateFormEntry
+  | CustomScalarTemplateFormEntry
+  | CustomRepeaterTemplateFormEntry;
+
+export interface TemplateFormSection {
+  id: string;
+  label: string;
+  entries: TemplateFormEntry[];
+}
+
+export interface TemplateFormConfig {
+  sections: TemplateFormSection[];
+}
+
+export interface DocumentRepeaterColumnDefinition {
+  key: string;
+  label: string;
+  valueType: Exclude<DocumentFieldValueType, "table" | "image">;
+  control: TemplateScalarControl;
+  required: boolean;
+  sampleValue: string;
+  sensitiveData: SensitiveDataClassification;
+}
+
+export interface DocumentFieldDefinition {
+  key: string;
+  label: string;
+  description: string;
+  section: string;
+  valueType: DocumentFieldValueType;
+  control: TemplateScalarControl | "repeater" | "hidden";
+  source: DocumentFieldSource;
+  required: boolean;
+  computationRequired: boolean;
+  sampleValue: string;
+  allowedBindingTypes: readonly PdfmeBindingType[];
+  repeaterColumns?: readonly DocumentRepeaterColumnDefinition[];
+  sensitiveData: SensitiveDataClassification;
+}
+
+export interface DocumentDefinition {
+  documentType: DocumentType;
+  label: string;
+  toolComponentKey: string;
+  defaultPageFormat: PageFormat;
+  allowedPageFormats: readonly PageFormat[];
+  fields: readonly DocumentFieldDefinition[];
+  defaultForm: TemplateFormConfig;
+  requiredBindings: readonly string[];
+  complianceMode: "normal" | "internal-tax-report" | "tax-request";
+}
+
+export interface AdvancedTemplateConfigV2 {
   editor: "pdfme";
+  schemaVersion: 2;
   pageFormat: PageFormat;
   template: PdfmeTemplate;
   sampleData: Record<string, string>;
+  form: TemplateFormConfig;
 }
 
+export type AdvancedTemplateConfig = AdvancedTemplateConfigV2;
+
+export interface LegacyAdvancedTemplateConfig {
+  editor: "pdfme";
+  schemaVersion?: undefined;
+  pageFormat: PageFormat;
+  template: PdfmeTemplate;
+  sampleData: Record<string, string>;
+  form?: undefined;
+}
+
+export interface AdvancedTemplateValidationIssue {
+  code: string;
+  message: string;
+  path: string;
+}
+
+export interface AdvancedTemplateValidationResult {
+  valid: boolean;
+  errors: AdvancedTemplateValidationIssue[];
+  warnings: AdvancedTemplateValidationIssue[];
+}
 export interface InvoiceTemplateConfig {
   theme: {
     primaryColor: string;

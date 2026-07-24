@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { InvoiceTemplate } from "@smarttools/invoice-templates";
+import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   Button,
   EmptyState,
@@ -19,18 +19,24 @@ import { Check, Search, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
 interface TemplateSelectorProps {
+  documentLabel?: string;
   selectedTemplateId: string;
-  templates: readonly InvoiceTemplate[];
-  onSelect: (template: InvoiceTemplate) => void;
+  templates: readonly DocumentTemplate[];
+  onSelect: (template: DocumentTemplate) => void;
 }
 
 export default function TemplateSelector({
+  documentLabel,
   selectedTemplateId,
   templates,
   onSelect,
 }: TemplateSelectorProps) {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const label =
+    documentLabel ??
+    templates[0]?.documentType.replaceAll("-", " ") ??
+    "document";
 
   const categories = useMemo(() => {
     const list = new Set<string>();
@@ -57,7 +63,7 @@ export default function TemplateSelector({
       <SectionHeading
         action={<StatusBadge variant="info">{templates.length} published styles</StatusBadge>}
         description="Dynamic structure scales immediately based on layout. No lost draft."
-        title="Select Invoice Design Theme"
+        title={`Select ${label} template`}
       />
 
       <div className="flex flex-col gap-3 md:flex-row">
@@ -67,7 +73,7 @@ export default function TemplateSelector({
             className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
           />
           <Input
-            aria-label="Search invoice design themes"
+            aria-label={`Search ${label} templates`}
             className="pl-9"
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search layout names or attributes..."
@@ -78,7 +84,7 @@ export default function TemplateSelector({
 
         <div className="md:hidden">
           <Select
-            aria-label="Filter invoice themes by category"
+            aria-label={`Filter ${label} templates by category`}
             onChange={(event) => setActiveCategory(event.target.value)}
             value={activeCategory}
           >

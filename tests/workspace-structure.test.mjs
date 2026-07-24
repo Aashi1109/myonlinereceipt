@@ -176,7 +176,8 @@ test("Paperwork exposes published templates through a guarded read-only API", as
   );
 
   assert.match(route, /getPublishedTemplates/);
-  assert.match(route, /getAvailableToolBySlug/);
+  assert.match(route, /getAvailableTools/);
+  assert.match(route, /tool\.componentKey === componentKey/);
   assert.match(route, /export\s+async\s+function\s+GET/);
   assert.doesNotMatch(route, /export\s+async\s+function\s+POST/);
   assert.doesNotMatch(route, /localStorage|invoiceTemplatesTable/);

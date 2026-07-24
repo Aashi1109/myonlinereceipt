@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InvoiceData, CalculatedTotals } from "../types";
+import type { CalculatedTotals, InvoiceData } from "../types";
 
 /**
  * Perform precise financial calculations for an invoice draft.

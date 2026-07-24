@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
   Button,
   Card,
@@ -39,11 +40,17 @@ import {
   Briefcase
 } from "lucide-react";
 import { DataBridge, DataBridgeKeys, VendorProfile } from "../../lib/shared/dataBridge";
+import {
+  createW9Request,
+  W9_REQUEST_DISCLAIMER,
+} from "../../lib/contractorTaxRules";
+import { w9RequestAdapter } from "../../lib/documentAdapters";
+import AdvancedTemplateWorkspace from "../AdvancedTemplateWorkspace";
 
 const ENTITY_TYPES = ["Individual", "LLC", "Partnership", "Corporation", "Unknown"];
 const W9_STATUS_OPTIONS = ["Not Requested", "Requested", "Received", "Needs Review", "Not Applicable"];
 
-const DEFAULT_VENDORS: VendorProfile[] = [
+export const DEFAULT_W9_VENDORS: VendorProfile[] = [
   {
     id: "vendor-1",
     legalName: "Devon Lane",
@@ -57,12 +64,109 @@ const DEFAULT_VENDORS: VendorProfile[] = [
   }
 ];
 
-export default function W9RequestPage({ onTrackClick }: { onTrackClick?: (item: string) => void }) {
-  const [vendors, setVendors] = useState<VendorProfile[]>(() => {
-    return DataBridge.get<VendorProfile[]>(DataBridgeKeys.W9_VENDORS, DEFAULT_VENDORS);
-  });
+export interface W9RequestDraft {
+  requesterName: string;
+  requesterEmail: string;
+  requesterAddress: string;
+  reportingYear: number;
+  requestDate: string;
+  dueDate: string;
+  message: string;
+  secureSubmissionInstructions: string;
+  supportContact: string;
+  requestStatus: string;
+  vendors: VendorProfile[];
+}
 
-  const [selectedVendorId, setSelectedVendorId] = useState<string>("vendor-1");
+export const DEFAULT_W9_REQUEST_DRAFT: W9RequestDraft = {
+  requesterName: "",
+  requesterEmail: "",
+  requesterAddress: "",
+  reportingYear: 2026,
+  requestDate: new Date().toISOString().substring(0, 10),
+  dueDate: "",
+  message: "Please complete the current official IRS Form W-9.",
+  secureSubmissionInstructions:
+    "Upload the completed form through your organization's approved secure vendor portal. Do not return it by ordinary email.",
+  supportContact: "",
+  requestStatus: "Requested",
+  vendors: DEFAULT_W9_VENDORS,
+};
+
+export const SAMPLE_W9_REQUEST_DRAFT: W9RequestDraft = {
+  ...DEFAULT_W9_REQUEST_DRAFT,
+  requesterName: "Northstar Studio LLC",
+  requesterEmail: "accounts@northstar.example",
+  requesterAddress: "42 Market Street, Austin, TX 78701",
+  requestDate: "2026-07-23",
+  dueDate: "2026-08-06",
+  supportContact: "accounts@northstar.example",
+};
+
+export function normalizeW9RequestDraft(
+  draft: Partial<W9RequestDraft>,
+): W9RequestDraft {
+  const vendors = (draft.vendors || DEFAULT_W9_VENDORS).map((vendor) => ({
+    id: String(vendor.id || `vendor-${Date.now()}`),
+    legalName: String(vendor.legalName || ""),
+    businessName: String(vendor.businessName || ""),
+    email: String(vendor.email || ""),
+    phone: String(vendor.phone || ""),
+    addressLine1: String(vendor.addressLine1 || ""),
+    city: vendor.city ? String(vendor.city) : undefined,
+    state: vendor.state ? String(vendor.state) : undefined,
+    zipCode: vendor.zipCode ? String(vendor.zipCode) : undefined,
+    entityType: vendor.entityType || "Unknown",
+    w9Status: vendor.w9Status || "Not Requested",
+    notes: String(vendor.notes || ""),
+  }));
+  return {
+    requesterName: String(draft.requesterName || ""),
+    requesterEmail: String(draft.requesterEmail || ""),
+    requesterAddress: String(draft.requesterAddress || ""),
+    reportingYear: Number(draft.reportingYear || 2026),
+    requestDate: String(
+      draft.requestDate || DEFAULT_W9_REQUEST_DRAFT.requestDate,
+    ),
+    dueDate: String(draft.dueDate || ""),
+    message: String(draft.message || DEFAULT_W9_REQUEST_DRAFT.message),
+    secureSubmissionInstructions: String(
+      draft.secureSubmissionInstructions ||
+        DEFAULT_W9_REQUEST_DRAFT.secureSubmissionInstructions,
+    ),
+    supportContact: String(draft.supportContact || ""),
+    requestStatus: String(
+      draft.requestStatus || DEFAULT_W9_REQUEST_DRAFT.requestStatus,
+    ),
+    vendors,
+  };
+}
+
+export default function W9RequestPage({
+  onTrackClick,
+  templates = [],
+}: {
+  onTrackClick?: (item: string) => void;
+  templates?: readonly DocumentTemplate[];
+}) {
+  const [draft, setDraft] = useState<W9RequestDraft>(() => {
+    const storedDraft = DataBridge.get<Partial<W9RequestDraft>>(
+      "paperworkkit.w9Request.draft",
+      {},
+    );
+    const vendors = DataBridge.getW9Vendors();
+    return normalizeW9RequestDraft({
+      ...storedDraft,
+      vendors: vendors.length ? vendors : storedDraft.vendors,
+    });
+  });
+  const vendors = draft.vendors;
+  const setVendors = (nextVendors: VendorProfile[]) =>
+    setDraft((current) => ({ ...current, vendors: nextVendors }));
+
+  const [selectedVendorId, setSelectedVendorId] = useState<string>(
+    () => vendors[0]?.id || "",
+  );
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -81,7 +185,8 @@ export default function W9RequestPage({ onTrackClick }: { onTrackClick?: (item: 
   // Sync state to memory
   useEffect(() => {
     DataBridge.saveW9Vendors(vendors);
-  }, [vendors]);
+    DataBridge.set("paperworkkit.w9Request.draft", draft);
+  }, [draft, vendors]);
 
   // Load details to editor upon selection
   const activeVendor = vendors.find(v => v.id === selectedVendorId) || vendors[0];
@@ -162,28 +267,21 @@ export default function W9RequestPage({ onTrackClick }: { onTrackClick?: (item: 
 
   // Generate compliance W9 request email blueprint
   const getEmailSubject = () => {
-    return `W-9 request needed for onboarding verification - ${activeVendor?.businessName || "Contractor Milestone Partners"}`;
+    return createW9Request({
+      reportingYear: draft.reportingYear,
+      contractorName: activeVendor?.legalName || "Contractor Partner",
+      contractorBusinessName: activeVendor?.businessName,
+      secureSubmissionInstructions: draft.secureSubmissionInstructions,
+    }).subject;
   };
 
   const getEmailBody = () => {
-    return `Hello ${activeVendor?.legalName || "Contractor Partner"},
-
-We hope you are doing well.
-
-To comply with US Internal Revenue Service regulations and complete your vendor account onboarding file setup, we require a signed IRS Form W-9 (Request for Taxpayer Identification Number and Certification).
-
-Please find instructions below:
-1. Obtain/download a copy of Form W-9 from the official IRS website (irs.gov/pub/irs-pdf/fw9.pdf).
-2. Complete all Sections in Part I and Part II (including Legal Name, Tax Classification LLV/Individual coordinates, EIN/SSN Number, and an authentic Signature).
-3. Safely email a secure PDF copy back to us at your earliest convenience prior to the close of current milestone cycles.
-
-Note: All payments above $600 with independent contractors in our tax year require active W-9 records to process subsequent annual Form 1099-NEC vouchers correctly.
-
-Let us know if you have any questions regarding these compliance items.
-
-Best regards,
-Onboarding & Verification Solutions
-SmartTools Paperwork Toolkit Suite`;
+    return createW9Request({
+      reportingYear: draft.reportingYear,
+      contractorName: activeVendor?.legalName || "Contractor Partner",
+      contractorBusinessName: activeVendor?.businessName,
+      secureSubmissionInstructions: draft.secureSubmissionInstructions,
+    }).body;
   };
 
   const handleCopyEmailText = () => {
@@ -207,6 +305,14 @@ SmartTools Paperwork Toolkit Suite`;
         description="Maintain compliance folders for self-employed subcontractor entities, track verification status states, and request records."
         eyebrow={<StatusBadge variant="info">IRS Form 1099 Vendor Verification</StatusBadge>}
         title="W-9 Request & Onboarding Tracker"
+      />
+
+      <AdvancedTemplateWorkspace
+        adapter={w9RequestAdapter}
+        draft={draft}
+        onDraftChange={setDraft}
+        onTrackClick={onTrackClick}
+        templates={templates}
       />
 
       {/* Main split panels layout */}
@@ -416,6 +522,33 @@ SmartTools Paperwork Toolkit Suite`;
                   <span>{copiedEmail ? "CopiedSubjectBody!" : "Copy Subject + Body"}</span>
                 </Button>
               </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[10rem_1fr]">
+                <div>
+                  <label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-reporting-year">Reporting year</label>
+                  <Select
+                    id="w9-reporting-year"
+                    value={draft.reportingYear}
+                    onChange={(event) => setDraft({ ...draft, reportingYear: Number(event.target.value) })}
+                  >
+                    <option value={2026}>2026 ($2,000)</option>
+                    <option value={2025}>2025 ($600)</option>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-secure-submission">Secure submission instructions</label>
+                  <textarea
+                    className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-xs"
+                    id="w9-secure-submission"
+                    value={draft.secureSubmissionInstructions}
+                    onChange={(event) => setDraft({ ...draft, secureSubmissionInstructions: event.target.value })}
+                  />
+                </div>
+              </div>
+
+              <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
+                {W9_REQUEST_DISCLAIMER}
+              </p>
 
               {/* Subject block */}
               <div className="bg-slate-50 p-3 rounded-lg border text-xs">

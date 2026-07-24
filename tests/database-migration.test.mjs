@@ -16,6 +16,10 @@ const mediaMigrationUrl = new URL(
   "../packages/database/drizzle/0002_media_tools.sql",
   import.meta.url,
 );
+const documentTemplateMigrationUrl = new URL(
+  "../packages/database/drizzle/0003_document_template_kinds.sql",
+  import.meta.url,
+);
 const schemaUrl = new URL("../packages/database/src/schema.ts", import.meta.url);
 
 test("the control-plane migration keeps anonymous users separate from auth accounts", async () => {
@@ -92,12 +96,83 @@ test("the Media migration expands only managed tool ownership and seeds every to
   );
 });
 
-test("the migration runner applies 0001 then 0002 in explicit order", async () => {
+test("document template kinds are constrained without rewriting existing rows", async () => {
+  const [sql, schema] = await Promise.all([
+    readFile(documentTemplateMigrationUrl, "utf8"),
+    readFile(schemaUrl, "utf8"),
+  ]);
+  const documentTypes = [
+    "invoice",
+    "receipt",
+    "expense-report",
+    "mileage-log",
+    "quarterly-tax-estimator",
+    "w9-request",
+    "1099-nec-tracker",
+  ];
+
+  for (const documentType of documentTypes) {
+    assert.match(sql, new RegExp(`'${documentType}'`));
+    assert.match(schema, new RegExp(`"${documentType}"`));
+  }
+  assert.match(
+    sql,
+    /ADD CONSTRAINT invoice_templates_document_type_check[\s\S]+NOT VALID/i,
+  );
+  assert.match(
+    sql,
+    /ADD CONSTRAINT invoice_templates_advanced_document_type_check[\s\S]+layout_family = 'advanced'[\s\S]+document_type = 'invoice'[\s\S]+NOT VALID/i,
+  );
+  assert.match(
+    sql,
+    /ADD CONSTRAINT invoice_templates_default_published_check[\s\S]+is_default = FALSE[\s\S]+status = 'published'[\s\S]+NOT VALID/i,
+  );
+  assert.match(sql, /IF EXISTS[\s\S]+FROM invoice_templates/i);
+  for (const constraint of [
+    "invoice_templates_document_type_check",
+    "invoice_templates_advanced_document_type_check",
+    "invoice_templates_default_published_check",
+  ]) {
+    assert.match(
+      sql,
+      new RegExp(`VALIDATE CONSTRAINT ${constraint}`, "i"),
+    );
+  }
+
+  const replacementIndex = sql.indexOf(
+    "invoice_templates_published_default_by_document_type_unique",
+  );
+  const oldIndexDrop = sql.indexOf(
+    "DROP INDEX IF EXISTS invoice_templates_published_default_unique",
+  );
+  assert.notEqual(replacementIndex, -1);
+  assert.ok(oldIndexDrop > replacementIndex);
+  assert.match(
+    sql,
+    /CREATE UNIQUE INDEX IF NOT EXISTS invoice_templates_published_default_by_document_type_unique[\s\S]+ON invoice_templates\s*\(\s*document_type\s*\)[\s\S]+WHERE is_default = TRUE AND status = 'published'/i,
+  );
+  assert.match(
+    sql,
+    /CREATE INDEX IF NOT EXISTS invoice_templates_published_document_type_updated_idx[\s\S]+ON invoice_templates\s*\(\s*document_type\s*,\s*updated_at DESC\s*\)[\s\S]+WHERE status = 'published'/i,
+  );
+  assert.match(
+    schema,
+    /uniqueIndex\(\s*"invoice_templates_published_default_by_document_type_unique",?\s*\)[\s\S]+\.on\(table\.documentType\)/,
+  );
+  assert.match(
+    schema,
+    /index\("invoice_templates_published_document_type_updated_idx"\)[\s\S]+table\.documentType[\s\S]+table\.updatedAt\.desc\(\)/,
+  );
+});
+
+test("the migration runner applies 0001, 0002, then 0003 in explicit order", async () => {
   const runner = await readFile(migrationRunnerUrl, "utf8");
   const first = runner.indexOf("0001_auth_control_plane.sql");
   const second = runner.indexOf("0002_media_tools.sql");
+  const third = runner.indexOf("0003_document_template_kinds.sql");
 
   assert.notEqual(first, -1);
   assert.ok(second > first);
+  assert.ok(third > second);
   assert.match(runner, /for \(const [^)]*migration[^)]* of migrations\)/);
 });

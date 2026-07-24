@@ -7,6 +7,7 @@ import {
   DocumentTemplateSchema,
   InvoiceTemplateSchema,
   createAdvancedTemplateConfig,
+  resizeAdvancedTemplateConfig,
   seedTemplates,
 } from "../packages/invoice-templates/src/index.ts";
 
@@ -69,6 +70,112 @@ test("advanced defaults are valid blank-base pdfme templates with realistic samp
   }
 });
 
+test("advanced template canvases resize proportionally between compatible page formats", () => {
+  const original = createAdvancedTemplateConfig("receipt", "RECEIPT_80MM");
+  original.template.basePdf.staticSchema = [
+    {
+      name: "footer",
+      type: "text",
+      position: { x: 5, y: 180 },
+      width: 70,
+      height: 8,
+      fontSize: 10,
+    },
+  ];
+  original.template.schemas.push([
+    {
+      ...structuredClone(original.template.schemas[0][0]),
+      position: { x: 10, y: 20 },
+    },
+  ]);
+  const firstSchema = structuredClone(original.template.schemas[0][0]);
+  const originalTable = structuredClone(
+    original.template.schemas[0].find((schema) => schema.type === "table"),
+  );
+
+  const resized = resizeAdvancedTemplateConfig(
+    original,
+    "receipt",
+    "RECEIPT_58MM",
+  );
+
+  assert.equal(resized.pageFormat, "RECEIPT_58MM");
+  assert.deepEqual(resized.template.basePdf, {
+    width: 58,
+    height: 180,
+    padding: [5, 5, 5, 5],
+    staticSchema: [
+      {
+        name: "footer",
+        type: "text",
+        position: { x: 3.625, y: 162 },
+        width: 50.75,
+        height: 7.2,
+        fontSize: 7.25,
+      },
+    ],
+  });
+  assert.equal(
+    resized.template.schemas[0][0].position.x,
+    firstSchema.position.x * (58 / 80),
+  );
+  assert.equal(
+    resized.template.schemas[0][0].position.y,
+    firstSchema.position.y * (180 / 200),
+  );
+  assert.equal(
+    resized.template.schemas[0][0].width,
+    firstSchema.width * (58 / 80),
+  );
+  assert.equal(
+    resized.template.schemas[0][0].height,
+    firstSchema.height * (180 / 200),
+  );
+  assert.deepEqual(resized.template.schemas[1][0].position, {
+    x: 10 * (58 / 80),
+    y: 20 * (180 / 200),
+  });
+  assert.equal(
+    resized.template.schemas[0][0].fontSize,
+    firstSchema.fontSize * (58 / 80),
+  );
+  const resizedTable = resized.template.schemas[0].find(
+    (schema) => schema.type === "table",
+  );
+  assert.equal(
+    resizedTable.headStyles.fontSize,
+    originalTable.headStyles.fontSize * (58 / 80),
+  );
+  assert.equal(
+    resizedTable.headStyles.padding.left,
+    originalTable.headStyles.padding.left * (58 / 80),
+  );
+  assert.equal(
+    resizedTable.headStyles.padding.top,
+    originalTable.headStyles.padding.top * (180 / 200),
+  );
+  assert.deepEqual(resized.sampleData, original.sampleData);
+  assert.equal(
+    AdvancedTemplateConfigSchema.safeParse(resized).success,
+    true,
+  );
+  assert.equal(original.pageFormat, "RECEIPT_80MM");
+  assert.equal(original.template.basePdf.width, 80);
+
+  const resizedInvoice = resizeAdvancedTemplateConfig(
+    createAdvancedTemplateConfig("invoice", "A4"),
+    "invoice",
+    "LETTER",
+  );
+  assert.equal(resizedInvoice.pageFormat, "LETTER");
+  assert.equal(resizedInvoice.template.basePdf.width, 215.9);
+  assert.equal(resizedInvoice.template.basePdf.height, 279.4);
+  assert.equal(
+    AdvancedTemplateConfigSchema.safeParse(resizedInvoice).success,
+    true,
+  );
+});
+
 test("document template validation accepts standard and advanced templates without widening the standard schema", () => {
   const standard = seedTemplates[0];
   const advancedInvoice = createAdvancedTemplate("invoice", "A4");
@@ -94,6 +201,15 @@ test("advanced template validation rejects incompatible document and page format
   assert.throws(
     () => createAdvancedTemplateConfig("receipt", "A4"),
     /not supported for receipt templates/,
+  );
+  assert.throws(
+    () =>
+      resizeAdvancedTemplateConfig(
+        createAdvancedTemplateConfig("invoice", "A4"),
+        "invoice",
+        "RECEIPT_80MM",
+      ),
+    /not supported for invoice templates/,
   );
 
   const invoiceOnReceiptPaper = createAdvancedTemplate(

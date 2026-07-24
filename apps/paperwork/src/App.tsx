@@ -38,9 +38,10 @@ import {
 } from "@smarttools/ui";
 import {
   seedTemplates,
-  type InvoiceTemplate,
+  type DocumentTemplate,
 } from "@smarttools/invoice-templates";
 import type { ResolvedTool } from "@smarttools/tool-catalog";
+import AdvancedTemplateWorkspace from "./components/AdvancedTemplateWorkspace";
 import ExpenseReportPage from "./components/expense/ExpenseReportPage";
 import FAQSection from "./components/FAQSection";
 import InvoiceForm from "./components/InvoiceForm";
@@ -53,6 +54,7 @@ import RelatedTools from "./components/RelatedTools";
 import SEOContent from "./components/SEOContent";
 import TemplateSelector from "./components/TemplateSelector";
 import W9RequestPage from "./components/w9/W9RequestPage";
+import { invoiceAdapter } from "./lib/documentAdapters";
 import type { InvoiceData } from "./types";
 import { validateInvoiceData } from "./utils/invoiceValidation";
 import { getInitialBlankInvoice, getSampleInvoice } from "./utils/sampleData";
@@ -63,9 +65,11 @@ function trackEvent(eventName: string, payload: Record<string, unknown> = {}) {
 
 const TOOL_COMPONENTS: Record<
   string,
-  ComponentType<{ onTrackClick: (itemName: string) => void }>
+  ComponentType<{
+    onTrackClick: (itemName: string) => void;
+    templates?: readonly DocumentTemplate[];
+  }>
 > = {
-  "receipt-generator": ReceiptGeneratorPage,
   "expense-report": ExpenseReportPage,
   "mileage-log": MileageLogPage,
   "quarterly-tax-estimator": QuarterlyTaxEstimatorPage,
@@ -124,8 +128,11 @@ function AppDialog({
   );
 }
 
-function defaultTemplate(templates: readonly InvoiceTemplate[]) {
-  const published = templates.filter((template) => template.status === "published");
+function defaultTemplate(templates: readonly DocumentTemplate[]) {
+  const published = templates.filter(
+    (template) =>
+      template.status === "published" && template.documentType === "invoice",
+  );
   const fallback = seedTemplates.filter(
     (template) => template.status === "published",
   );
@@ -146,10 +153,11 @@ export default function App({
 }: {
   account: AccountNavigationProps;
   componentKey: string;
-  templates: readonly InvoiceTemplate[];
+  templates: readonly DocumentTemplate[];
   tools: readonly ResolvedTool[];
 }) {
   const isInvoice = componentKey === "invoice-generator";
+  const isReceipt = componentKey === "receipt-generator";
   const ToolComponent = TOOL_COMPONENTS[componentKey];
   const formSectionRef = useRef<HTMLDivElement>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>(
@@ -158,6 +166,7 @@ export default function App({
   const [selectedTemplate, setSelectedTemplate] = useState(() =>
     defaultTemplate(templates),
   );
+  const [templateSelectionReady, setTemplateSelectionReady] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -169,6 +178,25 @@ export default function App({
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistError, setWaitlistError] = useState("");
   const toastTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    const storedTemplateId = localStorage.getItem(
+      "paperworkkit.advanced-template.invoice.selected",
+    );
+    const storedTemplate = templates.find(
+      (template) =>
+        template.id === storedTemplateId && template.status === "published",
+    );
+    if (storedTemplate) setSelectedTemplate(storedTemplate);
+    setTemplateSelectionReady(true);
+  }, [templates]);
+
+  useEffect(() => {
+    if (!templateSelectionReady) return;
+    localStorage.setItem(
+      "paperworkkit.advanced-template.invoice.selected",
+      selectedTemplate.id,
+    );
+  }, [selectedTemplate.id, templateSelectionReady]);
 
   function showToast(message: string, tone: ToastMessage["tone"] = "success") {
     if (toastTimerRef.current !== null) {
@@ -253,9 +281,11 @@ export default function App({
   }
 
   async function generateInvoicePdf(action: "download" | "print") {
+    if (selectedTemplate.layoutFamily === "advanced") return;
     if (!validateInvoice()) return;
 
-    const printWindow = action === "print" ? window.open("about:blank", "_blank") : null;
+    const printWindow =
+      action === "print" ? window.open("about:blank", "_blank") : null;
     if (action === "print" && !printWindow) {
       setPdfError("Allow pop-ups to open the printable PDF.");
       showToast("Your browser blocked the printable PDF. Allow pop-ups and try again.", "error");
@@ -265,6 +295,10 @@ export default function App({
 
     setPdfAction(action);
     setPdfError("");
+    const invoiceNumber = invoiceData.invoice.invoiceNumber
+      .trim()
+      .replace(/[^a-z0-9_-]+/gi, "-");
+    const fileName = `invoice-${invoiceNumber || "draft"}.pdf`;
 
     try {
       const [{ pdf }, { default: InvoicePdfDocument }] = await Promise.all([
@@ -282,11 +316,8 @@ export default function App({
         showToast("Printable invoice opened in a new tab.");
       } else {
         const link = document.createElement("a");
-        const invoiceNumber = invoiceData.invoice.invoiceNumber
-          .trim()
-          .replace(/[^a-z0-9_-]+/gi, "-");
         link.href = url;
-        link.download = `invoice-${invoiceNumber || "draft"}.pdf`;
+        link.download = fileName;
         document.body.append(link);
         link.click();
         link.remove();
@@ -428,8 +459,16 @@ export default function App({
       </header>
 
       <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
-        {ToolComponent ? (
-          <ToolComponent onTrackClick={handleTrackClick} />
+        {isReceipt ? (
+          <ReceiptGeneratorPage
+            onTrackClick={handleTrackClick}
+            templates={templates}
+          />
+        ) : ToolComponent ? (
+          <ToolComponent
+            onTrackClick={handleTrackClick}
+            templates={templates}
+          />
         ) : isInvoice ? (
           <>
             <PageHero
@@ -443,14 +482,16 @@ export default function App({
                   >
                     Start invoice
                   </Button>
-                  <Button
-                    onClick={() => setActiveDialog("sample")}
-                    size="lg"
-                    variant="secondary"
-                  >
-                    <RefreshCw className="mr-1 inline h-4 w-4" />
-                    Load sample
-                  </Button>
+                  {selectedTemplate.layoutFamily !== "advanced" ? (
+                    <Button
+                      onClick={() => setActiveDialog("sample")}
+                      size="lg"
+                      variant="secondary"
+                    >
+                      <RefreshCw className="mr-1 inline h-4 w-4" />
+                      Load sample
+                    </Button>
+                  ) : null}
                 </>
               }
               align="center"
@@ -473,50 +514,106 @@ export default function App({
                 </AlertBanner>
               ) : null}
 
-              <div
-                aria-label="Invoice workspace view"
-                className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1 print:hidden lg:hidden"
-                id="mobile-view-tabs"
-                role="tablist"
-              >
-                <button
-                  aria-controls="editor-panel"
-                  aria-selected={activeMobileTab === "edit"}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    activeMobileTab === "edit"
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  id="mobile-edit-tab"
-                  onClick={() => showMobileTab("edit")}
-                  onKeyDown={handleMobileTabKey}
-                  role="tab"
-                  tabIndex={activeMobileTab === "edit" ? 0 : -1}
-                  type="button"
+              {selectedTemplate.layoutFamily !== "advanced" ? (
+                <div
+                  aria-label="Invoice workspace view"
+                  className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1 print:hidden lg:hidden"
+                  id="mobile-view-tabs"
+                  role="tablist"
                 >
-                  <PenLine aria-hidden="true" className="size-4" />
-                  Edit details
-                </button>
-                <button
-                  aria-controls="preview-panel"
-                  aria-selected={activeMobileTab === "preview"}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                    activeMobileTab === "preview"
-                      ? "bg-card text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  id="mobile-preview-tab"
-                  onClick={() => showMobileTab("preview")}
-                  onKeyDown={handleMobileTabKey}
-                  role="tab"
-                  tabIndex={activeMobileTab === "preview" ? 0 : -1}
-                  type="button"
-                >
-                  <Eye aria-hidden="true" className="size-4" />
-                  Live preview
-                </button>
-              </div>
+                  <button
+                    aria-controls="editor-panel"
+                    aria-selected={activeMobileTab === "edit"}
+                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeMobileTab === "edit"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    id="mobile-edit-tab"
+                    onClick={() => showMobileTab("edit")}
+                    onKeyDown={handleMobileTabKey}
+                    role="tab"
+                    tabIndex={activeMobileTab === "edit" ? 0 : -1}
+                    type="button"
+                  >
+                    <PenLine aria-hidden="true" className="size-4" />
+                    Edit details
+                  </button>
+                  <button
+                    aria-controls="preview-panel"
+                    aria-selected={activeMobileTab === "preview"}
+                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      activeMobileTab === "preview"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    id="mobile-preview-tab"
+                    onClick={() => showMobileTab("preview")}
+                    onKeyDown={handleMobileTabKey}
+                    role="tab"
+                    tabIndex={activeMobileTab === "preview" ? 0 : -1}
+                    type="button"
+                  >
+                    <Eye aria-hidden="true" className="size-4" />
+                    Live preview
+                  </button>
+                </div>
+              ) : null}
 
+              {selectedTemplate.layoutFamily === "advanced" ? (
+                <div className="grid gap-6">
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Grid
+                          aria-hidden="true"
+                          className="size-5 shrink-0 text-primary"
+                        />
+                        <div className="min-w-0">
+                          <h2 className="text-sm font-extrabold">
+                            Invoice theme: {selectedTemplate.name}
+                          </h2>
+                          <p className="text-xs text-muted-foreground">
+                            Published templates are managed centrally.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => setShowTemplates((shown) => !shown)}
+                        size="sm"
+                      >
+                        {showTemplates ? "Hide themes" : "Change theme"}
+                      </Button>
+                    </div>
+                    {showTemplates ? (
+                      <div className="mt-4">
+                        <TemplateSelector
+                          documentLabel="invoice"
+                          onSelect={(nextTemplate) => {
+                            setSelectedTemplate(nextTemplate);
+                            setInvoiceData((current) => ({
+                              ...current,
+                              template: nextTemplate.slug,
+                            }));
+                            showToast(
+                              `Invoice theme changed to ${nextTemplate.name}.`,
+                            );
+                          }}
+                          selectedTemplateId={selectedTemplate.id}
+                          templates={templates}
+                        />
+                      </div>
+                    ) : null}
+                  </Card>
+                  <AdvancedTemplateWorkspace
+                    adapter={invoiceAdapter}
+                    draft={invoiceData}
+                    onDraftChange={setInvoiceData}
+                    onTrackClick={handleTrackClick}
+                    templates={[selectedTemplate]}
+                  />
+                </div>
+              ) : (
               <div className="grid items-start gap-8 lg:grid-cols-12">
                 <div
                   aria-labelledby="mobile-edit-tab"
@@ -617,6 +714,7 @@ export default function App({
                   </Card>
                 </div>
               </div>
+              )}
             </AppContainer>
             </div>
           </>
@@ -654,7 +752,7 @@ export default function App({
         </div>
       </footer>
 
-      {isInvoice ? (
+      {isInvoice && selectedTemplate.layoutFamily !== "advanced" ? (
         <div
           className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-border bg-card/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg backdrop-blur-sm print:hidden lg:hidden"
           id="mobile-invoice-actions"
