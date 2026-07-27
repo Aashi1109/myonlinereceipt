@@ -11,8 +11,13 @@ import {
   Button,
   Card,
   Input,
+  Label,
   Select,
   StatusBadge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Textarea,
   ToolPageHeader
 } from "@smarttools/ui";
 import {
@@ -329,15 +334,16 @@ export default function W9RequestPage({
                   key={vend.id}
                   className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-150 ${selectedVendorId === vend.id ? "border-slate-900/60 bg-slate-50" : "border-slate-200 bg-white"}`}
                 >
-                  <button
+                  <Button
                     aria-pressed={selectedVendorId === vend.id}
-                    className="min-w-0 grow rounded-md text-left text-xs outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="h-auto min-w-0 grow justify-start whitespace-normal rounded-md px-0 text-left text-xs hover:bg-transparent hover:text-primary"
                     onClick={() => setSelectedVendorId(vend.id)}
                     type="button"
+                    variant="ghost"
                   >
                     <span className="font-extrabold text-slate-950 block">{vend.legalName}</span>
                     {vend.businessName && <span className="text-[10px] text-slate-500 block font-semibold">{vend.businessName}</span>}
-                  </button>
+                  </Button>
 
                   <div className="flex gap-2 items-center shrink-0">
                     <StatusBadge variant={
@@ -372,24 +378,21 @@ export default function W9RequestPage({
         <div className="lg:col-span-8 space-y-6">
 
           {/* Tab sub headers */}
-          <div className="flex bg-slate-200 p-1 rounded-xl border border-slate-200" id="w9-tabs">
-            <button
-              onClick={() => setActiveTab("onboarding")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "onboarding" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-              type="button"
-            >
-              <UserCheck className="w-4 h-4" />
-              <span>1. Formulate Profile Metadata</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("email")}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${activeTab === "email" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-              type="button"
-            >
-              <Mail className="w-4 h-4" />
-              <span>2. Copy W-9 compliance request Email</span>
-            </button>
-          </div>
+          <Tabs
+            onValueChange={(value) => setActiveTab(value as "onboarding" | "email")}
+            value={activeTab}
+          >
+            <TabsList className="grid w-full grid-cols-2 border border-slate-200" id="w9-tabs" variant="segmented">
+              <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="onboarding">
+                <UserCheck className="w-4 h-4" />
+                <span>1. Formulate Profile Metadata</span>
+              </TabsTrigger>
+              <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="email">
+                <Mail className="w-4 h-4" />
+                <span>2. Copy W-9 compliance request Email</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {activeTab === "onboarding" ? (
             <form onSubmit={handleUpdateVendorDetail} className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm">
@@ -399,7 +402,7 @@ export default function W9RequestPage({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</Label>
                   <Input
                     aria-describedby={errors.formName ? undefined : "w9-legal-name-description"}
                     aria-errormessage={errors.formName ? "w9-legal-name-error" : undefined}
@@ -421,7 +424,7 @@ export default function W9RequestPage({
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</Label>
                   <Input
                     type="text"
                     className="font-semibold"
@@ -431,7 +434,7 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-email">Email Coordinates</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-email">Email Coordinates</Label>
                   <Input
                     type="email"
                     className="font-medium"
@@ -441,7 +444,7 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-phone">Support Phone</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-phone">Support Phone</Label>
                   <Input
                     id="w9-phone"
                     type="text"
@@ -450,7 +453,7 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-address">Street address</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-address">Street address</Label>
                   <Input
                     type="text"
                     className="font-semibold"
@@ -460,7 +463,7 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-entity">Tax Classification Entity</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-entity">Tax Classification Entity</Label>
                   <Select
                     className="font-bold"
                     id="w9-entity"
@@ -473,7 +476,7 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-status">W-9 Request compliance status</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-status">W-9 Request compliance status</Label>
                   <Select
                     className="font-black"
                     id="w9-status"
@@ -486,7 +489,7 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-notes">Notes / Project association description</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-notes">Notes / Project association description</Label>
                   <Input
                     id="w9-notes"
                     type="text"
@@ -525,7 +528,7 @@ export default function W9RequestPage({
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[10rem_1fr]">
                 <div>
-                  <label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-reporting-year">Reporting year</label>
+                  <Label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-reporting-year">Reporting year</Label>
                   <Select
                     id="w9-reporting-year"
                     value={draft.reportingYear}
@@ -536,8 +539,8 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-secure-submission">Secure submission instructions</label>
-                  <textarea
+                  <Label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-secure-submission">Secure submission instructions</Label>
+                  <Textarea
                     className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-xs"
                     id="w9-secure-submission"
                     value={draft.secureSubmissionInstructions}

@@ -14,9 +14,15 @@ import {
   AlertBanner,
   Button,
   Card,
+  CheckboxControl,
+  IconTile,
   Input,
+  Label,
   Select,
   StatusBadge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
   Textarea,
   ToolPageHeader,
 } from "@smarttools/ui";
@@ -331,12 +337,12 @@ export default function ReceiptGeneratorPage({
 
       {advancedTemplates.length ? (
         <Card className="mb-6 grid gap-2 p-4 print:hidden">
-          <label
+          <Label
             className="text-xs font-black uppercase tracking-wider text-muted-foreground"
             htmlFor="receipt-template-mode"
           >
             Receipt template
-          </label>
+          </Label>
           <Select
             id="receipt-template-mode"
             onChange={(event) => {
@@ -370,9 +376,9 @@ export default function ReceiptGeneratorPage({
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <Card className="w-full max-w-md space-y-4 rounded-2xl shadow-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+              <IconTile className="rounded-full border border-blue-100 bg-blue-50 text-blue-600" size="sm">
                 <RefreshCw className="w-5 h-5 animate-spin-reverse" />
-              </div>
+              </IconTile>
               <h4 className="font-extrabold text-slate-900 text-lg">Import Active Invoice Draft?</h4>
             </div>
             <p className="text-xs text-slate-600 leading-relaxed font-semibold">
@@ -400,22 +406,21 @@ export default function ReceiptGeneratorPage({
       )}
 
       {/* 3. Mobile tab switcher */}
-      <div className={`${selectedAdvancedTemplate ? "hidden" : "flex"} md:hidden bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200/50 print:hidden`} id="receipt-mobile-tabs">
-        <button
-          type="button"
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${activeTab === "edit" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-          onClick={() => setActiveTab("edit")}
-        >
-          1. Edit Fields
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${activeTab === "preview" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-          onClick={() => setActiveTab("preview")}
-        >
-          2. Live Design Preview
-        </button>
-      </div>
+      <Tabs
+        className={`${selectedAdvancedTemplate ? "hidden" : ""} mb-6 md:hidden print:hidden`}
+        id="receipt-mobile-tabs"
+        onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
+        value={activeTab}
+      >
+        <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
+          <TabsTrigger className="whitespace-normal py-2 text-xs" value="edit">
+            1. Edit Fields
+          </TabsTrigger>
+          <TabsTrigger className="whitespace-normal py-2 text-xs" value="preview">
+            2. Live Design Preview
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* 4. Split Screen Editor & Live Rendered Frame */}
       <div className={`${selectedAdvancedTemplate ? "hidden" : "grid"} grid-cols-1 lg:grid-cols-12 gap-8 items-start`}>
@@ -432,7 +437,7 @@ export default function ReceiptGeneratorPage({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-name">Company / Seller Name *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-name">Company / Seller Name *</Label>
                   <Input
                     aria-errormessage={errors["business.name"] ? "receipt-seller-name-error" : undefined}
                     type="text"
@@ -452,7 +457,7 @@ export default function ReceiptGeneratorPage({
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-tax-id">Tax ID / EIN (Optional)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-tax-id">Tax ID / EIN (Optional)</Label>
                   <Input
                     type="text"
                     placeholder="e.g. 12-3456789"
@@ -463,7 +468,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-address">Address Location</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-address">Address Location</Label>
                   <Input
                     type="text"
                     placeholder="e.g. 404 Ridge Point Lane"
@@ -500,7 +505,7 @@ export default function ReceiptGeneratorPage({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-email">Sender Email</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-email">Sender Email</Label>
                   <Input
                     type="email"
                     placeholder="e.g. info@domain.com"
@@ -511,7 +516,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-phone">Support Phone</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-phone">Support Phone</Label>
                   <Input
                     type="text"
                     placeholder="+1 (555) 000-0000"
@@ -531,7 +536,7 @@ export default function ReceiptGeneratorPage({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-name">Client Name *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-name">Client Name *</Label>
                   <Input
                     aria-errormessage={errors["customer.name"] ? "receipt-client-name-error" : undefined}
                     type="text"
@@ -551,7 +556,7 @@ export default function ReceiptGeneratorPage({
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-company">Company / Association</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-company">Company / Association</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Acme Corp"
@@ -562,7 +567,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-address">Billing Street Address</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-address">Billing Street Address</Label>
                   <Input
                     type="text"
                     placeholder="822 Broad Street"
@@ -608,7 +613,7 @@ export default function ReceiptGeneratorPage({
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-number">Receipt Number *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-number">Receipt Number *</Label>
                   <Input
                     type="text"
                     className="text-xs font-bold"
@@ -618,7 +623,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-date">Receipt Date *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-date">Receipt Date *</Label>
                   <Input
                     type="date"
                     className="text-xs font-semibold"
@@ -628,7 +633,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-category">Receipt Category</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-category">Receipt Category</Label>
                   <Select
                     className="text-xs font-bold"
                     id="receipt-category"
@@ -644,7 +649,7 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-related-invoice">Related Invoice #</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-related-invoice">Related Invoice #</Label>
                   <Input
                     type="text"
                     placeholder="e.g. INV-2026-001"
@@ -655,7 +660,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-transaction-id">Transaction/Ref ID</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-transaction-id">Transaction/Ref ID</Label>
                   <Input
                     type="text"
                     placeholder="e.g. TXN-99812A"
@@ -666,7 +671,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-status">Payment Status</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-status">Payment Status</Label>
                   <Select
                     className="text-xs font-bold"
                     id="receipt-payment-status"
@@ -701,7 +706,7 @@ export default function ReceiptGeneratorPage({
                 {data.lineItems.map((item, idx) => (
                   <div key={item.id} className="flex flex-col md:flex-row gap-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl relative">
                     <div className="grow">
-                      <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>Description *</label>
+                      <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>Description *</Label>
                       <Input
                         type="text"
                         placeholder="e.g. Strategic Development Consultation"
@@ -713,7 +718,7 @@ export default function ReceiptGeneratorPage({
                     </div>
                     <div className="grid grid-cols-3 gap-2 w-full md:w-auto shrink-0 md:max-w-xs">
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>Qty</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>Qty</Label>
                         <Input
                           type="number"
                           min="1"
@@ -724,7 +729,7 @@ export default function ReceiptGeneratorPage({
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>Rate ($)</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>Rate ($)</Label>
                         <Input
                           type="number"
                           placeholder="0.00"
@@ -736,24 +741,25 @@ export default function ReceiptGeneratorPage({
                       </div>
                       <div className="flex flex-col items-center justify-center pt-2">
                         <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Tax</span>
-                        <input
+                        <CheckboxControl
                           aria-label={`Taxable receipt item ${idx + 1}`}
-                          type="checkbox"
                           className="size-4 rounded border-input accent-primary"
                           checked={item.taxable}
-                          onChange={(e) => handleItemChange(item.id, "taxable", e.target.checked)}
+                          onCheckedChange={(checked) => handleItemChange(item.id, "taxable", checked === true)}
                         />
                       </div>
                     </div>
                     {data.lineItems.length > 1 && (
-                      <button
+                      <Button
                         aria-label={`Remove receipt item ${idx + 1}`}
-                        type="button"
+                        className="absolute right-2 top-2 text-slate-400 hover:text-red-600 md:relative md:top-auto md:right-auto md:self-end"
                         onClick={() => handleRemoveItem(item.id)}
-                        className="absolute right-2 top-2 md:relative md:self-end md:top-auto md:right-auto text-slate-400 hover:text-red-600 p-1.5"
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -767,7 +773,7 @@ export default function ReceiptGeneratorPage({
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-type">Discount Type</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-type">Discount Type</Label>
                   <Select
                     className="text-xs font-bold"
                     id="receipt-discount-type"
@@ -781,9 +787,9 @@ export default function ReceiptGeneratorPage({
                 </div>
                 {data.discountType !== "none" && (
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-value">
+                    <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-value">
                       {data.discountType === "percent" ? "Percentage Off (%)" : "Amount Deducted ($)"}
-                    </label>
+                    </Label>
                     <Input
                       type="number"
                       className="text-xs font-bold"
@@ -794,7 +800,7 @@ export default function ReceiptGeneratorPage({
                   </div>
                 )}
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-rate">Sales Tax rate (%)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-rate">Sales Tax rate (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -806,7 +812,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-label">sales tax Label</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-label">sales tax Label</Label>
                   <Input
                     type="text"
                     className="text-xs font-semibold"
@@ -819,7 +825,7 @@ export default function ReceiptGeneratorPage({
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tip">Tip / Gratuity ($)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tip">Tip / Gratuity ($)</Label>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -830,7 +836,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-additional-fee">Additional Fee ($)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-additional-fee">Additional Fee ($)</Label>
                   <Input
                     type="number"
                     placeholder="0.00"
@@ -841,7 +847,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-method">Payment Method</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-method">Payment Method</Label>
                   <Select
                     className="text-xs font-bold"
                     id="receipt-payment-method"
@@ -859,7 +865,7 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-received-by">Received By</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-received-by">Received By</Label>
                   <Input
                     type="text"
                     placeholder="Staff/Agent Name"
@@ -879,7 +885,7 @@ export default function ReceiptGeneratorPage({
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-notes">Memo / Internal Notes</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-notes">Memo / Internal Notes</Label>
                   <Textarea
                     rows={2}
                     className="min-h-20 text-xs font-medium"
@@ -890,7 +896,7 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-thank-you">Thank-You Sign-off Message</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-thank-you">Thank-You Sign-off Message</Label>
                   <Input
                     type="text"
                     className="text-xs font-semibold"
@@ -932,29 +938,31 @@ export default function ReceiptGeneratorPage({
                 { key: "rent", label: "Rent" },
                 { key: "contractor", label: "contractor" }
               ].map((themeOpt) => (
-                <button
+                <Button
                   key={themeOpt.key}
                   onClick={() => {
                     setSelectedTheme(themeOpt.key as typeof selectedTheme);
                     setSelectedAdvancedTemplateId("");
                     setPdfError("");
                   }}
-                  className={`py-1.5 rounded-lg border uppercase transition-colors font-extrabold ${selectedTheme === themeOpt.key ? "bg-slate-900 border-slate-900 text-white" : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600"}`}
+                  className="h-auto rounded-lg py-1.5 uppercase"
+                  size="sm"
                   type="button"
+                  variant={selectedTheme === themeOpt.key ? "strong" : "secondary"}
                 >
                   {themeOpt.label}
-                </button>
+                </Button>
               ))}
             </div>
 
             {advancedTemplates.length ? (
               <div>
-                <label
+                <Label
                   className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500"
                   htmlFor="receipt-published-template"
                 >
                   Published custom template
-                </label>
+                </Label>
                 <Select
                   id="receipt-published-template"
                   onChange={(event) => {

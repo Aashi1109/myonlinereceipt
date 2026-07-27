@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SectionCard, SectionHeading } from "@smarttools/ui";
+import { Button, SectionCard, SectionHeading } from "@smarttools/ui";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -63,13 +63,14 @@ export default function FAQSection() {
           const isOpen = openId === faq.id;
           return (
             <div className="py-2" id={`faq-item-${faq.id}`} key={faq.id}>
-              <button
+              <Button
                 aria-controls={`faq-panel-${faq.id}`}
                 aria-expanded={isOpen}
-                className="flex w-full items-center justify-between gap-4 rounded-md py-3 text-left text-sm font-bold text-foreground outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="h-auto w-full justify-between whitespace-normal rounded-md px-0 py-3 text-left text-sm font-bold text-foreground hover:bg-transparent hover:text-primary"
                 id={`faq-trigger-${faq.id}`}
                 onClick={() => handleToggle(faq.id)}
                 type="button"
+                variant="ghost"
               >
                 <span>{faq.question}</span>
                 {isOpen ? (
@@ -77,7 +78,7 @@ export default function FAQSection() {
                 ) : (
                   <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                 )}
-              </button>
+              </Button>
               {isOpen && (
                 <div
                   aria-labelledby={`faq-trigger-${faq.id}`}

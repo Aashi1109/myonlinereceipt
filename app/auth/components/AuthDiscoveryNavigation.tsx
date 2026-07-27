@@ -1,0 +1,338 @@
+"use client";
+
+import { toolManifest, type ToolApp } from "@smarttools/tool-catalog";
+import {
+  Braces,
+  Calculator,
+  ChevronDown,
+  Code2,
+  FileImage,
+  FileText,
+  LoaderCircle,
+  ReceiptText,
+  Search,
+  SearchX,
+  Table2,
+  X,
+} from "lucide-react";
+import { usePathname } from "next/navigation";
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+
+export type AuthProjectPaths = {
+  devtools: string;
+  media: string;
+  paperwork: string;
+};
+
+type MenuName = "documents" | "developer" | null;
+
+const categoryMenus = {
+  documents: [
+    { href: "/paperwork/invoice-generator", icon: FileText, label: "Invoices" },
+    { href: "/paperwork/receipt-generator", icon: ReceiptText, label: "Receipts" },
+    { href: "/paperwork/expense-report", icon: Calculator, label: "Expenses" },
+  ],
+  developer: [
+    { href: "/devtools?category=JSON+Tools", icon: Braces, label: "JSON tools" },
+    { href: "/devtools?category=CSV+%26+Data+Tools", icon: Table2, label: "CSV tools" },
+    { href: "/devtools?category=Web+%26+URL+Tools", icon: Code2, label: "Web tools" },
+  ],
+} as const;
+
+function toolHref(app: ToolApp, componentKey: string) {
+  if (app === "devtools") return `/devtools/${componentKey}`;
+  if (app === "media") return `/media/${componentKey}`;
+  return `/paperwork/${componentKey}`;
+}
+
+function ToolIcon({ app, name }: { app: ToolApp; name: string }) {
+  const Icon = app === "media"
+    ? FileImage
+    : app === "devtools"
+      ? name.toLowerCase().includes("csv")
+        ? Table2
+        : Braces
+      : name.toLowerCase().includes("receipt")
+        ? ReceiptText
+        : FileText;
+
+  return (
+    <span aria-hidden="true" className="auth-search-result-icon">
+      <Icon />
+    </span>
+  );
+}
+
+export function AuthDiscoveryNavigation({ projects }: { projects: AuthProjectPaths }) {
+  const pathname = usePathname();
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<MenuName>(null);
+  const [activeResult, setActiveResult] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const stableQuery = useDeferredValue(query);
+  const isSearching = query !== stableQuery;
+
+  const results = useMemo(() => {
+    const normalized = stableQuery.trim().toLowerCase();
+    if (!normalized) return [];
+
+    return toolManifest
+      .filter((tool) => tool.defaultEnabled !== false)
+      .filter((tool) =>
+        [
+          tool.defaultName,
+          tool.defaultDescription,
+          tool.category ?? "",
+          ...(tool.keywords ?? []),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalized),
+      )
+      .slice(0, 6);
+  }, [stableQuery]);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setSearchOpen(false);
+        setOpenMenu(null);
+      }
+    }
+
+    function handleShortcut(event: KeyboardEvent) {
+      if (
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !(event.target instanceof HTMLInputElement) &&
+        !(event.target instanceof HTMLTextAreaElement)
+      ) {
+        event.preventDefault();
+        searchRef.current?.focus();
+        setSearchOpen(true);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleShortcut);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleShortcut);
+    };
+  }, []);
+
+  const documentsActive = pathname.startsWith("/paperwork/invoice-generator") ||
+    pathname.startsWith("/paperwork/receipt-generator");
+  const businessActive = pathname === projects.paperwork || (
+    pathname.startsWith("/paperwork/") && !documentsActive
+  );
+
+  function toggleMenu(menu: Exclude<MenuName, null>) {
+    setSearchOpen(false);
+    setOpenMenu((current) => (current === menu ? null : menu));
+  }
+
+  function moveMenuFocus(event: ReactKeyboardEvent<HTMLButtonElement>, menu: Exclude<MenuName, null>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setOpenMenu(menu);
+      requestAnimationFrame(() => {
+        rootRef.current
+          ?.querySelector<HTMLAnchorElement>(`[data-menu="${menu}"] a`)
+          ?.focus();
+      });
+    }
+  }
+
+  return (
+    <div className="auth-discovery" ref={rootRef}>
+      <div className="auth-search-wrap">
+        <div
+          className="auth-search"
+          data-open={searchOpen || undefined}
+          role="combobox"
+          aria-controls="auth-tool-search-results"
+          aria-expanded={searchOpen}
+          aria-haspopup="listbox"
+        >
+          {isSearching ? (
+            <LoaderCircle aria-hidden="true" className="auth-search-spinner" />
+          ) : (
+            <Search aria-hidden="true" />
+          )}
+          <input
+            aria-autocomplete="list"
+            aria-label="Search all SmartTools"
+            autoComplete="off"
+            onChange={(event) => {
+              const value = event.currentTarget.value;
+              setQuery(value);
+              setActiveResult(0);
+              setSearchOpen(true);
+              setOpenMenu(null);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setSearchOpen(false);
+                searchRef.current?.blur();
+              } else if (event.key === "ArrowDown" && results.length > 0) {
+                event.preventDefault();
+                setActiveResult((current) => Math.min(current + 1, results.length - 1));
+              } else if (event.key === "ArrowUp" && results.length > 0) {
+                event.preventDefault();
+                setActiveResult((current) => Math.max(current - 1, 0));
+              } else if (event.key === "Enter" && results[activeResult]) {
+                window.location.assign(toolHref(results[activeResult].app, results[activeResult].componentKey));
+              }
+            }}
+            placeholder="Search 150+ tools"
+            ref={searchRef}
+            value={query}
+          />
+          {query ? (
+            <button
+              aria-label="Clear search"
+              className="auth-search-clear"
+              onClick={() => {
+                setQuery("");
+                setActiveResult(0);
+                searchRef.current?.focus();
+              }}
+              type="button"
+            >
+              <X aria-hidden="true" />
+            </button>
+          ) : (
+            <kbd aria-label="Keyboard shortcut: slash">/</kbd>
+          )}
+        </div>
+
+        {searchOpen && query.trim() ? (
+          <div className="auth-search-popover" id="auth-tool-search-results">
+            {isSearching ? (
+              <div aria-live="polite" className="auth-search-loading" role="status">
+                {[0, 1, 2].map((item) => (
+                  <span className="auth-search-skeleton" key={item}>
+                    <i />
+                    <b />
+                  </span>
+                ))}
+                <span className="sr-only">Searching tools</span>
+              </div>
+            ) : results.length > 0 ? (
+              <>
+                <p className="auth-search-count">
+                  {results.length} {results.length === 1 ? "result" : "results"} for “{stableQuery}”
+                </p>
+                <div aria-label="Tool search results" role="listbox">
+                  {results.map((tool, index) => (
+                    <a
+                      aria-selected={index === activeResult}
+                      className="auth-search-result"
+                      href={toolHref(tool.app, tool.componentKey)}
+                      key={tool.id}
+                      onMouseEnter={() => setActiveResult(index)}
+                      role="option"
+                    >
+                      <ToolIcon app={tool.app} name={tool.defaultName} />
+                      <span>
+                        <strong>{tool.defaultName}</strong>
+                        <small>{tool.category ?? (tool.app === "paperwork" ? "Documents" : "Media")}</small>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div aria-live="polite" className="auth-search-empty" role="status">
+                <SearchX aria-hidden="true" />
+                <strong>No tools match “{stableQuery}”</strong>
+                <span>Check spelling, try “invoice”, or clear the query.</span>
+                <button onClick={() => searchRef.current?.select()} type="button">Edit search</button>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      <nav aria-label="Tool categories" className="auth-category-nav">
+        <a aria-current={pathname === "/" ? "page" : undefined} href="/">All tools</a>
+        <span className="auth-category-menu">
+          <button
+            aria-expanded={openMenu === "documents"}
+            aria-haspopup="menu"
+            className={documentsActive ? "is-active" : undefined}
+            onClick={() => toggleMenu("documents")}
+            onKeyDown={(event) => moveMenuFocus(event, "documents")}
+            type="button"
+          >
+            Documents <ChevronDown aria-hidden="true" />
+          </button>
+          {openMenu === "documents" ? (
+            <CategoryMenu menu="documents" onClose={() => setOpenMenu(null)} />
+          ) : null}
+        </span>
+        <span className="auth-category-menu">
+          <button
+            aria-expanded={openMenu === "developer"}
+            aria-haspopup="menu"
+            className={pathname.startsWith("/devtools") ? "is-active" : undefined}
+            onClick={() => toggleMenu("developer")}
+            onKeyDown={(event) => moveMenuFocus(event, "developer")}
+            type="button"
+          >
+            Developer <ChevronDown aria-hidden="true" />
+          </button>
+          {openMenu === "developer" ? (
+            <CategoryMenu menu="developer" onClose={() => setOpenMenu(null)} />
+          ) : null}
+        </span>
+        <a aria-current={businessActive ? "page" : undefined} href={projects.paperwork}>
+          Business
+        </a>
+      </nav>
+    </div>
+  );
+}
+
+function CategoryMenu({ menu, onClose }: { menu: Exclude<MenuName, null>; onClose: () => void }) {
+  return (
+    <div className="auth-category-popover" data-menu={menu} role="menu">
+      {categoryMenus[menu].map(({ href, icon: Icon, label }) => (
+        <a
+          href={href}
+          key={href}
+          onKeyDown={(event) => {
+            const links = Array.from(event.currentTarget.parentElement?.querySelectorAll<HTMLAnchorElement>("a") ?? []);
+            const index = links.indexOf(event.currentTarget);
+            if (event.key === "Escape") {
+              onClose();
+            } else if (event.key === "ArrowDown") {
+              event.preventDefault();
+              links[(index + 1) % links.length]?.focus();
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              links[(index - 1 + links.length) % links.length]?.focus();
+            }
+          }}
+          role="menuitem"
+        >
+          <Icon aria-hidden="true" />
+          {label}
+        </a>
+      ))}
+    </div>
+  );
+}

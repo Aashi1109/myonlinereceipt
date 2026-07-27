@@ -1,6 +1,6 @@
 "use client";
 
-import { buttonVariants } from "@smarttools/ui";
+import { Button } from "@smarttools/ui";
 import type { MouseEvent } from "react";
 import { shouldUseBrowserBack } from "../../_lib/security";
 
@@ -33,14 +33,15 @@ export function ProfileBackLink({
   }
 
   return (
-    <a
-      aria-label="Back to previous page"
-      className={buttonVariants({ size: "sm", variant: "ghost" })}
-      href={fallbackHref}
-      onClick={handleClick}
-    >
-      <span aria-hidden="true">←</span>
-      Back
-    </a>
+    <Button asChild size="sm" variant="ghost">
+      <a
+        aria-label="Back to previous page"
+        href={fallbackHref}
+        onClick={handleClick}
+      >
+        <span aria-hidden="true">←</span>
+        Back
+      </a>
+    </Button>
   );
 }

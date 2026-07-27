@@ -14,7 +14,7 @@ export type CsvDelimiter = "," | ";" | "\t" | "|";
 export type UtilityOptionDefinition = {
   key: string;
   label: string;
-  kind: "select" | "checkbox" | "number" | "text";
+  kind: "select" | "checkbox" | "toggle" | "number" | "text";
   defaultValue: string | number | boolean;
   choices?: readonly { label: string; value: string }[];
   min?: number;
@@ -1140,7 +1140,11 @@ export const utilityToolDefinitions: Record<string, UtilityToolDefinition> = {
     TEXT_CATEGORY,
     "Text",
     "Smart tools make repeated work faster. They should remain easy to trust.",
-    [],
+    [
+      option("countHyphenated", "Count hyphenated words as one word", "toggle", true),
+      option("ignoreNumbers", "Ignore standalone numbers", "toggle", false),
+      option("excludeEmails", "Exclude email-like strings", "toggle", true),
+    ],
     { runLabel: "Count", live: true },
   ),
   "character-counter": singleTool(
@@ -2224,7 +2228,11 @@ async function executeUtilityTool(
       );
     }
     case "word-counter": {
-      const metrics = textMetrics(primary);
+      const metrics = textMetrics(primary, {
+        countHyphenated: booleanOption(resolved, "countHyphenated"),
+        excludeEmails: booleanOption(resolved, "excludeEmails"),
+        ignoreNumbers: booleanOption(resolved, "ignoreNumbers"),
+      });
       const minutes = metrics.words ? Math.max(1, Math.ceil(metrics.words / 200)) : 0;
       return done(
         `Words: ${metrics.words}\nCharacters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nSentences: ${metrics.sentences}\nParagraphs: ${metrics.paragraphs}\nLines: ${metrics.lines}\nReading time: ${minutes} minute${minutes === 1 ? "" : "s"}`,
@@ -3373,7 +3381,14 @@ function convertTextCase(value: string, target: string): string {
   }
 }
 
-function textMetrics(value: string): {
+function textMetrics(
+  value: string,
+  options: {
+    countHyphenated?: boolean;
+    excludeEmails?: boolean;
+    ignoreNumbers?: boolean;
+  } = {},
+): {
   words: number;
   characters: number;
   charactersWithoutSpaces: number;
@@ -3382,7 +3397,18 @@ function textMetrics(value: string): {
   lines: number;
   bytes: number;
 } {
-  const wordCount = value.trim() ? value.trim().split(/\s+/u).length : 0;
+  const initialTokens = value.trim() ? value.trim().split(/\s+/u) : [];
+  const filteredTokens = initialTokens.filter((token) => {
+    if (options.ignoreNumbers && /^\p{N}+(?:[.,]\p{N}+)*$/u.test(token)) return false;
+    if (options.excludeEmails && /^[^\s@]+@[^\s@]+\.[^\s@]+[.!?,;:]?$/u.test(token)) return false;
+    return true;
+  });
+  const wordCount = options.countHyphenated === false
+    ? filteredTokens.reduce(
+        (total, token) => total + token.split(/[-‐‑‒–—]+/u).filter(Boolean).length,
+        0,
+      )
+    : filteredTokens.length;
   return {
     words: wordCount,
     characters: Array.from(value).length,

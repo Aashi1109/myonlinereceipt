@@ -1,27 +1,52 @@
 "use client";
 
-import { ToolNav } from "@smarttools/ui";
+import { SidebarNavItem } from "@smarttools/ui";
+import {
+  FileText,
+  Flag,
+  History,
+  LayoutDashboard,
+  Palette,
+  ShieldCheck,
+  Users,
+  Wrench,
+} from "lucide-react";
 import { useSelectedLayoutSegment } from "next/navigation";
 
 const links = [
-  { href: "/admin/tools", label: "Tools" },
-  { href: "/admin/templates", label: "Templates" },
-  { href: "/admin/features", label: "Features" },
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/roles", label: "Roles" },
-  { href: "/admin/audit", label: "Audit" },
+  { href: "/admin/tools", label: "Tools catalog", icon: Wrench },
+  { href: "/admin/templates", label: "Templates", icon: FileText },
+  { href: "/admin/features", label: "Feature flags", icon: Flag },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/roles", label: "Roles", icon: ShieldCheck },
+  { href: "/admin/audit", label: "Audit history", icon: History },
+  { href: "/admin/design-system", label: "Design system", icon: Palette },
 ] as const;
 
 export function AdminNavigation() {
   const segment = useSelectedLayoutSegment();
 
   return (
-    <ToolNav
-      ariaLabel="Admin sections"
-      items={links.map((item) => ({
-        ...item,
-        current: item.href === `/admin/${segment}`,
-      }))}
-    />
+    <nav aria-label="Admin sections" className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+      <SidebarNavItem
+        active={segment === null}
+        className="shrink-0"
+        href="/admin"
+        icon={<LayoutDashboard aria-hidden="true" />}
+      >
+        Overview
+      </SidebarNavItem>
+      {links.map(({ href, icon: Icon, label }) => (
+        <SidebarNavItem
+          active={href === `/admin/${segment}`}
+          className="shrink-0"
+          href={href}
+          icon={<Icon aria-hidden="true" />}
+          key={href}
+        >
+          {label}
+        </SidebarNavItem>
+      ))}
+    </nav>
   );
 }

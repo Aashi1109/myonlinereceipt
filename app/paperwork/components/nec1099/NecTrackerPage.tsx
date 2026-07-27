@@ -13,6 +13,8 @@ import {
   Card,
   Checkbox,
   Input,
+  Label,
+  MetricCard,
   Select,
   StatusBadge,
   ToolPageHeader
@@ -341,32 +343,35 @@ export default function NecTrackerPage({
 
       {/* Threshold stats alerts row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 print:hidden">
-        <div className="bg-white p-5 border border-slate-200 rounded-2xl">
-          <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total payments ledger</span>
-          <p className="text-2xl font-black text-slate-900">${stats.totalPayments.toLocaleString()}</p>
-        </div>
+        <MetricCard
+          className="rounded-2xl border-slate-200 bg-white"
+          label="Total payments ledger"
+          value={`$${stats.totalPayments.toLocaleString()}`}
+        />
 
-        <div className="bg-white p-5 border border-slate-200 rounded-2xl flex justify-between items-center">
-          <div>
-            <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              {reportingThreshold === null ? "Rules update required" : `At or above $${reportingThreshold.toLocaleString()} threshold`}
-            </span>
-            <div className="flex items-baseline gap-1.5">
+        <MetricCard
+          className="rounded-2xl border-slate-200 bg-white"
+          label={reportingThreshold === null ? "Rules update required" : `At or above $${reportingThreshold.toLocaleString()} threshold`}
+          value={(
+            <span className="flex items-center justify-between gap-3">
+              <span className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-amber-600">{stats.aboveThresholdCount}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">contractors</span>
-            </div>
-          </div>
-          {stats.aboveThresholdCount > 0 && (
-            <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-200 shrink-0">
-              <AlertTriangle className="w-5 h-5 animate-bounce-slow" />
-            </div>
+              </span>
+              {stats.aboveThresholdCount > 0 && (
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-500">
+                  <AlertTriangle className="size-5 animate-bounce-slow" />
+                </span>
+              )}
+            </span>
           )}
-        </div>
+        />
 
-        <div className="bg-white p-5 border border-slate-200 rounded-2xl">
-          <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 font-sans">Eligible 1099 payouts</span>
-          <p className="text-2xl font-black text-emerald-600">${stats.reportablePayments.toLocaleString()}</p>
-        </div>
+        <MetricCard
+          className="rounded-2xl border-slate-200 bg-white [&_strong]:text-emerald-600"
+          label="Eligible 1099 payouts"
+          value={`$${stats.reportablePayments.toLocaleString()}`}
+        />
       </div>
 
       {/* Split Columns Editor & Live Render */}
@@ -397,7 +402,7 @@ export default function NecTrackerPage({
             </div>
 
             <div className="max-w-48">
-              <label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor="nec-reporting-year">Reporting year</label>
+              <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor="nec-reporting-year">Reporting year</Label>
               <Select
                 id="nec-reporting-year"
                 value={data.reportingYear}
@@ -424,7 +429,7 @@ export default function NecTrackerPage({
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-date`}>Payment Date *</label>
+                      <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-date`}>Payment Date *</Label>
                       <Input
                         type="date"
                         className="font-semibold"
@@ -434,7 +439,7 @@ export default function NecTrackerPage({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-vendor`}>Contractor Name *</label>
+                      <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-vendor`}>Contractor Name *</Label>
                       <Select
                         className="font-bold"
                         id={`nec-payment-${pay.id}-vendor`}
@@ -447,7 +452,7 @@ export default function NecTrackerPage({
                       </Select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-amount`}>Amount ($) *</label>
+                      <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-amount`}>Amount ($) *</Label>
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -458,7 +463,7 @@ export default function NecTrackerPage({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-black text-slate-500 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-method`}>Payment Route</label>
+                      <Label className="block text-[11px] font-black text-slate-500 uppercase mb-1" htmlFor={`nec-payment-${pay.id}-method`}>Payment Route</Label>
                       <Select
                         className="font-semibold"
                         id={`nec-payment-${pay.id}-method`}
@@ -488,7 +493,7 @@ export default function NecTrackerPage({
                       <Checkbox
                         checked={pay.includeIn1099}
                         label="Include in 1099 NEC"
-                        onChange={(e) => handlePaymentChange(pay.id, "includeIn1099", e.target.checked)}
+                        onCheckedChange={(checked) => handlePaymentChange(pay.id, "includeIn1099", checked === true)}
                       />
                     </div>
                   </div>
@@ -524,7 +529,7 @@ export default function NecTrackerPage({
                       ["stateWithholding", "State withholding", "number"],
                     ] as const).map(([field, label, type]) => (
                       <div key={field}>
-                        <label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-${field}`}>{label}</label>
+                        <Label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-${field}`}>{label}</Label>
                         <Input
                           id={`nec-${vendor.id}-${field}`}
                           min={type === "number" ? "0" : undefined}
@@ -535,7 +540,7 @@ export default function NecTrackerPage({
                       </div>
                     ))}
                     <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-masked-tin`}>Masked TIN reference</label>
+                      <Label className="block text-[10px] font-black uppercase text-slate-400" htmlFor={`nec-${vendor.id}-masked-tin`}>Masked TIN reference</Label>
                       <Input
                         id={`nec-${vendor.id}-masked-tin`}
                         inputMode="numeric"

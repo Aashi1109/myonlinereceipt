@@ -1,8 +1,19 @@
 "use client";
 
+import { Mail, ShieldCheck } from "lucide-react";
 import { useId, useState } from "react";
-import type { FormEvent } from "react";
-import { AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
+import type { FormEvent, ReactNode } from "react";
+import {
+  AlertBanner,
+  Button,
+  Card,
+  CheckboxControl,
+  Field,
+  FieldLegend,
+  FieldSet,
+  Input,
+  Separator,
+} from "@smarttools/ui";
 import { authClient } from "./_lib/authClient";
 import {
   getSafeAuthError,
@@ -10,7 +21,7 @@ import {
   isValidPassword,
 } from "./_lib/security";
 
-type Mode = "sign-in" | "sign-up" | "forgot";
+export type AuthMode = "sign-in" | "sign-up" | "forgot";
 type Feedback = { kind: "error" | "success"; text: string } | null;
 
 function field(form: FormData, name: string): string {
@@ -18,22 +29,45 @@ function field(form: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function AuthNotice({
+  children,
+  icon,
+  title,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  title: ReactNode;
+}) {
+  return (
+    <div className="auth-notice">
+      <span aria-hidden="true">{icon}</span>
+      <div>
+        <strong>{title}</strong>
+        <p>{children}</p>
+      </div>
+    </div>
+  );
+}
+
 export function AuthPanel({
   returnTo,
   initialError,
+  initialMode = "sign-in",
 }: {
   returnTo: string;
   initialError?: string;
+  initialMode?: AuthMode;
 }) {
   const panelId = useId();
-  const [mode, setMode] = useState<Mode>("sign-in");
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [pending, setPending] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState<string>();
   const [feedback, setFeedback] = useState<Feedback>(
     initialError ? { kind: "error", text: initialError } : null,
   );
 
-  function chooseMode(nextMode: Mode) {
+  function chooseMode(nextMode: AuthMode) {
     setMode(nextMode);
     setFeedback(null);
     setVerificationEmail(undefined);
@@ -56,7 +90,6 @@ export function AuthPanel({
 
     if (mode === "sign-up") {
       const name = field(form, "name");
-      const confirmation = field(form, "passwordConfirmation");
       if (!name || name.length > 100) {
         setFeedback({ kind: "error", text: "Enter a name under 100 characters." });
         setPending(false);
@@ -67,8 +100,11 @@ export function AuthPanel({
         setPending(false);
         return;
       }
-      if (password !== confirmation) {
-        setFeedback({ kind: "error", text: "Passwords do not match." });
+      if (!termsAccepted) {
+        setFeedback({
+          kind: "error",
+          text: "Agree to the Terms of Service and Privacy Policy to continue.",
+        });
         setPending(false);
         return;
       }
@@ -156,252 +192,189 @@ export function AuthPanel({
     setPending(false);
   }
 
+  const isSignUp = mode === "sign-up";
+  const isForgot = mode === "forgot";
+
   return (
     <Card
       aria-labelledby={`${panelId}-title`}
-      className="w-full max-w-lg rounded-none p-6 shadow-none sm:p-8"
+      className="auth-card w-full max-w-[440px] gap-[18px]"
       role="region"
     >
-      {mode !== "forgot" && (
-        <div
-          aria-label="Account access mode"
-          className="-mx-6 -mt-6 mb-7 grid grid-cols-2 border-b border-border bg-background sm:-mx-8 sm:-mt-8"
-          role="group"
+      <div className="auth-heading">
+        <h1 id={`${panelId}-title`}>
+          {isSignUp ? "Create your account" : isForgot ? "Reset password" : "Sign in"}
+        </h1>
+        <p>
+          {isSignUp
+            ? "Save your paperwork and access it from any device."
+            : isForgot
+              ? "Enter your email and we’ll send a link to reset your password."
+              : "Welcome back. Sign in to save and sync your history."}
+        </p>
+      </div>
+
+      <AuthNotice
+        icon={isForgot ? <Mail /> : <ShieldCheck />}
+        title={isForgot ? "Only for saved accounts" : "An account is optional"}
+      >
+        {isForgot
+          ? "If you never made an account, you can keep using the tools without one."
+          : isSignUp
+            ? "You can use every tool without signing up. Create an account only to sync history."
+            : "Your paperwork stays in your browser. Sign in only to save history across devices."}
+      </AuthNotice>
+
+      {feedback ? (
+        <AlertBanner variant={feedback.kind}>{feedback.text}</AlertBanner>
+      ) : null}
+
+      {verificationEmail ? (
+        <AlertBanner
+          action={
+            <Button disabled={pending} onClick={resendVerification} size="sm" type="button" variant="ghost">
+              Resend email
+            </Button>
+          }
+          title="Verification needed"
         >
-          <button
-            aria-pressed={mode === "sign-in"}
-            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60 ${
-              mode === "sign-in"
-                ? "border-primary bg-card text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+          Check <span className="break-all font-semibold">{verificationEmail}</span>.
+        </AlertBanner>
+      ) : null}
+
+      {isForgot ? (
+        <form onSubmit={requestRecovery}>
+          <FieldSet className="grid min-w-0 gap-[18px] border-0 p-0" disabled={pending}>
+            <FieldLegend className="sr-only">Password recovery</FieldLegend>
+            <Field htmlFor={`${panelId}-recovery-email`} label="Email" variant="auth">
+              <Input
+                autoComplete="email"
+                id={`${panelId}-recovery-email`}
+                name="email"
+                placeholder="jane@company.com"
+                required
+                type="email"
+              />
+            </Field>
+            <Button className="w-full" type="submit">
+              {pending ? "Sending…" : "Send reset link"}
+            </Button>
+          </FieldSet>
+        </form>
+      ) : (
+        <>
+          <Button
+            className="w-full"
             disabled={pending}
-            onClick={() => chooseMode("sign-in")}
+            onClick={signInWithGoogle}
             type="button"
+            variant="outline"
           >
-            Sign in
-          </button>
-          <button
-            aria-pressed={mode === "sign-up"}
-            className={`border-b-2 px-3 py-4 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60 ${
-              mode === "sign-up"
-                ? "border-primary bg-card text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            disabled={pending}
-            onClick={() => chooseMode("sign-up")}
-            type="button"
-          >
-            Create account
-          </button>
-        </div>
-      )}
+            <img
+              alt=""
+              className="size-4 object-contain"
+              height="16"
+              src="/auth/google-g-logo.png"
+              width="16"
+            />
+            {isSignUp ? "Sign up with Google" : "Continue with Google"}
+          </Button>
 
-      <div id={`${panelId}-panel`}>
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-            {mode === "sign-up"
-              ? "New account"
-              : mode === "forgot"
-                ? "Account recovery"
-                : "Account access"}
-          </p>
-          <h2
-            className="mt-2 text-2xl font-black tracking-tight text-foreground sm:text-3xl"
-            id={`${panelId}-title`}
-          >
-            {mode === "sign-up"
-              ? "Create your account"
-              : mode === "forgot"
-                ? "Reset your password"
-                : "Sign in to SmartTools"}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {mode === "forgot"
-              ? "We’ll email a time-limited reset link if the account exists."
-              : "Use email and password, or continue with Google."}
-          </p>
-        </div>
+          <div className="auth-divider">
+            <Separator />
+            <span>or</span>
+            <Separator />
+          </div>
 
-        {feedback && (
-          <AlertBanner className="mt-5 rounded-none" variant={feedback.kind}>
-            {feedback.text}
-          </AlertBanner>
-        )}
-
-        {verificationEmail && (
-          <AlertBanner
-            action={
-              <Button
-                disabled={pending}
-                className="min-h-11 rounded-none"
-                onClick={resendVerification}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                Resend verification email
-              </Button>
-            }
-            className="mt-5 rounded-none"
-          >
-            Verification needed for{" "}
-            <span className="break-all font-semibold">{verificationEmail}</span>
-          </AlertBanner>
-        )}
-
-        {mode === "forgot" ? (
-          <form className="mt-6" onSubmit={requestRecovery}>
-            <fieldset
-              className="grid min-w-0 gap-4 border-0 p-0"
-              disabled={pending}
-            >
-              <legend className="sr-only">Password recovery</legend>
-              <Field htmlFor={`${panelId}-recovery-email`} label="Email address">
+          <form onSubmit={submitCredentials}>
+            <FieldSet className="grid min-w-0 gap-[18px] border-0 p-0" disabled={pending}>
+              <FieldLegend className="sr-only">
+                {isSignUp ? "Create account with email" : "Sign in with email"}
+              </FieldLegend>
+              {isSignUp ? (
+                <Field htmlFor={`${panelId}-name`} label="Full name" variant="auth">
+                  <Input
+                    autoComplete="name"
+                    id={`${panelId}-name`}
+                    maxLength={100}
+                    name="name"
+                    placeholder="Jane Cooper"
+                    required
+                  />
+                </Field>
+              ) : null}
+              <Field htmlFor={`${panelId}-email`} label="Email" variant="auth">
                 <Input
                   autoComplete="email"
-                  className="h-12 rounded-none"
-                  id={`${panelId}-recovery-email`}
+                  id={`${panelId}-email`}
                   name="email"
+                  placeholder="jane@company.com"
                   required
                   type="email"
                 />
               </Field>
-              <Button className="w-full rounded-none" size="lg" type="submit">
-                {pending ? "Sending…" : "Send reset link"}
-              </Button>
-              <Button
-                className="min-h-11 justify-self-center rounded-none"
-                onClick={() => chooseMode("sign-in")}
-                type="button"
-                variant="ghost"
+              <Field
+                description={isSignUp ? "At least 12 characters." : undefined}
+                htmlFor={`${panelId}-password`}
+                label="Password"
+                variant="auth"
               >
-                Back to sign in
-              </Button>
-            </fieldset>
-          </form>
-        ) : (
-          <>
-            <Button
-              className="mt-6 w-full rounded-none"
-              disabled={pending}
-              onClick={signInWithGoogle}
-              size="lg"
-              type="button"
-              variant="outline"
-            >
-              <img
-                alt=""
-                className="size-4 object-contain"
-                height="16"
-                src="/auth/google-g-logo.png"
-                width="16"
-              />
-              Continue with Google
-            </Button>
-            <div className="my-5 flex items-center gap-3 text-xs font-semibold text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              <span>or use email</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-            <form onSubmit={submitCredentials}>
-              <fieldset
-                className="grid min-w-0 gap-4 border-0 p-0"
-                disabled={pending}
-              >
-                <legend className="sr-only">
-                  {mode === "sign-up"
-                    ? "Create account with email"
-                    : "Sign in with email"}
-                </legend>
-                {mode === "sign-up" && (
-                  <Field htmlFor={`${panelId}-name`} label="Name">
-                    <Input
-                      autoComplete="name"
-                      className="h-12 rounded-none"
-                      id={`${panelId}-name`}
-                      maxLength={100}
-                      name="name"
-                      required
-                    />
-                  </Field>
-                )}
-                <Field htmlFor={`${panelId}-email`} label="Email address">
-                  <Input
-                    autoComplete="email"
-                    className="h-12 rounded-none"
-                    id={`${panelId}-email`}
-                    name="email"
-                    required
-                    type="email"
-                  />
-                </Field>
-                <Field
-                  description={mode === "sign-up" ? "12–128 characters" : undefined}
-                  htmlFor={`${panelId}-password`}
-                  label="Password"
-                >
-                  <Input
-                    autoComplete={
-                      mode === "sign-up" ? "new-password" : "current-password"
-                    }
-                    className="h-12 rounded-none"
-                    id={`${panelId}-password`}
-                    maxLength={128}
-                    minLength={mode === "sign-up" ? 12 : undefined}
-                    name="password"
-                    required
-                    type="password"
-                  />
-                </Field>
-                {mode === "sign-up" && (
-                  <Field
-                    htmlFor={`${panelId}-password-confirmation`}
-                    label="Confirm password"
-                  >
-                    <Input
-                      autoComplete="new-password"
-                      className="h-12 rounded-none"
-                      id={`${panelId}-password-confirmation`}
-                      maxLength={128}
-                      minLength={12}
-                      name="passwordConfirmation"
-                      required
-                      type="password"
-                    />
-                  </Field>
-                )}
-                {mode === "sign-in" && (
-                  <Button
-                    className="min-h-11 justify-self-end rounded-none px-0"
-                    onClick={() => chooseMode("forgot")}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    Forgot password?
-                  </Button>
-                )}
-                <Button
-                  className="w-full rounded-none"
-                  size="lg"
-                  type="submit"
-                >
-                  {pending
-                    ? "Please wait…"
-                    : mode === "sign-up"
-                      ? "Create account"
-                      : "Sign in"}
-                </Button>
-              </fieldset>
-            </form>
-          </>
-        )}
-      </div>
+                <Input
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  id={`${panelId}-password`}
+                  maxLength={128}
+                  minLength={isSignUp ? 12 : undefined}
+                  name="password"
+                  placeholder="••••••••••"
+                  required
+                  type="password"
+                />
+              </Field>
 
-      <p className="mt-6 text-left text-xs leading-5 text-muted-foreground">
-        Authentication cookies are HttpOnly and never stored in browser storage.
-      </p>
+              {isSignUp ? (
+                <label className="auth-terms-row">
+                  <CheckboxControl
+                    aria-label="Agree to the Terms of Service and Privacy Policy"
+                    checked={termsAccepted}
+                    disabled={pending}
+                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  />
+                  <span>
+                    I agree to the <a href="/paperwork/terms">Terms of Service</a> and{" "}
+                    <a href="/privacy">Privacy Policy</a>.
+                  </span>
+                </label>
+              ) : (
+                <div className="auth-options-row">
+                  <label>
+                    <CheckboxControl aria-label="Remember me" defaultChecked />
+                    <span>Remember me</span>
+                  </label>
+                  <button onClick={() => chooseMode("forgot")} type="button">
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              <Button className="w-full" type="submit">
+                {pending ? "Please wait…" : isSignUp ? "Create account" : "Sign in"}
+              </Button>
+            </FieldSet>
+          </form>
+        </>
+      )}
+
+      <div className="auth-card-footer-link">
+        <span>
+          {isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}
+        </span>
+        <button
+          onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
+          type="button"
+        >
+          {isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}
+        </button>
+      </div>
     </Card>
   );
 }

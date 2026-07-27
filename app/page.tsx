@@ -1,5 +1,6 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
-import { AccountNavigation, ProductHeader } from "@smarttools/ui";
+import { AccountNavigation, Button, ProductHeader } from "@smarttools/ui";
 import { headers } from "next/headers";
 
 const projects = [
@@ -67,24 +68,26 @@ export default async function HomePage() {
                 developer utilities into one clear place to start.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
-                <a
-                  className="inline-flex min-h-12 items-center justify-center bg-primary px-5 text-sm font-bold text-primary-foreground outline-none transition-colors hover:bg-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  href={projects[0].href}
+                <Button
+                  asChild
+                  className="h-auto min-h-12 rounded-none px-5 text-sm hover:bg-foreground"
                 >
-                  Explore Paperwork
-                </a>
-                <a
-                  className="inline-flex min-h-12 items-center justify-center border border-foreground bg-card px-5 text-sm font-bold text-foreground outline-none transition-colors hover:bg-foreground hover:text-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  href={projects[1].href}
+                  <a href={projects[0].href}>Explore Paperwork</a>
+                </Button>
+                <Button
+                  asChild
+                  className="h-auto min-h-12 rounded-none border-foreground px-5 text-sm hover:bg-foreground hover:text-card"
+                  variant="outline"
                 >
-                  Browse Devtools
-                </a>
-                <a
-                  className="inline-flex min-h-12 items-center justify-center border border-foreground bg-card px-5 text-sm font-bold text-foreground outline-none transition-colors hover:bg-foreground hover:text-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  href={projects[2].href}
+                  <a href={projects[1].href}>Browse Devtools</a>
+                </Button>
+                <Button
+                  asChild
+                  className="h-auto min-h-12 rounded-none border-foreground px-5 text-sm hover:bg-foreground hover:text-card"
+                  variant="outline"
                 >
-                  Open Media Tools
-                </a>
+                  <a href={projects[2].href}>Open Media Tools</a>
+                </Button>
               </div>
               <p className="mt-6 text-xs font-semibold text-muted-foreground">
                 Public tools are available without an account.
@@ -181,27 +184,7 @@ export default async function HomePage() {
         </section>
       </main>
 
-      <footer className="bg-card">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 text-sm sm:flex-row sm:items-end sm:justify-between sm:px-6 lg:px-8">
-          <div>
-            <p className="font-black">SmartTools</p>
-            <p className="mt-2 text-muted-foreground">
-              Focused utilities for everyday work.
-            </p>
-          </div>
-          <nav aria-label="SmartTools projects" className="flex flex-wrap gap-6 font-bold">
-            {projects.map((project) => (
-              <a
-                className="underline-offset-4 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                href={project.href}
-                key={project.name}
-              >
-                {project.name}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </footer>
+      <SmartToolsFooter />
     </div>
   );
 }

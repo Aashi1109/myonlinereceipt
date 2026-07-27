@@ -70,6 +70,50 @@ final result: blocked
 
 ---
 
+# Design QA — Admin Overview Recent Access Labels
+
+**Comparison target**
+
+- Source visual truth: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-OUKuaS.png`
+- Source pixels: 1818 × 966
+- Implementation route: `/admin`
+- Implementation screenshot: unavailable
+- Viewport and density normalization: unavailable because no in-app or Chrome browser surface is connected
+- State: populated desktop “Recent access changes” card
+
+**Evidence**
+
+- Full view: the supplied current-state screenshot was opened and inspected; a post-change implementation capture is unavailable.
+- Focused region: the screenshot shows raw action keys and one generic user icon. The implementation now consumes the shared event presentation map, but rendered icon and label fidelity cannot be compared without a post-change capture.
+- Fonts and typography: the existing card typography classes are unchanged; rendered verification is blocked.
+- Spacing and layout rhythm: the existing icon tile and row layout are unchanged; rendered verification is blocked.
+- Colors and tokens: the existing accent tile and primary icon color are unchanged; rendered verification is blocked.
+- Image quality and assets: action-specific Lucide icons replace the generic Lucide icon; no raster assets were added.
+- Copy and content: focused tests verify readable labels replace raw action keys.
+- Primary interactions tested: not browser-tested.
+- Console errors checked: unavailable without a connected browser.
+
+**Findings**
+
+- [Blocked] A browser-rendered post-change comparison is unavailable, so the final icon and label rendering cannot be visually confirmed.
+
+**Comparison history**
+
+- The supplied screenshot identified the raw-label and generic-icon mismatch. The shared presentation helper was applied, but no post-change visual iteration was possible.
+
+**Implementation checklist**
+
+- Connect a browser surface and capture `/admin` with populated recent audit data.
+- Compare the card and its event rows against the supplied current-state screenshot.
+
+**Follow-up polish**
+
+- None identified without rendered evidence.
+
+final result: blocked
+
+---
+
 # Design QA — CodeUtilityKit Devtools Parity
 
 Result: passed
@@ -277,5 +321,45 @@ final result: passed
 ## Findings
 
 - P1 verification blocker: a browser-rendered post-fix screenshot and interaction state are still required to confirm that the native left strip is absent and the native field panel neither clips nor overlaps.
+
+final result: blocked
+
+---
+
+# Design QA — Admin Audit Event Labels
+
+**Comparison target**
+
+- Source visual truth: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-4WDJik.png`
+- Source pixels: 1484 × 430
+- Implementation route: `/admin/audit`
+- Implementation screenshot: unavailable
+- Viewport and density normalization: unavailable because no in-app or Chrome browser surface is connected
+- State: populated desktop audit table
+
+**Evidence**
+
+- Full view: the source screenshot was opened and inspected; the rendered implementation could not be captured.
+- Focused event column: the source uses a small blue line icon, a readable semibold event label, and centered vertical alignment. The implementation capture is unavailable for a visual comparison.
+- Primary interactions tested: not browser-tested.
+- Console errors checked: not available without a connected browser.
+
+**Findings**
+
+- [Blocked] Browser-rendered comparison is unavailable. Code checks confirm the event cell uses Lucide icons, plain-language labels, and a readable fallback, but visual fidelity cannot be confirmed from source code alone.
+
+**Comparison history**
+
+- No visual iteration was possible because the implementation could not be opened in a connected browser.
+
+**Implementation checklist**
+
+- Connect the in-app browser or authorize a local Playwright capture.
+- Capture `/admin/audit` with populated audit data at the reference desktop state.
+- Compare the full table and focused event column against the source.
+
+**Follow-up polish**
+
+- None identified without rendered evidence.
 
 final result: blocked

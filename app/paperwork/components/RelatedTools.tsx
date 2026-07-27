@@ -4,7 +4,7 @@
  */
 
 import type { ResolvedTool } from "@smarttools/tool-catalog";
-import { Button, StatusBadge } from "@smarttools/ui";
+import { Button, CatalogCard, StatusBadge } from "@smarttools/ui";
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -123,39 +123,17 @@ export default function RelatedTools({
           {tools.map((tool) => {
             const Icon = tool.Icon;
             return (
-              <a
-                className="group flex flex-col rounded-2xl border border-border/60 bg-muted/30 p-5 outline-none transition duration-200 hover:border-border hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
+              <CatalogCard
+                action="Launch generator →"
+                description={tool.description}
                 href={tool.path}
                 id={`tool-card-${tool.id}`}
+                icon={<Icon aria-hidden="true" />}
                 key={tool.id}
                 onClick={() => onTrackClick(`related_tool_${tool.id}_clicked`)}
-              >
-                <div className="space-y-3">
-                  <div className="grid size-10 place-items-center rounded-lg border border-border bg-card text-muted-foreground shadow-sm transition-colors duration-200 group-hover:bg-foreground group-hover:text-background motion-reduce:transition-none">
-                    <Icon aria-hidden="true" className="size-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-extrabold tracking-tight text-foreground">
-                        {tool.title}
-                      </h3>
-                      <StatusBadge variant="success">Available</StatusBadge>
-                    </div>
-                    <p className="mt-1.5 text-xs font-medium leading-5 text-muted-foreground">
-                      {tool.description}
-                    </p>
-                  </div>
-                </div>
-                <span className="mt-auto flex items-center gap-1 pt-4 text-xs font-extrabold text-primary">
-                  Launch generator
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none"
-                  >
-                    →
-                  </span>
-                </span>
-              </a>
+                status={<StatusBadge variant="success">Available</StatusBadge>}
+                title={tool.title}
+              />
             );
           })}
         </div>

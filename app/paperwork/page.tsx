@@ -1,3 +1,4 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableTools } from "@smarttools/control-plane";
 import {
@@ -77,6 +78,7 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
+      <SmartToolsFooter />
     </div>
   );
 }

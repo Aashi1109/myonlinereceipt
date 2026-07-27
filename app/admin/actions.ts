@@ -211,6 +211,17 @@ export async function importTemplateAction(formData: FormData) {
   );
 }
 
+export async function updateTemplateMetadataAction(formData: FormData) {
+  const templateId = text(formData, "templateId");
+  await updateDocumentTemplate(await getActorUserId(), templateId, {
+    name: text(formData, "name"),
+    description: text(formData, "description"),
+    category: text(formData, "category") as TemplateCategory,
+  });
+  revalidatePath("/admin/templates");
+  revalidatePath(`/admin/templates/${templateId}/manage`);
+}
+
 export async function updateTemplateAction(formData: FormData) {
   const templateId = text(formData, "templateId");
   await updateDocumentTemplate(

@@ -121,9 +121,9 @@ export default function TemplateSelector({
             const isSelected = template.id === selectedTemplateId;
 
             return (
-              <button
+              <Button
                 aria-pressed={isSelected}
-                className={`group flex min-h-40 select-none flex-col justify-between gap-3 rounded-lg border p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                className={`group h-auto min-h-40 w-full select-none flex-col items-stretch justify-between gap-3 whitespace-normal rounded-lg p-4 text-left ${
                   isSelected
                     ? "border-primary bg-accent ring-1 ring-primary"
                     : "border-border bg-card hover:border-primary/50 hover:bg-accent/40"
@@ -131,6 +131,7 @@ export default function TemplateSelector({
                 key={template.id}
                 onClick={() => onSelect(template)}
                 type="button"
+                variant="outline"
               >
                 <span className="space-y-2">
                   <span className="flex items-center justify-between gap-2">
@@ -163,7 +164,7 @@ export default function TemplateSelector({
                     </span>
                   )}
                 </span>
-              </button>
+              </Button>
             );
           })}
         </div>

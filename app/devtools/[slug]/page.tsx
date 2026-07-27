@@ -164,6 +164,7 @@ export default async function ToolPage({
     return (
       <JsonWorkbench
         account={account}
+        category={tool.category ?? "Developer Tools"}
         description={tool.description}
         title={tool.name}
       />
@@ -177,6 +178,7 @@ export default async function ToolPage({
     return (
       <DataConversionWorkbench
         account={account}
+        category={tool.category ?? "Developer Tools"}
         conversion={tool.componentKey}
         description={tool.description}
         title={tool.name}
@@ -188,6 +190,7 @@ export default async function ToolPage({
     return (
       <JsonViewerWorkbench
         account={account}
+        category={tool.category ?? "Developer Tools"}
         description={tool.description}
         title={tool.name}
       />

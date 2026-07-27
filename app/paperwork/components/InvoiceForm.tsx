@@ -22,8 +22,10 @@ import {
 import {
   AlertBanner,
   Button,
+  CheckboxControl,
   Field,
   Input,
+  Label,
   SectionCard,
   SectionHeading,
   Select,
@@ -263,16 +265,17 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   className="max-h-full max-w-full object-contain"
                   referrerPolicy="no-referrer"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={removeLogo}
-                  className="absolute inset-0 flex items-center justify-center bg-destructive/90 text-xs font-bold text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring"
+                  className="absolute inset-0 h-full w-full rounded-none bg-destructive/90 text-xs font-bold text-destructive-foreground opacity-0 transition-opacity hover:bg-destructive/90 group-hover:opacity-100 focus-visible:opacity-100"
+                  variant="destructive"
                 >
                   Delete Logo
-                </button>
+                </Button>
               </div>
             ) : (
-              <label className="group flex h-16 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary">
+              <Label className="group flex h-16 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary">
                 <Upload aria-hidden="true" className="size-5 text-muted-foreground group-hover:text-primary" />
                 <span className="mt-1 text-xs font-semibold text-muted-foreground">Add Logo</span>
                 <input
@@ -281,7 +284,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   onChange={handleLogoUpload}
                   className="hidden"
                 />
-              </label>
+              </Label>
             )}
             <div className="space-y-1 text-center sm:text-left">
               <span className="text-xs font-bold text-foreground">Company Logo Accent</span>
@@ -744,9 +747,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                 >
                   {/* Item Description */}
                   <div className="col-span-1 md:col-span-6 ">
-                    <label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={descriptionId}>
+                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={descriptionId}>
                       Description <span className="text-destructive">*</span>
-                    </label>
+                    </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].description`] ? `${descriptionId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].description`])}
@@ -766,9 +769,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
                   {/* Quantity */}
                   <div className="col-span-1 md:col-span-2">
-                    <label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={quantityId}>
+                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={quantityId}>
                       Quantity <span className="text-destructive">*</span>
-                    </label>
+                    </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].quantity`] ? `${quantityId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].quantity`])}
@@ -790,9 +793,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
                   {/* Unit price */}
                   <div className="col-span-1 md:col-span-2">
-                    <label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
+                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
                       Unit Price ($) <span className="text-destructive">*</span>
-                    </label>
+                    </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].unitPrice`] ? `${unitPriceId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].unitPrice`])}
@@ -815,11 +818,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   {/* Taxable boolean Checkbox */}
                   <div className="col-span-1 flex items-center justify-between border-t border-border py-1 md:col-span-1 md:justify-center md:border-0">
                     <span className="block text-xs font-semibold text-muted-foreground md:hidden">Taxable:</span>
-                    <input
+                    <CheckboxControl
                       aria-label={`Taxable line item ${index + 1}`}
-                      type="checkbox"
                       checked={item.taxable || false}
-                      onChange={(e) => handleLineItemChange(item.id, "taxable", e.target.checked)}
+                      onCheckedChange={(checked) => handleLineItemChange(item.id, "taxable", checked === true)}
                       id={`line-item-taxable-${item.id}`}
                       className="size-4 rounded border-input accent-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
@@ -1025,9 +1027,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         <div className="space-y-4">
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <label className="text-sm font-bold text-foreground" htmlFor="notes-textarea">
+              <Label className="text-sm font-bold text-foreground" htmlFor="notes-textarea">
                 Notes / Scope of Work Details
-              </label>
+              </Label>
               <div className="flex items-center gap-1">
                 <span className="text-xs font-semibold text-muted-foreground">Quick insert:</span>
               </div>

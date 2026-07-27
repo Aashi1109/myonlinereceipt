@@ -1,6 +1,6 @@
 "use client";
 
-import { Select } from "@smarttools/ui";
+import { Label, Select } from "@smarttools/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export function CategoryFilter({
@@ -15,12 +15,16 @@ export function CategoryFilter({
   const searchParams = useSearchParams();
 
   return (
-    <label className="inline-flex items-center gap-2 text-sm font-bold text-foreground">
+    <Label
+      className="inline-flex items-center gap-2 text-sm font-bold text-foreground"
+      htmlFor="devtools-category-filter"
+    >
       Tools
       <Select
         aria-label="Filter tools by category"
         className="h-10 w-56 bg-card text-sm font-semibold"
         defaultValue={value}
+        id="devtools-category-filter"
         onChange={(event) => {
           const params = new URLSearchParams(searchParams.toString());
           params.set("view", "all");
@@ -39,6 +43,6 @@ export function CategoryFilter({
           </option>
         ))}
       </Select>
-    </label>
+    </Label>
   );
 }

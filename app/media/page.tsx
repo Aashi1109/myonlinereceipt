@@ -1,12 +1,16 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableTools } from "@smarttools/control-plane";
 import type { ResolvedTool } from "@smarttools/tool-catalog";
 import {
   AccountNavigation,
   AppContainer,
+  Badge,
   Button,
+  Card,
   CatalogCard,
   EmptyState,
+  IconTile,
   Input,
   ProductHeader,
   SectionHeading,
@@ -122,9 +126,12 @@ export default async function HomePage({
       <main>
         <section className="bg-primary text-primary-foreground">
           <AppContainer className="py-16 text-center sm:py-24">
-            <span className="inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.14em]">
+            <Badge
+              className="border-white/25 bg-white/10 px-3 font-extrabold tracking-[0.14em] text-primary-foreground uppercase"
+              variant="outline"
+            >
               Private image and PDF tools
-            </span>
+            </Badge>
             <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
               Edit media without sending it anywhere.
             </h1>
@@ -231,9 +238,9 @@ export default async function HomePage({
                     href={`/media?category=${encodeURIComponent(name)}`}
                     key={name}
                   >
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                    <IconTile className="rounded-xl" size="sm">
                       <Icon aria-hidden="true" className="size-5" />
-                    </span>
+                    </IconTile>
                     <span className="min-w-0">
                       <strong className="block text-sm font-extrabold group-hover:text-primary">{name}</strong>
                       <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
@@ -265,22 +272,17 @@ export default async function HomePage({
                 description: "No server API, IndexedDB, local storage, or service worker keeps your files.",
               },
             ].map(({ description, icon: Icon, title }) => (
-              <article className="rounded-2xl border border-border bg-card p-6" key={title}>
+              <Card className="gap-0 rounded-2xl shadow-none" key={title} role="article">
                 <Icon aria-hidden="true" className="size-6 text-primary" />
                 <h2 className="mt-4 text-lg font-black">{title}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-              </article>
+              </Card>
             ))}
           </AppContainer>
         </section>
       </main>
 
-      <footer className="border-t border-border bg-card py-8 text-sm text-muted-foreground">
-        <AppContainer className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} SmartTools Media Tools</span>
-          <span>On-device image and PDF processing.</span>
-        </AppContainer>
-      </footer>
+      <SmartToolsFooter />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import {
   type ReactNode,
   useCallback,
@@ -13,34 +14,61 @@ import { json } from "@codemirror/lang-json";
 import CodeMirror, { EditorView } from "@uiw/react-codemirror";
 import {
   AccountNavigation,
+  AlertBanner,
   type AccountNavigationProps,
-  AppContainer,
+  Badge,
   Button,
+  Checkbox,
+  Field,
   Input,
-  ProductHeader,
+  Label,
   Select,
+  Separator,
   StatusBadge,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
   Textarea,
-  ToolPageHeader,
+  ToolPageShell,
+  WorkbenchShell,
+  type WorkbenchShellProps,
 } from "@smarttools/ui";
 import {
   AlignLeft,
+  ArrowLeftRight,
+  Braces,
+  CalendarClock,
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   Copy,
   Download,
   FileJson,
+  Globe2,
   Info,
+  Lightbulb,
   Minimize2,
+  Palette,
   PanelRightClose,
   PanelRightOpen,
   ShieldCheck,
+  Sparkles,
   Table2,
   Trash2,
+  WandSparkles,
+  Workflow,
 } from "lucide-react";
 
+import {
+  JsonResultRenderer,
+  ROOT_JSON_TREE_PATH,
+  type JsonTreePath,
+  type JsonTreeSelection,
+} from "../components/JsonResultRenderer";
 import {
   MAX_JSON_INPUT_CHARS,
   type CsvDelimiter,
@@ -87,23 +115,12 @@ const JSON_INPUT_EXTENSIONS = [
 const CODE_EDITOR_CLASS_NAME =
   "min-h-0 w-full flex-1 overflow-hidden bg-inherit text-foreground focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring [&_.cm-activeLine]:bg-accent [&_.cm-content]:min-w-max [&_.cm-content]:p-4 [&_.cm-content]:caret-primary [&_.cm-editor]:h-full [&_.cm-editor]:bg-inherit [&_.cm-editor]:text-foreground [&_.cm-gutters]:hidden [&_.cm-line]:p-0 [&_.cm-matchingBracket]:bg-accent [&_.cm-matchingBracket]:outline [&_.cm-matchingBracket]:outline-1 [&_.cm-matchingBracket]:outline-ring [&_.cm-placeholder]:text-muted-foreground [&_.cm-scroller]:overflow-auto [&_.cm-scroller]:font-mono [&_.cm-scroller]:text-[0.8125rem] [&_.cm-scroller]:leading-5 [&_.cm-scroller]:[font-variant-ligatures:none] [&_.cm-scroller]:[tab-size:2]";
 
-type JsonTreePath = readonly (string | number)[];
-type JsonTreeSelection = {
-  key: string;
-  path: JsonTreePath;
-  value: unknown;
-};
-type TreeExpansion = { version: number; open?: boolean };
-
-const ROOT_JSON_TREE_PATH: JsonTreePath = [];
-const FORMATTER_TREE_EXPANSION: TreeExpansion = { version: 0 };
-
-function jsonTreePathsEqual(left: JsonTreePath, right: JsonTreePath) {
-  return left.length === right.length && left.every((segment, index) => segment === right[index]);
-}
-
-function jsonTreePathKey(path: JsonTreePath) {
-  return JSON.stringify(path);
+function parseJsonResult(output: string): { value: unknown } | null {
+  try {
+    return { value: JSON.parse(output) as unknown };
+  } catch {
+    return null;
+  }
 }
 
 function resolveJsonTreePath(
@@ -132,85 +149,75 @@ function resolveJsonTreePath(
   return { found: true, value: current };
 }
 
+function ConversionFormatSelector({ label, value }: { label: string; value: string }) {
+  const id = `conversion-${label.toLowerCase()}-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  return (
+    <div className="flex w-44 flex-col gap-[7px]">
+      <Label className="font-caption text-xs font-medium text-muted-foreground" htmlFor={id}>
+        {label}
+      </Label>
+      <Select className="h-11 bg-card px-[13px] py-3 text-sm" id={id} value={value}>
+        <option value={value}>{value}</option>
+      </Select>
+    </div>
+  );
+}
+
 function ToolWorkspace({
   actions,
   busy,
   children,
+  options,
   status,
   toolbarLabel,
+  variant = "utility",
 }: {
   actions: ReactNode;
   busy?: boolean;
   children: ReactNode;
+  options?: ReactNode;
   status: ReactNode;
   toolbarLabel: string;
+  variant?: WorkbenchShellProps["variant"];
 }) {
   return (
-    <section
+    <WorkbenchShell
       aria-busy={busy || undefined}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground motion-reduce:[&_*]:transition-none max-[54rem]:overflow-visible"
+      className="flex-1 text-card-foreground motion-reduce:[&_*]:transition-none"
       data-testid="tool-workspace"
       id="tool-workspace"
+      options={options}
+      status={
+        <div
+          aria-live="polite"
+          className="flex w-full items-center justify-between gap-4 font-mono text-[10px] text-muted-foreground tabular-nums max-[40rem]:flex-col max-[40rem]:items-start max-[40rem]:gap-1"
+          data-testid="tool-status-line"
+          role="status"
+        >
+          {status}
+        </div>
+      }
       tabIndex={-1}
+      variant={variant}
+      toolbar={
+        <div
+          aria-label={toolbarLabel}
+          className="flex w-full flex-wrap items-center gap-2"
+          data-testid="tool-action-toolbar"
+          role="toolbar"
+        >
+          {actions}
+        </div>
+      }
     >
       <div
-        aria-label={toolbarLabel}
-        className="flex min-h-13 shrink-0 flex-wrap items-center gap-2 border-b border-border bg-muted/55 px-3 py-2 sm:px-4"
-        data-testid="tool-action-toolbar"
-        role="toolbar"
-      >
-        {actions}
-      </div>
-
-      <div
-        className="flex min-h-0 flex-1 overflow-hidden max-[54rem]:block max-[54rem]:overflow-visible"
+        className="flex h-full min-h-0 overflow-hidden max-[54rem]:block max-[54rem]:h-auto max-[54rem]:overflow-visible"
         data-testid="tool-workspace-content"
       >
         {children}
       </div>
-
-      <div
-        aria-live="polite"
-        className="flex min-h-9 shrink-0 items-center justify-between gap-4 border-t border-border bg-card px-4 py-1.5 text-xs text-muted-foreground tabular-nums max-[40rem]:flex-col max-[40rem]:items-start max-[40rem]:gap-1 max-[40rem]:py-2"
-        data-testid="tool-status-line"
-        role="status"
-      >
-        {status}
-      </div>
-    </section>
-  );
-}
-
-function ToolBreadcrumb({
-  category,
-  title,
-}: {
-  category: string;
-  title: string;
-}) {
-  return (
-    <nav
-      aria-label="Breadcrumb"
-      className="mb-5 flex min-h-9 flex-wrap items-center gap-1 text-xs font-bold text-muted-foreground"
-    >
-      <a
-        className="inline-flex min-h-9 items-center rounded-lg px-2 outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
-        href="/devtools?view=all"
-      >
-        All tools
-      </a>
-      <ChevronRight aria-hidden="true" className="size-3.5" />
-      <a
-        className="inline-flex min-h-9 items-center rounded-lg px-2 outline-none hover:bg-accent hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
-        href={`/devtools?category=${encodeURIComponent(category)}`}
-      >
-        {category}
-      </a>
-      <ChevronRight aria-hidden="true" className="size-3.5" />
-      <span aria-current="page" className="px-2 text-foreground">
-        {title}
-      </span>
-    </nav>
+    </WorkbenchShell>
   );
 }
 
@@ -219,6 +226,9 @@ function ToolPageFrame({
   category,
   children,
   description,
+  introCategory,
+  introDescription,
+  introTitle,
   online = false,
   skipHref = "#tool-workspace",
   title,
@@ -227,80 +237,51 @@ function ToolPageFrame({
   category: string;
   children: ReactNode;
   description: string;
+  introCategory?: string;
+  introDescription?: string;
+  introTitle?: string;
   online?: boolean;
   skipHref?: string;
   title: string;
 }) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <a
-        className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
-        href={skipHref}
-      >
-        {skipHref === "#json-input" ? "Skip to JSON input" : "Skip to tool workspace"}
-      </a>
-
-      <ProductHeader
-        actions={<AccountNavigation {...account} />}
-        className="sticky top-0 z-50 border-border/80 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
-        href="/devtools"
-        name="Devtools"
-      />
-
-      <main>
-        <section className="border-b border-border bg-card">
-          <AppContainer className="max-w-[100rem] py-5 sm:py-7">
-            <ToolBreadcrumb category={category} title={title} />
-
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
-              <ToolPageHeader
-                className="mb-0 border-b-0 pb-0 [&_h1]:text-4xl [&_h1]:tracking-[-0.045em] [&_p]:mt-3 [&_p]:max-w-3xl [&_p]:text-base [&_p]:leading-7 sm:[&_h1]:text-5xl"
-                description={description}
-                eyebrow={
-                  <>
-                    <StatusBadge variant={online ? "warning" : "success"}>
-                      {online ? "Online lookup" : "Runs locally"}
-                    </StatusBadge>
-                    <span>{category}</span>
-                  </>
-                }
-                inlineEyebrow
-                title={title}
-              />
-
-              <div className="flex items-center gap-3 lg:mb-1 lg:max-w-xs lg:border-l lg:border-border lg:pl-6">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-primary">
-                  <ShieldCheck aria-hidden="true" className="size-5" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-extrabold">
-                    {online ? "Provider-assisted" : "Private by default"}
-                  </h2>
-                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                    {online
-                      ? "This lookup sends the domain to Ahrefs."
-                      : "Your input stays in this browser."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </AppContainer>
-        </section>
-
-        <AppContainer className="max-w-[100rem] py-5 sm:py-7 lg:py-8">
-          {children}
-        </AppContainer>
-      </main>
-    </div>
+    <ToolPageShell
+      badge={
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Badge className="border-transparent bg-accent px-2.5 py-1.5 font-caption text-[11px] font-semibold tracking-[0.035em] text-primary" variant="secondary">
+            QUICK TASK
+          </Badge>
+          <Badge className="border-transparent bg-accent px-2.5 py-1.5 font-caption text-[11px] font-semibold tracking-[0.035em] text-primary" variant="secondary">
+            RESULT READY
+          </Badge>
+          <Badge className="border-transparent bg-accent px-2.5 py-1.5 font-caption text-[11px] font-semibold tracking-[0.035em] text-primary" variant="secondary">
+            {online ? "ONLINE LOOKUP" : "PRIVATE IN BROWSER"}
+          </Badge>
+        </div>
+      }
+      category={introCategory ?? category}
+      description={introDescription ?? description}
+      footer={<SmartToolsFooter />}
+      headerActions={<AccountNavigation {...account} />}
+      productHref="/devtools"
+      productName="Developer tools"
+      skipHref={skipHref}
+      skipLabel={skipHref === "#json-input" ? "Skip to JSON input" : "Skip to tool workspace"}
+      title={introTitle ?? title}
+    >
+      {children}
+    </ToolPageShell>
   );
 }
 
 export default function JsonWorkbench({
   account,
+  category,
   description,
   title,
 }: {
   account: AccountNavigationProps;
+  category: string;
   description: string;
   title: string;
 }) {
@@ -402,13 +383,14 @@ export default function JsonWorkbench({
   return (
     <ToolPageFrame
       account={account}
-      category="JSON Tools"
+      category={category}
       description={description}
       skipHref="#json-input"
       title={title}
     >
       <div className="flex min-h-[33rem] flex-col max-[54rem]:block max-[54rem]:min-h-0">
-            <ToolWorkspace
+        <ToolWorkspace
+          variant="json"
           actions={
             <>
           <div className="flex min-w-0 items-center gap-2 max-[40rem]:grid max-[40rem]:w-full max-[40rem]:grid-cols-3">
@@ -447,7 +429,7 @@ export default function JsonWorkbench({
           </div>
 
           <div className="ml-auto flex min-w-0 items-center gap-2 max-[40rem]:ml-0 max-[40rem]:grid max-[40rem]:w-full max-[40rem]:grid-cols-[minmax(0,1fr)_2.5rem_3rem]">
-            <label
+            <Label
               className="flex min-h-9 w-48 min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted pl-2 max-[40rem]:w-full"
               htmlFor="indentation"
             >
@@ -468,7 +450,7 @@ export default function JsonWorkbench({
                 <option value="4">4 Spaces</option>
                 <option value="tab">Tabs</option>
               </Select>
-            </label>
+            </Label>
             <Button
               aria-label="Copy formatted JSON"
               disabled={!canUseResult}
@@ -509,7 +491,7 @@ export default function JsonWorkbench({
                   )}
                   {notice || statusLabel}
                 </span>
-                <span aria-hidden="true" className="h-4 w-px bg-border" />
+                <Separator className="h-4" orientation="vertical" />
                 <span>Size: {summary ? `${summary.byteSize.toLocaleString()} B` : "—"}</span>
                 <span>Lines: {summary?.lineCount ?? input.split("\n").length}</span>
               </div>
@@ -523,7 +505,7 @@ export default function JsonWorkbench({
         >
           <section
             aria-label="JSON input"
-            className="flex min-w-0 flex-[0_0_35%] flex-col overflow-hidden border-r border-border bg-muted/20 max-[64rem]:flex-[0_0_40%] max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:flex-none max-[54rem]:border-r-0 max-[54rem]:border-b"
+            className="flex w-[560px] min-w-0 shrink-0 flex-col overflow-hidden border-r border-border bg-muted/20 max-[64rem]:w-[40%] max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:flex-none max-[54rem]:border-r-0 max-[54rem]:border-b"
             data-workspace-panel="input"
           >
             <header className="flex min-h-11 shrink-0 items-center justify-between border-b border-border bg-muted/45 px-4">
@@ -568,7 +550,7 @@ export default function JsonWorkbench({
             className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card max-[54rem]:min-h-[32rem] max-[54rem]:w-full max-[54rem]:border-b max-[54rem]:border-border"
             data-workspace-panel="output"
           >
-            <header className="flex min-h-11 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+            <header className="hidden min-h-11 shrink-0 items-center justify-between border-b border-border bg-card px-4">
               <h2 className="text-xs font-extrabold tracking-[0.08em] uppercase">
                 Output
               </h2>
@@ -586,19 +568,14 @@ export default function JsonWorkbench({
               ) : null}
             </header>
             {result.ok ? (
-              <div className="min-h-0 flex-1 overflow-auto p-4">
-                <div aria-label="JSON tree" className="w-max min-w-full" role="tree">
-                  <JsonTreeNode
-                    expansion={FORMATTER_TREE_EXPANSION}
-                    label="root"
-                    onCopy={copyNode}
-                    onSelect={setSelectedNode}
-                    path={ROOT_JSON_TREE_PATH}
-                    selectedPath={selectedNode?.path}
-                    value={result.value}
-                  />
-                </div>
-              </div>
+              <JsonResultRenderer
+                formattedValue={result.output}
+                label="Formatted JSON result"
+                onCopy={copyNode}
+                onSelect={setSelectedNode}
+                selectedPath={selectedNode?.path}
+                value={result.value}
+              />
             ) : (
               <div className="m-auto flex max-w-lg items-start gap-3 p-6 text-muted-foreground">
                 <Info aria-hidden="true" className="shrink-0" size={20} />
@@ -615,7 +592,7 @@ export default function JsonWorkbench({
           <aside
             aria-hidden={!inspectorOpen}
             aria-label="JSON inspector"
-            className={`flex min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-[width,flex-basis,border-color] duration-300 max-[54rem]:min-h-[38rem] max-[54rem]:border-l-0 max-[54rem]:border-b ${
+            className={`hidden min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-[width,flex-basis,border-color] duration-300 max-[54rem]:min-h-[38rem] max-[54rem]:border-l-0 max-[54rem]:border-b ${
               inspectorOpen
                 ? "w-80 basis-80 max-[64rem]:w-72 max-[64rem]:basis-72 max-[54rem]:w-full max-[54rem]:basis-auto"
                 : "invisible w-0 basis-0 border-transparent max-[54rem]:hidden"
@@ -644,23 +621,15 @@ export default function JsonWorkbench({
                 </div>
               </header>
               <div className="min-h-0 flex-1 overflow-auto p-4">
-                <div
-                  className={`mb-4 flex items-start gap-2 rounded-md border p-3 ${
-                    result.ok
-                      ? "border-primary/20 bg-accent text-accent-foreground"
-                      : "border-destructive/30 bg-destructive/10 text-destructive"
-                  }`}
+                <AlertBanner
+                  className="mb-4"
+                  title={statusLabel}
+                  variant={result.ok ? "success" : "error"}
                 >
-                  <Info aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-                  <div>
-                    <strong className="text-sm">{statusLabel}</strong>
-                    <p className="mt-1 text-[0.8125rem] leading-5 text-current/80">
-                      {result.ok
-                        ? "The document is well-formed and passes structural validation."
-                        : result.error.message}
-                    </p>
-                  </div>
-                </div>
+                  {result.ok
+                    ? "The document is well-formed and passes structural validation."
+                    : result.error.message}
+                </AlertBanner>
                 <dl>
                   <div className="flex min-h-9 items-center justify-between gap-4 border-b border-border text-[0.8125rem]">
                     <dt className="text-muted-foreground">Depth</dt>
@@ -699,44 +668,50 @@ export default function JsonWorkbench({
                   <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-muted-foreground uppercase">
                     Value Type
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 font-mono text-[0.8125rem] text-foreground">
+                  <Badge
+                    className="rounded-md font-mono text-[0.8125rem] font-normal"
+                    variant="secondary"
+                  >
                     <i aria-hidden="true" className="size-2 rounded-full bg-primary" />
                     {selectedMetadata?.selectedType ?? "Unknown"}
-                  </span>
+                  </Badge>
                 </div>
                 <div className="mt-4">
                   <p className="mb-1.5 text-xs font-extrabold tracking-[0.04em] text-muted-foreground uppercase">
                     Data Preview
                   </p>
                   <div className="overflow-hidden rounded-md border border-border bg-muted/20 font-mono text-xs">
-                    <table aria-label="Data Preview" className="w-full table-fixed text-left">
-                      <thead>
-                        <tr className="border-b border-border text-muted-foreground">
-                          <th className="w-[40%] px-2.5 py-2 font-normal" scope="col">Key</th>
-                          <th className="px-2.5 py-2 font-normal" scope="col">Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table
+                      aria-label="Data Preview"
+                      className="table-fixed text-left font-mono text-xs"
+                    >
+                      <TableHeader className="bg-transparent">
+                        <TableRow className="text-muted-foreground hover:bg-transparent">
+                          <TableHead className="w-[40%] px-2.5 py-2 font-normal">Key</TableHead>
+                          <TableHead className="px-2.5 py-2 font-normal">Value</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {selectedMetadata?.preview.length ? (
                           selectedMetadata.preview.map((item) => (
-                            <tr className="border-b border-border last:border-b-0" key={item.key}>
-                              <th className="px-2.5 py-2 font-normal text-muted-foreground" scope="row">
+                            <TableRow className="hover:bg-transparent" key={item.key}>
+                              <TableHead className="px-2.5 py-2 font-normal text-muted-foreground" scope="row">
                                 {item.key}
-                              </th>
-                              <td className="px-2.5 py-2">
+                              </TableHead>
+                              <TableCell className="px-2.5 py-2">
                                 <code className="font-mono text-primary">{item.value}</code>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))
                         ) : (
-                          <tr>
-                            <td className="p-3 font-sans text-muted-foreground" colSpan={2}>
+                          <TableRow className="hover:bg-transparent">
+                            <TableCell className="p-3 font-sans text-muted-foreground" colSpan={2}>
                               No value preview available.
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         )}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </div>
@@ -744,7 +719,6 @@ export default function JsonWorkbench({
           </aside>
         </ToolWorkspace>
       </div>
-
       <span className="sr-only">
         Maximum input size is {MAX_JSON_INPUT_CHARS.toLocaleString()} characters.
       </span>
@@ -759,11 +733,13 @@ const CONVERSION_EXAMPLES = {
 
 export function DataConversionWorkbench({
   account,
+  category,
   conversion,
   description,
   title,
 }: {
   account: AccountNavigationProps;
+  category: string;
   conversion: keyof typeof CONVERSION_EXAMPLES;
   description: string;
   title: string;
@@ -789,6 +765,16 @@ export function DataConversionWorkbench({
   function updateInput(value: string) {
     setInput(value);
     setNotice("");
+  }
+
+  async function pasteInput() {
+    try {
+      const value = await navigator.clipboard.readText();
+      updateInput(value);
+      setNotice(`${sourceFormat} pasted from clipboard.`);
+    } catch {
+      setNotice("Clipboard access was blocked. Paste into the input panel manually.");
+    }
   }
 
   async function copyOutput() {
@@ -825,99 +811,89 @@ export function DataConversionWorkbench({
   return (
     <ToolPageFrame
       account={account}
-      category="JSON Tools"
+      category={category}
       description={description}
       title={title}
     >
       <ToolWorkspace
-            actions={
-              <>
-                <Button
-                  onClick={() => {
-                    updateInput(CONVERSION_EXAMPLES[conversion]);
-                    setNotice("Example loaded.");
-                  }}
-                  size="sm"
+        variant="conversion"
+        actions={
+          <>
+            <div className="flex min-w-0 items-end gap-2.5">
+              <ConversionFormatSelector label="FROM" value={sourceFormat} />
+              <Button aria-label="Swap formats" className="size-10 rounded-lg" size="icon" variant="outline">
+                <ArrowLeftRight aria-hidden="true" className="size-[18px]" />
+              </Button>
+              <ConversionFormatSelector label="TO" value={targetFormat} />
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <Button className="text-primary" onClick={() => void pasteInput()} variant="ghost">
+                <ClipboardCheck aria-hidden="true" className="size-4" />
+                Paste
+              </Button>
+              <Button
+                onClick={() => {
+                  updateInput(CONVERSION_EXAMPLES[conversion]);
+                  setNotice("Example loaded.");
+                }}
+                variant="outline"
+              >
+                Example
+              </Button>
+              <Button
+                disabled={!input}
+                onClick={() => {
+                  updateInput("");
+                  setNotice("Input cleared.");
+                }}
+                variant="outline"
+              >
+                Clear
+              </Button>
+              <Button
+                disabled={!input || isChecking}
+                onClick={() => setNotice(result.ok ? `${targetFormat} preview updated.` : result.error.message)}
+              >
+                Convert →
+              </Button>
+            </div>
+          </>
+        }
+        options={
+          <>
+            {!convertsCsv ? (
+              <Label className="flex items-center gap-2 text-xs font-normal" htmlFor="repair-mode">
+                <span className="whitespace-nowrap">Auto-fix</span>
+                <Select
+                  className="h-8 w-44 bg-card py-0"
+                  id="repair-mode"
+                  onChange={(event) => setRepairMode(event.target.value as JsonRepairMode)}
+                  value={repairMode}
                 >
-                  <FileJson aria-hidden="true" className="size-4" />
-                  Load example
-                </Button>
-                <Button
-                  aria-label={`Copy ${targetFormat} output`}
-                  disabled={!canExport}
-                  onClick={copyOutput}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Copy aria-hidden="true" className="size-4" />
-                  Copy
-                </Button>
-                <Button
-                  aria-label={`Download ${targetFormat} output`}
-                  disabled={!canExport}
-                  onClick={downloadOutput}
-                  size="sm"
-                  variant="outline"
-                >
-                  <Download aria-hidden="true" className="size-4" />
-                  Download
-                </Button>
-
-                <div className="flex flex-1 flex-wrap items-center gap-2 sm:ml-2">
-                  {!convertsCsv ? (
-                    <label
-                      className="flex min-h-9 items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 text-xs font-bold"
-                      htmlFor="repair-mode"
-                    >
-                      <span className="whitespace-nowrap">Auto-fix</span>
-                      <Select
-                        className="h-8 w-44 border-0 bg-transparent py-0 shadow-none focus-visible:ring-0"
-                        id="repair-mode"
-                        onChange={(event) => setRepairMode(event.target.value as JsonRepairMode)}
-                        value={repairMode}
-                      >
-                        <option value="remove">Remove broken parts</option>
-                        <option value="null">Replace with null</option>
-                        <option value="off">Do not repair</option>
-                      </Select>
-                    </label>
-                  ) : null}
-                  <label
-                    className="flex min-h-9 items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 text-xs font-bold"
-                    htmlFor="csv-delimiter"
-                  >
-                    <span>Delimiter</span>
-                    <Select
-                      className="h-8 w-28 border-0 bg-transparent py-0 shadow-none focus-visible:ring-0"
-                      id="csv-delimiter"
-                      onChange={(event) => setDelimiter(event.target.value as CsvDelimiter)}
-                      value={delimiter}
-                    >
-                      <option value=",">Comma</option>
-                      <option value=";">Semicolon</option>
-                      <option value={"\t"}>Tab</option>
-                      <option value="|">Pipe</option>
-                    </Select>
-                  </label>
-                </div>
-
-                <div className="ml-auto border-l border-border pl-2">
-                  <Button
-                    disabled={!input}
-                    onClick={() => {
-                      updateInput("");
-                      setNotice("Input cleared.");
-                    }}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                    Clear
-                  </Button>
-                </div>
-              </>
-            }
-            status={
+                  <option value="remove">Remove broken parts</option>
+                  <option value="null">Replace with null</option>
+                  <option value="off">Do not repair</option>
+                </Select>
+              </Label>
+            ) : null}
+            <Label className="flex items-center gap-2 text-xs font-normal" htmlFor="csv-delimiter">
+              <span>Delimiter</span>
+              <Select
+                className="h-8 w-32 bg-card py-0"
+                id="csv-delimiter"
+                onChange={(event) => setDelimiter(event.target.value as CsvDelimiter)}
+                value={delimiter}
+              >
+                <option value=",">Comma</option>
+                <option value=";">Semicolon</option>
+                <option value={"\t"}>Tab</option>
+                <option value="|">Pipe</option>
+              </Select>
+            </Label>
+            <span className="ml-auto font-mono text-[10px] text-muted-foreground">UTF-8 · Auto detect</span>
+          </>
+        }
+        status={
               <>
                 <span
                   className={`inline-flex items-center gap-1.5 font-semibold ${
@@ -943,55 +919,64 @@ export function DataConversionWorkbench({
             toolbarLabel={`${title} actions`}
           >
             <section
-              className="flex min-w-0 flex-[0_0_35%] flex-col overflow-hidden border-r border-border bg-card max-[64rem]:flex-[0_0_40%] max-[54rem]:min-h-[28rem] max-[54rem]:w-full max-[54rem]:border-r-0 max-[54rem]:border-b"
+              className="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-border bg-card max-[54rem]:min-h-[28rem] max-[54rem]:w-full max-[54rem]:border-r-0 max-[54rem]:border-b"
               data-workspace-panel="input"
             >
-              <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 py-2">
-                <h2 className="flex items-center gap-2 text-xs font-extrabold tracking-[0.06em] uppercase">
-                  {convertsCsv ? (
-                    <Table2 aria-hidden="true" className="size-4 text-primary" />
-                  ) : (
-                    <FileJson aria-hidden="true" className="size-4 text-primary" />
-                  )}
-                  {sourceFormat} input
-                </h2>
-                <span className="text-xs text-muted-foreground">
-                  {input.length.toLocaleString()} chars
+              <header className="flex h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-caption text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+                    {sourceFormat} input
+                  </h2>
+                  {result.ok ? <span className="font-caption text-[11px] font-semibold text-success">{result.rowCount} rows</span> : null}
+                </div>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {new TextEncoder().encode(input).length.toLocaleString()} bytes
                 </span>
               </header>
-              <Textarea
-                aria-invalid={Boolean(input) && !result.ok}
-                aria-label={`${sourceFormat} input`}
-                className="min-h-[25rem] flex-1 resize-y rounded-none border-0 bg-card p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
-                maxLength={MAX_JSON_INPUT_CHARS}
-                onChange={(event) => updateInput(event.target.value)}
-                placeholder={
-                  convertsCsv
-                    ? "Paste CSV with a header row…\n\nid,name\n1,Alice"
-                    : 'Paste an object or array of objects…\n\n[{"id":1,"name":"Alice"}]'
-                }
-                spellCheck={false}
-                value={input}
-              />
+              <div className="flex min-h-[25rem] flex-1 overflow-hidden bg-muted">
+                <pre aria-hidden="true" className="shrink-0 select-none border-r border-border/70 px-3 py-[18px] text-right font-mono text-xs leading-[1.65] text-muted-foreground/60">
+                  {Array.from({ length: Math.max(1, input.split("\n").length) }, (_, index) => index + 1).join("\n")}
+                </pre>
+                <Textarea
+                  aria-invalid={Boolean(input) && !result.ok}
+                  aria-label={`${sourceFormat} input`}
+                  className="min-h-[25rem] flex-1 resize-none rounded-none border-0 bg-muted p-[18px] font-mono text-xs leading-[1.65] shadow-none focus-visible:ring-2 focus-visible:ring-inset"
+                  maxLength={MAX_JSON_INPUT_CHARS}
+                  onChange={(event) => updateInput(event.target.value)}
+                  placeholder={
+                    convertsCsv
+                      ? "Paste CSV with a header row…\n\nid,name\n1,Alice"
+                      : 'Paste an object or array of objects…\n\n[{"id":1,"name":"Alice"}]'
+                  }
+                  spellCheck={false}
+                  value={input}
+                />
+              </div>
             </section>
 
             <section
               className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/15 max-[54rem]:min-h-[28rem] max-[54rem]:w-full"
               data-workspace-panel="output"
             >
-              <header className="flex min-h-11 items-center border-b border-border px-4 py-2">
-                <h2 className="flex items-center gap-2 text-xs font-extrabold tracking-[0.06em] uppercase">
-                  {convertsCsv ? (
-                    <FileJson aria-hidden="true" className="size-4 text-primary" />
-                  ) : (
-                    <Table2 aria-hidden="true" className="size-4 text-primary" />
-                  )}
-                  {targetFormat} output
-                </h2>
+              <header className="flex h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-caption text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+                    {targetFormat} output
+                  </h2>
+                  {result.ok ? <CheckCircle2 aria-hidden="true" className="size-3.5 text-success" /> : null}
+                </div>
+                <div className="flex gap-1">
+                  <Button disabled={!canExport} onClick={() => void copyOutput()} size="sm" variant="ghost">
+                    <Copy aria-hidden="true" className="size-4" /> Copy
+                  </Button>
+                  <Button disabled={!canExport} onClick={downloadOutput} size="sm" variant="ghost">
+                    <Download aria-hidden="true" className="size-4" /> Download
+                  </Button>
+                </div>
               </header>
               <Textarea
                 aria-label={`${targetFormat} output`}
-                className="min-h-[25rem] flex-1 resize-y rounded-none border-0 bg-muted/20 p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
+                className="min-h-[25rem] flex-1 resize-none rounded-none border-0 bg-card p-[18px] font-mono text-xs leading-[1.42] shadow-none focus-visible:ring-2 focus-visible:ring-inset"
                 placeholder={`Converted ${targetFormat} will appear here.`}
                 readOnly
                 spellCheck={false}
@@ -1017,227 +1002,14 @@ const VIEWER_EXAMPLE = `{
 const VIEWER_BROKEN_EXAMPLE =
   `[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]`;
 
-function JsonTreeNode({
-  depth = 0,
-  expansion,
-  isArrayItem = false,
-  label,
-  onCopy,
-  onSelect,
-  path = ROOT_JSON_TREE_PATH,
-  selectedPath,
-  value,
-}: {
-  depth?: number;
-  expansion: TreeExpansion;
-  isArrayItem?: boolean;
-  label: string;
-  onCopy: (value: string, label: string) => void;
-  onSelect?: (selection: JsonTreeSelection) => void;
-  path?: JsonTreePath;
-  selectedPath?: JsonTreePath;
-  value: unknown;
-}) {
-  const entries =
-    value !== null && typeof value === "object"
-      ? Array.isArray(value)
-        ? value.map((child, index) => [String(index), child] as const)
-        : Object.entries(value)
-      : null;
-  const [open, setOpen] = useState(expansion.open ?? (depth < 2));
-  const isRoot = depth === 0;
-  const displayedLabel = isRoot
-    ? ""
-    : Array.isArray(value) || isArrayItem
-      ? `[${label}]`
-      : JSON.stringify(label);
-  const treeItemLabel = isRoot ? "root" : isArrayItem ? `[${label}]` : label;
-  const isSelectable = Boolean(onSelect);
-  const isSelected = Boolean(selectedPath && jsonTreePathsEqual(path, selectedPath));
-  const copyLabel = isRoot ? "Root node" : `${label} node`;
-  const copyButton = (
-    <button
-      aria-label={`Copy ${isRoot ? "root" : label} value`}
-      className="ml-2 grid size-6 shrink-0 place-items-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
-      onClick={(event) => {
-        event.stopPropagation();
-        onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
-      }}
-      title={`Copy ${isRoot ? "root" : label} value`}
-      type="button"
-    >
-      <Copy aria-hidden="true" className="size-3.5" />
-    </button>
-  );
-
-  useEffect(() => {
-    if (expansion.open !== undefined) setOpen(expansion.open);
-  }, [expansion.open, expansion.version]);
-
-  function selectNode(expand = false) {
-    if (!onSelect) return;
-    onSelect({ key: isRoot ? "root" : label, path, value });
-    if (expand && entries?.length) setOpen(true);
-  }
-
-  function handleSelectionKeyDown(event: React.KeyboardEvent<HTMLDivElement>, expand = false) {
-    if (event.target !== event.currentTarget) return;
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    selectNode(expand);
-  }
-
-  const selectedClassName = isSelected
-    ? "bg-primary/10 ring-1 ring-inset ring-primary/30"
-    : "hover:bg-muted/60 focus-within:bg-muted/60";
-
-  if (!entries) {
-    const type = value === null ? "null" : typeof value;
-    const displayedValue = type === "string" ? JSON.stringify(value) : String(value);
-    return (
-      <div
-        aria-label={isSelectable ? treeItemLabel : undefined}
-        aria-selected={isSelectable ? isSelected : undefined}
-        className={`group flex min-w-max items-center rounded px-1 font-mono text-[0.875rem] leading-7 ${selectedClassName}`}
-        onClick={isSelectable ? () => selectNode() : undefined}
-        onFocus={isSelectable ? (event) => {
-          if (event.target === event.currentTarget) selectNode();
-        } : undefined}
-        onKeyDown={isSelectable ? (event) => handleSelectionKeyDown(event) : undefined}
-        role={isSelectable ? "treeitem" : undefined}
-        tabIndex={isSelectable ? 0 : undefined}
-      >
-        {displayedLabel ? (
-          <>
-            <span className="ml-5 font-medium text-primary">{displayedLabel}</span>
-            <span className="mx-1 text-muted-foreground">:</span>
-          </>
-        ) : null}
-        <span
-          className={
-            type === "string"
-              ? "text-emerald-700"
-              : type === "number"
-                ? "text-amber-700"
-                : "text-violet-700"
-          }
-        >
-          {displayedValue}
-        </span>
-        {copyButton}
-      </div>
-    );
-  }
-
-  const typeLabel = Array.isArray(value) ? `Array(${entries.length})` : "Object";
-  const canExpand = entries.length > 0;
-  const nodeDescription = (
-    <>
-      {displayedLabel ? (
-        <>
-          <span className="font-medium text-primary">{displayedLabel}</span>
-          <span className="mx-1 text-muted-foreground">:</span>
-        </>
-      ) : null}
-      <span className="text-muted-foreground">{typeLabel}</span>
-    </>
-  );
-
-  return (
-    <div
-      className="min-w-max font-mono text-[0.875rem] leading-7 text-foreground"
-    >
-      <div
-        aria-expanded={isSelectable && canExpand ? open : undefined}
-        aria-label={isSelectable ? treeItemLabel : undefined}
-        aria-selected={isSelectable ? isSelected : undefined}
-        className={`group flex min-w-max items-center rounded px-1 ${selectedClassName}`}
-        onClick={isSelectable ? () => selectNode(true) : undefined}
-        onFocus={isSelectable ? (event) => {
-          if (event.target === event.currentTarget) selectNode();
-        } : undefined}
-        onKeyDown={isSelectable ? (event) => handleSelectionKeyDown(event, true) : undefined}
-        role={isSelectable ? "treeitem" : undefined}
-        tabIndex={isSelectable ? 0 : undefined}
-      >
-        {canExpand && isSelectable ? (
-          <button
-            aria-expanded={open}
-            aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
-            className="flex size-5 shrink-0 items-center justify-center focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={(event) => {
-              event.stopPropagation();
-              setOpen((current) => !current);
-            }}
-            type="button"
-          >
-            {open ? (
-              <ChevronDown aria-hidden="true" className="size-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-4 text-muted-foreground" />
-            )}
-          </button>
-        ) : canExpand ? (
-          <button
-            aria-expanded={open}
-            aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
-            className="flex min-w-0 items-center text-left focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={(event) => {
-              event.stopPropagation();
-              setOpen((current) => !current);
-            }}
-            type="button"
-          >
-            {open ? (
-              <ChevronDown aria-hidden="true" className="mr-1 size-4 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="mr-1 size-4 shrink-0 text-muted-foreground" />
-            )}
-            {nodeDescription}
-          </button>
-        ) : (
-          <div className="flex min-w-0 items-center">
-            <span aria-hidden="true" className="mr-1 block size-4 shrink-0" />
-            {nodeDescription}
-          </div>
-        )}
-        {canExpand && isSelectable ? nodeDescription : null}
-        {copyButton}
-      </div>
-      {canExpand && open ? (
-        <div className="ml-5" role={isSelectable ? "group" : undefined}>
-          {entries.map(([key, child]) => {
-            const childPath = [
-              ...path,
-              Array.isArray(value) ? Number(key) : key,
-            ] as const;
-            return (
-              <JsonTreeNode
-                depth={depth + 1}
-                expansion={expansion}
-                isArrayItem={Array.isArray(value)}
-                key={jsonTreePathKey(childPath)}
-                label={key}
-                onCopy={onCopy}
-                onSelect={onSelect}
-                path={childPath}
-                selectedPath={selectedPath}
-                value={child}
-              />
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function JsonViewerWorkbench({
   account,
+  category,
   description,
   title,
 }: {
   account: AccountNavigationProps;
+  category: string;
   description: string;
   title: string;
 }) {
@@ -1246,9 +1018,6 @@ export function JsonViewerWorkbench({
   const [classicTab, setClassicTab] = useState<"text" | "tree">("text");
   const [repairMode, setRepairMode] =
     useState<Exclude<JsonRepairMode, "off">>("remove");
-  const [expansion, setExpansion] = useState<TreeExpansion>({
-    version: 0,
-  });
   const [notice, setNotice] = useState("");
   const deferredInput = useDeferredValue(input);
   const result = useMemo(
@@ -1291,19 +1060,6 @@ export function JsonViewerWorkbench({
     }
   }
 
-  function download() {
-    if (!ready) return;
-    const url = URL.createObjectURL(
-      new Blob([result.output], { type: "application/json;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "smarttools-viewer.json";
-    link.click();
-    URL.revokeObjectURL(url);
-    setNotice("JSON downloaded.");
-  }
-
   const showText = layout === "modern" || classicTab === "text";
   const showTree = layout === "modern" || classicTab === "tree";
   const status = deferredInput !== input
@@ -1315,17 +1071,18 @@ export function JsonViewerWorkbench({
   return (
     <ToolPageFrame
       account={account}
-      category="JSON Tools"
+      category={category}
       description={description}
       title={title}
     >
       <ToolWorkspace
+        variant="json"
             actions={
               <>
                 <Button disabled={!input} onClick={repairInput} size="sm">
                   Repair &amp; clean
                 </Button>
-                <label
+                <Label
                   className="flex min-h-9 items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 text-xs font-bold"
                   htmlFor="viewer-repair-mode"
                 >
@@ -1343,7 +1100,7 @@ export function JsonViewerWorkbench({
                     <option value="remove">Remove broken</option>
                     <option value="null">Set broken to null</option>
                   </Select>
-                </label>
+                </Label>
                 <Button
                   disabled={!ready}
                   onClick={() => transformInput("format")}
@@ -1417,34 +1174,6 @@ export function JsonViewerWorkbench({
                   </div>
                 ) : null}
 
-                <div className="ml-auto flex flex-wrap gap-1">
-                  <Button
-                    disabled={!ready}
-                    onClick={() =>
-                      setExpansion(({ version }) => ({
-                        version: version + 1,
-                        open: true,
-                      }))
-                    }
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Expand all
-                  </Button>
-                  <Button
-                    disabled={!ready}
-                    onClick={() =>
-                      setExpansion(({ version }) => ({
-                        version: version + 1,
-                        open: false,
-                      }))
-                    }
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Collapse all
-                  </Button>
-                </div>
                 <div className="border-l border-border pl-2">
                   <Button
                     disabled={!input}
@@ -1525,47 +1254,18 @@ export function JsonViewerWorkbench({
                 className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/15 max-[54rem]:min-h-[30rem] max-[54rem]:w-full"
                 data-workspace-panel="output"
               >
-                <header className="flex min-h-11 items-center justify-between border-b border-border px-4 py-2">
-                  <h2 className="text-xs font-extrabold tracking-[0.06em] uppercase">
-                    Tree view
-                  </h2>
-                  <div className="flex gap-1">
-                    <Button
-                      disabled={!ready}
-                      onClick={() => copy(result.ok ? result.output : "", "JSON")}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      <Copy aria-hidden="true" className="size-4" />
-                      Copy
-                    </Button>
-                    <Button
-                      disabled={!ready}
-                      onClick={download}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      <Download aria-hidden="true" className="size-4" />
-                      Download
-                    </Button>
+                {result.ok ? (
+                  <JsonResultRenderer
+                    formattedValue={result.output}
+                    label="Interactive JSON result"
+                    onCopy={copy}
+                    value={result.value}
+                  />
+                ) : (
+                  <div className="flex min-h-[30rem] flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                    {input ? result.error.message : "Interactive tree will appear here."}
                   </div>
-                </header>
-                <div className="min-h-[30rem] flex-1 overflow-auto p-4">
-                  {result.ok ? (
-                    <div aria-label="JSON tree" className="w-max min-w-full" role="region">
-                      <JsonTreeNode
-                        expansion={expansion}
-                        label="root"
-                        onCopy={copy}
-                        value={result.value}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex min-h-[27rem] items-center justify-center p-6 text-center text-sm text-muted-foreground">
-                      {input ? result.error.message : "Interactive tree will appear here."}
-                    </div>
-                  )}
-                </div>
+                )}
               </section>
             ) : null}
       </ToolWorkspace>
@@ -1596,28 +1296,37 @@ function UtilityOptionControl({
 }) {
   const id = `${componentKey}-${option.key}`;
 
+  if (option.kind === "toggle") {
+    return (
+      <div className="flex min-h-10 items-center justify-between gap-4">
+        <Label className="text-sm font-semibold" htmlFor={id}>{option.label}</Label>
+        <Switch
+          checked={Boolean(value)}
+          id={id}
+          onCheckedChange={(checked) => onChange(checked)}
+          size="sm"
+        />
+      </div>
+    );
+  }
+
   if (option.kind === "checkbox") {
     return (
-      <label className="flex min-h-9 items-center gap-2 text-sm font-semibold" htmlFor={id}>
-        <input
-          checked={Boolean(value)}
-          className="size-4 rounded border-border accent-primary"
-          id={id}
-          onChange={(event) => onChange(event.target.checked)}
-          type="checkbox"
-        />
-        {option.label}
-      </label>
+      <Checkbox
+        checked={Boolean(value)}
+        className="min-h-9 items-center"
+        id={id}
+        label={option.label}
+        onCheckedChange={(checked) => onChange(checked === true)}
+      />
     );
   }
 
   if (option.kind === "select") {
     return (
-      <label className="grid gap-1 text-xs font-bold" htmlFor={id}>
-        {option.label}
+      <Field htmlFor={id} label={option.label}>
         <Select
           className="w-full"
-          id={id}
           onChange={(event) => onChange(event.target.value)}
           value={String(value)}
         >
@@ -1627,16 +1336,14 @@ function UtilityOptionControl({
             </option>
           ))}
         </Select>
-      </label>
+      </Field>
     );
   }
 
   return (
-    <label className="grid gap-1 text-xs font-bold" htmlFor={id}>
-      {option.label}
+    <Field htmlFor={id} label={option.label}>
       <Input
         className="w-full"
-        id={id}
         max={option.max}
         min={option.min}
         placeholder={option.placeholder}
@@ -1652,7 +1359,115 @@ function UtilityOptionControl({
           );
         }}
       />
-    </label>
+    </Field>
+  );
+}
+
+const CONVERSION_WORKBENCH_TOOL_KEYS = new Set([
+  "json-to-typescript",
+  "json-minifier",
+  "yaml-to-json",
+  "json-to-yaml",
+  "json-schema-generator",
+  "json-editor",
+  "xml-to-json",
+  "json-to-xml",
+  "json-array-to-table",
+  "json-sorter",
+  "csv-viewer",
+  "csv-to-markdown-table",
+  "csv-to-tsv",
+  "tsv-to-csv",
+  "csv-formatter",
+  "csv-to-table",
+  "csv-duplicate-remover",
+  "csv-delimiter-converter",
+  "text-diff-checker",
+  "find-and-replace",
+  "jwt-decoder",
+  "base64-decoder",
+  "base64-encoder",
+  "url-decoder",
+  "url-encoder",
+  "binary-to-text",
+  "html-encoder",
+  "html-decoder",
+  "text-to-binary",
+  "hex-to-text",
+  "text-to-hex",
+  "unicode-decoder",
+  "unicode-encoder",
+  "bcrypt-compare",
+  "hash-compare",
+]);
+
+function UtilityToolbarOptionControl({
+  componentKey,
+  onChange,
+  option,
+  value,
+}: {
+  componentKey: string;
+  onChange: (value: string | number | boolean) => void;
+  option: UtilityOptionDefinition;
+  value: string | number | boolean;
+}) {
+  const id = `${componentKey}-${option.key}`;
+
+  if (option.kind === "toggle") {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs">{option.label}</span>
+        <Switch checked={Boolean(value)} onCheckedChange={(checked) => onChange(checked)} size="sm" />
+      </div>
+    );
+  }
+
+  if (option.kind === "checkbox") {
+    return (
+      <Checkbox
+        checked={Boolean(value)}
+        className="min-h-0 items-center text-xs [&_span]:font-normal"
+        id={id}
+        label={option.label}
+        onCheckedChange={(checked) => onChange(checked === true)}
+      />
+    );
+  }
+
+  if (option.kind === "select") {
+    return (
+      <Label className="flex items-center gap-2 text-xs font-normal" htmlFor={id}>
+        <span>{option.label}</span>
+        <Select
+          className="h-8 w-40 bg-card py-0"
+          id={id}
+          onChange={(event) => onChange(event.target.value)}
+          value={String(value)}
+        >
+          {option.choices?.map((choice) => (
+            <option key={choice.value} value={choice.value}>{choice.label}</option>
+          ))}
+        </Select>
+      </Label>
+    );
+  }
+
+  return (
+    <Label className="flex items-center gap-2 text-xs font-normal" htmlFor={id}>
+      <span>{option.label}</span>
+      <Input
+        className="h-8 w-40 bg-card"
+        id={id}
+        max={option.max}
+        min={option.min}
+        onChange={(event) => onChange(option.kind === "number" ? Number(event.target.value) : event.target.value)}
+        placeholder={option.placeholder}
+        step={option.step}
+        type={option.kind === "number" ? "number" : "text"}
+        value={String(value)}
+      />
+    </Label>
   );
 }
 
@@ -1685,6 +1500,10 @@ export function UtilityToolWorkbench({
   const [notice, setNotice] = useState("");
   const [running, setRunning] = useState(false);
   const execution = useRef(0);
+  const jsonResult = useMemo(
+    () => (result?.outputKind === "text" ? parseJsonResult(result.output) : null),
+    [result],
+  );
 
   const execute = useCallback(async () => {
     const currentExecution = ++execution.current;
@@ -1767,6 +1586,16 @@ export function UtilityToolWorkbench({
     setRunning(false);
   }
 
+  async function pasteInput() {
+    try {
+      const value = await navigator.clipboard.readText();
+      updatePrimary(value);
+      setNotice("Input pasted from clipboard.");
+    } catch {
+      setNotice("Clipboard access was blocked. Paste into the input panel manually.");
+    }
+  }
+
   async function copyOutput() {
     if (!result?.output) return;
     try {
@@ -1815,6 +1644,28 @@ export function UtilityToolWorkbench({
     (option) => options[option.key] !== defaultOptions[option.key],
   );
   const outputLabel = `${definition.name} output`;
+  const externalSource = ({
+    "domain-rating-checker": "Ahrefs",
+    "domain-age-checker": "public RDAP registry data",
+    "dns-checker": "Google Public DNS",
+  } as Record<string, string>)[componentKey];
+  const isOnlineTool = Boolean(externalSource);
+  const categoryPresentation = ({
+    "JWT & API Tools": { Icon: Globe2, guidance: "Check the generated request or response before using it in production." },
+    "Web & Markup Tools": { Icon: Braces, guidance: "Review syntax and semantics before replacing source files." },
+    "Color & Design Tools": { Icon: Palette, guidance: "Preview the visual result before copying the CSS." },
+    "Date & Time Tools": { Icon: CalendarClock, guidance: "Confirm timezone and precision before using the result." },
+    "Developer Generators": { Icon: WandSparkles, guidance: "Review generated values before saving or publishing them." },
+    "Diagram Tools": { Icon: Workflow, guidance: "Keep labels concise, then export the final diagram." },
+    "SEO & Domain Tools": { Icon: ShieldCheck, guidance: "Confirm the queried host and data source before acting on the result." },
+  } as Record<string, { Icon: typeof Sparkles; guidance: string }>)[definition.category] ?? { Icon: Sparkles, guidance: "Review the result before copying or downloading it." };
+  const UtilityIcon = categoryPresentation.Icon;
+  const generatorInputOptions = definition.mode === "generator"
+    ? definition.options.filter((option) => option.kind === "number" || option.kind === "text").slice(0, 2)
+    : [];
+  const sideOptions = definition.mode === "generator"
+    ? definition.options.filter((option) => !generatorInputOptions.includes(option))
+    : definition.options;
   const status = error
     ? error
     : running
@@ -1825,73 +1676,239 @@ export function UtilityToolWorkbench({
           : definition.mode === "generator"
             ? "Configure the generator, then run it."
             : "Waiting for input.");
+  const usesConversionWorkbench = CONVERSION_WORKBENCH_TOOL_KEYS.has(componentKey);
+
+  if (usesConversionWorkbench) {
+    const sourceLabel = definition.primaryLabel ?? "Input";
+    const targetLabel = definition.mode === "dual"
+      ? definition.secondaryLabel ?? "Comparison value"
+      : definition.name.replace(/ Decoder$| Encoder$| Generator$/, " result");
+
+    return (
+      <ToolPageFrame
+        account={account}
+        category={definition.category}
+        description={description}
+        online={Boolean(serverAction)}
+        title={title}
+      >
+        <ToolWorkspace
+          variant="conversion"
+          actions={
+            <>
+              <div className="flex min-w-0 items-end gap-2.5">
+                <ConversionFormatSelector label="FROM" value={sourceLabel} />
+                <Button aria-label="Swap formats" className="size-10 rounded-lg" size="icon" variant="outline">
+                  <ArrowLeftRight aria-hidden="true" className="size-[18px]" />
+                </Button>
+                <ConversionFormatSelector label="TO" value={targetLabel} />
+              </div>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <Button onClick={() => void pasteInput()} variant="ghost">
+                  <ClipboardCheck aria-hidden="true" className="size-4" /> Paste
+                </Button>
+                {hasExample ? (
+                  <Button onClick={loadExample} variant="outline">
+                    Example
+                  </Button>
+                ) : null}
+                <Button
+                  aria-label="Clear"
+                  disabled={!primary && !secondary && !hasChangedOptions && !result && !error}
+                  onClick={clear}
+                  variant="outline"
+                >
+                  Clear
+                </Button>
+                <Button data-testid="run-tool" disabled={running} onClick={() => void execute()}>
+                  {running ? "Running…" : definition.runLabel}
+                </Button>
+              </div>
+            </>
+          }
+          busy={running}
+          options={definition.options.length ? (
+            <>
+              {definition.options.map((option) => (
+                <UtilityToolbarOptionControl
+                  componentKey={componentKey}
+                  key={option.key}
+                  onChange={(value) => updateOption(option, value)}
+                  option={option}
+                  value={options[option.key]}
+                />
+              ))}
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">UTF-8 · Auto detect</span>
+            </>
+          ) : undefined}
+          status={
+            <>
+              <span className={`inline-flex items-center gap-1.5 font-semibold ${error ? "text-destructive" : result ? "text-success" : "text-muted-foreground"}`}>
+                {result ? <CheckCircle2 aria-hidden="true" className="size-3.5" /> : <Info aria-hidden="true" className="size-3.5" />}
+                {status}
+              </span>
+              <span>{serverAction ? "Provider-assisted lookup" : "Processed in this browser"}</span>
+            </>
+          }
+          toolbarLabel={`${definition.name} actions`}
+        >
+          <div className="flex min-h-0 w-full flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 max-[54rem]:block">
+              <section
+                className="flex min-w-0 flex-1 flex-col overflow-hidden border-r border-border bg-muted/30 max-[54rem]:min-h-[28rem] max-[54rem]:border-r-0 max-[54rem]:border-b"
+                data-testid="utility-input-panel"
+                data-workspace-panel="input"
+              >
+                <header className="flex h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4">
+                  <h2 className="font-caption text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{sourceLabel}</h2>
+                  <span className="font-mono text-[10px] text-muted-foreground">{new TextEncoder().encode(primary).length.toLocaleString()} bytes</span>
+                </header>
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <Label className="sr-only" htmlFor={`${componentKey}-primary`}>
+                    {sourceLabel}
+                  </Label>
+                  <div className="flex min-h-[22rem] flex-1 overflow-hidden bg-muted">
+                    <pre aria-hidden="true" className="shrink-0 select-none border-r border-border/70 px-3 py-[18px] text-right font-mono text-xs leading-[1.65] text-muted-foreground/60">
+                      {Array.from({ length: Math.max(1, primary.split("\n").length) }, (_, index) => index + 1).join("\n")}
+                    </pre>
+                    <Textarea
+                      aria-invalid={Boolean(error)}
+                      className="min-h-[22rem] flex-1 resize-none rounded-none border-0 bg-muted p-[18px] font-mono text-xs leading-[1.65] shadow-none focus-visible:ring-2 focus-visible:ring-inset"
+                      id={`${componentKey}-primary`}
+                      onChange={(event) => updatePrimary(event.target.value)}
+                      placeholder={definition.primaryPlaceholder}
+                      spellCheck={false}
+                      value={primary}
+                    />
+                  </div>
+                  {definition.mode === "dual" ? (
+                    <>
+                      <Label className="border-y border-border px-4 py-2 text-xs font-bold text-muted-foreground" htmlFor={`${componentKey}-secondary`}>
+                        {definition.secondaryLabel ?? "Second input"}
+                      </Label>
+                      <Textarea
+                        aria-invalid={Boolean(error)}
+                        className="min-h-[12rem] flex-1 resize-y rounded-none border-0 bg-muted/20 p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
+                        id={`${componentKey}-secondary`}
+                        onChange={(event) => updateSecondary(event.target.value)}
+                        placeholder={definition.secondaryPlaceholder}
+                        spellCheck={false}
+                        value={secondary}
+                      />
+                    </>
+                  ) : null}
+                </div>
+              </section>
+
+              <section
+                className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card max-[54rem]:min-h-[28rem]"
+                data-testid="utility-output-panel"
+                data-workspace-panel="output"
+              >
+                <header className="flex h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-caption text-[11px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">{targetLabel}</h2>
+                    {result ? <CheckCircle2 aria-hidden="true" className="size-3.5 text-success" /> : null}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button aria-label="Copy output" disabled={!result?.output} onClick={() => void copyOutput()} size="sm" variant="ghost">
+                      Copy
+                    </Button>
+                    <Button aria-label="Download output" disabled={!result?.output} onClick={downloadOutput} size="sm" variant="ghost">
+                      Download
+                    </Button>
+                  </div>
+                </header>
+                {error ? (
+                  <AlertBanner className="m-4" title="Needs attention" variant="error">{error}</AlertBanner>
+                ) : result?.outputKind === "html" ? (
+                  <iframe className="min-h-[25rem] w-full flex-1 bg-white" sandbox="" srcDoc={result.output} title={`${definition.name} preview`} />
+                ) : result?.outputKind === "image" ? (
+                  <div className="flex min-h-[25rem] flex-1 items-center justify-center overflow-auto p-6">
+                    <img alt={`${definition.name} result`} className="max-h-[28rem] max-w-full object-contain" src={result.output} />
+                  </div>
+                ) : jsonResult && result ? (
+                  <JsonResultRenderer
+                    formattedValue={result.output}
+                    label={outputLabel}
+                    onCopy={(value, label) => void navigator.clipboard.writeText(value).then(() => setNotice(`${label} copied.`), () => setNotice("Copy failed. Select the output and copy it manually."))}
+                    value={jsonResult.value}
+                  />
+                ) : (
+                  <Textarea
+                    aria-label={outputLabel}
+                    className="min-h-[25rem] flex-1 resize-y rounded-none border-0 bg-card p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
+                    placeholder="Output will appear here."
+                    readOnly
+                    spellCheck={false}
+                    value={result?.output ?? ""}
+                  />
+                )}
+              </section>
+            </div>
+          </div>
+        </ToolWorkspace>
+      </ToolPageFrame>
+    );
+  }
 
   return (
     <ToolPageFrame
       account={account}
       category={definition.category}
       description={description}
-      online={Boolean(serverAction)}
+      online={isOnlineTool}
       title={title}
     >
       <ToolWorkspace
+        variant="utility"
             actions={
               <>
-                <Button
-                  data-testid="run-tool"
-                  disabled={running}
-                  onClick={() => void execute()}
-                  size="sm"
-                >
-                  {running ? "Running…" : definition.runLabel}
-                </Button>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-[34px] shrink-0 place-items-center rounded-lg bg-accent text-primary">
+                    <UtilityIcon aria-hidden="true" className="size-[18px]" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="truncate font-heading text-[13px] font-semibold text-foreground">{title}</h2>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {externalSource ? `Uses ${externalSource}` : "Runs in your browser · nothing is uploaded"}
+                    </p>
+                  </div>
+                </div>
+                <span className="ml-auto hidden items-center gap-[7px] text-xs text-muted-foreground xl:inline-flex">
+                  <Lightbulb aria-hidden="true" className="size-[15px] text-primary" />
+                  Tip · use the example to get started
+                </span>
                 {hasExample ? (
                   <Button
                     aria-label="Load example"
                     onClick={loadExample}
-                    size="sm"
-                    variant="outline"
+                    variant="ghost"
                   >
-                    Load example
+                    Example
                   </Button>
                 ) : null}
                 <Button
-                  aria-label="Copy output"
-                  disabled={!result?.output}
-                  onClick={() => void copyOutput()}
-                  size="sm"
+                  aria-label="Clear"
+                  disabled={
+                    !primary &&
+                    !secondary &&
+                    !hasChangedOptions &&
+                    !result &&
+                    !error
+                  }
+                  onClick={clear}
                   variant="outline"
                 >
-                  <Copy aria-hidden="true" className="size-4" />
-                  Copy
+                  Reset
                 </Button>
                 <Button
-                  aria-label="Download output"
-                  disabled={!result?.output}
-                  onClick={downloadOutput}
-                  size="sm"
-                  variant="outline"
+                  data-testid="run-tool"
+                  disabled={running}
+                  onClick={() => void execute()}
                 >
-                  <Download aria-hidden="true" className="size-4" />
-                  Download
+                  {running ? "Running…" : definition.runLabel}
                 </Button>
-                <div className="ml-auto border-l border-border pl-2">
-                  <Button
-                    disabled={
-                      !primary &&
-                      !secondary &&
-                      !hasChangedOptions &&
-                      !result &&
-                      !error
-                    }
-                    onClick={clear}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                    Clear
-                  </Button>
-                </div>
               </>
             }
             busy={running}
@@ -1926,8 +1943,9 @@ export function UtilityToolWorkbench({
             }
             toolbarLabel={`${definition.name} actions`}
           >
+            <div className="flex min-w-0 flex-1 flex-col border-r border-border max-[54rem]:w-full max-[54rem]:border-r-0 max-[54rem]:border-b">
             <section
-              className="flex min-w-0 flex-[0_0_35%] flex-col overflow-hidden border-r border-border bg-card max-[64rem]:flex-[0_0_40%] max-[54rem]:min-h-[28rem] max-[54rem]:w-full max-[54rem]:border-r-0 max-[54rem]:border-b"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden bg-card"
               data-testid="utility-input-panel"
               data-workspace-panel="input"
             >
@@ -1939,7 +1957,7 @@ export function UtilityToolWorkbench({
 
               {definition.mode === "generator" ? (
                 <div className="grid min-h-[25rem] content-start gap-4 p-5 sm:grid-cols-2 max-[54rem]:min-h-0">
-                  {definition.options.map((option) => (
+                  {generatorInputOptions.map((option) => (
                     <UtilityOptionControl
                       componentKey={componentKey}
                       key={option.key}
@@ -1948,7 +1966,7 @@ export function UtilityToolWorkbench({
                       value={options[option.key]}
                     />
                   ))}
-                  {definition.options.length === 0 ? (
+                  {generatorInputOptions.length === 0 ? (
                     <p className="text-sm leading-6 text-muted-foreground sm:col-span-2">
                       Select {definition.runLabel.toLowerCase()} to create a result.
                     </p>
@@ -1956,10 +1974,13 @@ export function UtilityToolWorkbench({
                 </div>
               ) : (
                 <div className="flex min-h-[25rem] flex-1 flex-col">
-                  <label className="flex min-h-0 flex-1 flex-col" htmlFor={`${componentKey}-primary`}>
-                    <span className="border-b border-border px-4 py-2 text-xs font-bold text-muted-foreground">
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    <Label
+                      className="border-b border-border px-4 py-2 text-xs font-bold text-muted-foreground"
+                      htmlFor={`${componentKey}-primary`}
+                    >
                       {definition.primaryLabel ?? "Input"}
-                    </span>
+                    </Label>
                     <Textarea
                       aria-invalid={Boolean(error)}
                       className="min-h-[17rem] flex-1 resize-y rounded-none border-0 bg-card p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
@@ -1969,16 +1990,18 @@ export function UtilityToolWorkbench({
                       spellCheck={false}
                       value={primary}
                     />
-                  </label>
+                  </div>
 
                   {definition.mode === "dual" ? (
-                    <label
+                    <div
                       className="flex min-h-0 flex-1 flex-col border-t border-border"
-                      htmlFor={`${componentKey}-secondary`}
                     >
-                      <span className="border-b border-border px-4 py-2 text-xs font-bold text-muted-foreground">
+                      <Label
+                        className="border-b border-border px-4 py-2 text-xs font-bold text-muted-foreground"
+                        htmlFor={`${componentKey}-secondary`}
+                      >
                         {definition.secondaryLabel ?? "Second input"}
-                      </span>
+                      </Label>
                       <Textarea
                         aria-invalid={Boolean(error)}
                         className="min-h-[12rem] flex-1 resize-y rounded-none border-0 bg-card p-4 font-mono text-[0.8125rem] leading-6 shadow-none focus-visible:ring-2 focus-visible:ring-inset"
@@ -1988,30 +2011,38 @@ export function UtilityToolWorkbench({
                         spellCheck={false}
                         value={secondary}
                       />
-                    </label>
+                    </div>
                   ) : null}
                 </div>
               )}
             </section>
 
             <section
-              className="flex min-w-0 flex-1 flex-col overflow-hidden bg-muted/15 max-[54rem]:min-h-[28rem] max-[54rem]:w-full"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-muted/15"
               data-testid="utility-output-panel"
               data-workspace-panel="output"
             >
-              <header className="flex min-h-11 items-center border-b border-border px-4 py-2">
+              <header className="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4 py-2">
                 <h2 className="text-xs font-extrabold tracking-[0.06em] uppercase">
                   Output
                 </h2>
+                <div className="flex items-center gap-1">
+                  <Button aria-label="Copy output" disabled={!result?.output} onClick={() => void copyOutput()} size="sm" variant="ghost">
+                    <Copy aria-hidden="true" className="size-4" /> Copy
+                  </Button>
+                  <Button aria-label="Download output" disabled={!result?.output} onClick={downloadOutput} size="sm" variant="ghost">
+                    <Download aria-hidden="true" className="size-4" /> Download
+                  </Button>
+                </div>
               </header>
 
               {error ? (
-                <div
-                  className="m-4 min-h-[23rem] flex-1 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
-                  role="alert"
+                <AlertBanner
+                  className="m-4 min-h-[23rem] flex-1 text-destructive"
+                  variant="error"
                 >
                   {error}
-                </div>
+                </AlertBanner>
               ) : result?.outputKind === "html" ? (
                 <iframe
                   className="min-h-[25rem] w-full flex-1 bg-white"
@@ -2027,6 +2058,18 @@ export function UtilityToolWorkbench({
                     src={result.output}
                   />
                 </div>
+              ) : jsonResult && result ? (
+                <JsonResultRenderer
+                  formattedValue={result.output}
+                  label={outputLabel}
+                  onCopy={(value, label) => {
+                    void navigator.clipboard.writeText(value).then(
+                      () => setNotice(`${label} copied.`),
+                      () => setNotice("Copy failed. Select the output and copy it manually."),
+                    );
+                  }}
+                  value={jsonResult.value}
+                />
               ) : (
                 <Textarea
                   aria-label={outputLabel}
@@ -2038,19 +2081,19 @@ export function UtilityToolWorkbench({
                 />
               )}
             </section>
+            </div>
 
-            {definition.mode !== "generator" && definition.options.length > 0 ? (
               <aside
                 aria-label={`${definition.name} options`}
-                className="w-72 shrink-0 overflow-auto border-l border-border bg-card p-4 max-[64rem]:w-64 max-[54rem]:w-full max-[54rem]:border-t max-[54rem]:border-l-0"
+                className="w-[460px] shrink-0 overflow-auto bg-card p-5 max-[64rem]:w-[380px] max-[54rem]:w-full max-[54rem]:border-t"
                 data-testid="utility-options-panel"
                 data-workspace-panel="details"
               >
                 <h2 className="mb-4 text-xs font-extrabold tracking-[0.06em] uppercase">
-                  Options
+                  Options · optional
                 </h2>
                 <div className="grid gap-4">
-                  {definition.options.map((option) => (
+                  {sideOptions.map((option) => (
                     <UtilityOptionControl
                       componentKey={componentKey}
                       key={option.key}
@@ -2059,9 +2102,25 @@ export function UtilityToolWorkbench({
                       value={options[option.key]}
                     />
                   ))}
+                  {sideOptions.length === 0 ? (
+                    <p className="text-sm leading-6 text-muted-foreground">No extra configuration is required for this tool.</p>
+                  ) : null}
+                </div>
+                <div className="my-5 h-px bg-border" />
+                <p className="mb-3 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">Your result</p>
+                <AlertBanner
+                  title={error ? "Needs attention" : result ? "Result ready" : "Ready when you are"}
+                  variant={error ? "error" : result ? "success" : "info"}
+                >
+                  {error || (result ? "Processed successfully. Copy or download the result below." : "Add input, review the options, then run the tool.")}
+                </AlertBanner>
+                <div className="mt-4 rounded-lg bg-muted p-3.5">
+                  <p className="text-sm font-semibold text-foreground">{result ? "Output is ready" : "No output yet"}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {result ? `${result.output.length.toLocaleString()} characters generated` : "The result summary and actions will appear here."}
+                  </p>
                 </div>
               </aside>
-            ) : null}
       </ToolWorkspace>
     </ToolPageFrame>
   );

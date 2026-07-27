@@ -1,81 +1,145 @@
-import { EmptyState, ToolPageHeader } from "@smarttools/ui";
+import {
+  EmptyState,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  ToolPageHeader,
+} from "@smarttools/ui";
+import { History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listAuditEvents } from "../../../../lib/admin/data";
+import { AuditFilters } from "./AuditFilters";
+import { auditEventPresentation } from "./eventPresentation";
 
-export default async function AuditPage() {
+const dateTimeFormatter = new Intl.DateTimeFormat("en", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+type AuditSearchParams = Promise<{
+  action?: string | string[];
+  date?: string | string[];
+  q?: string | string[];
+}>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function AuditPage({ searchParams }: { searchParams: AuditSearchParams }) {
   await requirePagePermission("audit", "view");
-  const events = await listAuditEvents();
+  const [events, params] = await Promise.all([listAuditEvents(), searchParams]);
+  const query = valueOf(params.q).trim().toLowerCase();
+  const requestedAction = valueOf(params.action);
+  const action = requestedAction === "all" ? "" : requestedAction;
+  const date = valueOf(params.date) || "30";
+  const days = date === "all" ? null : Number(date);
+  const cutoff = days && Number.isFinite(days)
+    ? new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    : null;
+  const actions = [...new Set(events.map((event) => event.action))].sort();
+  const filteredEvents = events.filter((event) => {
+    if (action && event.action !== action) return false;
+    if (cutoff && event.createdAt < cutoff) return false;
+    if (!query) return true;
+    return [
+      event.actorName,
+      event.actorEmail,
+      event.action,
+      event.targetType,
+      event.targetId,
+      event.targetUserName,
+      event.targetUserEmail,
+      JSON.stringify(event.metadata),
+    ].some((value) => value?.toLowerCase().includes(query));
+  });
 
   return (
     <>
       <ToolPageHeader
-        description="The latest 200 privileged mutations, with sensitive metadata redacted."
+        className="mb-5"
+        description="A chronological record of privileged administrative and access events. Sensitive metadata is redacted."
+        eyebrow="Security"
         title="Audit history"
       />
-      {events.length ? (
+      <div className="mb-5">
+        <AuditFilters
+          actions={actions}
+          defaultAction={action}
+          defaultDate={date}
+          defaultQuery={query}
+        />
+      </div>
+      {filteredEvents.length ? (
         <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/60">
-                {['Time', 'Actor', 'Action', 'Target', 'Metadata'].map((heading) => (
-                  <th
-                    className="px-4 py-3 text-left text-xs font-extrabold uppercase tracking-wide text-muted-foreground"
-                    key={heading}
-                    scope="col"
-                  >
+          <Table className="min-w-[900px] border-collapse">
+            <TableHeader>
+              <TableRow className="bg-muted/60">
+                {[
+                  ["Actor", "w-[22%]"],
+                  ["Event", "w-[20%]"],
+                  ["Target", "w-[22%]"],
+                  ["Metadata", "w-[22%]"],
+                  ["Time", "w-[14%]"],
+                ].map(([heading, width]) => (
+                  <TableHead className={`${width} py-3 font-caption text-[10px] font-semibold tracking-[0.05em] uppercase`} key={heading} scope="col">
                     {heading}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {events.map((event) => (
-                <tr className="align-top hover:bg-muted/30" key={event.id}>
-                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
-                    {event.createdAt.toISOString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <strong className="block text-foreground">
-                      {event.actorName ?? "Deleted user"}
-                    </strong>
-                    <span className="block break-all text-xs text-muted-foreground">
-                      {event.actorEmail ?? event.actorUserId}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-foreground">{event.action}</td>
-                  <td className="px-4 py-3">
-                    {event.targetType === "user" ? (
-                      <>
-                        <strong className="block text-foreground">
-                          {event.targetUserName ?? "Deleted user"}
-                        </strong>
-                        <span className="block break-all text-xs text-muted-foreground">
-                          {event.targetUserEmail ?? event.targetId}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        {event.targetType}:{" "}
-                        <code className="break-all font-mono text-xs">
-                          {event.targetId}
-                        </code>
-                      </>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <code className="break-all font-mono text-xs text-muted-foreground">
-                      {JSON.stringify(event.metadata)}
-                    </code>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEvents.map((event) => {
+                const { icon: EventIcon, label } = auditEventPresentation(event.action);
+                return (
+                  <TableRow className="align-top hover:bg-muted/30" key={event.id}>
+                    <TableCell className="whitespace-normal py-3.5">
+                      <strong className="block font-heading text-sm font-semibold text-foreground">{event.actorName ?? "Deleted user"}</strong>
+                      <span className="mt-0.5 block break-all text-xs text-muted-foreground">{event.actorEmail ?? event.actorUserId}</span>
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-3.5 align-middle">
+                      <span className="inline-flex items-center gap-2.5 font-heading text-sm font-semibold text-foreground">
+                        <EventIcon aria-hidden="true" className="size-[18px] shrink-0 text-primary" strokeWidth={1.8} />
+                        {label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-3.5">
+                      {event.targetType === "user" ? (
+                        <>
+                          <strong className="block text-sm font-semibold text-foreground">{event.targetUserName ?? "Deleted user"}</strong>
+                          <span className="mt-0.5 block break-all text-xs text-muted-foreground">{event.targetUserEmail ?? event.targetId}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block font-caption text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{event.targetType}</span>
+                          <code className="mt-1 block break-all font-mono text-xs">{event.targetId}</code>
+                        </>
+                      )}
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-3.5">
+                      <code className="block max-w-xs break-all font-mono text-[11px] leading-5 text-muted-foreground">{JSON.stringify(event.metadata)}</code>
+                    </TableCell>
+                    <TableCell className="whitespace-normal py-3.5 text-xs leading-5 text-muted-foreground">
+                      <time dateTime={event.createdAt.toISOString()}>{dateTimeFormatter.format(event.createdAt)}</time>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 font-caption text-[11px] text-muted-foreground">
+            <span>Showing {filteredEvents.length} of {events.length} retained events</span>
+            <span>Latest 200 events</span>
+          </div>
         </div>
       ) : (
         <EmptyState
-          description="Privileged changes will appear here after an administrator makes one."
-          title="No privileged mutations recorded"
+          description={events.length ? "No events match the current filters. Adjust the search, action, or date range." : "Privileged changes will appear here after an administrator makes one."}
+          icon={<History aria-hidden="true" />}
+          title={events.length ? "No matching audit events" : "No privileged mutations recorded"}
         />
       )}
     </>

@@ -1,3 +1,4 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableTools } from "@smarttools/control-plane";
 import type { ResolvedTool } from "@smarttools/tool-catalog";
@@ -7,7 +8,9 @@ import {
   Button,
   CatalogCard,
   EmptyState,
+  IconTile,
   Input,
+  InlineGuidance,
   ProductHeader,
   SectionHeading,
   buttonVariants,
@@ -230,10 +233,12 @@ export default async function HomePage({
                     accounts, uploads, or waiting.
                   </p>
                   <div className="mt-7">{searchForm}</div>
-                  <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <ShieldCheck aria-hidden="true" className="size-4 text-primary" />
+                  <InlineGuidance
+                    className="mt-4 text-sm font-semibold"
+                    icon={<ShieldCheck aria-hidden="true" />}
+                  >
                     Core tools process your content locally in this browser.
-                  </p>
+                  </InlineGuidance>
                 </div>
               </div>
 
@@ -383,9 +388,12 @@ export default async function HomePage({
                         href={`/devtools?category=${encodeURIComponent(name)}`}
                         key={name}
                       >
-                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary group-hover:bg-background">
+                        <IconTile
+                          className="rounded-xl group-hover:bg-background"
+                          size="sm"
+                        >
                           <Icon aria-hidden="true" className="size-5" />
-                        </span>
+                        </IconTile>
                         <span className="min-w-0 flex-1">
                           <strong className="block text-sm font-extrabold">
                             {name}
@@ -412,9 +420,9 @@ export default async function HomePage({
               <AppContainer>
                 <div className="flex flex-col gap-8 overflow-hidden rounded-[1.75rem] bg-card-foreground px-6 py-8 text-card sm:px-10 sm:py-10 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex max-w-3xl items-start gap-5">
-                    <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                    <IconTile className="size-12 rounded-2xl bg-primary text-primary-foreground">
                       <LockKeyhole aria-hidden="true" className="size-6" />
-                    </span>
+                    </IconTile>
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
                         Private by default
@@ -442,12 +450,7 @@ export default async function HomePage({
         )}
       </main>
 
-      <footer className="border-t border-border bg-card py-7 text-sm text-muted-foreground">
-        <AppContainer className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} SmartTools Devtools</span>
-          <span>Fast, private browser utilities.</span>
-        </AppContainer>
-      </footer>
+      <SmartToolsFooter />
     </div>
   );
 }

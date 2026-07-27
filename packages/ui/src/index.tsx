@@ -1,22 +1,165 @@
+import {
+  Bookmark,
+  ChevronDown,
+  CircleCheck,
+  CircleX,
+  Info,
+  Search,
+  TriangleAlert,
+} from "lucide-react";
 import { cloneElement } from "react";
 import type {
   AnchorHTMLAttributes,
-  ButtonHTMLAttributes,
+  ComponentProps,
   HTMLAttributes,
-  InputHTMLAttributes,
   ReactElement,
   ReactNode,
-  Ref,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
 } from "react";
 import smartToolsIcon from "./assets/smarttools-icon.png";
+import { Alert, AlertDescription, AlertTitle } from "./components/alert.tsx";
+import { Badge } from "./components/badge.tsx";
+import { Checkbox as CheckboxControl } from "./components/checkbox.tsx";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+} from "./components/empty.tsx";
+import {
+  Field as FieldRoot,
+  FieldDescription as FieldPrimitiveDescription,
+  FieldError as FieldPrimitiveError,
+  FieldLabel as FieldPrimitiveLabel,
+} from "./components/field.tsx";
+import { ToolPageIntro } from "./components/patterns.tsx";
 import { cn } from "./lib/utils.ts";
+
+export { DESIGN_SYSTEM_COMPONENTS } from "./design-system-manifest.ts";
+export type { DesignSystemComponentDefinition } from "./design-system-manifest.ts";
+export { Alert, AlertDescription, AlertTitle };
+export {
+  Avatar,
+  AvatarBadge,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarGroupCount,
+  AvatarImage,
+} from "./components/avatar.tsx";
+export { Badge, badgeVariants } from "./components/badge.tsx";
+export { Button, buttonVariants } from "./components/button.tsx";
+export {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./components/card.tsx";
+export { CheckboxControl };
+export {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "./components/empty.tsx";
+export {
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+  FieldTitle,
+  Field as FieldRoot,
+} from "./components/field.tsx";
+export { Input } from "./components/input.tsx";
+export { Label } from "./components/label.tsx";
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./components/select.tsx";
+export { RadioGroup, RadioGroupItem } from "./components/radio-group.tsx";
+export {
+  DataConversionWorkbench,
+  JsonFormatterWorkbench,
+  SegmentedControl,
+  Tag,
+  Toast,
+  ToolPageSystemControls,
+  UtilityWorkbench,
+  WorkbenchShell,
+} from "./components/design-system-components.tsx";
+export type {
+  SegmentedControlItem,
+  WorkbenchShellProps,
+} from "./components/design-system-components.tsx";
+export {
+  CompactAction,
+  DownloadResult,
+  FileQueueItem,
+  FileUploadZone,
+  HowItWorks,
+  IconTile,
+  InlineGuidance,
+  InlineProductHeader,
+  MetricCard,
+  ProcessingStatus,
+  ProductFooter,
+  RemoveFileAction,
+  RightPanelProcessing,
+  RightPanelResult,
+  SidebarNavItem,
+  ToolOptionsPanel,
+  ToolPageIntro,
+  ToolSupportSections,
+  UniversalProductHeader,
+} from "./components/patterns.tsx";
+export { Separator } from "./components/separator.tsx";
+export { toast, Toaster } from "./components/sonner.tsx";
+export { Switch } from "./components/switch.tsx";
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./components/table.tsx";
+export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  tabsListVariants,
+} from "./components/tabs.tsx";
+export { Textarea } from "./components/textarea.tsx";
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./components/tooltip.tsx";
 
 export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8", className)}
+      className={cn("mx-auto w-full max-w-[1328px] px-4 lg:px-16", className)}
       {...props}
     />
   );
@@ -35,32 +178,33 @@ export function AccountNavigation({
 }: AccountNavigationProps) {
   const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
   const accountName = user?.name.trim() || "Account";
+  const initials = accountName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 
   return (
-    <nav aria-label="Account" className={cn("flex items-center gap-3 text-sm", className)}>
+    <nav aria-label="Account" className={cn("flex items-center", className)}>
       {user ? (
         <a
           aria-label={`Open profile for ${accountName}`}
-          className="group inline-flex min-h-11 max-w-48 items-center gap-2 rounded-xl border border-border bg-background p-1.5 pr-3 text-foreground no-underline outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="group inline-flex h-10 max-w-48 items-center gap-2 rounded-full border border-border bg-muted py-1 pr-2.5 pl-1 text-foreground no-underline outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href={target}
           title={accountName}
         >
           <span
             aria-hidden="true"
-            className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-black text-primary"
+            className="grid size-[30px] shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
           >
-            {accountName.charAt(0).toUpperCase()}
+            {initials}
           </span>
-          <span className="min-w-0 leading-tight">
-            <span className="block truncate text-xs font-extrabold">{accountName}</span>
-            <span className="block text-[0.6875rem] font-semibold text-muted-foreground">
-              Profile
-            </span>
-          </span>
+          <span className="truncate text-[11px] font-semibold">{accountName}</span>
+          <ChevronDown aria-hidden="true" className="size-[13px] shrink-0 text-muted-foreground" />
         </a>
       ) : (
         <a
-          className="font-bold text-inherit underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground no-underline outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           href={target}
         >
           Sign in
@@ -82,7 +226,7 @@ export function BrandLockup({
   return (
     <a
       className={cn(
-        "inline-flex h-8 items-stretch gap-2.5 rounded-lg text-primary no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "inline-flex h-[30px] items-stretch gap-2.5 rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
       href={href}
@@ -90,12 +234,12 @@ export function BrandLockup({
       <img
         alt=""
         className="aspect-square h-full w-auto shrink-0"
-        height={32}
+        height={30}
         src={smartToolsIcon.src}
-        width={32}
+        width={30}
       />
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
-        <span className="block text-lg font-extrabold leading-none tracking-tight">{name}</span>
+        <span className="block font-heading text-[17px] font-semibold leading-none">{name}</span>
         {name !== "SmartTools" ? (
           <span className="text-caption block font-semibold tracking-wide text-muted-foreground">
             by SmartTools
@@ -109,21 +253,197 @@ export function BrandLockup({
 export function ProductHeader({
   actions,
   className,
-  href,
+  compact = false,
   name,
 }: {
   actions?: ReactNode;
   className?: string;
+  compact?: boolean;
   href: string;
   name: string;
 }) {
   return (
-    <header className={cn("border-b border-border bg-card print:hidden", className)}>
-      <AppContainer className="flex min-h-16 flex-wrap items-center justify-between gap-4 py-3">
-        <BrandLockup href={href} name={name} />
-        {actions}
+    <header
+      aria-label="SmartTools navigation"
+      className={cn("border-b border-border bg-card print:hidden", className)}
+      data-product-name={name}
+    >
+      <AppContainer className={cn("flex max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10", compact ? "min-h-[72px]" : "min-h-[88px]")}>
+        <a
+          aria-label="SmartTools home"
+          className="flex shrink-0 items-center gap-[13px] rounded-lg text-foreground no-underline outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          href="/"
+        >
+          <span aria-hidden="true" className="relative block size-12 shrink-0 rounded-[10px] bg-surface-ink">
+            <span className="absolute top-3 left-2.5 h-3.5 w-[22px] rounded-[3px] bg-on-ink" />
+            <span className="absolute top-[22px] left-4 h-3.5 w-[22px] rounded-[3px] bg-primary" />
+            <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
+          </span>
+          <span className="hidden flex-col gap-0.5 sm:flex">
+            <strong className="font-heading text-[18px] leading-none font-bold">
+              Smart<span className="text-primary">Tools</span>
+            </strong>
+            <span className="font-caption text-xs font-medium text-muted-foreground">
+              small tools, thoughtfully made
+            </span>
+          </span>
+        </a>
+
+        <a
+          className="hidden h-[46px] w-[250px] items-center gap-2 rounded-full border border-border bg-muted px-3 text-[13px] text-muted-foreground no-underline outline-none hover:border-input focus-visible:ring-2 focus-visible:ring-ring xl:flex"
+          href="/?search=open"
+        >
+          <Search aria-hidden="true" className="size-[17px]" />
+          <span>Search 150+ tools</span>
+          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold">/</kbd>
+        </a>
+
+        <nav
+          aria-label="Tool suites"
+          className="hidden h-[46px] items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold xl:flex"
+        >
+          <a className="rounded-full bg-accent px-[13px] py-2.5 text-primary no-underline" href="/">All tools</a>
+          <a className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/paperwork">
+            Documents <ChevronDown aria-hidden="true" className="size-3" />
+          </a>
+          <a className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/devtools">
+            Developer <ChevronDown aria-hidden="true" className="size-3" />
+          </a>
+          <a className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/paperwork">Business</a>
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
+            href="/auth?returnTo=%2Fauth%2Fprofile"
+          >
+            <Bookmark aria-hidden="true" className="size-3.5 text-muted-foreground" />
+            Saved
+          </a>
+          {actions}
+        </div>
       </AppContainer>
     </header>
+  );
+}
+
+export type ToolPageShellProps = {
+  badge?: ReactNode;
+  category: string;
+  children: ReactNode;
+  description: ReactNode;
+  footer?: ReactNode;
+  headerActions?: ReactNode;
+  productHref: string;
+  productName: string;
+  skipHref?: string;
+  skipLabel?: ReactNode;
+  showIntro?: boolean;
+  systemControls?: ReactNode;
+  title: string;
+  workspaceClassName?: string;
+  workspaceId?: string;
+};
+
+export function ToolPageShell({
+  badge,
+  category,
+  children,
+  description,
+  footer,
+  headerActions,
+  productHref,
+  productName,
+  skipHref = "#tool-workspace",
+  skipLabel = "Skip to tool workspace",
+  showIntro = true,
+  systemControls,
+  title,
+  workspaceClassName,
+  workspaceId = "tool-workspace",
+}: ToolPageShellProps) {
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <a
+        className="fixed top-3 left-3 z-[100] -translate-y-[180%] rounded-lg bg-primary px-3.5 py-2.5 font-bold text-primary-foreground shadow-sm focus:translate-y-0"
+        href={skipHref}
+      >
+        {skipLabel}
+      </a>
+
+      <ProductHeader
+        actions={headerActions}
+        className="sticky top-0 z-50 border-border bg-card"
+        compact
+        href={productHref}
+        name={productName}
+      />
+
+      <main className="flex-1 bg-card">
+        <section className="bg-card">
+          <AppContainer className="max-w-[1440px] pt-6">
+            <nav aria-label="Breadcrumb" className="flex min-h-8 items-center">
+              <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-caption text-xs font-normal text-muted-foreground">
+                <li>
+                  <a
+                    className="rounded-sm px-1.5 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    href={`${productHref}?view=all`}
+                  >
+                    All tools
+                  </a>
+                </li>
+                <li aria-hidden="true" className="text-input">›</li>
+                <li>
+                  <a
+                    className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    href={productHref}
+                  >
+                    {productName}
+                  </a>
+                </li>
+                <li aria-hidden="true" className="text-input">›</li>
+                <li>
+                  <a
+                    className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    href={`${productHref}?category=${encodeURIComponent(category)}`}
+                  >
+                    {category}
+                  </a>
+                </li>
+                <li aria-hidden="true" className="text-input">›</li>
+                <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
+                  {title}
+                </li>
+              </ol>
+            </nav>
+          </AppContainer>
+        </section>
+        {!showIntro ? <h1 className="sr-only">{title}</h1> : null}
+        {showIntro ? (
+          <section className="bg-card">
+            <AppContainer className="max-w-[1440px] pt-[18px]">
+              <ToolPageIntro
+                badge={badge}
+                category={category}
+                description={description}
+                title={title}
+              />
+            </AppContainer>
+          </section>
+        ) : null}
+
+        <AppContainer
+          className={cn("max-w-[1440px] pt-[18px] pb-8 outline-none", workspaceClassName)}
+          id={workspaceId}
+          tabIndex={-1}
+        >
+          {systemControls ? <div className="mb-8">{systemControls}</div> : null}
+          {children}
+        </AppContainer>
+      </main>
+
+      {footer}
+    </div>
   );
 }
 
@@ -138,15 +458,15 @@ export function ToolNav({
 }) {
   return (
     <nav aria-label={ariaLabel} className={cn("overflow-x-auto", className)}>
-      <div className="flex min-w-max gap-2">
+      <div className="flex min-w-max gap-1">
         {items.map((item) => (
           <a
             aria-current={item.current ? "page" : undefined}
             className={cn(
-              "inline-flex h-10 items-center whitespace-nowrap rounded-lg px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-9",
+              "inline-flex min-h-10 items-center whitespace-nowrap rounded-lg px-3 font-sans text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               item.current
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                ? "bg-accent font-semibold text-primary"
+                : "text-foreground hover:bg-muted",
             )}
             href={item.href}
             key={item.href}
@@ -179,8 +499,8 @@ export function PageHero({
   return (
     <section className={cn(compact ? "py-10 lg:py-12" : "py-16 lg:py-20", className)}>
       <AppContainer>
-        {eyebrow ? <p className={cn(compact ? "mb-3" : "mb-4", "text-xs font-extrabold uppercase tracking-[0.16em] text-primary", align === "center" && "text-center")}>{eyebrow}</p> : null}
-        <h1 className={cn("max-w-3xl font-black tracking-tight text-foreground", compact ? "text-3xl sm:text-4xl" : "text-4xl sm:text-5xl", align === "center" && "mx-auto text-center")}>{title}</h1>
+        {eyebrow ? <p className={cn(compact ? "mb-3" : "mb-4", "font-caption text-[13px] font-semibold uppercase tracking-[0.05em] text-primary", align === "center" && "text-center")}>{eyebrow}</p> : null}
+        <h1 className={cn("max-w-3xl font-heading font-semibold tracking-tight text-foreground", compact ? "text-[32px]" : "text-[48px]", align === "center" && "mx-auto text-center")}>{title}</h1>
         <p className={cn("max-w-2xl text-muted-foreground", compact ? "mt-3 text-sm leading-6 sm:text-base" : "mt-5 text-base leading-7 sm:text-lg", align === "center" && "mx-auto text-center")}>{description}</p>
         {actions ? <div className={cn(compact ? "mt-5" : "mt-8", "flex flex-wrap gap-3", align === "center" && "justify-center")}>{actions}</div> : null}
       </AppContainer>
@@ -206,7 +526,7 @@ export function ToolPageHeader({
   const titleNode = (
     <h1
       className={cn(
-        "text-3xl font-black tracking-tight text-foreground",
+        "font-heading text-[2.125rem] font-semibold tracking-[-0.0375rem] text-foreground",
         inlineEyebrow && "min-w-0 break-words",
       )}
     >
@@ -216,7 +536,7 @@ export function ToolPageHeader({
   const eyebrowNode = eyebrow ? (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-primary",
+        "flex flex-wrap items-center gap-2 font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary",
         inlineEyebrow ? "max-w-full" : "mb-2",
       )}
     >
@@ -261,79 +581,13 @@ export function SectionHeading({
   return (
     <div className={cn("mb-4 flex items-start justify-between gap-4", className)}>
       <div>
-        {eyebrow ? <p className="mb-1 text-xs font-extrabold uppercase tracking-[0.12em] text-primary">{eyebrow}</p> : null}
-        <h2 className="text-lg font-extrabold tracking-tight text-foreground">{title}</h2>
-        {description ? <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p> : null}
+        {eyebrow ? <p className="mb-2 font-caption text-[13px] font-semibold uppercase tracking-[0.03125rem] text-primary">{eyebrow}</p> : null}
+        <h2 className="font-heading text-[30px] leading-[1.12] font-semibold tracking-[-0.025rem] text-foreground">{title}</h2>
+        {description ? <p className="mt-2 font-sans text-[15px] leading-[1.55] text-muted-foreground">{description}</p> : null}
       </div>
       {action}
     </div>
   );
-}
-
-type ButtonVariant = "default" | "strong" | "secondary" | "outline" | "ghost" | "destructive" | "danger-subtle";
-type ButtonSize = "sm" | "default" | "lg" | "icon";
-
-export function buttonVariants({
-  className,
-  size = "default",
-  variant = "default",
-}: {
-  className?: string;
-  size?: ButtonSize;
-  variant?: ButtonVariant;
-} = {}) {
-  const variants: Record<ButtonVariant, string> = {
-    default: "bg-primary text-primary-foreground hover:bg-primary/90",
-    strong: "bg-card-foreground text-card hover:bg-foreground",
-    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-    ghost: "hover:bg-accent hover:text-accent-foreground",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-    "danger-subtle": "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
-  };
-  const sizes: Record<ButtonSize, string> = {
-    sm: "h-9 rounded-lg px-3",
-    default: "h-10 rounded-lg px-4",
-    lg: "h-12 rounded-lg px-5",
-    icon: "size-10 rounded-lg",
-  };
-
-  return cn(
-    "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-    variants[variant],
-    sizes[size],
-    className,
-  );
-}
-
-export function Button({
-  className,
-  ref,
-  size,
-  type = "button",
-  variant,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  ref?: Ref<HTMLButtonElement>;
-  size?: ButtonSize;
-  variant?: ButtonVariant;
-}) {
-  return <button className={buttonVariants({ className, size, variant })} ref={ref} type={type} {...props} />;
-}
-
-const controlClassName =
-  "w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60 aria-invalid:border-destructive aria-invalid:ring-destructive/20";
-
-export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(controlClassName, "h-10", className)} {...props} />;
-}
-
-export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(controlClassName, "h-10", className)} {...props} />;
-}
-
-export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className={cn(controlClassName, "min-h-28 resize-y py-2.5", className)} {...props} />;
 }
 
 export function Field({
@@ -344,6 +598,7 @@ export function Field({
   htmlFor,
   label,
   required,
+  variant = "default",
 }: {
   children: ReactElement<{
     "aria-describedby"?: string;
@@ -357,6 +612,7 @@ export function Field({
   htmlFor: string;
   label: ReactNode;
   required?: boolean;
+  variant?: "default" | "auth";
 }) {
   const descriptionId = description ? `${htmlFor}-description` : undefined;
   const errorId = error ? `${htmlFor}-error` : undefined;
@@ -368,20 +624,24 @@ export function Field({
     .join(" ") || undefined;
 
   return (
-    <div className={cn("grid gap-1.5", className)}>
-      <label className="text-xs font-bold text-foreground" htmlFor={htmlFor}>
+    <FieldRoot className={className} data-invalid={Boolean(error)} variant={variant}>
+      <FieldPrimitiveLabel htmlFor={htmlFor}>
         {label}{required ? <span className="ml-1 font-medium text-muted-foreground">(required)</span> : null}
-      </label>
+      </FieldPrimitiveLabel>
       {cloneElement(children, {
         "aria-describedby": describedBy,
         "aria-errormessage": errorMessage,
         "aria-invalid": error ? true : children.props["aria-invalid"],
         id: htmlFor,
       })}
-      {description ? <p className="text-xs leading-5 text-muted-foreground" id={descriptionId}>{description}</p> : null}
-      {error ? <p className="text-xs font-semibold text-destructive" id={errorId} role="alert">{error}</p> : null}
-    </div>
+      {description ? <FieldPrimitiveDescription id={descriptionId}>{description}</FieldPrimitiveDescription> : null}
+      {error ? <FieldPrimitiveError id={errorId}>{error}</FieldPrimitiveError> : null}
+    </FieldRoot>
   );
+}
+
+export function AuthField(props: Omit<ComponentProps<typeof Field>, "variant">) {
+  return <Field variant="auth" {...props} />;
 }
 
 export function Checkbox({
@@ -389,17 +649,14 @@ export function Checkbox({
   description,
   label,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & {
+}: Omit<ComponentProps<typeof CheckboxControl>, "className"> & {
+  className?: string;
   description?: ReactNode;
   label: ReactNode;
 }) {
   return (
     <label className={cn("flex min-h-10 items-start gap-3 text-sm text-foreground", className)}>
-      <input
-        className="mt-0.5 size-4 rounded border-input accent-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        type="checkbox"
-        {...props}
-      />
+      <CheckboxControl className="mt-0.5" {...props} />
       <span>
         <span className="block font-semibold">{label}</span>
         {description ? <span className="mt-1 block leading-5 text-muted-foreground">{description}</span> : null}
@@ -408,11 +665,8 @@ export function Checkbox({
   );
 }
 
-const cardClassName = "rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm";
-
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn(cardClassName, className)} {...props} />;
-}
+const cardClassName =
+  "rounded-xl border border-border bg-card p-6 text-card-foreground shadow-[0_2px_4px_#00000008,0_12px_32px_#0000000f]";
 
 export function SectionCard({ className, ...props }: HTMLAttributes<HTMLElement>) {
   return <section className={cn(cardClassName, "space-y-6", className)} {...props} />;
@@ -440,26 +694,30 @@ export function CatalogCard({
   return (
     <a
       className={cn(
-        "group flex flex-col rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        "group flex flex-col gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground outline-none transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
       {...props}
     >
       {icon || status ? (
-        <span className="mb-4 flex items-center gap-3">
+        <span className="flex items-center justify-between gap-3">
           {icon ? (
-            <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-muted/40 text-muted-foreground [&_svg]:size-4">
+            <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary [&_svg]:size-[22px]">
               {icon}
             </span>
           ) : null}
           {status ? <span className="min-w-0">{status}</span> : null}
         </span>
       ) : null}
-      <span className="text-base font-extrabold tracking-tight">{title}</span>
-      <span className="mt-2 text-xs leading-5 text-muted-foreground">{description}</span>
-      <span className="mt-auto pt-4 text-xs font-extrabold text-primary group-hover:underline">{action}</span>
+      <span className="font-heading text-lg font-semibold">{title}</span>
+      <span className="-mt-2 font-sans text-sm leading-[1.5] text-muted-foreground">{description}</span>
+      <span className="mt-auto font-sans text-sm font-semibold text-primary group-hover:underline">{action}</span>
     </a>
   );
+}
+
+export function ToolCard(props: ComponentProps<typeof CatalogCard>) {
+  return <CatalogCard data-slot="tool-card" {...props} />;
 }
 
 type StatusVariant = "neutral" | "info" | "success" | "warning" | "danger" | "archived";
@@ -473,16 +731,22 @@ export function StatusBadge({
   className?: string;
   variant?: StatusVariant;
 }) {
-  const variants: Record<StatusVariant, string> = {
-    neutral: "bg-secondary text-secondary-foreground",
-    info: "bg-accent text-accent-foreground",
-    success: "bg-emerald-50 text-emerald-700",
-    warning: "bg-amber-50 text-amber-800",
-    danger: "bg-destructive/10 text-destructive",
-    archived: "bg-slate-200 text-slate-600",
+  const variants: Record<StatusVariant, { badge: string; dot: string }> = {
+    neutral: { badge: "border-input bg-card text-muted-foreground", dot: "bg-muted-foreground" },
+    info: { badge: "border-transparent bg-accent text-primary", dot: "bg-primary" },
+    success: { badge: "border-transparent bg-success-soft text-success", dot: "bg-success" },
+    warning: { badge: "border-transparent bg-status-warning-soft text-status-warning", dot: "bg-status-warning" },
+    danger: { badge: "border-transparent bg-status-danger-soft text-status-danger", dot: "bg-status-danger" },
+    archived: { badge: "border-transparent bg-muted text-muted-foreground", dot: "bg-muted-foreground" },
   };
+  const styles = variants[variant];
 
-  return <span className={cn("inline-flex min-h-5 items-center rounded-full px-2 py-0.5 text-[0.6875rem] font-extrabold", variants[variant], className)}>{children}</span>;
+  return (
+    <Badge className={cn(styles.badge, className)} variant="secondary">
+      <span aria-hidden="true" className={cn("size-[7px] rounded-full", styles.dot)} />
+      {children}
+    </Badge>
+  );
 }
 
 type AlertVariant = "info" | "success" | "warning" | "error";
@@ -501,21 +765,34 @@ export function AlertBanner({
   variant?: AlertVariant;
 }) {
   const variants: Record<AlertVariant, string> = {
-    info: "border-primary/20 bg-accent text-foreground",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-950",
-    warning: "border-amber-200 bg-amber-50 text-amber-950",
-    error: "border-destructive/20 bg-destructive/5 text-destructive",
+    info: "border-transparent bg-accent text-foreground",
+    success: "border-transparent bg-success-soft text-foreground",
+    warning: "border-transparent bg-status-warning-soft text-foreground",
+    error: "border-transparent bg-status-danger-soft text-foreground",
   };
   const urgent = variant === "error";
+  const icons = {
+    info: <Info className="text-primary" />,
+    success: <CircleCheck className="text-success" />,
+    warning: <TriangleAlert className="text-status-warning" />,
+    error: <CircleX className="text-status-danger" />,
+  };
 
   return (
-    <div className={cn("flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4 text-sm", variants[variant], className)} role={urgent ? "alert" : "status"}>
-      <div>
-        {title ? <p className="font-extrabold">{title}</p> : null}
-        <div className={cn("leading-6", title ? "mt-1" : undefined)}>{children}</div>
+    <Alert
+      className={cn("flex flex-wrap items-start justify-between gap-3 p-4", variants[variant], className)}
+      role={urgent ? "alert" : "status"}
+      variant={urgent ? "destructive" : "default"}
+    >
+      {icons[variant]}
+      <div className="min-w-0 flex-1">
+        {title ? <AlertTitle className="col-auto line-clamp-none">{title}</AlertTitle> : null}
+        <AlertDescription className={cn("col-auto block text-inherit", title ? "mt-1" : undefined)}>
+          {children}
+        </AlertDescription>
       </div>
       {action}
-    </div>
+    </Alert>
   );
 }
 
@@ -537,11 +814,13 @@ export function EmptyState({
   const Heading = headingLevel;
 
   return (
-    <div className={cn("rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center", className)}>
-      {icon ? <div className="mx-auto mb-4 flex size-10 items-center justify-center text-muted-foreground">{icon}</div> : null}
-      <Heading className="font-extrabold text-foreground">{title}</Heading>
-      {description ? <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">{description}</p> : null}
-      {action ? <div className="mt-5 flex justify-center">{action}</div> : null}
-    </div>
+    <Empty className={cn("gap-3.5 rounded-xl border-solid p-10", className)}>
+      <EmptyHeader className="max-w-md gap-0">
+        {icon ? <EmptyMedia className="mb-3.5 size-14 rounded-xl bg-muted text-muted-foreground [&_svg]:size-[26px]">{icon}</EmptyMedia> : null}
+        <Heading className="font-heading text-[17px] font-semibold text-foreground">{title}</Heading>
+        {description ? <EmptyDescription className="mt-2 max-w-md leading-[1.5]">{description}</EmptyDescription> : null}
+      </EmptyHeader>
+      {action ? <EmptyContent className="mt-0">{action}</EmptyContent> : null}
+    </Empty>
   );
 }

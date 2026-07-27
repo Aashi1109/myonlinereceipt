@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   Input,
+  Label,
   Select,
   StatusBadge,
   ToolPageHeader
@@ -174,7 +175,7 @@ export default function QuarterlyTaxEstimatorPage({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-year">Tax year</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-year">Tax year</Label>
                   <Select
                     id="tax-year"
                     value={draft.taxYear}
@@ -184,7 +185,7 @@ export default function QuarterlyTaxEstimatorPage({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-filing-status">Filing status</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-filing-status">Filing status</Label>
                   <Select
                     className="font-bold"
                     id="tax-filing-status"
@@ -199,9 +200,9 @@ export default function QuarterlyTaxEstimatorPage({
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-gross-revenue">
+                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-gross-revenue">
                   Estimated Gross Contractor Income ($) *
-                </label>
+                </Label>
                 <Input
                   aria-describedby="tax-gross-revenue-description"
                   type="number"
@@ -217,9 +218,9 @@ export default function QuarterlyTaxEstimatorPage({
               </div>
 
               <div className="relative">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-business-expenses">
+                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-business-expenses">
                   Business Deductible Expenses ($)
-                </label>
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     aria-describedby="tax-business-expenses-description"
@@ -241,7 +242,7 @@ export default function QuarterlyTaxEstimatorPage({
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-w2-wages">Existing W-2 wages ($)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-w2-wages">Existing W-2 wages ($)</Label>
                   <Input
                     type="number"
                     min="0"
@@ -252,7 +253,7 @@ export default function QuarterlyTaxEstimatorPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-state-rate">State Tax rate (%)</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-state-rate">State Tax rate (%)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -265,7 +266,7 @@ export default function QuarterlyTaxEstimatorPage({
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-other-income">Other income ($)</label>
+                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-other-income">Other income ($)</Label>
                 <Input
                   type="number"
                   step="500"
@@ -287,7 +288,7 @@ export default function QuarterlyTaxEstimatorPage({
                   ["priorYearAdjustedGrossIncome", "Prior-year AGI"],
                 ] as const).map(([field, label]) => (
                   <div key={field}>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor={`tax-${field}`}>{label} ($)</label>
+                    <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor={`tax-${field}`}>{label} ($)</Label>
                     <Input
                       type="number"
                       min="0"

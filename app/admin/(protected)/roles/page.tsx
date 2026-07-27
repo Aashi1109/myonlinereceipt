@@ -3,75 +3,127 @@ import {
   Card,
   Field,
   Input,
-  SectionCard,
-  SectionHeading,
   StatusBadge,
   Textarea,
   ToolPageHeader,
-  buttonVariants,
 } from "@smarttools/ui";
+import {
+  ChevronRight,
+  CreditCard,
+  Eye,
+  Headphones,
+  Inbox,
+  KeyRound,
+  LockKeyhole,
+  Shield,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listRoles } from "../../../../lib/admin/data";
 import { createRoleAction } from "../../actions";
 
+function roleIcon(name: string): LucideIcon {
+  const normalized = name.toLowerCase();
+  if (normalized.includes("billing")) return CreditCard;
+  if (normalized.includes("support")) return Headphones;
+  if (normalized.includes("viewer") || normalized.includes("read")) return Eye;
+  if (normalized.includes("admin")) return Shield;
+  return KeyRound;
+}
+
+function RoleRow({ role }: { role: Awaited<ReturnType<typeof listRoles>>[number] }) {
+  const Icon = roleIcon(role.name);
+  const content = (
+    <Card className="flex-row items-center gap-3.5 p-[18px] shadow-none transition-colors hover:border-primary/30 hover:bg-muted/30">
+      <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary">
+        <Icon aria-hidden="true" className="size-[22px]" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <strong className="font-heading text-sm font-semibold text-foreground">{role.name}</strong>
+          <StatusBadge variant={role.isSystem ? "neutral" : "info"}>
+            {role.isSystem ? "System" : "Custom"}
+          </StatusBadge>
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{role.description}</span>
+      </span>
+      <span className="shrink-0 font-caption text-[11px] text-muted-foreground">
+        {Number(role.assignedUsers)} {Number(role.assignedUsers) === 1 ? "user" : "users"}
+      </span>
+      {role.isSystem ? (
+        <LockKeyhole aria-label="Protected system role" className="size-[17px] shrink-0 text-muted-foreground" />
+      ) : (
+        <ChevronRight aria-hidden="true" className="size-[18px] shrink-0 text-muted-foreground" />
+      )}
+    </Card>
+  );
+
+  return role.isSystem ? (
+    <div>{content}</div>
+  ) : (
+    <Link className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" href={`/admin/roles/${role.id}`}>
+      {content}
+    </Link>
+  );
+}
+
 export default async function RolesPage() {
   await requirePagePermission("roles", "view");
   const roles = await listRoles();
+  const systemCount = roles.filter((role) => role.isSystem).length;
+  const customCount = roles.length - systemCount;
 
   return (
-    <>
+    <div className="flex min-h-full flex-col gap-[22px]">
       <ToolPageHeader
-        description="Custom roles begin with no access and grant only selected permissions."
+        className="mb-0 border-b-0 pb-0"
+        description="Start with a system role or create one for your team’s workflow."
         title="Roles"
       />
-      <SectionCard>
-        <SectionHeading
-          description="Start with a clear name and purpose; permissions are assigned after creation."
-          title="Create custom role"
-        />
-        <form action={createRoleAction} className="grid gap-4">
-          <Field htmlFor="new-role-name" label="Name" required>
-            <Input id="new-role-name" maxLength={80} name="name" required />
-          </Field>
-          <Field htmlFor="new-role-description" label="Description" required>
-            <Textarea
-              id="new-role-description"
-              maxLength={500}
-              name="description"
-              required
-            />
-          </Field>
-          <Button className="justify-self-start" type="submit">
-            Create with no access
-          </Button>
-        </form>
-      </SectionCard>
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {roles.map((role) => (
-          <Card className="flex flex-col gap-4" key={role.id}>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-extrabold tracking-tight text-foreground">
-                {role.name}
-              </h2>
-              {role.isSystem && <StatusBadge>Protected</StatusBadge>}
+      <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <section aria-labelledby="available-roles-heading" className="min-w-0">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <h2 className="font-heading text-base font-semibold" id="available-roles-heading">Available roles</h2>
+            <p className="font-caption text-[11px] text-muted-foreground">{systemCount} system · {customCount} custom</p>
+          </div>
+          <div className="grid gap-3">
+            {roles.map((role) => <RoleRow key={role.id} role={role} />)}
+          </div>
+        </section>
+        <aside className="rounded-xl bg-surface-ink p-6 text-on-ink xl:sticky xl:top-0 xl:min-h-[560px] xl:self-start">
+          <form action={createRoleAction} className="flex h-full flex-col gap-[18px]">
+            <div>
+              <h2 className="font-heading text-xl font-semibold">Create a custom role</h2>
+              <p className="mt-2 text-[13px] leading-[1.5] text-on-ink-muted">
+                Define a role now, then choose granular permissions on its detail page.
+              </p>
             </div>
-            <p className="text-sm leading-6 text-muted-foreground">{role.description}</p>
-            <code className="break-all font-mono text-xs text-muted-foreground">{role.id}</code>
-            <p className="text-sm text-muted-foreground">
-              {Number(role.assignedUsers)} assigned users
+            <Field
+              className="[&_[data-slot=field-label]]:font-caption [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-semibold [&_[data-slot=field-label]]:tracking-[0.06em] [&_[data-slot=field-label]]:text-on-ink-muted [&_[data-slot=field-label]]:uppercase"
+              htmlFor="new-role-name"
+              label="Role name"
+              required
+            >
+              <Input className="border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary" maxLength={80} name="name" placeholder="Operations manager" required />
+            </Field>
+            <Field
+              className="[&_[data-slot=field-label]]:font-caption [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-semibold [&_[data-slot=field-label]]:tracking-[0.06em] [&_[data-slot=field-label]]:text-on-ink-muted [&_[data-slot=field-label]]:uppercase"
+              htmlFor="new-role-description"
+              label="Description"
+              required
+            >
+              <Textarea className="min-h-[88px] border-white/15 bg-white/[0.07] text-on-ink placeholder:text-on-ink-muted focus-visible:border-primary" maxLength={500} name="description" placeholder="Manages daily documents and customer operations." required />
+            </Field>
+            <div className="min-h-4 flex-1" />
+            <Button className="w-full" size="lg" type="submit">Create role</Button>
+            <p className="flex items-start gap-2 font-caption text-[10px] leading-[1.4] text-on-ink-muted">
+              <Inbox aria-hidden="true" className="mt-px size-[15px] shrink-0" />
+              {customCount ? `${customCount} custom ${customCount === 1 ? "role is" : "roles are"} currently configured.` : "No custom roles yet — create the first one here."}
             </p>
-            {!role.isSystem && (
-              <Link
-                className={buttonVariants({ className: "self-start" })}
-                href={`/admin/roles/${role.id}`}
-              >
-                Edit permissions
-              </Link>
-            )}
-          </Card>
-        ))}
+          </form>
+        </aside>
       </div>
-    </>
+    </div>
   );
 }

@@ -5,9 +5,14 @@
 ## Shared exports
 
 - Shell: `AppContainer`, `AccountNavigation`, `BrandLockup`, `ProductHeader`, `ToolNav`. `BrandLockup` owns the canonical SmartTools mark and byline; `AccountNavigation` sits in the same header row, and consumers provide only product and session data.
-- Structure: `PageHero`, `ToolPageHeader`, `SectionHeading`.
-- Actions and fields: `Button`, `buttonVariants`, `Field`, `Input`, `Select`, `Textarea`, `Checkbox`.
-- Surfaces and feedback: `Card`, `SectionCard`, `DangerZone`, `CatalogCard`, `StatusBadge`, `AlertBanner`, `EmptyState`.
+- Structure: `PageHero`, `ToolPageHeader`, `SectionHeading`, `Tabs`, `SegmentedControl`, `Table`.
+- Actions and fields: `Button`, `buttonVariants`, `CompactAction`, `Field`, `AuthField`, `Input`, `Select`, `Textarea`, `Checkbox`, `RadioGroup`, `Switch`.
+- Surfaces and feedback: `Card`, `SectionCard`, `DangerZone`, `CatalogCard`, `ToolCard`, `Badge`, `Tag`, `StatusBadge`, `Alert`, `AlertBanner`, `Empty`, `EmptyState`, `Tooltip`, `Toast`, `Toaster`.
+- Tool patterns: `WorkbenchShell`, `JsonFormatterWorkbench`, `DataConversionWorkbench`, `UtilityWorkbench`, `ToolPageSystemControls`, and the upload, queue, processing, result, options, guidance, header, and footer compositions exported from `patterns.tsx`.
+
+## Design-file coverage
+
+`DESIGN_SYSTEM_COMPONENTS` is the canonical mapping from all 47 reusable nodes in `design.pen` to their exported code implementations. Keep the manifest and `tests/design-system-alignment.test.mjs` updated whenever a reusable design node is added, renamed, or replaced.
 
 ## Ownership rule
 
@@ -33,7 +38,7 @@ These patterns describe presentation only. Product copy, routes, status logic, a
 ### Cards
 
 - Use `Card` for passive content, `SectionCard` for a grouped page section, and `CatalogCard` when the entire surface leads to one destination.
-- Keep the visual shell consistent: semantic card colors, a subtle border and shadow, rounded corners, and `p-5` to `p-6` internal spacing.
+- Keep the visual shell consistent: `#FFFFFF`, a `#EAECEF` border, 12px corners, the shared large elevation, and 24px internal spacing.
 - Structure discovery cards as optional icon tile, title, short description, then action. In equal-height grids, use a column layout and `margin-top: auto` on the action instead of fixed heights or large empty gaps.
 - Make interactive cards semantic links or buttons with visible hover and keyboard-focus states. Use badges only when they distinguish cards; never repeat a universal status on every card.
 - Lay out card collections as one column on small screens, two on medium screens, and three on large screens, with a consistent `gap-6` rhythm.
@@ -46,6 +51,6 @@ These patterns describe presentation only. Product copy, routes, status logic, a
 
 ### Footers
 
-- Use a dedicated `<footer>` with a top border, neutral card surface, generous vertical padding, and the same horizontal container as the page.
-- Keep the footer itself compact: brand or copyright text plus a labeled utility navigation. Longer promotional or educational sections belong before it.
-- Center or stack content on narrow screens and allow link rows to wrap. Use muted text by default, clear hover and focus-visible states, and real links for navigable destinations.
+- Use `ProductFooter`: `#111214` surface, 56px top/32px bottom spacing, a 300px brand column, and labeled utility columns.
+- Use `#FFFFFF` for the brand and headings, `#A7ADB5` for descriptions and links, and a 10% white divider above copyright.
+- Stack responsively on narrow screens while preserving real links, clear hover states, and keyboard focus.

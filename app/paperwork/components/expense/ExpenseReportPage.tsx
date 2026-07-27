@@ -11,9 +11,14 @@ import {
   AlertBanner,
   Button,
   Card,
+  Checkbox,
   Input,
+  Label,
   Select,
   StatusBadge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
   ToolPageHeader,
 } from "@smarttools/ui";
 import {
@@ -486,22 +491,21 @@ export default function ExpenseReportPage({
       )}
 
       {/* 3. Mobile tabs mapping */}
-      <div className="flex md:hidden bg-slate-100 p-1 rounded-xl mb-6 border border-slate-200/50 print:hidden" id="expense-mobile-view-tabs">
-        <button
-          type="button"
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${activeTab === "edit" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-          onClick={() => setActiveTab("edit")}
-        >
-          1. Edit items
-        </button>
-        <button
-          type="button"
-          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${activeTab === "preview" ? "bg-white text-slate-950 shadow-xs" : "text-slate-500"}`}
-          onClick={() => setActiveTab("preview")}
-        >
-          2. PDF / Print View
-        </button>
-      </div>
+      <Tabs
+        className="mb-6 md:hidden print:hidden"
+        id="expense-mobile-view-tabs"
+        onValueChange={(value) => setActiveTab(value as "edit" | "preview")}
+        value={activeTab}
+      >
+        <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
+          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="edit">
+            1. Edit items
+          </TabsTrigger>
+          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="preview">
+            2. PDF / Print View
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* 4. Split Screen layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -518,7 +522,7 @@ export default function ExpenseReportPage({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-title">Report Title / Purpose *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-title">Report Title / Purpose *</Label>
                   <Input
                     type="text"
                     required
@@ -529,7 +533,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-number">Report Number *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-number">Report Number *</Label>
                   <Input
                     type="text"
                     className="text-xs font-bold"
@@ -539,7 +543,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-date">Report issue Date *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-date">Report issue Date *</Label>
                   <Input
                     type="date"
                     className="text-xs font-semibold"
@@ -549,7 +553,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-start">Period Start</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-start">Period Start</Label>
                   <Input
                     type="date"
                     className="text-xs font-semibold"
@@ -559,7 +563,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-end">Period End</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-end">Period End</Label>
                   <Input
                     type="date"
                     className="text-xs font-semibold"
@@ -578,7 +582,7 @@ export default function ExpenseReportPage({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-name">Legal Name *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-name">Legal Name *</Label>
                   <Input
                     aria-errormessage={errors["submitter.name"] ? "expense-submitter-name-error" : undefined}
                     type="text"
@@ -597,7 +601,7 @@ export default function ExpenseReportPage({
                   )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-email">Email Coordinates</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-email">Email Coordinates</Label>
                   <Input
                     type="email"
                     placeholder="alex@brand.com"
@@ -608,7 +612,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-department">Corporate Department / Team</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-department">Corporate Department / Team</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Client Solutions Group"
@@ -628,7 +632,7 @@ export default function ExpenseReportPage({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-name">Company / client Name *</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-name">Company / client Name *</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Acme Retail Corp"
@@ -639,7 +643,7 @@ export default function ExpenseReportPage({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-contact">Point of Contact</label>
+                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-contact">Point of Contact</Label>
                   <Input
                     type="text"
                     placeholder="Sarah Jenkins"
@@ -671,18 +675,20 @@ export default function ExpenseReportPage({
               <div className="space-y-4">
                 {data.expenses.map((row, index) => (
                   <div key={row.id} className="p-4 bg-slate-50 border border-slate-200/60 rounded-xl space-y-3 relative">
-                    <button
+                    <Button
                       aria-label={`Remove expense from ${row.merchant || `row ${index + 1}`}`}
-                      type="button"
+                      className="absolute right-2 top-2 text-slate-400 hover:text-rose-600"
                       onClick={() => handleRemoveExpenseRow(row.id)}
-                      className="absolute right-2 top-2 text-slate-400 hover:text-rose-600 transition p-1"
+                      size="icon-xs"
+                      type="button"
+                      variant="ghost"
                     >
                       <Trash2 className="w-4.5 h-4.5" />
-                    </button>
+                    </Button>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-date`}>Date *</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-date`}>Date *</Label>
                         <Input
                           type="date"
                           className="text-xs"
@@ -692,7 +698,7 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-merchant`}>Merchant / Vendor *</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-merchant`}>Merchant / Vendor *</Label>
                         <Input
                           type="text"
                           placeholder="Amazon, Shell etc"
@@ -703,7 +709,7 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-category`}>expense Category</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-category`}>expense Category</Label>
                         <Select
                           className="text-xs font-bold"
                           id={`expense-row-${row.id}-category`}
@@ -722,7 +728,7 @@ export default function ExpenseReportPage({
                         </Select>
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-amount`}>Purchase Amount ($) *</label>
+                        <Label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-amount`}>Purchase Amount ($) *</Label>
                         <Input
                           type="number"
                           placeholder="0.00"
@@ -736,7 +742,7 @@ export default function ExpenseReportPage({
 
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>Tax ($)</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>Tax ($)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -747,7 +753,7 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>Tip ($)</label>
+                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>Tip ($)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -777,33 +783,24 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div className="md:col-span-6 flex flex-wrap gap-4 items-center justify-end text-[10px] font-bold text-slate-600">
-                        <label className="flex items-center gap-1.5">
-                          <input
-                            type="checkbox"
-                            className="size-3.5 rounded border-input accent-primary"
-                            checked={row.reimbursable}
-                            onChange={(e) => handleExpenseRowChange(row.id, "reimbursable", e.target.checked)}
-                          />
-                          <span>Reimbursable</span>
-                        </label>
-                        <label className="flex items-center gap-1.5">
-                          <input
-                            type="checkbox"
-                            className="size-3.5 rounded border-input accent-primary"
-                            checked={row.billable}
-                            onChange={(e) => handleExpenseRowChange(row.id, "billable", e.target.checked)}
-                          />
-                          <span>Bill Client</span>
-                        </label>
-                        <label className="flex items-center gap-1.5">
-                          <input
-                            type="checkbox"
-                            className="size-3.5 rounded border-input accent-primary"
-                            checked={row.receiptAttached}
-                            onChange={(e) => handleExpenseRowChange(row.id, "receiptAttached", e.target.checked)}
-                          />
-                          <span>Receipt File</span>
-                        </label>
+                        <Checkbox
+                          checked={row.reimbursable}
+                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          label="Reimbursable"
+                          onCheckedChange={(checked) => handleExpenseRowChange(row.id, "reimbursable", checked === true)}
+                        />
+                        <Checkbox
+                          checked={row.billable}
+                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          label="Bill Client"
+                          onCheckedChange={(checked) => handleExpenseRowChange(row.id, "billable", checked === true)}
+                        />
+                        <Checkbox
+                          checked={row.receiptAttached}
+                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          label="Receipt File"
+                          onCheckedChange={(checked) => handleExpenseRowChange(row.id, "receiptAttached", checked === true)}
+                        />
                       </div>
                     </div>
 
@@ -858,18 +855,20 @@ export default function ExpenseReportPage({
                 <div className="space-y-3">
                   {data.mileageRows.map((mRow) => (
                     <div key={mRow.id} className="bg-slate-50/60 border rounded-lg p-3 relative flex flex-col md:flex-row gap-3">
-                      <button
+                      <Button
                         aria-label="Remove mileage row"
-                        type="button"
+                        className="absolute right-2 top-2 text-slate-400 hover:text-rose-600"
                         onClick={() => handleRemoveMileageRow(mRow.id)}
-                        className="absolute right-2 top-2 text-slate-400 hover:text-rose-600 transition p-1"
+                        size="icon-xs"
+                        type="button"
+                        variant="ghost"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
 
                       <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
-                          <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-date`}>Date</label>
+                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-date`}>Date</Label>
                           <Input
                             type="date"
                             className="text-xs"
@@ -879,7 +878,7 @@ export default function ExpenseReportPage({
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-purpose`}>Trip Purpose</label>
+                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-purpose`}>Trip Purpose</Label>
                           <Input
                             type="text"
                             placeholder="e.g. Travel to CLT Airport terminal"
@@ -890,7 +889,7 @@ export default function ExpenseReportPage({
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-miles`}>Driven Miles</label>
+                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-miles`}>Driven Miles</Label>
                           <Input
                             type="number"
                             min="0"
@@ -901,7 +900,7 @@ export default function ExpenseReportPage({
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-rate`}>Rate / mile</label>
+                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-rate`}>Rate / mile</Label>
                           <Input
                             type="number"
                             min="0"
@@ -925,7 +924,7 @@ export default function ExpenseReportPage({
                 6. Corporate Advance Received
               </h3>
               <div className="max-w-xs">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-advance">Pre-Paid Advance ($)</label>
+                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-advance">Pre-Paid Advance ($)</Label>
                 <Input
                   type="number"
                   placeholder="0.00"

@@ -4,6 +4,8 @@ import {
   Checkbox,
   DangerZone,
   Field,
+  FieldLegend,
+  FieldSet,
   Input,
   SectionCard,
   SectionHeading,
@@ -47,12 +49,14 @@ export default async function RolePage({
           </Field>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Object.entries(PERMISSION_CATALOG).map(([resource, definition]) => (
-              <fieldset
-                className="rounded-lg border border-border bg-muted/40 p-4"
+              <FieldSet
+                className="gap-0 rounded-lg border border-border bg-muted/40 p-4"
                 key={resource}
                 title={definition.description}
               >
-                <legend className="px-1 font-extrabold text-foreground">{resource}</legend>
+                <FieldLegend className="mb-0 px-1 font-extrabold text-foreground">
+                  {resource}
+                </FieldLegend>
                 <p className="mb-4 text-sm leading-6 text-muted-foreground">
                   {definition.description}
                 </p>
@@ -68,7 +72,7 @@ export default async function RolePage({
                     />
                   ))}
                 </div>
-              </fieldset>
+              </FieldSet>
             ))}
           </div>
           <Button className="justify-self-start" type="submit">

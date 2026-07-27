@@ -12,7 +12,10 @@ import {
 import {
   Button,
   Card,
+  Checkbox,
+  CheckboxControl,
   Input,
+  Label,
   Select,
   StatusBadge,
   Textarea,
@@ -490,16 +493,13 @@ export default function AdvancedTemplateWorkspace<TDraft>({
 
     if (control === "checkbox") {
       return (
-        <label className="flex items-center gap-2 text-sm font-bold" htmlFor={id}>
-          <input
-            checked={Boolean(value)}
-            id={id}
-            onChange={(event) => writeEntry(entry, event.target.checked)}
-            type="checkbox"
-          />
-          {entry.label}
-          {entry.required ? " *" : ""}
-        </label>
+        <Checkbox
+          checked={Boolean(value)}
+          id={id}
+          label={`${entry.label}${entry.required ? " *" : ""}`}
+          onCheckedChange={(checked) => writeEntry(entry, checked === true)}
+          required={entry.required}
+        />
       );
     }
     if (control === "textarea") {
@@ -584,16 +584,18 @@ export default function AdvancedTemplateWorkspace<TDraft>({
           renderItem={(row, state) => (
             <Card className="grid gap-3 p-3">
               <div className="flex items-center justify-between gap-2">
-                <button
+                <Button
                   {...state.attributes}
                   {...state.listeners}
                   aria-label={`Reorder ${entry.label} row`}
-                  className="grid size-9 touch-none place-items-center rounded-lg text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                  className="size-9 touch-none text-muted-foreground"
                   ref={state.setActivatorNodeRef}
+                  size="icon"
                   type="button"
+                  variant="ghost"
                 >
                   <GripVertical aria-hidden="true" size={16} />
-                </button>
+                </Button>
                 <Button
                   aria-label={`Remove ${entry.label} row`}
                   disabled={rows.length <= minRows}
@@ -616,8 +618,8 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                     `${adapter.documentType}:${entry.key}.${column.key}`,
                   );
                   return (
-                    <label className="grid gap-1 text-xs font-bold" key={column.key}>
-                      <span>{column.label}</span>
+                    <div className="grid gap-1 text-xs font-bold" key={column.key}>
+                      <Label htmlFor={id}>{column.label}</Label>
                       {column.control === "select" ? (
                         <Select
                           id={id}
@@ -643,23 +645,23 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           ))}
                         </Select>
                       ) : column.control === "checkbox" ? (
-                        <input
+                        <CheckboxControl
+                          aria-label={column.label}
                           checked={Boolean(value)}
                           className="size-4"
                           id={id}
-                          onChange={(event) =>
+                          onCheckedChange={(checked) =>
                             updateRows(
                               rows.map((item) =>
                                 item.id === row.id
                                   ? {
                                       ...item,
-                                      [column.key]: event.target.checked,
+                                      [column.key]: checked === true,
                                     }
                                   : item,
                               ),
                             )
                           }
-                          type="checkbox"
                         />
                       ) : (
                         <Input
@@ -681,7 +683,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           value={String(value ?? "")}
                         />
                       )}
-                    </label>
+                    </div>
                   );
                 })}
               </div>
@@ -705,9 +707,10 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   return (
     <Card className="grid gap-6 p-5 print:hidden">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <label className="grid min-w-64 gap-1 text-sm font-extrabold">
-          <span>Published template</span>
+        <div className="grid min-w-64 gap-1 text-sm font-extrabold">
+          <Label htmlFor="advanced-published-template">Published template</Label>
           <Select
+            id="advanced-published-template"
             onChange={(event) => setSelectedTemplateId(event.target.value)}
             value={selectedTemplate.id}
           >
@@ -717,7 +720,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
               </option>
             ))}
           </Select>
-        </label>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => {
@@ -820,7 +823,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           ) : null}
                         </div>
                       ) : (
-                        <label
+                        <Label
                           className="grid gap-1.5 text-sm font-extrabold"
                           htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}
                         >
@@ -834,7 +837,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                               {entry.helpText}
                             </span>
                           ) : null}
-                        </label>
+                        </Label>
                       )}
                       {errors[entry.key] ? (
                         <p

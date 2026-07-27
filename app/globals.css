@@ -17,27 +17,24 @@ textarea {
 }
 
 .platform-shell {
-  --background: #f7f7f8;
-  --foreground: #111114;
+  --background: #f6f7f9;
+  --foreground: #1a1a1a;
   --card: #ffffff;
-  --card-foreground: #111114;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #111114;
-  --primary: #002fa7;
+  --popover-foreground: #1a1a1a;
+  --primary: #0066ff;
   --primary-foreground: #ffffff;
-  --secondary: #eeeeef;
-  --secondary-foreground: #25252a;
-  --muted: #eeeeef;
-  --muted-foreground: #5c5c66;
-  --accent: #e9edff;
-  --accent-foreground: #002fa7;
-  --border: #d8d8de;
-  --input: #b9bac2;
-  --ring: #002fa7;
-}
-
-.platform-shell {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --secondary: #ffffff;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f6f7f9;
+  --muted-foreground: #666666;
+  --accent: #e8f0ff;
+  --accent-foreground: #0066ff;
+  --border: #eaecef;
+  --input: #d6d9de;
+  --ring: #0066ff;
+  font-family: var(--font-geist, Geist), ui-sans-serif, system-ui, sans-serif;
 }
 
 .platform-header {
@@ -46,8 +43,8 @@ textarea {
 
 .platform-grid {
   background-image:
-    linear-gradient(to right, rgb(0 47 167 / 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(0 47 167 / 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgb(0 102 255 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 102 255 / 0.08) 1px, transparent 1px);
   background-size: 2rem 2rem;
 }
 

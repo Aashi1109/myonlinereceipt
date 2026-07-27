@@ -4,14 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import {
   AlertBanner,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Button,
   Checkbox,
   DangerZone,
   Field,
   Input,
   SectionHeading,
+  SidebarNavItem,
   StatusBadge,
-  buttonVariants,
 } from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
 import {
@@ -360,17 +363,21 @@ export function ProfileManager({
             Account overview
           </p>
           <div className="mt-4 flex min-w-0 items-center gap-4 lg:block">
-            <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-xl font-black text-primary-foreground ring-4 ring-accent">
-              {avatarInitial}
+            <Avatar
+              aria-hidden="true"
+              className="size-16 bg-primary ring-4 ring-accent"
+            >
               {profileImage ? (
-                <img
+                <AvatarImage
                   alt=""
-                  className="absolute inset-0 size-full object-cover"
                   referrerPolicy="no-referrer"
                   src={profileImage}
                 />
               ) : null}
-            </div>
+              <AvatarFallback className="bg-primary text-xl font-black text-primary-foreground">
+                {avatarInitial}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0 lg:mt-4">
               <p className="truncate font-extrabold text-foreground">{user.name}</p>
               <p className="mt-1 break-all text-sm leading-5 text-muted-foreground">
@@ -390,13 +397,9 @@ export function ProfileManager({
               ["Active sessions", "#active-sessions"],
               ["Delete account", "#delete-account"],
             ].map(([label, href]) => (
-              <a
-                className="flex min-h-10 items-center rounded-lg px-3 text-sm font-bold text-muted-foreground outline-none hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                href={href}
-                key={href}
-              >
+              <SidebarNavItem href={href} key={href}>
                 {label}
-              </a>
+              </SidebarNavItem>
             ))}
           </nav>
 
@@ -429,7 +432,7 @@ export function ProfileManager({
                 className="grid max-w-2xl gap-5"
                 onSubmit={updateProfile}
               >
-                <Field htmlFor="profile-name" label="Name">
+                <Field htmlFor="profile-name" label="Name" variant="auth">
                   <Input
                     defaultValue={user.name}
                     id="profile-name"
@@ -445,17 +448,18 @@ export function ProfileManager({
                   value={profileImage ?? ""}
                 />
                 <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center">
-                  <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full bg-primary text-xl font-black text-primary-foreground">
-                    {avatarInitial}
+                  <Avatar className="size-16 bg-primary">
                     {profileImage ? (
-                      <img
+                      <AvatarImage
                         alt="Profile preview"
-                        className="absolute inset-0 size-full object-cover"
                         referrerPolicy="no-referrer"
                         src={profileImage}
                       />
                     ) : null}
-                  </div>
+                    <AvatarFallback className="bg-primary text-xl font-black text-primary-foreground">
+                      {avatarInitial}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-foreground">
                       Profile photo
@@ -477,23 +481,26 @@ export function ProfileManager({
                         onChange={chooseProfileImage}
                         type="file"
                       />
-                      <label
-                        aria-disabled={Boolean(pending)}
-                        className={buttonVariants({
-                          className: `cursor-pointer peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${
-                            pending ? "pointer-events-none opacity-50" : ""
-                          }`,
-                          size: "sm",
-                          variant: "outline",
-                        })}
-                        htmlFor="profile-image"
+                      <Button
+                        asChild
+                        className={`peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 ${
+                          pending ? "pointer-events-none opacity-50" : ""
+                        }`}
+                        size="sm"
+                        variant="outline"
                       >
-                        {pending === "image"
-                          ? "Preparing…"
-                          : profileImage
-                            ? "Change photo"
-                            : "Choose photo"}
-                      </label>
+                        <label
+                          aria-disabled={Boolean(pending)}
+                          className="cursor-pointer"
+                          htmlFor="profile-image"
+                        >
+                          {pending === "image"
+                            ? "Preparing…"
+                            : profileImage
+                              ? "Change photo"
+                              : "Choose photo"}
+                        </label>
+                      </Button>
                       {profileImage ? (
                         <Button
                           disabled={Boolean(pending)}
@@ -536,12 +543,11 @@ export function ProfileManager({
                       key={account.id}
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                        <span
-                          aria-hidden="true"
-                          className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-sm font-black text-accent-foreground"
-                        >
-                          {account.providerId === "google" ? "G" : "@"}
-                        </span>
+                        <Avatar aria-hidden="true">
+                          <AvatarFallback className="font-black text-accent-foreground">
+                            {account.providerId === "google" ? "G" : "@"}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="grid min-w-0 gap-1">
                           <strong className="break-words text-sm">
                             {providerName(account.providerId)}
@@ -615,7 +621,7 @@ export function ProfileManager({
                   className="grid max-w-2xl gap-5"
                   onSubmit={changePassword}
                 >
-                  <Field htmlFor="current-password" label="Current password">
+                  <Field htmlFor="current-password" label="Current password" variant="auth">
                     <Input
                       autoComplete="current-password"
                       id="current-password"
@@ -629,6 +635,7 @@ export function ProfileManager({
                       description="12–128 characters"
                       htmlFor="profile-new-password"
                       label="New password"
+                      variant="auth"
                     >
                       <Input
                         autoComplete="new-password"
@@ -643,6 +650,7 @@ export function ProfileManager({
                     <Field
                       htmlFor="profile-confirm-password"
                       label="Confirm new password"
+                      variant="auth"
                     >
                       <Input
                         autoComplete="new-password"
@@ -773,6 +781,7 @@ export function ProfileManager({
               description={`Type ${user.email} exactly.`}
               htmlFor="delete-confirmation"
               label="Confirm your email address"
+              variant="auth"
             >
               <Input
                 autoComplete="off"

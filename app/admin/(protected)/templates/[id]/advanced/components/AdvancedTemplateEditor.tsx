@@ -2,6 +2,7 @@
 
 import type {
   Plugins,
+  PropPanelWidgetProps,
   Schema,
   Template,
 } from "@pdfme/common";
@@ -16,17 +17,24 @@ import {
   type PdfmeSchema,
 } from "@smarttools/invoice-templates";
 import {
-  BrandLockup,
+  AlertBanner,
   Button,
+  Card,
+  CheckboxControl,
+  Field,
   Input,
+  Label,
   Select,
   StatusBadge,
+  Textarea,
   buttonVariants,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
+  AlignCenter,
   ArrowLeft,
   Barcode,
+  Bold,
   Braces,
   CalendarClock,
   CalendarDays,
@@ -35,13 +43,14 @@ import {
   ChevronUp,
   Circle,
   CircleDot,
+  CirclePlus,
   Clock3,
-  Database,
-  Eye,
+  Copy,
+  File,
   FilePlus2,
-  FileText,
-  Focus,
+  Files,
   GripVertical,
+  Hand,
   ImageIcon,
   Layers,
   List,
@@ -50,15 +59,20 @@ import {
   Maximize2,
   Minus,
   MousePointer2,
+  PanelBottom,
+  PanelTop,
   PenLine,
   Plus,
   QrCode,
   Redo2,
-  Save,
+  Scan,
+  Search,
   Shapes,
   Square,
   SquareCheck,
   Table2,
+  TextCursorInput,
+  Trash2,
   Type,
   Undo2,
   X,
@@ -274,9 +288,99 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong.";
 }
 
+const smarttoolsBridge: {
+  toggleRepeat: () => void;
+  deleteElement: () => void;
+} = {
+  toggleRepeat: () => {},
+  deleteElement: () => {},
+};
+
+function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
+  try {
+    const { rootElement, activeSchema } = props;
+    rootElement.replaceChildren();
+    const repeating = Boolean(
+      (activeSchema as { smarttoolsRegion?: string }).smarttoolsRegion,
+    );
+
+    const wrap = document.createElement("div");
+    wrap.style.cssText =
+      "display:flex;flex-direction:column;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #eaecef;";
+
+    const row = document.createElement("div");
+    row.style.cssText =
+      "display:flex;align-items:center;justify-content:space-between;gap:8px;";
+    const text = document.createElement("div");
+    text.innerHTML =
+      '<div style="font-size:12px;font-weight:600;color:#1a1a1a;line-height:1.3;">Repeat on every page</div>' +
+      '<div style="font-size:10px;color:#666;line-height:1.3;">Move into header or footer</div>';
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.setAttribute("aria-label", "Repeat on every page");
+    toggle.style.cssText =
+      "position:relative;height:24px;width:40px;flex-shrink:0;border:0;border-radius:9999px;cursor:pointer;transition:background .15s;background:" +
+      (repeating ? "#0066ff" : "#d6d9de") +
+      ";";
+    const knob = document.createElement("span");
+    knob.style.cssText =
+      "position:absolute;top:3px;height:18px;width:18px;border-radius:9999px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s;left:" +
+      (repeating ? "19px" : "3px") +
+      ";";
+    toggle.appendChild(knob);
+    toggle.addEventListener("click", () => smarttoolsBridge.toggleRepeat());
+    row.append(text, toggle);
+
+    const del = document.createElement("button");
+    del.type = "button";
+    del.textContent = "Delete element";
+    del.style.cssText =
+      "height:36px;width:100%;border:1px solid #d6d9de;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;";
+    del.addEventListener("click", () => smarttoolsBridge.deleteElement());
+
+    wrap.append(row, del);
+    rootElement.appendChild(wrap);
+  } catch {
+    // A widget error must never take down pdfme's property panel.
+  }
+}
+
+type PdfmePlugin = Plugins[string];
+
+function withSmarttoolsControls(plugin: PdfmePlugin): PdfmePlugin {
+  const propPanel = plugin.propPanel;
+  const originalSchema = propPanel.schema;
+  return {
+    ...plugin,
+    propPanel: {
+      ...propPanel,
+      widgets: {
+        ...(propPanel.widgets ?? {}),
+        smarttoolsControls: renderSmarttoolsControls,
+      },
+      schema: (schemaProps) => {
+        const base =
+          typeof originalSchema === "function"
+            ? originalSchema(schemaProps)
+            : originalSchema;
+        return {
+          ...base,
+          smarttoolsControls: {
+            type: "void",
+            widget: "smarttoolsControls",
+            bind: false,
+            span: 24,
+          },
+        };
+      },
+    },
+  };
+}
+
 async function loadPlugins(): Promise<Plugins> {
   const schemas = await import("@pdfme/schemas");
-  return {
+  const raw: Plugins = {
     text: schemas.text,
     multiVariableText: schemas.multiVariableText,
     list: schemas.list,
@@ -296,6 +400,12 @@ async function loadPlugins(): Promise<Plugins> {
     circleMark: schemas.circleMark,
     ...schemas.barcodes,
   };
+  return Object.fromEntries(
+    Object.entries(raw).map(([key, plugin]) => [
+      key,
+      withSmarttoolsControls(plugin),
+    ]),
+  );
 }
 
 function blankBase(template: Template): PdfmeBlankBase {
@@ -304,9 +414,9 @@ function blankBase(template: Template): PdfmeBlankBase {
 
 function panelButtonClass(active: boolean) {
   return [
-    "flex min-h-14 w-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+    "size-8 rounded-lg p-0 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
     active
-      ? "bg-primary text-primary-foreground shadow-sm"
+      ? "bg-primary/90 text-primary-foreground shadow-sm hover:bg-primary"
       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
   ].join(" ");
 }
@@ -344,14 +454,18 @@ export default function AdvancedTemplateEditor({
   const restoringHistoryRef = useRef(false);
   const saveFromDesignerRef = useRef<(next: Template) => void>(() => {});
 
-  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+  const [activePanel, setActivePanel] = useState<ActivePanel>("add");
+  const [addQuery, setAddQuery] = useState("");
+  const [expandedBindingKey, setExpandedBindingKey] = useState<string | null>(null);
+  const [editingRegion, setEditingRegion] = useState<Region | null>(null);
+  const [canvasMode, setCanvasMode] = useState<"pan" | "select">("select");
   const [currentPage, setCurrentPage] = useState(0);
   const [designerReady, setDesignerReady] = useState(false);
   const [documentStripOpen, setDocumentStripOpen] = useState(true);
   const [error, setError] = useState("");
   const [focusMode, setFocusMode] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [isDirty, setIsDirty] = useState(false);
+  const [isDirty, setIsDirty] = useState(true);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [name, setName] = useState(template.name);
@@ -384,6 +498,24 @@ export default function AdvancedTemplateEditor({
   const repeatingFooterCount = staticSchemas.filter(
     (schema) => schema.smarttoolsRegion === "footer",
   ).length;
+
+  useEffect(() => {
+    smarttoolsBridge.deleteElement = () => deleteSelectedElement();
+    smarttoolsBridge.toggleRepeat = () => {
+      const region = (
+        selectedPdfmeSchema as { smarttoolsRegion?: string } | undefined
+      )?.smarttoolsRegion;
+      if (region) {
+        const base = blankBase(currentTemplateRef.current);
+        const index = (base.staticSchema ?? []).findIndex(
+          (schema) => schema.name === selectedPdfmeSchema?.name,
+        );
+        if (index >= 0) restoreRepeatingRegion(index);
+      } else {
+        moveSelectionToRegion("header");
+      }
+    };
+  });
 
   const layerItems = useMemo<LayerItem[]>(
     () =>
@@ -523,7 +655,26 @@ export default function AdvancedTemplateEditor({
           setPageCount(totalPages);
         });
         designer.onSaveTemplate((next) => saveFromDesignerRef.current(next));
+        designer.updateOptions({ sidebarOpen: false });
         setDesignerReady(true);
+        window.setTimeout(() => {
+          if (disposed) return;
+          const firstPage = currentTemplateRef.current.schemas[0] ?? [];
+          const schemaIndex = firstPage.findIndex((schema) =>
+            schema.name.toLowerCase().includes("total"),
+          );
+          const selectedIndex = schemaIndex >= 0 ? schemaIndex : 0;
+          const selected = firstPage[selectedIndex];
+          if (!selected || designer.getSelectedSchemas().length) return;
+          designer.selectSchemas(
+            {
+              name: selected.name,
+              pageIndex: 0,
+              schemaIndex: selectedIndex,
+            },
+            { pageIndex: 0, scroll: true },
+          );
+        }, 300);
       })
       .catch((loadError) => {
         if (!disposed) setError(errorMessage(loadError));
@@ -538,15 +689,70 @@ export default function AdvancedTemplateEditor({
     };
   }, [rememberTemplate]);
 
+  useEffect(() => {
+    if (!designerReady || canvasMode !== "pan") return;
+    const canvas = designerContainerRef.current?.querySelector<HTMLElement>(
+      ".pdfme-designer-canvas",
+    );
+    if (!canvas) return;
+
+    let dragging = false;
+    let previousX = 0;
+    let previousY = 0;
+
+    const startPan = (event: PointerEvent) => {
+      dragging = true;
+      previousX = event.clientX;
+      previousY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const movePan = (event: PointerEvent) => {
+      if (!dragging) return;
+      canvas.scrollLeft -= event.clientX - previousX;
+      canvas.scrollTop -= event.clientY - previousY;
+      previousX = event.clientX;
+      previousY = event.clientY;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const stopPan = (event: PointerEvent) => {
+      dragging = false;
+      if (canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    canvas.style.cursor = "grab";
+    canvas.addEventListener("pointerdown", startPan, true);
+    canvas.addEventListener("pointermove", movePan, true);
+    canvas.addEventListener("pointerup", stopPan, true);
+    canvas.addEventListener("pointercancel", stopPan, true);
+    return () => {
+      canvas.style.cursor = "";
+      canvas.removeEventListener("pointerdown", startPan, true);
+      canvas.removeEventListener("pointermove", movePan, true);
+      canvas.removeEventListener("pointerup", stopPan, true);
+      canvas.removeEventListener("pointercancel", stopPan, true);
+    };
+  }, [canvasMode, designerReady]);
+
   function togglePanel(panel: Exclude<ActivePanel, null>) {
-    const next = activePanel === panel ? null : panel;
-    setActivePanel(next);
-    designerRef.current?.updateOptions({ sidebarOpen: false });
+    setActivePanel(activePanel === panel ? null : panel);
+    if (panel !== "pages") setEditingRegion(null);
+  }
+
+  function openRegionPanel(region: Region) {
+    const assignedCount =
+      region === "header" ? repeatingHeaderCount : repeatingFooterCount;
+    setActivePanel("pages");
+    setEditingRegion(assignedCount ? region : null);
   }
 
   function closePanels() {
     setActivePanel(null);
-    designerRef.current?.updateOptions({ sidebarOpen: false });
+    setEditingRegion(null);
   }
 
   function restoreHistory(direction: -1 | 1) {
@@ -666,6 +872,59 @@ export default function AdvancedTemplateEditor({
       },
       { pageIndex: currentPage, scroll: true },
     );
+  }
+
+  function deleteSelectedElement() {
+    const selected = selection?.schemas[0];
+    if (!selected) return;
+    const next = cloneTemplate(currentTemplateRef.current);
+    next.schemas[selected.pageIndex]?.splice(selected.schemaIndex, 1);
+    applyTemplate(next);
+    setSelection(null);
+  }
+
+  function updateSelectedSchema(update: (schema: Schema) => void) {
+    const selected = selection?.schemas[0];
+    if (!selected) return;
+    const next = cloneTemplate(currentTemplateRef.current);
+    const schema = next.schemas[selected.pageIndex]?.[selected.schemaIndex];
+    if (!schema) return;
+    update(schema);
+    applyTemplate(next);
+  }
+
+  function duplicateSelectedElement() {
+    const selected = selection?.schemas[0];
+    if (!selected) return;
+    const next = cloneTemplate(currentTemplateRef.current);
+    const source = next.schemas[selected.pageIndex]?.[selected.schemaIndex];
+    if (!source) return;
+    const duplicate = structuredClone(source);
+    const usedNames = new Set(next.schemas.flat().map((schema) => schema.name));
+    let suffix = 1;
+    let nextName = `${source.name}Copy`;
+    while (usedNames.has(nextName)) {
+      suffix += 1;
+      nextName = `${source.name}Copy${suffix}`;
+    }
+    duplicate.name = nextName;
+    const basePdf = blankBase(next);
+    duplicate.position = {
+      x: Math.min(source.position.x + 3, basePdf.width - source.width),
+      y: Math.min(source.position.y + 3, basePdf.height - source.height),
+    };
+    const schemaIndex = next.schemas[selected.pageIndex].push(duplicate) - 1;
+    applyTemplate(next);
+    window.requestAnimationFrame(() => {
+      designerRef.current?.selectSchemas(
+        {
+          name: duplicate.name,
+          pageIndex: selected.pageIndex,
+          schemaIndex,
+        },
+        { pageIndex: selected.pageIndex, scroll: true },
+      );
+    });
   }
 
   function addPage() {
@@ -916,6 +1175,7 @@ export default function AdvancedTemplateEditor({
     basePdf.staticSchema = [...(basePdf.staticSchema ?? []), ...moved];
     applyTemplate(next);
     setSelection(null);
+    setEditingRegion(region);
   }
 
   function restoreRepeatingRegion(index: number) {
@@ -924,10 +1184,11 @@ export default function AdvancedTemplateEditor({
     const staticSchema = [...(basePdf.staticSchema ?? [])];
     const [schema] = staticSchema.splice(index, 1);
     if (!schema) return;
-    const { smarttoolsRegion: _region, ...editableSchema } = schema;
+    const { smarttoolsRegion: region, ...editableSchema } = schema;
     next.schemas[currentPage].push(editableSchema as Schema);
     basePdf.staticSchema = staticSchema;
     applyTemplate(next);
+    setEditingRegion(region === "header" || region === "footer" ? region : null);
   }
 
   async function previewPdf() {
@@ -971,91 +1232,127 @@ export default function AdvancedTemplateEditor({
   function renderPanel() {
     if (!activePanel) return null;
 
+    const panelCopy = {
+      add: ["Panel 01", "Add elements", "Insert content and document controls"],
+      layers: ["Panel 02", "Layers", "Order elements on the current page"],
+      data: ["Panel 03", "Fields & data", "Bind document data to the selection"],
+      pages: ["Panel 04", "Pages", "Manage pages and repeating regions"],
+    }[activePanel];
+
     return (
       <aside
-        className={`absolute inset-y-4 left-4 z-30 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl ${
-          activePanel === "data" ? "w-[30rem]" : "w-80"
-        }`}
+        className="absolute left-[5.75rem] top-[5.5rem] z-30 flex h-[574px] w-[18.75rem] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
       >
-        <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <h2 className="text-sm font-extrabold capitalize">
-            {activePanel === "add"
-              ? "Add elements"
-              : activePanel === "data"
-                ? "Fields & data"
-                : activePanel}
-          </h2>
-          <button
+        <div className="flex h-[74px] shrink-0 items-start justify-between border-b border-border/70 px-4 pt-3.5 pb-3">
+          <div className="grid gap-0.5">
+            <p className="font-caption text-[8px] font-semibold uppercase tracking-[0.1em] text-primary">
+              {panelCopy[0]}
+            </p>
+            <h2 className="font-heading text-sm font-semibold">
+              {panelCopy[1]}
+            </h2>
+            <p className="text-[9px] text-muted-foreground">
+              {panelCopy[2]}
+            </p>
+          </div>
+          <Button
             aria-label={`Close ${activePanel} panel`}
-            className={buttonVariants({ size: "icon", variant: "ghost" })}
+            className="-mr-1 text-muted-foreground"
             onClick={closePanels}
+            size="icon-sm"
             type="button"
+            variant="ghost"
           >
-            <X aria-hidden="true" size={17} />
-          </button>
+            <X aria-hidden="true" size={14} strokeWidth={1.75} />
+          </Button>
         </div>
 
         {activePanel === "add" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <p className="mb-4 text-xs leading-5 text-muted-foreground">
-              Add an element, then position it anywhere on the canvas.
-            </p>
-            <div className="space-y-5">
-              {ADD_TOOL_GROUPS.map((group) => (
-                <section key={group}>
-                  <h3 className="mb-1.5 px-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-                    {group}
-                  </h3>
-                  <div className="grid gap-1">
-                    {ADD_TOOLS.filter((tool) => tool.group === group).map(
-                      (tool) => {
-                        const Icon = tool.icon;
-                        return (
-                          <button
-                            aria-label={`Add ${tool.label}`}
-                            className="group flex min-h-12 items-center gap-3 rounded-xl px-2.5 py-2 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                            disabled={!designerReady}
-                            key={tool.pluginKey}
-                            onClick={() => addElement(tool)}
-                            type="button"
-                          >
-                            <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-border bg-background text-foreground transition-colors group-hover:border-primary/40 group-hover:text-primary">
-                              <Icon aria-hidden="true" size={17} />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-xs font-extrabold text-foreground">
-                                {tool.label}
+          <div className="flex min-h-0 flex-1 flex-col gap-3.5 p-4">
+            <label className="flex h-10 shrink-0 items-center gap-2.5 rounded-lg border border-border bg-muted px-3 text-xs text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+              <Search aria-hidden="true" size={15} />
+              <input
+                aria-label="Search elements"
+                className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
+                onChange={(event) => setAddQuery(event.target.value)}
+                placeholder="Search elements"
+                type="search"
+                value={addQuery}
+              />
+            </label>
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto">
+              {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map(
+                (group) => {
+                  const visibleTools = ADD_TOOLS.filter((tool) => {
+                    const displayGroup =
+                      tool.group === "Codes" ? "Fields" : tool.group;
+                    const query = addQuery.trim().toLowerCase();
+                    return (
+                      displayGroup === group &&
+                      (!query ||
+                        tool.label.toLowerCase().includes(query) ||
+                        tool.description.toLowerCase().includes(query))
+                    );
+                  });
+                  return (
+                    <section key={group}>
+                      <h3 className="mb-1 px-1 font-caption text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        {group === "Fields" ? "Fields & codes" : group}
+                      </h3>
+                      <div className="grid gap-1">
+                        {visibleTools.map((tool) => {
+                          const Icon = tool.icon;
+                          return (
+                            <button
+                              aria-label={`Add ${tool.label}`}
+                              className="group flex h-[46px] w-full items-center gap-2.5 rounded-lg px-2 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                              disabled={!designerReady}
+                              key={tool.pluginKey}
+                              onClick={() => addElement(tool)}
+                              type="button"
+                            >
+                              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-foreground">
+                                <Icon aria-hidden="true" size={15} />
                               </span>
-                              <span className="block truncate text-[10px] text-muted-foreground">
-                                {tool.description}
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-[11px] font-semibold text-foreground">
+                                  {tool.label}
+                                </span>
+                                <span className="block truncate text-[9px] text-muted-foreground">
+                                  {tool.description}
+                                </span>
                               </span>
-                            </span>
-                            <Plus
-                              aria-hidden="true"
-                              className="text-muted-foreground group-hover:text-primary"
-                              size={14}
-                            />
-                          </button>
-                        );
-                      },
-                    )}
-                  </div>
-                </section>
-              ))}
+                              <Plus
+                                aria-hidden="true"
+                                className="text-muted-foreground"
+                                size={13}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                },
+              )}
             </div>
           </div>
         ) : null}
 
         {activePanel === "layers" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <p className="mb-3 text-xs leading-5 text-muted-foreground">
-              Page {currentPage + 1}. Drag by the handle or use the keyboard to
-              change stacking order.
-            </p>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <div className="mb-2 flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
+              <span>
+                {layerItems.length ? "Populated" : "Empty"} · Page {currentPage + 1}
+              </span>
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[8px] font-medium normal-case">
+                {layerItems.length} elements
+              </span>
+            </div>
             {layerItems.length ? (
               <OrderableList
                 ariaLabel={`Layers on page ${currentPage + 1}`}
-                className="grid gap-1.5"
+                className="grid gap-1"
                 getId={(item) => item.id}
                 items={layerItems}
                 onReorder={(items) =>
@@ -1063,59 +1360,70 @@ export default function AdvancedTemplateEditor({
                 }
                 renderItem={(item, state) => (
                   <div
-                    className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
+                    className={`flex h-8 items-center gap-1.5 rounded border px-1.5 ${
                       state.isDragging
                         ? "border-primary bg-primary/5 shadow-md"
-                        : "border-border bg-background"
+                        : "border-border bg-card"
                     }`}
                   >
                     <button
                       {...state.attributes}
                       {...state.listeners}
                       aria-label={`Reorder ${item.schema.name}`}
-                      className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid size-4 shrink-0 touch-none place-items-center text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       ref={state.setActivatorNodeRef}
                       type="button"
                     >
-                      <GripVertical aria-hidden="true" size={15} />
+                      <GripVertical aria-hidden="true" size={12} />
                     </button>
+                    <Type aria-hidden="true" className="shrink-0" size={13} />
                     <button
-                      className="min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-xs font-bold outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      className="min-w-0 flex-1 truncate text-left text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => selectLayer(item)}
                       type="button"
                     >
                       {item.schema.name}
                     </button>
-                    <span className="text-[10px] uppercase text-muted-foreground">
+                    <span className="mr-1 font-caption text-[8px] uppercase text-muted-foreground">
                       {item.schema.type}
                     </span>
                   </div>
                 )}
               />
             ) : (
-              <p className="rounded-xl border border-dashed border-border p-5 text-center text-xs text-muted-foreground">
-                This page has no elements yet.
-              </p>
+              <div className="grid place-items-center gap-1.5 rounded-lg bg-muted p-3 text-center">
+                <span className="grid size-[34px] place-items-center rounded-md bg-card text-muted-foreground">
+                  <Layers aria-hidden="true" size={17} />
+                </span>
+                <p className="text-xs font-semibold">No elements yet</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Add an element to start this page.
+                </p>
+              </div>
             )}
           </div>
         ) : null}
 
         {activePanel === "data" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <p className="mb-3 text-xs leading-5 text-muted-foreground">
-              Bind canvas elements, edit safe sample values, and define the
-              published end-user form.
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <div className="mb-3 flex h-10 items-center justify-between rounded-lg bg-muted px-3">
+              <div>
+                <p className="font-caption text-[8px] font-semibold uppercase text-muted-foreground">
+                  Document type
+                </p>
+                <p className="text-[11px] font-semibold">{definition.label}</p>
+              </div>
+              <ChevronDown aria-hidden="true" className="text-muted-foreground" size={14} />
+            </div>
+            <p className="mb-2 font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Canvas bindings
             </p>
-            <details className="rounded-xl border border-border bg-background" open>
-              <summary className="cursor-pointer px-3 py-2 text-xs font-extrabold">
-                Canvas bindings
-              </summary>
-              <div className="grid gap-4 border-t border-border p-3">
+            <div className="grid gap-2">
                 {Array.from(
                   new Set(definition.fields.map((field) => field.section)),
                 ).map((fieldSection) => (
-                  <section className="grid gap-2" key={fieldSection}>
-                    <h3 className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                  <section className="grid gap-1.5" key={fieldSection}>
+                    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {fieldSection}
                     </h3>
                     {definition.fields
@@ -1129,66 +1437,75 @@ export default function AdvancedTemplateEditor({
                           );
                         return (
                           <div
-                            className="grid gap-2 rounded-lg border border-border p-2.5"
+                            className="rounded-lg border border-border bg-card p-2"
                             key={field.key}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-xs font-extrabold">
-                                  {field.label}
-                                </p>
-                                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                                  {field.description}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2">
                               <button
-                                className="rounded-md px-2 py-1 text-[10px] font-extrabold text-primary outline-none hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                                disabled={!selectedSchema || !compatible}
-                                onClick={() => bindSelection(field.key)}
+                                aria-expanded={expandedBindingKey === field.key}
+                                className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                onClick={() => setExpandedBindingKey((key) => key === field.key ? null : field.key)}
                                 type="button"
                               >
-                                Bind
+                                <p className="truncate text-[11px] font-semibold text-foreground">
+                                  {field.label}
+                                </p>
+                                <p className="mt-0.5 truncate font-mono text-[9px] text-muted-foreground">
+                                  {field.key}
+                                </p>
                               </button>
+                              <Button
+                                className="h-6 px-2 text-[9px] font-semibold"
+                                disabled={!selectedSchema || !compatible}
+                                onClick={() => {
+                                  setExpandedBindingKey(field.key);
+                                  bindSelection(field.key);
+                                }}
+                                size="xs"
+                                type="button"
+                                variant="ghost"
+                              >
+                                Bind
+                              </Button>
                             </div>
-                            <div className="flex flex-wrap gap-1">
-                              <StatusBadge className="text-[9px]">
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <StatusBadge className="px-1.5 py-0 text-[8px]">
                                 {field.source}
                               </StatusBadge>
-                              <StatusBadge className="text-[9px]">
+                              <StatusBadge className="px-1.5 py-0 text-[8px]">
                                 {field.valueType}
                               </StatusBadge>
-                              <span className="truncate text-[9px] text-muted-foreground">
-                                {field.key}
+                              <span className="min-w-0 truncate text-[9px] text-muted-foreground">
+                                {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
                               </span>
                             </div>
-                            <textarea
-                              aria-label={`${field.label} sample value`}
-                              className="min-h-14 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
-                              onChange={(event) => {
-                                if (readOnly) return;
-                                setSampleData((values) => ({
-                                  ...values,
-                                  [field.key]: event.target.value,
-                                }));
-                                setIsDirty(true);
-                              }}
-                              readOnly={readOnly}
-                              value={
-                                sampleData[field.key] ??
-                                String(field.sampleValue ?? "")
-                              }
-                            />
+                            {expandedBindingKey === field.key ? (
+                              <Textarea
+                                aria-label={`${field.label} sample value`}
+                                className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 text-[10px] outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                onChange={(event) => {
+                                  if (readOnly) return;
+                                  setSampleData((values) => ({ ...values, [field.key]: event.target.value }));
+                                  setIsDirty(true);
+                                }}
+                                readOnly={readOnly}
+                                value={sampleData[field.key] ?? String(field.sampleValue ?? "")}
+                              />
+                            ) : null}
                           </div>
                         );
                       })}
                   </section>
                 ))}
-              </div>
-            </details>
+            </div>
 
-            <div className="mt-4 flex items-center justify-between gap-2">
+            <details className="mt-4 border-t border-border pt-3">
+              <summary className="cursor-pointer font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Published form configuration
+              </summary>
+            <div className="mt-3 flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-xs font-black">Published form</h3>
+                <h3 className="text-xs font-semibold">Published form</h3>
                 <p className="text-[10px] text-muted-foreground">
                   Drag handles work with pointer and keyboard.
                 </p>
@@ -1214,16 +1531,18 @@ export default function AdvancedTemplateEditor({
               renderItem={(section, sectionOrderState) => (
                 <section className="rounded-xl border border-border bg-background p-3">
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       {...sectionOrderState.attributes}
                       {...sectionOrderState.listeners}
                       aria-label={`Reorder ${section.label} section`}
                       className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                       ref={sectionOrderState.setActivatorNodeRef}
+                      size="icon-sm"
                       type="button"
+                      variant="ghost"
                     >
-                      <GripVertical aria-hidden="true" size={15} />
-                    </button>
+                      <GripVertical aria-hidden="true" className="size-[15px]" />
+                    </Button>
                     <Input
                       aria-label="Section label"
                       className="h-8 text-xs font-extrabold"
@@ -1238,12 +1557,8 @@ export default function AdvancedTemplateEditor({
                     {section.entries.every(
                       (entry) => entry.kind !== "builtin",
                     ) ? (
-                      <button
+                      <Button
                         aria-label={`Remove ${section.label} section`}
-                        className={buttonVariants({
-                          size: "icon",
-                          variant: "ghost",
-                        })}
                         onClick={() =>
                           setFormSections(
                             form.sections.filter(
@@ -1251,10 +1566,12 @@ export default function AdvancedTemplateEditor({
                             ),
                           )
                         }
+                        size="icon"
                         type="button"
+                        variant="ghost"
                       >
                         <X aria-hidden="true" size={14} />
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
 
@@ -1291,16 +1608,18 @@ export default function AdvancedTemplateEditor({
                       return (
                         <div className="grid gap-2 rounded-lg border border-border bg-card p-2.5">
                           <div className="flex items-center gap-2">
-                            <button
+                            <Button
                               {...entryOrderState.attributes}
                               {...entryOrderState.listeners}
                               aria-label={`Reorder ${entry.label}`}
                               className="grid size-8 shrink-0 touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                               ref={entryOrderState.setActivatorNodeRef}
+                              size="icon-sm"
                               type="button"
+                              variant="ghost"
                             >
-                              <GripVertical aria-hidden="true" size={14} />
-                            </button>
+                              <GripVertical aria-hidden="true" className="size-3.5" />
+                            </Button>
                             <Input
                               aria-label={`${entry.key} label`}
                               className="h-8 min-w-0 text-xs font-bold"
@@ -1316,14 +1635,16 @@ export default function AdvancedTemplateEditor({
                               }
                               value={entry.label}
                             />
-                            <button
-                              className="rounded-md px-2 py-1 text-[10px] font-extrabold text-primary outline-none hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                            <Button
+                              className="h-auto rounded-md px-2 py-1 text-[10px] font-extrabold"
                               disabled={!selectedSchema || !compatible}
                               onClick={() => bindSelection(entry.key)}
+                              size="xs"
                               type="button"
+                              variant="ghost"
                             >
                               Bind
-                            </button>
+                            </Button>
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 text-[10px]">
@@ -1335,42 +1656,54 @@ export default function AdvancedTemplateEditor({
                             <span className="max-w-48 truncate text-muted-foreground">
                               {entry.key}
                             </span>
-                            <label className="ml-auto flex items-center gap-1">
-                              <input
+                            <span className="ml-auto flex items-center gap-1">
+                              <CheckboxControl
+                                className="size-4"
+                                id={`${section.id}-${entry.key}-enabled`}
                                 checked={entry.enabled}
                                 disabled={coreField}
-                                onChange={(event) =>
+                                onCheckedChange={(checked) =>
                                   updateFormEntry(
                                     section.id,
                                     entry.key,
                                     (current) => ({
                                       ...current,
-                                      enabled: event.target.checked,
+                                      enabled: checked === true,
                                     }),
                                   )
                                 }
-                                type="checkbox"
                               />
-                              Enabled
-                            </label>
-                            <label className="flex items-center gap-1">
-                              <input
+                              <Label
+                                className="text-[10px] text-foreground"
+                                htmlFor={`${section.id}-${entry.key}-enabled`}
+                              >
+                                Enabled
+                              </Label>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <CheckboxControl
+                                className="size-4"
+                                id={`${section.id}-${entry.key}-required`}
                                 checked={entry.required}
                                 disabled={coreField}
-                                onChange={(event) =>
+                                onCheckedChange={(checked) =>
                                   updateFormEntry(
                                     section.id,
                                     entry.key,
                                     (current) => ({
                                       ...current,
-                                      required: event.target.checked,
+                                      required: checked === true,
                                     }),
                                   )
                                 }
-                                type="checkbox"
                               />
-                              Required
-                            </label>
+                              <Label
+                                className="text-[10px] text-foreground"
+                                htmlFor={`${section.id}-${entry.key}-required`}
+                              >
+                                Required
+                              </Label>
+                            </span>
                           </div>
 
                           <Input
@@ -1390,8 +1723,11 @@ export default function AdvancedTemplateEditor({
                             value={entry.helpText ?? ""}
                           />
 
-                          <label className="grid gap-1 text-[10px] font-bold">
-                            Move to section
+                          <Field
+                            className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                            htmlFor={`${section.id}-${entry.key}-section`}
+                            label="Move to section"
+                          >
                             <Select
                               className="h-8 text-xs"
                               onChange={(event) =>
@@ -1412,12 +1748,15 @@ export default function AdvancedTemplateEditor({
                                 </option>
                               ))}
                             </Select>
-                          </label>
+                          </Field>
 
                           {entry.kind === "custom" ? (
                             <>
-                              <label className="grid gap-1 text-[10px] font-bold">
-                                Control
+                              <Field
+                                className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                                htmlFor={`${section.id}-${entry.key}-control`}
+                                label="Control"
+                              >
                                 <Select
                                   className="h-8 text-xs"
                                   onChange={(event) =>
@@ -1440,7 +1779,7 @@ export default function AdvancedTemplateEditor({
                                     <option key={control}>{control}</option>
                                   ))}
                                 </Select>
-                              </label>
+                              </Field>
                               {entry.control === "select" ? (
                                 <Input
                                   aria-label={`${entry.label} select options`}
@@ -1470,8 +1809,11 @@ export default function AdvancedTemplateEditor({
 
                           {entry.kind === "repeater" ? (
                             <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
-                              <label className="grid gap-1 text-[10px] font-bold">
-                                Minimum rows
+                              <Field
+                                className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                                htmlFor={`${section.id}-${entry.key}-min-rows`}
+                                label="Minimum rows"
+                              >
                                 <Input
                                   className="h-8 text-xs"
                                   max={MAX_RUNTIME_REPEATER_ROWS}
@@ -1494,7 +1836,7 @@ export default function AdvancedTemplateEditor({
                                   type="number"
                                   value={entry.minRows ?? 0}
                                 />
-                              </label>
+                              </Field>
                               <OrderableList
                                 ariaLabel={`${entry.label} columns`}
                                 className="grid gap-1.5"
@@ -1513,7 +1855,7 @@ export default function AdvancedTemplateEditor({
                                 }
                                 renderItem={(column, columnOrderState) => (
                                   <div className="grid grid-cols-[2rem_1fr_7rem_2rem] items-center gap-1 rounded-md border border-border bg-background p-1">
-                                    <button
+                                    <Button
                                       {...columnOrderState.attributes}
                                       {...columnOrderState.listeners}
                                       aria-label={`Reorder ${column.label} column`}
@@ -1521,13 +1863,15 @@ export default function AdvancedTemplateEditor({
                                       ref={
                                         columnOrderState.setActivatorNodeRef
                                       }
+                                      size="icon-sm"
                                       type="button"
+                                      variant="ghost"
                                     >
                                       <GripVertical
                                         aria-hidden="true"
-                                        size={13}
+                                        className="size-[13px]"
                                       />
-                                    </button>
+                                    </Button>
                                     <Input
                                       aria-label={`${column.key} column label`}
                                       className="h-8 text-xs"
@@ -1592,12 +1936,8 @@ export default function AdvancedTemplateEditor({
                                         <option key={control}>{control}</option>
                                       ))}
                                     </Select>
-                                    <button
+                                    <Button
                                       aria-label={`Remove ${column.label} column`}
-                                      className={buttonVariants({
-                                        size: "icon",
-                                        variant: "ghost",
-                                      })}
                                       disabled={entry.columns.length === 1}
                                       onClick={() =>
                                         updateFormEntry(
@@ -1617,10 +1957,12 @@ export default function AdvancedTemplateEditor({
                                               : current,
                                         )
                                       }
+                                      size="icon"
                                       type="button"
+                                      variant="ghost"
                                     >
                                       <X aria-hidden="true" size={13} />
-                                    </button>
+                                    </Button>
                                     {column.control === "select" ? (
                                       <Input
                                         aria-label={`${column.label} options`}
@@ -1678,7 +2020,7 @@ export default function AdvancedTemplateEditor({
                             </div>
                           ) : null}
 
-                          <textarea
+                          <Textarea
                             aria-label={`${entry.label} sample value`}
                             className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onChange={(event) => {
@@ -1729,120 +2071,190 @@ export default function AdvancedTemplateEditor({
                 </section>
               )}
             />
+            </details>
           </div>
         ) : null}
 
         {activePanel === "pages" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                Document pages
-              </h3>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+            <div className="flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
+              <h3>Document pages</h3>
               <button
-                className={buttonVariants({ size: "sm", variant: "ghost" })}
+                className="font-bold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={addPage}
                 type="button"
               >
-                <Plus aria-hidden="true" size={14} />
-                Add
+                + Add
               </button>
             </div>
-            <div className="mt-2 grid gap-2">
+            <div className="mt-2 flex h-9 items-center rounded-lg border border-border bg-muted/60 p-1">
+              <Button
+                aria-label="Previous document page"
+                className="size-7 shrink-0"
+                disabled={currentPage === 0}
+                onClick={() => goToPage(currentPage - 1)}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <ChevronDown aria-hidden="true" className="rotate-90" size={13} strokeWidth={1.75} />
+              </Button>
+              <button
+                className="min-w-0 flex-1 truncate text-center text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => goToPage(currentPage)}
+                type="button"
+              >
+                Page {currentPage + 1} of {pageCount}
+              </button>
+              <Button
+                aria-label="Next document page"
+                className="size-7 shrink-0"
+                disabled={currentPage >= pageCount - 1}
+                onClick={() => goToPage(currentPage + 1)}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <ChevronDown aria-hidden="true" className="-rotate-90" size={13} strokeWidth={1.75} />
+              </Button>
+              <span aria-hidden="true" className="mx-1 h-4 w-px bg-border" />
+              <Button
+                aria-label="Add document page"
+                className="size-7 shrink-0"
+                onClick={addPage}
+                size="icon-sm"
+                type="button"
+                variant="ghost"
+              >
+                <Plus aria-hidden="true" size={13} strokeWidth={1.75} />
+              </Button>
+            </div>
+            <div className="mt-2 grid gap-1.5">
               {currentTemplateRef.current.schemas.map((page, index) => (
                 <div
-                  className={`flex items-center gap-2 rounded-xl border p-2 ${
+                  className={`flex h-12 items-center gap-2 rounded-lg border px-2 ${
                     currentPage === index
-                      ? "border-primary bg-primary/5"
-                      : "border-border"
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card"
                   }`}
                   key={`page-${index}`}
                 >
                   <button
-                    className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => goToPage(index)}
                     type="button"
                   >
-                    <span className="grid size-10 place-items-center rounded-lg border bg-background text-xs font-black">
+                    <span className={`grid h-8 w-7 shrink-0 place-items-center rounded border bg-card font-mono text-[9px] font-bold ${
+                      currentPage === index
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    }`}>
                       {index + 1}
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-xs font-extrabold">
+                      <span className="block text-[10px] font-semibold">
                         Page {index + 1}
                       </span>
-                      <span className="block text-[10px] text-muted-foreground">
+                      <span className="block text-[9px] text-muted-foreground">
                         {page.length} elements
                       </span>
                     </span>
                   </button>
-                  <button
-                    aria-label={`Duplicate page ${index + 1}`}
-                    className={buttonVariants({ size: "icon", variant: "ghost" })}
-                    onClick={() => duplicatePage(index)}
-                    type="button"
-                  >
-                    <FilePlus2 aria-hidden="true" size={15} />
-                  </button>
-                  <button
-                    aria-label={`Remove page ${index + 1}`}
-                    className={buttonVariants({ size: "icon", variant: "ghost" })}
-                    disabled={pageCount === 1}
-                    onClick={() => removePage(index)}
-                    type="button"
-                  >
-                    <X aria-hidden="true" size={15} />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                      aria-label={`Duplicate page ${index + 1}`}
+                      className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                      onClick={() => duplicatePage(index)}
+                      type="button"
+                    >
+                      <FilePlus2 aria-hidden="true" size={12} strokeWidth={1.75} />
+                    </button>
+                    <button
+                      aria-label={`Remove page ${index + 1}`}
+                      className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                      disabled={pageCount === 1}
+                      onClick={() => removePage(index)}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={12} strokeWidth={1.75} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 border-t border-border pt-4">
-              <h3 className="text-xs font-black uppercase tracking-wider text-muted-foreground">
-                Repeating regions
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Move selected elements into a header or footer repeated by
-                pdfme on every generated page.
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button
-                  disabled={!selection?.schemas.length}
-                  onClick={() => moveSelectionToRegion("header")}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  Header
-                </Button>
-                <Button
-                  disabled={!selection?.schemas.length}
-                  onClick={() => moveSelectionToRegion("footer")}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  Footer
-                </Button>
+            <div className="mt-4 border-t border-border pt-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Repeating regions
+                </h3>
+                <span className={`text-[9px] font-medium ${selection?.schemas.length ? "text-primary" : "text-muted-foreground"}`}>
+                  {selection?.schemas.length ? "Elements ready" : "No selection"}
+                </span>
+              </div>
+              <div className="mt-2 grid gap-2">
+                {(["header", "footer"] as const).map((region) => {
+                  const Icon = region === "header" ? PanelTop : PanelBottom;
+                  const assigned = region === "header" ? repeatingHeaderCount : repeatingFooterCount;
+                  const editing = editingRegion === region;
+                  const ready = Boolean(selection?.schemas.length);
+                  const state = editing ? "Editing" : assigned ? `${assigned} assigned` : ready ? "Ready to assign" : "Not assigned";
+                  return (
+                    <div
+                      className={`flex h-11 items-center gap-2 rounded-lg border px-2.5 ${
+                        editing
+                          ? "border-primary bg-primary/10"
+                          : assigned
+                            ? "border-primary/30 bg-primary/5"
+                            : "border-border bg-muted/50"
+                      }`}
+                      key={region}
+                    >
+                      <Icon aria-hidden="true" className={editing || assigned ? "text-primary" : "text-muted-foreground"} size={14} strokeWidth={1.75} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-semibold capitalize">{region}</p>
+                        <p className={`text-[8px] ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>{state}</p>
+                      </div>
+                      <Button
+                        className="h-6 px-2 text-[9px]"
+                        disabled={!ready}
+                        onClick={() => moveSelectionToRegion(region)}
+                        size="xs"
+                        type="button"
+                        variant="ghost"
+                      >
+                        Assign
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
               {staticSchemas.length ? (
-                <div className="mt-3 grid gap-1.5">
-                  {staticSchemas.map((schema, index) => (
-                    <div
-                      className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
-                      key={`${schema.name}-${index}`}
-                    >
-                      <span className="min-w-0 truncate text-xs font-bold">
-                        {schema.name} ·{" "}
-                        {String(schema.smarttoolsRegion ?? "repeat")}
-                      </span>
-                      <button
-                        className="text-[10px] font-extrabold text-primary"
-                        onClick={() => restoreRepeatingRegion(index)}
-                        type="button"
+                <div className="mt-3 grid gap-1">
+                  <p className="font-caption text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Assigned elements</p>
+                  {staticSchemas.map((schema, index) => {
+                    const region = schema.smarttoolsRegion as Region | undefined;
+                    const editing = editingRegion === region;
+                    return (
+                      <div
+                        className={`flex h-8 items-center justify-between gap-2 rounded-md border px-2 ${editing ? "border-primary bg-primary/10" : "border-border bg-card"}`}
+                        key={`${schema.name}-${index}`}
                       >
-                        Edit
-                      </button>
-                    </div>
-                  ))}
+                        <span className="min-w-0 truncate text-[9px] font-medium">
+                          {schema.name} · {String(region ?? "repeat")}
+                        </span>
+                        <Button
+                          className="h-6 px-2 text-[9px] font-semibold"
+                          onClick={() => restoreRepeatingRegion(index)}
+                          size="xs"
+                          type="button"
+                          variant="ghost"
+                        >
+                          {editing ? "Editing" : "Edit"}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>
@@ -1855,7 +2267,7 @@ export default function AdvancedTemplateEditor({
   return (
     <>
       <div className="grid min-h-screen place-items-center bg-muted p-6 lg:hidden">
-        <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+        <Card className="max-w-md gap-0 rounded-2xl p-6 text-center shadow-sm">
           <Maximize2
             aria-hidden="true"
             className="mx-auto text-primary"
@@ -1874,49 +2286,60 @@ export default function AdvancedTemplateEditor({
           >
             Back to templates
           </Link>
-        </div>
+        </Card>
       </div>
 
-      <main className="hidden h-screen min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
-          <BrandLockup
-            className="mr-1 h-8 shrink-0 border-r border-border pr-4"
-            href="/admin/templates"
-            name="SmartTools"
-          />
+      <main className="hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
+        <header className="flex h-[76px] shrink-0 items-center gap-3.5 border-b border-border bg-card px-6">
           <Link
+            aria-label="Back to template lifecycle"
             className={buttonVariants({
-              className: "shrink-0",
-              size: "sm",
+              className: "!size-10 shrink-0 text-muted-foreground",
+              size: "icon",
               variant: "ghost",
             })}
             href="/admin/templates"
           >
-            <ArrowLeft aria-hidden="true" size={16} />
-            Templates
+            <ArrowLeft aria-hidden="true" size={17} />
           </Link>
-          <span aria-hidden="true" className="h-7 w-px bg-border" />
-          <Input
-            aria-label="Template name"
-            className="h-9 min-w-0 max-w-72 border-transparent bg-transparent px-2 text-sm font-extrabold shadow-none hover:border-input focus-visible:border-input"
-            onChange={(event) => {
-              setName(event.target.value);
-              setIsDirty(true);
-            }}
-            value={name}
-          />
-          <StatusBadge
-            className="shrink-0 capitalize"
-            variant={template.status === "published" ? "success" : "warning"}
-          >
-            {template.status}
-          </StatusBadge>
-          <span className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-background pl-3 text-xs font-bold">
-            <FileText aria-hidden="true" size={14} />
-            {definition.label}
+          <div className="w-[21.25rem] min-w-0 shrink-0">
+            <div className="flex h-8 items-center gap-2">
+              <input
+                aria-label="Template name"
+                className="h-7 min-w-20 max-w-[210px] bg-transparent font-heading text-[15px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setIsDirty(true);
+                }}
+                size={Math.max(8, Math.min(24, name.length))}
+                style={{
+                  fontFamily: "Inter",
+                  fontSize: 15,
+                  fontWeight: 650,
+                }}
+                value={name}
+              />
+              <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 font-caption text-[9px] font-semibold capitalize ${
+                template.status === "published"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-amber-50 text-amber-700"
+              }`}>
+                <span className={`size-1.5 rounded-full ${
+                  template.status === "published"
+                    ? "bg-emerald-600"
+                    : "bg-amber-600"
+                }`} />
+                {template.status}
+              </span>
+            </div>
+            <p className="truncate font-caption text-[10px] font-medium text-muted-foreground">
+              Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
+            </p>
+          </div>
+          <span className="flex h-10 w-[138px] shrink-0 items-center rounded-lg border border-border bg-muted text-xs font-bold">
             <Select
               aria-label="Page size"
-              className="h-8 w-24 border-0 bg-transparent px-2 text-xs shadow-none"
+              className="h-10 w-full border-0 bg-transparent px-3 text-xs font-semibold shadow-none"
               disabled={!designerReady || isSaving}
               onChange={(event) =>
                 changePageFormat(event.target.value as PageFormat)
@@ -1925,42 +2348,37 @@ export default function AdvancedTemplateEditor({
             >
               {definition.allowedPageFormats.map((format) => (
                 <option key={format} value={format}>
-                  {PAGE_FORMAT_LABELS[format]}
+                  {definition.label} · {PAGE_FORMAT_LABELS[format]}
                 </option>
               ))}
             </Select>
           </span>
 
-          <div className="ml-auto flex min-w-0 items-center gap-1">
-            <button
+          <div className="ml-auto flex min-w-0 items-center gap-1.5">
+            <Button
               aria-label="Undo"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
               disabled={historyIndex === 0}
               onClick={() => restoreHistory(-1)}
-              type="button"
-            >
-              <Undo2 aria-hidden="true" size={17} />
-            </button>
-            <button
-              aria-label="Redo"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              disabled={historyIndex >= historyRef.current.length - 1}
-              onClick={() => restoreHistory(1)}
-              type="button"
-            >
-              <Redo2 aria-hidden="true" size={17} />
-            </button>
-            <Button
-              className="hidden xl:inline-flex"
-              onClick={() => togglePanel("data")}
-              size="sm"
+              className="size-9 text-muted-foreground"
+              size="icon"
               type="button"
               variant="ghost"
             >
-              <Database aria-hidden="true" size={15} />
-              Fields & data
+              <Undo2 aria-hidden="true" size={16} />
             </Button>
             <Button
+              aria-label="Redo"
+              disabled={historyIndex >= historyRef.current.length - 1}
+              onClick={() => restoreHistory(1)}
+              className="size-9 text-muted-foreground"
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Redo2 aria-hidden="true" size={16} />
+            </Button>
+            <Button
+              className="h-10 px-[18px]"
               disabled={!designerReady || isPreviewing}
               onClick={() => void previewPdf()}
               size="sm"
@@ -1973,19 +2391,32 @@ export default function AdvancedTemplateEditor({
                   className="animate-spin"
                   size={15}
                 />
-              ) : (
-                <Eye aria-hidden="true" size={15} />
-              )}
-              Preview PDF
+              ) : null}
+              Preview
             </Button>
-            <span className="hidden min-w-24 text-right text-[11px] text-muted-foreground 2xl:inline">
-              {isDirty
-                ? "Unsaved changes"
-                : savedAt
-                  ? "Saved just now"
-                  : `Version ${template.version}`}
+            <span className={`min-w-14 text-right font-caption text-[10px] font-semibold ${
+              isPreviewing
+                ? "text-primary"
+                : isSaving
+                  ? "text-muted-foreground"
+                  : isDirty
+                    ? "text-amber-700"
+                    : savedAt
+                      ? "text-emerald-700"
+                      : "text-muted-foreground"
+            }`}>
+              {isPreviewing
+                ? "Previewing…"
+                : isSaving
+                  ? "Saving…"
+                  : isDirty
+                    ? "Unsaved"
+                    : savedAt
+                      ? "Saved just now"
+                      : `Version ${template.version}`}
             </span>
             <Button
+              className="h-10 px-[18px]"
               disabled={isSaving || name.trim().length < 2}
               onClick={() =>
                 startTransition(() => {
@@ -1996,10 +2427,10 @@ export default function AdvancedTemplateEditor({
               type="button"
               variant="secondary"
             >
-              <Save aria-hidden="true" size={15} />
               Save draft
             </Button>
             <Button
+              className="h-10 px-5"
               disabled={isSaving || name.trim().length < 2}
               onClick={() =>
                 startTransition(() => {
@@ -2009,37 +2440,44 @@ export default function AdvancedTemplateEditor({
               size="sm"
               type="button"
             >
-              Publish
+              Publish v{template.version}
             </Button>
-            <button
+            <Button
               aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
+              className="size-9 text-foreground"
               onClick={() => {
                 setFocusMode((value) => !value);
                 closePanels();
+                designerRef.current?.updateOptions({ sidebarOpen: false });
               }}
+              size="icon"
               type="button"
+              variant="ghost"
             >
-              <Focus aria-hidden="true" size={17} />
-            </button>
+              <Maximize2 aria-hidden="true" size={16} />
+            </Button>
           </div>
         </header>
 
         {error ? (
-          <div
-            className="flex min-h-10 shrink-0 items-center justify-between gap-4 border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-xs font-bold text-destructive"
-            role="alert"
+          <AlertBanner
+            action={
+              <Button
+                aria-label="Dismiss error"
+                className="text-destructive hover:bg-destructive/10"
+                onClick={() => setError("")}
+                size="icon-xs"
+                type="button"
+                variant="ghost"
+              >
+                <X aria-hidden="true" size={14} />
+              </Button>
+            }
+            className="min-h-10 shrink-0 rounded-none border-x-0 border-t-0 border-b border-destructive/20 px-4 py-2 text-xs font-bold text-destructive"
+            variant="error"
           >
-            <span>{error}</span>
-            <button
-              aria-label="Dismiss error"
-              className="rounded-md p-1 outline-none hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() => setError("")}
-              type="button"
-            >
-              <X aria-hidden="true" size={14} />
-            </button>
-          </div>
+            {error}
+          </AlertBanner>
         ) : null}
         {warnings.length ? (
           <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
@@ -2055,60 +2493,308 @@ export default function AdvancedTemplateEditor({
           </details>
         ) : null}
 
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
           {!focusMode ? (
             <nav
               aria-label="Designer tools"
-              className="flex w-[72px] shrink-0 flex-col items-center gap-2 border-r border-border bg-card px-2 py-4"
+              className={`absolute left-12 top-[248px] z-40 flex w-12 flex-col items-center gap-1.5 rounded-l-xl p-2 ${
+                activePanel ? "" : "border border-input bg-card shadow-[0_8px_20px_rgba(17,18,20,0.06)]"
+              }`}
             >
-              <button
+              <Button
                 className={panelButtonClass(activePanel === null)}
-                onClick={closePanels}
+                onClick={() => {
+                  setCanvasMode("select");
+                  closePanels();
+                }}
+                size="icon-sm"
                 type="button"
+                variant="ghost"
               >
-                <MousePointer2 aria-hidden="true" size={19} />
-                Select
-              </button>
-              <button
+                <MousePointer2 aria-hidden="true" size={16} strokeWidth={1.75} />
+                <span className="sr-only">Select</span>
+              </Button>
+              <Button
                 aria-label="Add elements"
                 className={panelButtonClass(activePanel === "add")}
                 onClick={() => togglePanel("add")}
+                size="icon-sm"
                 type="button"
+                variant="ghost"
               >
-                <Plus aria-hidden="true" size={20} />
-                Add
-              </button>
-              <button
+                <CirclePlus aria-hidden="true" size={16} strokeWidth={1.75} />
+                <span className="sr-only">Add</span>
+              </Button>
+              <Button
                 className={panelButtonClass(activePanel === "layers")}
                 onClick={() => togglePanel("layers")}
+                size="icon-sm"
                 type="button"
+                variant="ghost"
               >
-                <Layers aria-hidden="true" size={19} />
-                Layers
-              </button>
-              <button
+                <Layers aria-hidden="true" size={16} strokeWidth={1.75} />
+                <span className="sr-only">Layers</span>
+              </Button>
+              <span aria-hidden="true" className="h-px w-6 bg-border" />
+              <Button
                 className={panelButtonClass(activePanel === "data")}
                 onClick={() => togglePanel("data")}
+                size="icon-sm"
                 type="button"
+                variant="ghost"
               >
-                <Database aria-hidden="true" size={19} />
-                Fields
-              </button>
-              <button
+                <TextCursorInput aria-hidden="true" size={16} strokeWidth={1.75} />
+                <span className="sr-only">Fields</span>
+              </Button>
+              <Button
                 className={panelButtonClass(activePanel === "pages")}
                 onClick={() => togglePanel("pages")}
+                size="icon-sm"
                 type="button"
+                variant="ghost"
               >
-                <FileText aria-hidden="true" size={19} />
-                Pages
-              </button>
+                <Files aria-hidden="true" size={16} strokeWidth={1.75} />
+                <span className="sr-only">Pages</span>
+              </Button>
             </nav>
           ) : null}
 
           <section
             aria-label="Template canvas"
-            className="relative min-w-0 flex-1 overflow-hidden bg-[oklch(0.965_0.004_255)]"
+            className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.965_0.004_255)]"
           >
+            {!focusMode ? (
+              <div className="flex h-16 shrink-0 items-center border-b border-border bg-card px-5 text-xs">
+                <div className="flex h-full w-[320px] items-center gap-1.5 border-r border-border px-4">
+                  <span className="mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                    Canvas
+                  </span>
+                  <Button
+                    aria-label="Select tool"
+                    className={
+                      canvasMode === "select"
+                        ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
+                        : undefined
+                    }
+                    onClick={() => setCanvasMode("select")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <MousePointer2 aria-hidden="true" size={15} />
+                  </Button>
+                  <Button
+                    aria-label="Pan canvas"
+                    className={
+                      canvasMode === "pan"
+                        ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
+                        : undefined
+                    }
+                    onClick={() => setCanvasMode("pan")}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Hand aria-hidden="true" size={15} />
+                  </Button>
+                  <Button
+                    aria-label="Fit canvas"
+                    onClick={() => updateZoom(0.85)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Scan aria-hidden="true" size={15} />
+                  </Button>
+                  <span className="ml-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-[10px] font-bold">
+                    {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]}
+                  </span>
+                </div>
+
+                <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
+                  <Button
+                    aria-label="Previous page"
+                    disabled={currentPage === 0}
+                    onClick={() => goToPage(currentPage - 1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="rotate-90"
+                      size={14}
+                    />
+                  </Button>
+                  <span className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-[11px] font-bold">
+                    <File
+                      aria-hidden="true"
+                      className="text-muted-foreground"
+                      size={13}
+                    />
+                    {currentPage + 1} / {pageCount}
+                  </span>
+                  <Button
+                    aria-label="Next page"
+                    disabled={currentPage >= pageCount - 1}
+                    onClick={() => goToPage(currentPage + 1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="-rotate-90"
+                      size={14}
+                    />
+                  </Button>
+                  <span
+                    aria-hidden="true"
+                    className="mx-1 h-5 w-px bg-border"
+                  />
+                  <Button
+                    aria-label="Zoom out"
+                    onClick={() => updateZoom(zoom - 0.1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Minus aria-hidden="true" size={14} />
+                  </Button>
+                  <span className="min-w-12 text-center text-[11px] font-bold">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <Button
+                    aria-label="Zoom in"
+                    onClick={() => updateZoom(zoom + 0.1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Plus aria-hidden="true" size={14} />
+                  </Button>
+                  <Button
+                    aria-label="Fit page to view"
+                    onClick={() => updateZoom(0.85)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Maximize2 aria-hidden="true" size={14} />
+                  </Button>
+                  <span
+                    aria-hidden="true"
+                    className="mx-1 h-5 w-px bg-border"
+                  />
+                  <Button
+                    aria-label="Undo canvas change"
+                    disabled={historyIndex === 0}
+                    onClick={() => restoreHistory(-1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Undo2 aria-hidden="true" size={14} />
+                  </Button>
+                  <Button
+                    aria-label="Redo canvas change"
+                    disabled={
+                      historyIndex >= historyRef.current.length - 1
+                    }
+                    onClick={() => restoreHistory(1)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Redo2 aria-hidden="true" size={14} />
+                  </Button>
+                </div>
+
+                <div className="flex h-full w-[370px] items-center justify-end gap-1.5 border-l border-border pl-4">
+                  <span className="mr-1 max-w-16 truncate font-caption text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                    {selectedPdfmeSchema
+                      ? selectedPdfmeSchema.type
+                      : "No selection"}
+                  </span>
+                  {selectedPdfmeSchema ? (
+                    <>
+                      <span className="w-[108px] truncate rounded bg-muted px-2 py-2 text-[10px] font-bold">
+                        {selectedPdfmeSchema.name} ·{" "}
+                        {String(selectedPdfmeSchema.fontSize ?? 12)} px
+                      </span>
+                      <Button
+                        aria-label="Bold selected text"
+                        className={
+                          (selectedPdfmeSchema as { fontWeight?: string })
+                            .fontWeight === "bold"
+                            ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
+                            : undefined
+                        }
+                        onClick={() =>
+                          updateSelectedSchema((schema) => {
+                            const textSchema = schema as Schema & {
+                              fontWeight?: string;
+                            };
+                            textSchema.fontWeight =
+                              textSchema.fontWeight === "bold"
+                                ? "normal"
+                                : "bold";
+                          })
+                        }
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Bold aria-hidden="true" size={14} />
+                      </Button>
+                      <Button
+                        aria-label="Align selected text"
+                        onClick={() =>
+                          updateSelectedSchema((schema) => {
+                            const textSchema = schema as Schema & {
+                              alignment?: "center" | "left" | "right";
+                            };
+                            textSchema.alignment =
+                              textSchema.alignment === "left"
+                                ? "center"
+                                : textSchema.alignment === "center"
+                                  ? "right"
+                                  : "left";
+                          })
+                        }
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <AlignCenter aria-hidden="true" size={14} />
+                      </Button>
+                      <Button
+                        aria-label="Duplicate selected element"
+                        onClick={duplicateSelectedElement}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Copy aria-hidden="true" size={14} />
+                      </Button>
+                      <Button
+                        aria-label="Delete selected element"
+                        className="text-destructive"
+                        onClick={deleteSelectedElement}
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Trash2 aria-hidden="true" size={14} />
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            <div className="pointer-events-none absolute left-7 top-[82px] z-10 font-caption text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Page {currentPage + 1} of {pageCount} · {name}
+            </div>
             {!designerReady ? (
               <div className="absolute inset-0 z-40 grid place-items-center bg-background/80">
                 <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
@@ -2122,7 +2808,7 @@ export default function AdvancedTemplateEditor({
               </div>
             ) : null}
             <div
-              className="advanced-pdfme-designer h-full w-full"
+              className="advanced-pdfme-designer min-h-0 w-full flex-1"
               data-field-inspector-open={Boolean(selectedSchema && !focusMode)}
               ref={designerContainerRef}
             />
@@ -2132,13 +2818,13 @@ export default function AdvancedTemplateEditor({
 
         {!focusMode ? (
           <footer
-            className={`shrink-0 border-t border-border bg-card transition-[height] ${
-              documentStripOpen ? "h-24" : "h-10"
+            className={`shrink-0 overflow-hidden border-t border-border bg-card transition-[height] ${
+              documentStripOpen ? "h-[92px]" : "h-10"
             }`}
           >
-            <div className="flex h-full items-center gap-4 px-5">
+            <div className="flex h-full min-w-0 items-center gap-3 px-4">
               <button
-                className="flex h-full w-32 shrink-0 items-center justify-between border-r border-border pr-4 text-xs font-extrabold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                className="flex h-full w-28 shrink-0 items-center justify-between border-r border-border pr-3 text-left font-heading text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 onClick={() => setDocumentStripOpen((value) => !value)}
                 type="button"
               >
@@ -2152,32 +2838,36 @@ export default function AdvancedTemplateEditor({
 
               {documentStripOpen ? (
                 <>
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-44 shrink-0 items-center gap-2 overflow-x-auto overscroll-contain">
                     {currentTemplateRef.current.schemas.map((_page, index) => (
                       <button
                         aria-label={`Go to page ${index + 1}`}
-                        className={`relative grid h-16 w-12 place-items-center rounded-md border bg-background text-xs font-black outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        className={`relative h-[66px] w-12 shrink-0 rounded-md border bg-card outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                           currentPage === index
-                            ? "border-primary ring-1 ring-primary"
-                            : "border-border"
+                            ? "border-2 border-primary"
+                            : "border-input"
                         }`}
                         key={`strip-page-${index}`}
                         onClick={() => goToPage(index)}
                         type="button"
                       >
-                        <FileText
-                          aria-hidden="true"
-                          className="text-muted-foreground"
-                          size={23}
-                        />
-                        <span className="absolute bottom-1 left-1 grid size-4 place-items-center rounded bg-card text-[9px] shadow-sm">
+                        <span className="absolute left-2 top-1.5 flex h-[43px] w-[30px] flex-col gap-[3px] rounded-sm bg-muted p-1">
+                          <span className="h-[3px] w-full rounded-[1px] bg-muted-foreground" />
+                          <span className="h-0.5 w-full rounded-[1px] bg-input" />
+                          <span className="h-0.5 w-[15px] rounded-[1px] bg-input" />
+                        </span>
+                        <span className={`absolute bottom-[3px] left-[3px] grid size-4 place-items-center rounded bg-card font-caption text-[9px] font-extrabold shadow-sm ${
+                          currentPage === index
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}>
                           {index + 1}
                         </span>
                       </button>
                     ))}
                     <button
                       aria-label="Add page"
-                      className="grid h-16 w-12 place-items-center rounded-md border border-dashed border-border text-muted-foreground outline-none hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+                      className="grid h-[66px] w-12 shrink-0 place-items-center rounded-md border border-input bg-card text-muted-foreground outline-none hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={addPage}
                       type="button"
                     >
@@ -2185,20 +2875,38 @@ export default function AdvancedTemplateEditor({
                     </button>
                   </div>
 
-                  <div className="hidden items-center gap-2 xl:flex">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
                     <button
-                      className="rounded-lg border border-border px-3 py-2 text-[11px] font-bold text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => togglePanel("pages")}
+                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 font-caption text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        editingRegion === "header" && activePanel === "pages"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : repeatingHeaderCount
+                            ? "border-primary/30 bg-primary/10 text-primary"
+                            : selection?.schemas.length
+                              ? "border-primary/30 bg-card text-primary"
+                              : "border-border bg-muted text-muted-foreground"
+                      }`}
+                      onClick={() => openRegionPanel("header")}
                       type="button"
                     >
-                      Header · {repeatingHeaderCount || "not set"}
+                      <PanelTop aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
+                      <span className="truncate">Header · {editingRegion === "header" && activePanel === "pages" ? "editing" : repeatingHeaderCount ? `${repeatingHeaderCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</span>
                     </button>
                     <button
-                      className="rounded-lg border border-border px-3 py-2 text-[11px] font-bold text-muted-foreground outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => togglePanel("pages")}
+                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 font-caption text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        editingRegion === "footer" && activePanel === "pages"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : repeatingFooterCount
+                            ? "border-primary/30 bg-primary/10 text-primary"
+                            : selection?.schemas.length
+                              ? "border-primary/30 bg-card text-primary"
+                              : "border-border bg-muted text-muted-foreground"
+                      }`}
+                      onClick={() => openRegionPanel("footer")}
                       type="button"
                     >
-                      Footer · {repeatingFooterCount || "not set"}
+                      <PanelBottom aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
+                      <span className="truncate">Footer · {editingRegion === "footer" && activePanel === "pages" ? "editing" : repeatingFooterCount ? `${repeatingFooterCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</span>
                     </button>
                   </div>
                 </>
@@ -2208,24 +2916,22 @@ export default function AdvancedTemplateEditor({
                 </span>
               )}
 
-              <div className="ml-auto flex items-center gap-4 text-[11px] font-bold text-muted-foreground">
-                <span className="hidden items-center gap-2 xl:flex">
-                  <span className="size-2 rounded-full bg-emerald-500" />
+              <div className="ml-auto flex shrink-0 items-center gap-2 font-caption text-[10px] font-semibold text-muted-foreground">
+                <span className="hidden items-center gap-1.5 xl:flex">
+                  <span className="size-[7px] rounded-full bg-emerald-500" />
                   No overflow errors
                 </span>
-                <span className="hidden 2xl:inline">
-                  {Object.keys(sampleData).length} sample fields
-                </span>
-                <div className="flex items-center rounded-lg border border-border bg-background">
+                <span className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</span>
+                <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
                   <button
                     aria-label="Zoom out"
                     className="grid size-8 place-items-center rounded-l-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => updateZoom(zoom - 0.1)}
                     type="button"
                   >
-                    −
+                    <Minus aria-hidden="true" size={14} />
                   </button>
-                  <span className="min-w-12 text-center">
+                  <span className="min-w-10 text-center font-mono text-[10px] text-foreground">
                     {Math.round(zoom * 100)}%
                   </span>
                   <button
@@ -2234,11 +2940,11 @@ export default function AdvancedTemplateEditor({
                     onClick={() => updateZoom(zoom + 0.1)}
                     type="button"
                   >
-                    +
+                    <Plus aria-hidden="true" size={14} />
                   </button>
                 </div>
-                <span className="hidden items-center gap-1.5 2xl:flex">
-                  <Check aria-hidden="true" className="text-emerald-600" size={14} />
+                <span className="flex items-center gap-1.5">
+                  <Check aria-hidden="true" className="text-emerald-600" size={13} />
                   pdfme ready
                 </span>
               </div>
@@ -2247,6 +2953,28 @@ export default function AdvancedTemplateEditor({
         ) : null}
       </main>
       <style jsx global>{`
+        .advanced-pdfme-designer .pdfme-ui-control-bar {
+          display: none !important;
+        }
+
+        .advanced-pdfme-designer .ruler-container,
+        .advanced-pdfme-designer .ruler-container + div,
+        .advanced-pdfme-designer .ruler-container + div + div,
+        .advanced-pdfme-designer .pdfme-designer-delete-button,
+        .advanced-pdfme-designer .moveable-rotation,
+        .advanced-pdfme-designer .moveable-origin,
+        .advanced-pdfme-designer .moveable-line {
+          display: none !important;
+        }
+
+        .advanced-pdfme-designer div[style*="opacity: 0.25"] {
+          display: none !important;
+        }
+
+        .advanced-pdfme-designer .pdfme-designer-canvas {
+          background: var(--muted) !important;
+        }
+
         .advanced-pdfme-designer .pdfme-designer-left-sidebar {
           display: none !important;
         }
@@ -2278,11 +3006,11 @@ export default function AdvancedTemplateEditor({
 
         .advanced-pdfme-designer[data-field-inspector-open="true"]
           .pdfme-designer-right-sidebar {
-          top: 16px !important;
-          right: 16px !important;
-          z-index: 20 !important;
-          width: 400px !important;
-          height: calc(100% - 32px) !important;
+          top: 18px !important;
+          right: 82px !important;
+          z-index: 30 !important;
+          width: 320px !important;
+          height: 578px !important;
           pointer-events: auto;
         }
 
@@ -2297,11 +3025,9 @@ export default function AdvancedTemplateEditor({
           overflow: hidden;
           box-sizing: border-box;
           border: 1px solid var(--border) !important;
-          border-radius: 16px;
+          border-radius: 12px;
           background: var(--card) !important;
-          box-shadow:
-            0 20px 25px -5px rgb(15 23 42 / 0.12),
-            0 8px 10px -6px rgb(15 23 42 / 0.08);
+          box-shadow: 0 8px 24px rgb(17 18 20 / 0.08);
         }
 
         .advanced-pdfme-designer[data-field-inspector-open="true"]

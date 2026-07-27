@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {
-  AlertBanner,
-  Button,
-  Card,
-  Field,
-  Input,
-  buttonVariants,
-} from "@smarttools/ui";
+import { AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError, isValidPassword } from "../_lib/security";
 
@@ -55,73 +48,60 @@ export function ResetPasswordForm({
 
   if (!token) {
     return (
-      <Card className="w-full max-w-lg p-6 shadow-lg sm:p-8">
-        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+      <Card className="auth-card w-full max-w-[440px] gap-[18px]">
+        <p className="font-caption text-xs font-semibold tracking-[0.05em] text-primary uppercase">
           Invalid link
         </p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight">
+        <h1 className="font-heading text-[26px] font-semibold tracking-[-0.025rem]">
           Request a new reset email.
         </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        <p className="text-sm leading-6 text-muted-foreground">
           This reset link is missing, invalid, or has expired.
         </p>
-        <a
-          className={buttonVariants({ className: "mt-6 w-full", size: "lg" })}
-          href="/auth"
-        >
-          Return to account recovery
-        </a>
+        <Button asChild className="w-full">
+          <a href="/auth?mode=forgot">Return to account recovery</a>
+        </Button>
       </Card>
     );
   }
 
   if (complete) {
     return (
-      <Card className="w-full max-w-lg p-6 shadow-lg sm:p-8">
-        <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+      <Card className="auth-card w-full max-w-[440px] gap-[18px]">
+        <p className="font-caption text-xs font-semibold tracking-[0.05em] text-success uppercase">
           Password updated
         </p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight">
+        <h1 className="font-heading text-[26px] font-semibold tracking-[-0.025rem]">
           Your new password is ready.
         </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        <p className="text-sm leading-6 text-muted-foreground">
           Sign in again. Other sessions were revoked when the reset completed.
         </p>
-        <a
-          className={buttonVariants({ className: "mt-6 w-full", size: "lg" })}
-          href={`/auth?returnTo=${encodeURIComponent(returnTo)}`}
-        >
-          Continue to sign in
-        </a>
+        <Button asChild className="w-full">
+          <a href={`/auth?returnTo=${encodeURIComponent(returnTo)}`}>
+            Continue to sign in
+          </a>
+        </Button>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full max-w-lg p-6 shadow-lg sm:p-8">
-      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-        Account recovery
-      </p>
-      <h1 className="mt-2 text-3xl font-black tracking-tight">
-        Choose a new password.
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        Use 12–128 characters. Resetting revokes your existing sessions.
-      </p>
-      {error && (
-        <AlertBanner className="mt-5" variant="error">
-          {error}
-        </AlertBanner>
-      )}
-      <form className="mt-6 grid gap-4" onSubmit={submit}>
+    <Card className="auth-card w-full max-w-[440px] gap-[18px]">
+      <div className="auth-heading">
+        <h1>Choose a new password</h1>
+        <p>Use 12–128 characters. Resetting revokes your existing sessions.</p>
+      </div>
+      {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
+      <form className="grid gap-[18px]" onSubmit={submit}>
         <Field
           description="12–128 characters"
           htmlFor="new-password"
           label="New password"
+          variant="auth"
         >
           <Input
             autoComplete="new-password"
-            className="h-12"
             id="new-password"
             maxLength={128}
             minLength={12}
@@ -130,10 +110,13 @@ export function ResetPasswordForm({
             type="password"
           />
         </Field>
-        <Field htmlFor="confirm-new-password" label="Confirm new password">
+        <Field
+          htmlFor="confirm-new-password"
+          label="Confirm new password"
+          variant="auth"
+        >
           <Input
             autoComplete="new-password"
-            className="h-12"
             id="confirm-new-password"
             maxLength={128}
             minLength={12}
@@ -142,7 +125,7 @@ export function ResetPasswordForm({
             type="password"
           />
         </Field>
-        <Button className="w-full" disabled={pending} size="lg" type="submit">
+        <Button className="w-full" disabled={pending} type="submit">
           {pending ? "Updating…" : "Update password"}
         </Button>
       </form>

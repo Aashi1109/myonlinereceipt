@@ -23,7 +23,7 @@ test("SmartTools is a root-owned direct-layout Next.js application", async () =>
   assert.equal(packageJson.private, true);
   assert.equal(typeof packageJson.dependencies.next, "string");
   assert.equal(await exists("apps"), false);
-  assert.equal(await exists("components"), false);
+  assert.equal(await exists("components/smarttools/PublicInfoChrome.tsx"), true);
   assert.equal(await exists("app/paperwork/components/App.tsx"), true);
   assert.equal(await exists("app/layout.tsx"), true);
   assert.equal(await exists("src"), false);
@@ -130,18 +130,28 @@ test("Paperwork navigation uses scoped paths without URL hashes", async () => {
   assert.match(source, /["']\/paperwork/);
 });
 
-test("Paperwork footer destinations are scoped application routes", async () => {
+test("contact and privacy are global while Paperwork-owned information stays scoped", async () => {
   const app = await readFile(
     new URL("app/paperwork/components/App.tsx", root),
     "utf8",
   );
 
-  for (const slug of ["about", "privacy", "terms", "contact"]) {
+  for (const slug of ["contact", "privacy"]) {
+    const page = await readFile(
+      new URL(`app/${slug}/page.tsx`, root),
+      "utf8",
+    );
+    assert.match(app, new RegExp(`href(?:=|:)\\s*["']/${slug}["']`));
+    assert.match(page, /PublicInfoChrome/);
+    assert.doesNotMatch(app, new RegExp(`/paperwork/${slug}`));
+  }
+
+  for (const slug of ["about", "terms"]) {
     const page = await readFile(
       new URL(`app/paperwork/${slug}/page.tsx`, root),
       "utf8",
     );
-    assert.match(app, new RegExp(`href=["']/paperwork/${slug}["']`));
+    assert.match(app, new RegExp(`href(?:=|:)\\s*["']/paperwork/${slug}["']`));
     assert.match(page, /InformationPage/);
   }
 });

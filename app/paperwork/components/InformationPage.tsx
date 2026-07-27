@@ -1,9 +1,12 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import {
   AccountNavigation,
   AppContainer,
+  Button,
   Card,
   ProductHeader,
+  ToolPageHeader,
 } from "@smarttools/ui";
 import { ArrowLeft } from "lucide-react";
 import { headers } from "next/headers";
@@ -37,30 +40,24 @@ export default async function InformationPage({
       />
       <main className="grow py-12 sm:py-16">
         <AppContainer>
-          <a
-            className="mb-8 inline-flex min-h-11 items-center gap-2 rounded-md text-sm font-bold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            href="/paperwork"
-          >
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Back to Paperwork tools
-          </a>
-          <header className="mb-8 max-w-3xl space-y-3">
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
-              {eyebrow}
-            </p>
-            <h1 className="text-4xl font-black tracking-tight sm:text-5xl">{title}</h1>
-            <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-              {description}
-            </p>
-          </header>
+          <Button asChild className="mb-8 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground" variant="ghost">
+            <a href="/paperwork">
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Back to Paperwork tools
+            </a>
+          </Button>
+          <ToolPageHeader
+            className="max-w-3xl"
+            description={description}
+            eyebrow={eyebrow}
+            title={title}
+          />
           <Card className="max-w-3xl space-y-7 p-6 text-sm leading-7 sm:p-8 sm:text-base">
             {children}
           </Card>
         </AppContainer>
       </main>
-      <footer className="border-t border-border bg-card py-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} SmartTools Paperwork Toolkit.
-      </footer>
+      <SmartToolsFooter />
     </div>
   );
 }

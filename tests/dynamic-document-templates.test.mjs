@@ -56,7 +56,7 @@ test("the shared advanced workspace renders published form configuration and iso
   assert.match(source, /containsFullTin/);
   assert.match(source, /control === "number"/);
   assert.match(source, /control === "date"/);
-  assert.match(source, /type="checkbox"/);
+  assert.match(source, /<CheckboxControl\b/);
   assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
 });
 

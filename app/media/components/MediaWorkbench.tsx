@@ -5,9 +5,16 @@ import {
   Button,
   Card,
   Checkbox,
+  DownloadResult as DownloadResultCard,
   Field,
+  FieldSet,
+  FileUploadZone,
   Input,
+  ProcessingStatus,
   Select,
+  StatusBadge,
+  ToolOptionsPanel,
+  WorkbenchShell,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
@@ -655,16 +662,68 @@ export function MediaWorkbench({
         </AlertBanner>
       ) : null}
 
-      <div
-        className={`grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start ${
+      <WorkbenchShell
+        aria-busy={isProcessing || undefined}
+        className={
           signedPdfWarning ||
           definition.slug === "crop-pdf" ||
           definition.slug === "remove-image-metadata"
             ? "mt-6"
-            : ""
-        }`}
+            : undefined
+        }
+        id="media-workbench"
+        status={
+          <div className="flex w-full items-center justify-between gap-4 font-mono text-[10px] text-muted-foreground">
+            <span>
+              {isProcessing
+                ? `Processing · ${job.progress?.completed ?? 0} of ${job.progress?.total ?? 1}`
+                : results.length
+                  ? `${results.length} result${results.length === 1 ? "" : "s"} ready`
+                  : files.length
+                    ? `${files.length} file${files.length === 1 ? "" : "s"} selected`
+                    : "Ready · no upload required"}
+            </span>
+            <span className="hidden sm:inline">Desktop workbench · viewport-safe</span>
+          </div>
+        }
+        toolbar={
+          <div className="flex w-full items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent text-primary">
+                {definition.engine === "pdf" ? (
+                  <FileText aria-hidden="true" className="size-[18px]" />
+                ) : (
+                  <FileImage aria-hidden="true" className="size-[18px]" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <h2 className="truncate font-heading text-sm font-semibold">{title}</h2>
+                <p className="truncate text-[11px] text-muted-foreground">
+                  Runs locally · files stay on this device
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <StatusBadge variant="success">Private · local</StatusBadge>
+            <Button
+              className="h-11 rounded-full px-6"
+              disabled={isProcessing || (!files.length && !results.length)}
+              onClick={reset}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <RotateCcw aria-hidden="true" className="size-4" />
+              Reset
+            </Button>
+            </div>
+          </div>
+        }
+        variant="media"
       >
-        <div className="min-w-0 space-y-6">
+        <div className="h-full overflow-y-auto">
+          <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+            <div className="min-w-0 space-y-4 p-5">
           <input
             accept={definition.accept}
             className="sr-only"
@@ -680,8 +739,9 @@ export function MediaWorkbench({
           />
 
           {!files.length ? (
-            <button
-              className="group flex min-h-64 w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center shadow-sm outline-none transition hover:border-primary/60 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            <FileUploadZone
+              className="h-[210px]"
+              description={`${selectionHint(definition)} · processed on this device`}
               disabled={isProcessing}
               onClick={() => inputRef.current?.click()}
               onDragOver={(event) => event.preventDefault()}
@@ -689,24 +749,13 @@ export function MediaWorkbench({
                 event.preventDefault();
                 void addFiles(event.dataTransfer.files);
               }}
-              type="button"
-            >
-              <span className="grid size-12 place-items-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10 transition group-hover:scale-105">
-                <Upload aria-hidden="true" className="size-6" />
-              </span>
-              <strong className="mt-5 text-lg font-black">Choose or drop local files</strong>
-              <span className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-                {definition.multiple ? "Select one or more files." : "Select one file."} Files are checked before processing and never uploaded.
-              </span>
-              <span className="mt-3 text-xs font-bold text-muted-foreground">
-                {selectionHint(definition)}
-              </span>
-            </button>
+              title={definition.multiple ? "Add or upload files" : "Add or upload a file"}
+            />
           ) : (
-            <Card className="overflow-hidden">
+            <Card className="gap-0 overflow-hidden p-0 shadow-none">
               <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div>
-                  <h2 className="font-black">Selected files</h2>
+                  <h2 className="font-heading text-[17px] font-semibold">Selected files</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     {files.length} {files.length === 1 ? "file" : "files"} ·{" "}
                     {formatBytes(totalSelectedBytes)}
@@ -823,7 +872,7 @@ export function MediaWorkbench({
               <Card aria-live="polite" className="flex items-center gap-3 p-5 sm:p-6">
                 <LoaderCircle aria-hidden="true" className="size-5 animate-spin text-primary" />
                 <div>
-                  <h2 className="font-black">Preparing page controls</h2>
+                  <h2 className="font-heading text-sm font-semibold">Preparing page controls</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Rendering small local previews. The PDF stays in this browser.
                   </p>
@@ -843,7 +892,7 @@ export function MediaWorkbench({
             ) : (
               <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
                 <div>
-                  <h2 className="font-black">Page previews unavailable</h2>
+                  <h2 className="font-heading text-sm font-semibold">Page previews unavailable</h2>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     Retry with the selected PDF; you do not need to choose it again.
                   </p>
@@ -873,15 +922,14 @@ export function MediaWorkbench({
           ) : null}
         </div>
 
-        <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <Card className="p-5 sm:p-6">
-            <h2 className="text-lg font-black">Options</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <div className="min-w-0 space-y-4 border-l border-border p-5 lg:sticky lg:top-0 lg:self-start">
+          <ToolOptionsPanel title="Tool options">
+            <p className="font-sans text-xs leading-5 text-muted-foreground">
               {files.length
                 ? `Configured for ${files.length} selected ${files.length === 1 ? "file" : "files"}.`
                 : "Choose files when you are ready; defaults can be adjusted now."}
             </p>
-            <fieldset className="mt-5 grid gap-4" disabled={isProcessing}>
+            <FieldSet className="grid gap-4" disabled={isProcessing}>
               <ToolOptions
                 definition={definition}
                 files={files}
@@ -890,8 +938,8 @@ export function MediaWorkbench({
                 options={options}
                 watermarkFile={watermarkFile}
               />
-            </fieldset>
-          </Card>
+            </FieldSet>
+          </ToolOptionsPanel>
 
           {error ? (
             <div ref={errorRef} tabIndex={-1}>
@@ -911,28 +959,17 @@ export function MediaWorkbench({
           ) : null}
 
           {job.status === "processing" ? (
-            <Card className="p-5 sm:p-6" aria-live="polite">
-              <div className="flex items-center gap-3">
-                <LoaderCircle aria-hidden="true" className="size-5 animate-spin text-primary" />
-                <div>
-                  <p className="font-black">Processing locally</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {job.progress?.stage ?? "Preparing worker…"} ·{" "}
-                    {job.progress?.completed ?? 0} of {job.progress?.total ?? 1}
-                  </p>
-                </div>
-              </div>
-              <progress
-                aria-label="Processing progress"
-                className="mt-4 h-2 w-full accent-primary"
-                max={job.progress?.total ?? 1}
-                value={job.progress?.completed ?? 0}
-              />
-              <Button className="mt-4 w-full" onClick={cancel} type="button" variant="outline">
-                <X aria-hidden="true" className="size-4" />
-                Cancel
-              </Button>
-            </Card>
+            <ProcessingStatus
+              action={
+                <Button onClick={cancel} size="sm" type="button" variant="secondary">
+                  <X aria-hidden="true" className="size-4" />
+                  Cancel
+                </Button>
+              }
+              detail={`${job.progress?.stage ?? "Preparing worker…"} · ${job.progress?.completed ?? 0} of ${job.progress?.total ?? 1}`}
+              progress={Math.round(((job.progress?.completed ?? 0) / Math.max(job.progress?.total ?? 1, 1)) * 100)}
+              title={`Processing · ${Math.round(((job.progress?.completed ?? 0) / Math.max(job.progress?.total ?? 1, 1)) * 100)}%`}
+            />
           ) : (
             <Button
               className="w-full"
@@ -951,10 +988,10 @@ export function MediaWorkbench({
         </div>
 
         {results.length ? (
-          <Card className="overflow-hidden lg:col-span-2" aria-live="polite">
+          <Card className="m-5 mt-0 overflow-hidden lg:col-start-2 lg:m-5 lg:mt-0" aria-live="polite">
             <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
-                <h2 className="font-black">Ready to download</h2>
+                <h2 className="font-heading text-[17px] font-semibold">Ready to download</h2>
                 {job.sizes ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     {results.length} output {results.length === 1 ? "file" : "files"} ·{" "}
@@ -984,46 +1021,31 @@ export function MediaWorkbench({
               }
             >
               {results.map((result) => (
-                <li
-                  className="flex min-w-0 items-center gap-3 bg-card px-5 py-4 sm:px-6"
-                  key={result.url}
-                >
-                  {result.mime.startsWith("image/") ? (
-                    <img
-                      alt=""
-                      className="size-12 shrink-0 rounded-lg border border-border bg-muted object-cover"
-                      src={result.url}
-                    />
-                  ) : (
-                    <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-accent text-primary">
-                      <FileText aria-hidden="true" className="size-6" />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">{result.filename}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatBytes(result.size)}
-                    </p>
-                  </div>
-                  <a
-                    aria-label={
-                      results.length > 1
-                        ? `Download ${result.filename}`
-                        : undefined
+                <li className="bg-card p-4" key={result.url}>
+                  <DownloadResultCard
+                    action={
+                      <Button asChild>
+                        <a
+                          aria-label={results.length > 1 ? `Download ${result.filename}` : undefined}
+                          download={result.filename}
+                          href={result.url}
+                        >
+                          <Download aria-hidden="true" className="size-4" />
+                          Download file
+                        </a>
+                      </Button>
                     }
-                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    download={result.filename}
-                    href={result.url}
-                  >
-                    <Download aria-hidden="true" className="size-4" />
-                    Download
-                  </a>
+                    metadata={`${result.filename} · ${formatBytes(result.size)}`}
+                    title="Your file is ready"
+                  />
                 </li>
               ))}
             </ul>
           </Card>
         ) : null}
-      </div>
+          </div>
+        </div>
+      </WorkbenchShell>
     </div>
   );
 }
@@ -1068,7 +1090,7 @@ function PdfPageControls({
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-border px-5 py-4 sm:px-6">
-        <h2 className="font-black">{heading}</h2>
+        <h2 className="font-heading text-[17px] font-semibold">{heading}</h2>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
           {mode === "reorder"
             ? "Drag the page handles to set the output order."
@@ -1317,10 +1339,10 @@ function ToolOptions({
             <AlertBanner variant="warning">Pages are rasterized. Selectable text, links, forms, signatures, bookmarks, annotations, and accessibility information are lost.</AlertBanner>
             <SelectField label="Preset" name="strongPreset" onChange={onChange} options={options} values={[["high", "High · 150 DPI"], ["balanced", "Balanced · 120 DPI"], ["smallest", "Smallest · 96 DPI"]]} />
             <SelectField label="Color" name="color" onChange={onChange} options={options} values={[["original", "Original"], ["grayscale", "Grayscale"], ["black-and-white", "Black and white"]]} />
-            <Checkbox checked={options.confirmed === true} label="I understand document content will be flattened" onChange={(event) => onChange("confirmed", event.target.checked)} />
+            <Checkbox checked={options.confirmed === true} label="I understand document content will be flattened" onCheckedChange={(checked) => onChange("confirmed", checked === true)} />
           </>
         ) : (
-          <Checkbox checked={options.removeMetadata === true} description="Text, links, forms, annotations, bookmarks, and accessibility structures remain structural where qpdf permits." label="Remove document metadata" onChange={(event) => onChange("removeMetadata", event.target.checked)} />
+          <Checkbox checked={options.removeMetadata === true} description="Text, links, forms, annotations, bookmarks, and accessibility structures remain structural where qpdf permits." label="Remove document metadata" onCheckedChange={(checked) => onChange("removeMetadata", checked === true)} />
         )}
       </>
     );
@@ -1376,8 +1398,8 @@ function ToolOptions({
       <>
         <SelectField label="Size unit" name="resizeUnit" onChange={onChange} options={options} values={[["pixels", "Pixels"], ["percentage", "Percentage"]]} />
         {percentage ? <NumberField label="Percentage" min={1} name="percentage" onChange={onChange} options={options} /> : <div className="grid grid-cols-2 gap-3"><NumberField label="Width" min={1} name="width" onChange={onChange} options={options} /><NumberField label="Height" min={1} name="height" onChange={onChange} options={options} /></div>}
-        <Checkbox checked={options.lockAspectRatio === true} label="Lock aspect ratio" onChange={(event) => onChange("lockAspectRatio", event.target.checked)} />
-        <Checkbox checked={options.noUpscale === true} label="Do not upscale smaller images" onChange={(event) => onChange("noUpscale", event.target.checked)} />
+        <Checkbox checked={options.lockAspectRatio === true} label="Lock aspect ratio" onCheckedChange={(checked) => onChange("lockAspectRatio", checked === true)} />
+        <Checkbox checked={options.noUpscale === true} label="Do not upscale smaller images" onCheckedChange={(checked) => onChange("noUpscale", checked === true)} />
         <SelectField label="Fit" name="fit" onChange={onChange} options={options} values={[["contain", "Contain"], ["cover", "Cover"], ["stretch", "Stretch"]]} />
         <OutputFields hasHeic={hasHeic} onChange={onChange} options={options} originalUsesQuality={originalUsesQuality} outputFormat={outputFormat} />
       </>
@@ -1647,7 +1669,7 @@ function CropOverlay({
 
   return (
     <Card className="p-5 sm:p-6">
-      <h2 className="font-black">Crop preview</h2>
+      <h2 className="font-heading text-[17px] font-semibold">Crop preview</h2>
       <p className="mt-1 text-xs leading-5 text-muted-foreground">Drag the crop frame, or focus it and use arrow keys. Hold Shift for 10-pixel steps.</p>
       <div className="mt-4 flex justify-center overflow-hidden rounded-xl bg-muted">
         <div className="relative inline-block max-w-full">

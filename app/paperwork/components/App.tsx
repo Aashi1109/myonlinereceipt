@@ -6,11 +6,11 @@ import {
   useState,
   type ComponentType,
   type FormEvent,
-  type KeyboardEvent,
   type ReactNode,
 } from "react";
 import {
   CheckCircle2,
+  CircleX,
   Clock,
   Eye,
   FileDown,
@@ -27,15 +27,18 @@ import {
   type AccountNavigationProps,
   AlertBanner,
   AppContainer,
-  BrandLockup,
   Button,
   Card,
   Field,
   Input,
   PageHero,
+  ProductHeader,
   StatusBadge,
-  ToolNav,
+  Tabs,
+  TabsList,
+  TabsTrigger,
 } from "@smarttools/ui";
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import {
   seedTemplates,
   type DocumentTemplate,
@@ -75,16 +78,6 @@ const TOOL_COMPONENTS: Record<
   "quarterly-tax-estimator": QuarterlyTaxEstimatorPage,
   "w9-request": W9RequestPage,
   "1099-nec-tracker": NecTrackerPage,
-};
-
-const TOOL_NAV_LABELS: Readonly<Record<string, string>> = {
-  "invoice-generator": "Invoice",
-  "receipt-generator": "Receipt",
-  "expense-report": "Expenses",
-  "mileage-log": "Mileage",
-  "quarterly-tax-estimator": "Tax",
-  "w9-request": "W-9",
-  "1099-nec-tracker": "1099",
 };
 
 type DialogName = "clear" | "sample" | "upgrade";
@@ -400,45 +393,17 @@ export default function App({
     });
   }
 
-  function handleMobileTabKey(event: KeyboardEvent<HTMLButtonElement>) {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    const nextTab = activeMobileTab === "edit" ? "preview" : "edit";
-    setActiveMobileTab(nextTab);
-    document.getElementById(`mobile-${nextTab}-tab`)?.focus();
-  }
-
   return (
     <div
       className="flex min-h-screen flex-col bg-background text-foreground selection:bg-foreground selection:text-primary-foreground"
       id="app-root"
     >
-      <header
-        className="sticky top-0 z-40 border-b border-border bg-card print:hidden"
-        id="app-header-nav"
-      >
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-2 px-4 sm:gap-x-4 sm:px-6 md:h-16 md:flex-nowrap lg:px-8">
-          <div className="flex h-16 shrink-0 items-center">
-            <BrandLockup href="/paperwork" name="Paperwork" />
-          </div>
-
-          <ToolNav
-            className="order-3 w-full border-t border-border py-2 md:order-none md:min-w-0 md:flex-1 md:border-0 md:py-0"
-            items={tools.flatMap((tool) =>
-              tool.slug
-                ? [{
-                    current: tool.componentKey === componentKey,
-                    href: `/paperwork/${tool.slug}`,
-                    label: TOOL_NAV_LABELS[tool.componentKey] ?? tool.name,
-                  }]
-                : [],
-            )}
-          />
-
-          <div className="order-2 ml-auto flex h-16 shrink-0 items-center gap-2 md:order-none md:ml-0">
+      <ProductHeader
+        actions={
+          <div className="flex items-center gap-2">
             {isInvoice ? (
               <>
-                <span className="hidden items-center gap-1 text-xs text-muted-foreground md:flex">
+                <span className="hidden items-center gap-1 text-xs text-muted-foreground 2xl:flex">
                   <Clock className="h-3.5 w-3.5" />
                   {saveStatus === "saving" ? "Saving…" : "Draft saved in browser"}
                 </span>
@@ -449,14 +414,17 @@ export default function App({
                   variant="danger-subtle"
                 >
                   <Trash2 aria-hidden="true" className="size-3.5" />
-                  <span className="hidden sm:inline">Clear</span>
+                  <span className="hidden 2xl:inline">Clear</span>
                 </Button>
               </>
             ) : null}
             <AccountNavigation {...account} />
           </div>
-        </div>
-      </header>
+        }
+        className="sticky top-2 z-40 mx-2 rounded-full border shadow-sm"
+        href="/"
+        name="SmartTools"
+      />
 
       <main className={isInvoice ? "grow pb-20 lg:pb-0" : "grow"}>
         {isReceipt ? (
@@ -515,49 +483,37 @@ export default function App({
               ) : null}
 
               {selectedTemplate.layoutFamily !== "advanced" ? (
-                <div
-                  aria-label="Invoice workspace view"
-                  className="mb-6 grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted p-1 print:hidden lg:hidden"
+                <Tabs
                   id="mobile-view-tabs"
-                  role="tablist"
+                  className="mb-6 print:hidden lg:hidden"
+                  onValueChange={(value) => showMobileTab(value as "edit" | "preview")}
+                  value={activeMobileTab}
                 >
-                  <button
+                  <TabsList
+                    aria-label="Invoice workspace view"
+                    className="grid w-full grid-cols-2 border border-border"
+                    variant="segmented"
+                  >
+                  <TabsTrigger
                     aria-controls="editor-panel"
-                    aria-selected={activeMobileTab === "edit"}
-                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      activeMobileTab === "edit"
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className="min-h-11"
                     id="mobile-edit-tab"
-                    onClick={() => showMobileTab("edit")}
-                    onKeyDown={handleMobileTabKey}
-                    role="tab"
-                    tabIndex={activeMobileTab === "edit" ? 0 : -1}
-                    type="button"
+                    value="edit"
                   >
                     <PenLine aria-hidden="true" className="size-4" />
                     Edit details
-                  </button>
-                  <button
+                  </TabsTrigger>
+                  <TabsTrigger
                     aria-controls="preview-panel"
-                    aria-selected={activeMobileTab === "preview"}
-                    className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      activeMobileTab === "preview"
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
+                    className="min-h-11"
                     id="mobile-preview-tab"
-                    onClick={() => showMobileTab("preview")}
-                    onKeyDown={handleMobileTabKey}
-                    role="tab"
-                    tabIndex={activeMobileTab === "preview" ? 0 : -1}
-                    type="button"
+                    value="preview"
                   >
                     <Eye aria-hidden="true" className="size-4" />
                     Live preview
-                  </button>
-                </div>
+                  </TabsTrigger>
+                  </TabsList>
+                </Tabs>
               ) : null}
 
               {selectedTemplate.layoutFamily === "advanced" ? (
@@ -721,7 +677,7 @@ export default function App({
         ) : null}
       </main>
 
-      <footer className="mt-auto border-t border-border bg-card py-12 print:hidden">
+      <div className="mt-auto print:hidden">
         {isInvoice ? (
           <>
             <SEOContent />
@@ -733,24 +689,8 @@ export default function App({
           onTrackClick={handleTrackClick}
           tools={tools}
         />
-        <div className="mx-auto mt-10 max-w-7xl space-y-4 border-t border-border px-4 pt-8 text-center text-xs text-muted-foreground sm:px-6 lg:px-8">
-          <p>© {new Date().getFullYear()} SmartTools Paperwork Toolkit.</p>
-          <nav aria-label="Paperwork information" className="flex flex-wrap justify-center gap-x-6 gap-y-3 font-semibold">
-            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/about">
-              About
-            </a>
-            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/privacy">
-              Privacy
-            </a>
-            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/terms">
-              Terms
-            </a>
-            <a className="rounded-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring" href="/paperwork/contact">
-              Contact
-            </a>
-          </nav>
-        </div>
-      </footer>
+        <SmartToolsFooter />
+      </div>
 
       {isInvoice && selectedTemplate.layoutFamily !== "advanced" ? (
         <div
@@ -785,14 +725,16 @@ export default function App({
         <div
           aria-atomic="true"
           aria-live={toast.tone === "error" ? "assertive" : "polite"}
-          className={`fixed right-4 bottom-24 z-50 flex max-w-sm items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-xl lg:bottom-6 ${
-            toast.tone === "error"
-              ? "border-destructive/30 bg-card text-destructive"
-              : "border-border bg-foreground text-background"
-          }`}
+          className="fixed right-4 bottom-24 z-50 flex max-w-sm items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] font-sans text-sm font-medium text-on-ink shadow-[0_8px_24px_#00000026] lg:bottom-6"
           role={toast.tone === "error" ? "alert" : "status"}
         >
-          <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          {toast.tone === "error" ? (
+            <CircleX aria-hidden="true" className="size-5 shrink-0 text-status-danger" />
+          ) : (
+            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-ink">
+              <CheckCircle2 aria-hidden="true" className="size-[13px]" />
+            </span>
+          )}
           <span>{toast.message}</span>
         </div>
       ) : null}
@@ -859,14 +801,16 @@ export default function App({
         open={activeDialog === "upgrade"}
       >
         <div className="relative space-y-6 p-6 sm:p-8">
-          <button
+          <Button
             aria-label="Close waitlist dialog"
-            className="absolute top-4 right-4 grid size-10 place-items-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
             onClick={() => setActiveDialog(null)}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             <X aria-hidden="true" className="size-5" />
-          </button>
+          </Button>
           <div className="space-y-3 pr-10">
             <div className="grid size-11 place-items-center rounded-xl bg-foreground text-background shadow-sm">
               <Sparkles aria-hidden="true" className="size-5" />

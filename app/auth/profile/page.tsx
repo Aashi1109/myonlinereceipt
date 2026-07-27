@@ -1,5 +1,7 @@
+import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { auth } from "@smarttools/auth";
 import {
+  AccountNavigation,
   AppContainer,
   ProductHeader,
   StatusBadge,
@@ -36,8 +38,14 @@ export default async function ProfilePage({
   }
 
   return (
-    <main className="auth-shell min-h-screen bg-background text-foreground">
+    <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
+        actions={
+          <AccountNavigation
+            returnTo={returnTo}
+            user={{ name: session.user.name }}
+          />
+        }
         className="auth-header sticky top-0 z-50"
         href="/"
         name="SmartTools"
@@ -76,6 +84,7 @@ export default async function ProfilePage({
           }}
         />
       </AppContainer>
-    </main>
+      <SmartToolsFooter />
+    </div>
   );
 }

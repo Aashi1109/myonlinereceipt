@@ -20,10 +20,14 @@ import {
   Checkbox,
   Field,
   Input,
+  Label,
   SectionCard,
   SectionHeading,
   Select,
   StatusBadge,
+  Tabs,
+  TabsList,
+  TabsTrigger,
   Textarea,
   buttonVariants,
 } from "@smarttools/ui";
@@ -174,9 +178,9 @@ function ColorField({
 }) {
   return (
     <div className="grid gap-1.5">
-      <label className="text-sm font-bold text-foreground" htmlFor={id}>
+      <Label className="text-sm font-bold text-foreground" htmlFor={id}>
         {label}
-      </label>
+      </Label>
       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
         <input
           aria-label={`${label} picker`}
@@ -474,46 +478,35 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           <input name="templateId" type="hidden" value={template.id} />
           <input name="template" type="hidden" value={serializedTemplate} />
 
-          <div
-            aria-label="Template editor mode"
-            className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
-            role="tablist"
+          <Tabs
+            onValueChange={(value) => selectEditorMode(value as "fields" | "json")}
+            value={editorMode}
           >
-            <Button
+            <TabsList
+              aria-label="Template editor mode"
+              className="grid w-full grid-cols-2"
+              variant="segmented"
+            >
+            <TabsTrigger
               aria-controls="template-fields-panel"
-              aria-selected={editorMode === "fields"}
-              className={`h-8 w-full text-xs ${
-                editorMode === "fields"
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border hover:bg-background"
-                  : "text-muted-foreground"
-              }`}
+              className="h-8 w-full text-xs data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
               id="template-fields-tab"
-              onClick={() => selectEditorMode("fields")}
-              role="tab"
-              type="button"
-              variant="ghost"
+              value="fields"
             >
               <Database aria-hidden="true" className="size-4" />
               Property fields
-            </Button>
-            <Button
+            </TabsTrigger>
+            <TabsTrigger
               aria-controls="template-json-panel"
-              aria-selected={editorMode === "json"}
-              className={`h-8 w-full text-xs ${
-                editorMode === "json"
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border hover:bg-background"
-                  : "text-muted-foreground"
-              }`}
+              className="h-8 w-full text-xs data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
               id="template-json-tab"
-              onClick={() => selectEditorMode("json")}
-              role="tab"
-              type="button"
-              variant="ghost"
+              value="json"
             >
               <Code2 aria-hidden="true" className="size-4" />
               Config JSON
-            </Button>
-          </div>
+            </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {formError ? <AlertBanner variant="error">{formError}</AlertBanner> : null}
 
@@ -736,10 +729,10 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                 <Checkbox
                   checked={config.page.showPageBorder}
                   label="Show a page border"
-                  onChange={(event) =>
+                  onCheckedChange={(checked) =>
                     setConfig({
                       ...config,
-                      page: { ...config.page, showPageBorder: event.target.checked },
+                      page: { ...config.page, showPageBorder: checked === true },
                     })
                   }
                 />
@@ -820,20 +813,20 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                   <Checkbox
                     checked={config.header.showInvoiceTitle}
                     label="Show invoice title"
-                    onChange={(event) =>
+                    onCheckedChange={(checked) =>
                       setConfig({
                         ...config,
-                        header: { ...config.header, showInvoiceTitle: event.target.checked },
+                        header: { ...config.header, showInvoiceTitle: checked === true },
                       })
                     }
                   />
                   <Checkbox
                     checked={config.header.showStatusBadge}
                     label="Show status badge"
-                    onChange={(event) =>
+                    onCheckedChange={(checked) =>
                       setConfig({
                         ...config,
-                        header: { ...config.header, showStatusBadge: event.target.checked },
+                        header: { ...config.header, showStatusBadge: checked === true },
                       })
                     }
                   />
@@ -847,10 +840,10 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                       checked={config.visibility[key]}
                       key={key}
                       label={label}
-                      onChange={(event) =>
+                      onCheckedChange={(checked) =>
                         setConfig({
                           ...config,
-                          visibility: { ...config.visibility, [key]: event.target.checked },
+                          visibility: { ...config.visibility, [key]: checked === true },
                         })
                       }
                     />
@@ -862,10 +855,10 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                 <Checkbox
                   checked={config.watermark.enabled}
                   label="Enable watermark"
-                  onChange={(event) =>
+                  onCheckedChange={(checked) =>
                     setConfig({
                       ...config,
-                      watermark: { ...config.watermark, enabled: event.target.checked },
+                      watermark: { ...config.watermark, enabled: checked === true },
                     })
                   }
                 />
@@ -948,17 +941,19 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                           : "bg-background"
                       }`}
                     >
-                      <button
+                      <Button
                         {...orderable.attributes}
                         {...orderable.listeners}
                         aria-label={`Reorder ${sectionLabels[section] ?? section}`}
                         className="grid size-8 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={orderable.disabled}
                         ref={orderable.setActivatorNodeRef}
+                        size="icon-sm"
                         type="button"
+                        variant="ghost"
                       >
                         <GripVertical aria-hidden="true" className="size-4" />
-                      </button>
+                      </Button>
                       <span className="text-sm font-bold text-foreground">
                         {sectionLabels[section] ?? section}
                       </span>
@@ -1035,12 +1030,12 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         >
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-2 shadow-sm">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <label
+              <Label
                 className="shrink-0 text-[10px] font-black uppercase tracking-wider text-muted-foreground"
                 htmlFor="preview-sample"
               >
                 Load client
-              </label>
+              </Label>
               <Select
                 className="h-8 min-w-0 flex-1 text-xs font-bold"
                 id="preview-sample"
