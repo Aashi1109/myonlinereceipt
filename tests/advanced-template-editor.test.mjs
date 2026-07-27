@@ -45,6 +45,13 @@ test("advanced templates use a separate immersive route and leave the standard e
   assert.match(editor, /aria-label="Previous page"/);
   assert.match(editor, /aria-label="Designer tools"/);
   assert.match(editor, /data-field-inspector-open/);
+  assert.match(editor, /pendingPageRemoval/);
+  assert.match(editor, /dialog\.showModal\(\)/);
+  assert.match(editor, /Delete page \{pendingPageRemoval \+ 1\}/);
+  assert.match(editor, /aria-expanded=\{documentStripOpen\}/);
+  assert.match(editor, /aria-pressed=\{activePanel === "pages"\}/);
+  assert.match(editor, /Edit on canvas/);
+  assert.doesNotMatch(editor, /onClick=\{\(\) => removePage\(index\)\}/);
   assert.match(editor, /pdfme-designer-left-sidebar/);
   assert.match(editor, /pdfme-designer-right-sidebar/);
   assert.match(editor, /pdfme-designer-detail-view/);

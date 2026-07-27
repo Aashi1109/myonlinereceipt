@@ -439,6 +439,7 @@ export default function AdvancedTemplateEditor({
   const initialTemplate = useRef(
     cloneTemplate(template.config.template as Template),
   );
+  const deletePageDialogRef = useRef<HTMLDialogElement>(null);
   const designerContainerRef = useRef<HTMLDivElement>(null);
   const designerRef = useRef<Designer | null>(null);
   const pluginsRef = useRef<Plugins | null>(null);
@@ -473,6 +474,9 @@ export default function AdvancedTemplateEditor({
     initialTemplate.current.schemas.length,
   );
   const [pageFormat, setPageFormat] = useState(template.config.pageFormat);
+  const [pendingPageRemoval, setPendingPageRemoval] = useState<number | null>(
+    null,
+  );
   const [sampleData, setSampleData] = useState(template.config.sampleData);
   const [form, setForm] = useState(template.config.form);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -516,6 +520,13 @@ export default function AdvancedTemplateEditor({
       }
     };
   });
+
+  useEffect(() => {
+    const dialog = deletePageDialogRef.current;
+    if (!dialog) return;
+    if (pendingPageRemoval !== null && !dialog.open) dialog.showModal();
+    if (pendingPageRemoval === null && dialog.open) dialog.close();
+  }, [pendingPageRemoval]);
 
   const layerItems = useMemo<LayerItem[]>(
     () =>
@@ -743,11 +754,9 @@ export default function AdvancedTemplateEditor({
     if (panel !== "pages") setEditingRegion(null);
   }
 
-  function openRegionPanel(region: Region) {
-    const assignedCount =
-      region === "header" ? repeatingHeaderCount : repeatingFooterCount;
+  function openRegionPanel() {
     setActivePanel("pages");
-    setEditingRegion(assignedCount ? region : null);
+    setEditingRegion(null);
   }
 
   function closePanels() {
@@ -764,6 +773,8 @@ export default function AdvancedTemplateEditor({
     setHistoryIndex(nextIndex);
     pageFormatRef.current = entry.pageFormat;
     setPageFormat(entry.pageFormat);
+    setSelection(null);
+    setEditingRegion(null);
     currentTemplateRef.current = cloneTemplate(entry.template);
     setPageCount(entry.template.schemas.length);
     designerRef.current?.updateTemplate(cloneTemplate(entry.template));
@@ -931,6 +942,8 @@ export default function AdvancedTemplateEditor({
     const next = cloneTemplate(currentTemplateRef.current);
     next.schemas.push([]);
     applyTemplate(next);
+    setSelection(null);
+    setEditingRegion(null);
     setCurrentPage(next.schemas.length - 1);
   }
 
@@ -941,6 +954,8 @@ export default function AdvancedTemplateEditor({
       schemas: [next.schemas[pageIndex] ?? []],
     }).schemas[0]);
     applyTemplate(next);
+    setSelection(null);
+    setEditingRegion(null);
     setCurrentPage(pageIndex + 1);
   }
 
@@ -949,10 +964,15 @@ export default function AdvancedTemplateEditor({
     const next = cloneTemplate(currentTemplateRef.current);
     next.schemas.splice(pageIndex, 1);
     applyTemplate(next);
+    setSelection(null);
+    setEditingRegion(null);
     setCurrentPage(Math.max(0, Math.min(pageIndex, next.schemas.length - 1)));
+    setPendingPageRemoval(null);
   }
 
   function goToPage(pageIndex: number) {
+    setSelection(null);
+    setEditingRegion(null);
     setCurrentPage(pageIndex);
     const firstSchema = currentTemplateRef.current.schemas[pageIndex]?.[0];
     if (firstSchema) {
@@ -1175,7 +1195,7 @@ export default function AdvancedTemplateEditor({
     basePdf.staticSchema = [...(basePdf.staticSchema ?? []), ...moved];
     applyTemplate(next);
     setSelection(null);
-    setEditingRegion(region);
+    setEditingRegion(null);
   }
 
   function restoreRepeatingRegion(index: number) {
@@ -1185,10 +1205,21 @@ export default function AdvancedTemplateEditor({
     const [schema] = staticSchema.splice(index, 1);
     if (!schema) return;
     const { smarttoolsRegion: region, ...editableSchema } = schema;
-    next.schemas[currentPage].push(editableSchema as Schema);
+    const schemaIndex =
+      next.schemas[currentPage].push(editableSchema as Schema) - 1;
     basePdf.staticSchema = staticSchema;
     applyTemplate(next);
     setEditingRegion(region === "header" || region === "footer" ? region : null);
+    window.requestAnimationFrame(() => {
+      designerRef.current?.selectSchemas(
+        {
+          name: editableSchema.name,
+          pageIndex: currentPage,
+          schemaIndex,
+        },
+        { pageIndex: currentPage, scroll: true },
+      );
+    });
   }
 
   async function previewPdf() {
@@ -1232,32 +1263,29 @@ export default function AdvancedTemplateEditor({
   function renderPanel() {
     if (!activePanel) return null;
 
-    const panelCopy = {
-      add: ["Panel 01", "Add elements", "Insert content and document controls"],
-      layers: ["Panel 02", "Layers", "Order elements on the current page"],
-      data: ["Panel 03", "Fields & data", "Bind document data to the selection"],
-      pages: ["Panel 04", "Pages", "Manage pages and repeating regions"],
+    const panelTitle = {
+      add: "Add elements",
+      layers: "Layers",
+      data: "Fields & data",
+      pages: "Pages",
     }[activePanel];
+    const panelTitleId = `advanced-editor-${activePanel}-panel-title`;
 
     return (
       <aside
-        className="absolute left-[5.75rem] top-[5.5rem] z-30 flex h-[574px] w-[18.75rem] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
+        aria-labelledby={panelTitleId}
+        className="absolute bottom-5 left-[5.5rem] top-[4.625rem] z-30 flex min-h-0 max-h-[574px] w-[17.5rem] flex-col overflow-hidden rounded-r-xl rounded-bl-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
       >
-        <div className="flex h-[74px] shrink-0 items-start justify-between border-b border-border/70 px-4 pt-3.5 pb-3">
-          <div className="grid gap-0.5">
-            <p className="font-caption text-[8px] font-semibold uppercase tracking-[0.1em] text-primary">
-              {panelCopy[0]}
-            </p>
-            <h2 className="font-heading text-sm font-semibold">
-              {panelCopy[1]}
-            </h2>
-            <p className="text-[9px] text-muted-foreground">
-              {panelCopy[2]}
-            </p>
-          </div>
+        <div className="flex h-12 shrink-0 items-center justify-between px-3">
+          <h2
+            className="font-heading text-sm font-semibold"
+            id={panelTitleId}
+          >
+            {panelTitle}
+          </h2>
           <Button
             aria-label={`Close ${activePanel} panel`}
-            className="-mr-1 text-muted-foreground"
+            className="text-muted-foreground"
             onClick={closePanels}
             size="icon-sm"
             type="button"
@@ -1268,8 +1296,8 @@ export default function AdvancedTemplateEditor({
         </div>
 
         {activePanel === "add" ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-3.5 p-4">
-            <label className="flex h-10 shrink-0 items-center gap-2.5 rounded-lg border border-border bg-muted px-3 text-xs text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3">
+            <label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-xs text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
               <Search aria-hidden="true" size={15} />
               <input
                 aria-label="Search elements"
@@ -1280,7 +1308,7 @@ export default function AdvancedTemplateEditor({
                 value={addQuery}
               />
             </label>
-            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto">
+            <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
               {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map(
                 (group) => {
                   const visibleTools = ADD_TOOLS.filter((tool) => {
@@ -1305,13 +1333,13 @@ export default function AdvancedTemplateEditor({
                           return (
                             <button
                               aria-label={`Add ${tool.label}`}
-                              className="group flex h-[46px] w-full items-center gap-2.5 rounded-lg px-2 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                              className="group flex h-10 w-full items-center gap-2 rounded-lg px-1.5 text-left outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                               disabled={!designerReady}
                               key={tool.pluginKey}
                               onClick={() => addElement(tool)}
                               type="button"
                             >
-                              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-muted text-foreground">
+                              <span className="grid size-7 shrink-0 place-items-center rounded text-foreground">
                                 <Icon aria-hidden="true" size={15} />
                               </span>
                               <span className="min-w-0 flex-1">
@@ -1340,7 +1368,7 @@ export default function AdvancedTemplateEditor({
         ) : null}
 
         {activePanel === "layers" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             <div className="mb-2 flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
               <span>
                 {layerItems.length ? "Populated" : "Empty"} · Page {currentPage + 1}
@@ -1405,7 +1433,7 @@ export default function AdvancedTemplateEditor({
         ) : null}
 
         {activePanel === "data" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             <div className="mb-3 flex h-10 items-center justify-between rounded-lg bg-muted px-3">
               <div>
                 <p className="font-caption text-[8px] font-semibold uppercase text-muted-foreground">
@@ -2076,7 +2104,7 @@ export default function AdvancedTemplateEditor({
         ) : null}
 
         {activePanel === "pages" ? (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             <div className="flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
               <h3>Document pages</h3>
               <button
@@ -2140,6 +2168,7 @@ export default function AdvancedTemplateEditor({
                   key={`page-${index}`}
                 >
                   <button
+                    aria-current={currentPage === index ? "page" : undefined}
                     className="flex min-w-0 flex-1 items-center gap-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={() => goToPage(index)}
                     type="button"
@@ -2171,9 +2200,9 @@ export default function AdvancedTemplateEditor({
                     </button>
                     <button
                       aria-label={`Remove page ${index + 1}`}
-                      className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                      className="grid size-8 place-items-center rounded-lg text-muted-foreground outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
                       disabled={pageCount === 1}
-                      onClick={() => removePage(index)}
+                      onClick={() => setPendingPageRemoval(index)}
                       type="button"
                     >
                       <X aria-hidden="true" size={12} strokeWidth={1.75} />
@@ -2250,7 +2279,7 @@ export default function AdvancedTemplateEditor({
                           type="button"
                           variant="ghost"
                         >
-                          {editing ? "Editing" : "Edit"}
+                          Edit on canvas
                         </Button>
                       </div>
                     );
@@ -2289,12 +2318,12 @@ export default function AdvancedTemplateEditor({
         </Card>
       </div>
 
-      <main className="hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
-        <header className="flex h-[76px] shrink-0 items-center gap-3.5 border-b border-border bg-card px-6">
+      <main className="relative hidden h-dvh min-w-[1024px] flex-col overflow-hidden bg-background lg:flex">
+        <header className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border bg-card px-4">
           <Link
             aria-label="Back to template lifecycle"
             className={buttonVariants({
-              className: "!size-10 shrink-0 text-muted-foreground",
+              className: "!size-9 shrink-0 text-muted-foreground",
               size: "icon",
               variant: "ghost",
             })}
@@ -2302,7 +2331,7 @@ export default function AdvancedTemplateEditor({
           >
             <ArrowLeft aria-hidden="true" size={17} />
           </Link>
-          <div className="w-[21.25rem] min-w-0 shrink-0">
+          <div className="w-[18.75rem] min-w-0 shrink-0">
             <div className="flex h-8 items-center gap-2">
               <input
                 aria-label="Template name"
@@ -2336,10 +2365,10 @@ export default function AdvancedTemplateEditor({
               Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
             </p>
           </div>
-          <span className="flex h-10 w-[138px] shrink-0 items-center rounded-lg border border-border bg-muted text-xs font-bold">
+          <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted text-xs font-bold">
             <Select
               aria-label="Page size"
-              className="h-10 w-full border-0 bg-transparent px-3 text-xs font-semibold shadow-none"
+              className="h-9 w-full border-0 bg-transparent px-2.5 text-[11px] font-semibold shadow-none"
               disabled={!designerReady || isSaving}
               onChange={(event) =>
                 changePageFormat(event.target.value as PageFormat)
@@ -2378,7 +2407,7 @@ export default function AdvancedTemplateEditor({
               <Redo2 aria-hidden="true" size={16} />
             </Button>
             <Button
-              className="h-10 px-[18px]"
+              className="h-9 px-3.5"
               disabled={!designerReady || isPreviewing}
               onClick={() => void previewPdf()}
               size="sm"
@@ -2416,7 +2445,7 @@ export default function AdvancedTemplateEditor({
                       : `Version ${template.version}`}
             </span>
             <Button
-              className="h-10 px-[18px]"
+              className="h-9 px-3.5"
               disabled={isSaving || name.trim().length < 2}
               onClick={() =>
                 startTransition(() => {
@@ -2430,7 +2459,7 @@ export default function AdvancedTemplateEditor({
               Save draft
             </Button>
             <Button
-              className="h-10 px-5"
+              className="h-9 px-4"
               disabled={isSaving || name.trim().length < 2}
               onClick={() =>
                 startTransition(() => {
@@ -2497,11 +2526,14 @@ export default function AdvancedTemplateEditor({
           {!focusMode ? (
             <nav
               aria-label="Designer tools"
-              className={`absolute left-12 top-[248px] z-40 flex w-12 flex-col items-center gap-1.5 rounded-l-xl p-2 ${
-                activePanel ? "" : "border border-input bg-card shadow-[0_8px_20px_rgba(17,18,20,0.06)]"
+              className={`absolute left-11 top-1/2 z-40 flex w-12 -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-xl bg-card p-2 shadow-[0_8px_20px_rgba(17,18,20,0.06)] ${
+                activePanel
+                  ? "border-y border-l border-input"
+                  : "border border-input"
               }`}
             >
               <Button
+                aria-pressed={activePanel === null}
                 className={panelButtonClass(activePanel === null)}
                 onClick={() => {
                   setCanvasMode("select");
@@ -2516,6 +2548,7 @@ export default function AdvancedTemplateEditor({
               </Button>
               <Button
                 aria-label="Add elements"
+                aria-pressed={activePanel === "add"}
                 className={panelButtonClass(activePanel === "add")}
                 onClick={() => togglePanel("add")}
                 size="icon-sm"
@@ -2526,6 +2559,7 @@ export default function AdvancedTemplateEditor({
                 <span className="sr-only">Add</span>
               </Button>
               <Button
+                aria-pressed={activePanel === "layers"}
                 className={panelButtonClass(activePanel === "layers")}
                 onClick={() => togglePanel("layers")}
                 size="icon-sm"
@@ -2537,6 +2571,7 @@ export default function AdvancedTemplateEditor({
               </Button>
               <span aria-hidden="true" className="h-px w-6 bg-border" />
               <Button
+                aria-pressed={activePanel === "data"}
                 className={panelButtonClass(activePanel === "data")}
                 onClick={() => togglePanel("data")}
                 size="icon-sm"
@@ -2547,6 +2582,7 @@ export default function AdvancedTemplateEditor({
                 <span className="sr-only">Fields</span>
               </Button>
               <Button
+                aria-pressed={activePanel === "pages"}
                 className={panelButtonClass(activePanel === "pages")}
                 onClick={() => togglePanel("pages")}
                 size="icon-sm"
@@ -2564,13 +2600,14 @@ export default function AdvancedTemplateEditor({
             className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.965_0.004_255)]"
           >
             {!focusMode ? (
-              <div className="flex h-16 shrink-0 items-center border-b border-border bg-card px-5 text-xs">
-                <div className="flex h-full w-[320px] items-center gap-1.5 border-r border-border px-4">
+              <div className="flex h-[54px] shrink-0 items-center border-b border-border bg-card px-3.5 text-xs">
+                <div className="flex h-full w-[292px] items-center gap-1 border-r border-border px-3.5">
                   <span className="mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
                     Canvas
                   </span>
                   <Button
                     aria-label="Select tool"
+                    aria-pressed={canvasMode === "select"}
                     className={
                       canvasMode === "select"
                         ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
@@ -2585,6 +2622,7 @@ export default function AdvancedTemplateEditor({
                   </Button>
                   <Button
                     aria-label="Pan canvas"
+                    aria-pressed={canvasMode === "pan"}
                     className={
                       canvasMode === "pan"
                         ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary hover:bg-accent"
@@ -2710,7 +2748,7 @@ export default function AdvancedTemplateEditor({
                   </Button>
                 </div>
 
-                <div className="flex h-full w-[370px] items-center justify-end gap-1.5 border-l border-border pl-4">
+                <div className="flex h-full w-[336px] items-center justify-end gap-1 border-l border-border pl-3">
                   <span className="mr-1 max-w-16 truncate font-caption text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
                     {selectedPdfmeSchema
                       ? selectedPdfmeSchema.type
@@ -2796,7 +2834,11 @@ export default function AdvancedTemplateEditor({
               Page {currentPage + 1} of {pageCount} · {name}
             </div>
             {!designerReady ? (
-              <div className="absolute inset-0 z-40 grid place-items-center bg-background/80">
+              <div
+                aria-live="polite"
+                className="absolute inset-0 z-40 grid place-items-center bg-background/80"
+                role="status"
+              >
                 <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
                   <LoaderCircle
                     aria-hidden="true"
@@ -2824,6 +2866,8 @@ export default function AdvancedTemplateEditor({
           >
             <div className="flex h-full min-w-0 items-center gap-3 px-4">
               <button
+                aria-controls="advanced-editor-document-strip"
+                aria-expanded={documentStripOpen}
                 className="flex h-full w-28 shrink-0 items-center justify-between border-r border-border pr-3 text-left font-heading text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                 onClick={() => setDocumentStripOpen((value) => !value)}
                 type="button"
@@ -2837,10 +2881,14 @@ export default function AdvancedTemplateEditor({
               </button>
 
               {documentStripOpen ? (
-                <>
+                <div
+                  className="contents"
+                  id="advanced-editor-document-strip"
+                >
                   <div className="flex max-w-44 shrink-0 items-center gap-2 overflow-x-auto overscroll-contain">
                     {currentTemplateRef.current.schemas.map((_page, index) => (
                       <button
+                        aria-current={currentPage === index ? "page" : undefined}
                         aria-label={`Go to page ${index + 1}`}
                         className={`relative h-[66px] w-12 shrink-0 rounded-md border bg-card outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                           currentPage === index
@@ -2886,7 +2934,7 @@ export default function AdvancedTemplateEditor({
                               ? "border-primary/30 bg-card text-primary"
                               : "border-border bg-muted text-muted-foreground"
                       }`}
-                      onClick={() => openRegionPanel("header")}
+                      onClick={openRegionPanel}
                       type="button"
                     >
                       <PanelTop aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
@@ -2902,24 +2950,44 @@ export default function AdvancedTemplateEditor({
                               ? "border-primary/30 bg-card text-primary"
                               : "border-border bg-muted text-muted-foreground"
                       }`}
-                      onClick={() => openRegionPanel("footer")}
+                      onClick={openRegionPanel}
                       type="button"
                     >
                       <PanelBottom aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
                       <span className="truncate">Footer · {editingRegion === "footer" && activePanel === "pages" ? "editing" : repeatingFooterCount ? `${repeatingFooterCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</span>
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
                 <span className="text-xs text-muted-foreground">
                   Page {currentPage + 1} of {pageCount}
                 </span>
               )}
 
-              <div className="ml-auto flex shrink-0 items-center gap-2 font-caption text-[10px] font-semibold text-muted-foreground">
+              <div
+                aria-live="polite"
+                className="ml-auto flex shrink-0 items-center gap-2 font-caption text-[10px] font-semibold text-muted-foreground"
+                role="status"
+              >
                 <span className="hidden items-center gap-1.5 xl:flex">
-                  <span className="size-[7px] rounded-full bg-emerald-500" />
-                  No overflow errors
+                  <span
+                    className={`size-[7px] rounded-full ${
+                      error
+                        ? "bg-destructive"
+                        : warnings.length
+                          ? "bg-amber-500"
+                          : designerReady
+                            ? "bg-emerald-500"
+                            : "bg-muted-foreground"
+                    }`}
+                  />
+                  {error
+                    ? "Validation error"
+                    : warnings.length
+                      ? `${warnings.length} publish warning${warnings.length === 1 ? "" : "s"}`
+                      : designerReady
+                        ? "No overflow errors"
+                        : "Checking template"}
                 </span>
                 <span className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</span>
                 <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
@@ -2944,13 +3012,100 @@ export default function AdvancedTemplateEditor({
                   </button>
                 </div>
                 <span className="flex items-center gap-1.5">
-                  <Check aria-hidden="true" className="text-emerald-600" size={13} />
-                  pdfme ready
+                  {designerReady ? (
+                    <Check aria-hidden="true" className="text-emerald-600" size={13} />
+                  ) : (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="animate-spin"
+                      size={13}
+                    />
+                  )}
+                  {designerReady ? "pdfme ready" : "Loading designer"}
                 </span>
               </div>
             </div>
           </footer>
         ) : null}
+        <dialog
+          aria-describedby="delete-page-description"
+          aria-labelledby="delete-page-title"
+          className="m-auto h-[340px] w-[calc(100%_-_3rem)] max-w-[530px] overflow-hidden rounded-xl border border-border bg-card p-0 text-card-foreground shadow-[0_18px_48px_rgba(0,0,0,0.18)] backdrop:bg-foreground/45"
+          onCancel={(event) => {
+            event.preventDefault();
+            setPendingPageRemoval(null);
+          }}
+          onClick={(event) => {
+            if (event.currentTarget === event.target) {
+              setPendingPageRemoval(null);
+            }
+          }}
+          ref={deletePageDialogRef}
+        >
+          {pendingPageRemoval !== null ? (
+            <section
+              className="flex h-full w-full flex-col"
+            >
+              <div className="flex items-center gap-3 border-b border-border px-[22px] py-5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-destructive/10 text-destructive">
+                  <Trash2 aria-hidden="true" size={19} />
+                </span>
+                <div className="grid gap-0.5">
+                  <h2
+                    className="font-heading text-[19px] font-bold"
+                    id="delete-page-title"
+                  >
+                    Delete page {pendingPageRemoval + 1}?
+                  </h2>
+                  <p className="text-[13px] text-muted-foreground">
+                    Selected page ·{" "}
+                    {currentTemplateRef.current.schemas[pendingPageRemoval]
+                      ?.length ?? 0}{" "}
+                    elements
+                  </p>
+                </div>
+              </div>
+              <div
+                className="min-h-0 flex-1 px-[22px] py-[18px] text-[13px] leading-6 text-muted-foreground"
+                id="delete-page-description"
+              >
+                <p>
+                  Deleting this page will not remove document fields or data
+                  bindings. Header and footer regions stay unchanged.
+                </p>
+                <p className="mt-4">
+                  Page{" "}
+                  {Math.max(
+                    0,
+                    Math.min(
+                      pendingPageRemoval,
+                      currentTemplateRef.current.schemas.length - 2,
+                    ),
+                  ) + 1}{" "}
+                  becomes selected after deletion. You can undo until the
+                  draft is saved.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2.5 border-t border-border px-[22px] py-4">
+                <Button
+                  autoFocus
+                  onClick={() => setPendingPageRemoval(null)}
+                  type="button"
+                  variant="ghost"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => removePage(pendingPageRemoval)}
+                  type="button"
+                  variant="destructive"
+                >
+                  Delete page {pendingPageRemoval + 1}
+                </Button>
+              </div>
+            </section>
+          ) : null}
+        </dialog>
       </main>
       <style jsx global>{`
         .advanced-pdfme-designer .pdfme-ui-control-bar {
@@ -3006,11 +3161,11 @@ export default function AdvancedTemplateEditor({
 
         .advanced-pdfme-designer[data-field-inspector-open="true"]
           .pdfme-designer-right-sidebar {
-          top: 18px !important;
+          top: 14px !important;
           right: 82px !important;
           z-index: 30 !important;
           width: 320px !important;
-          height: 578px !important;
+          height: min(578px, calc(100% - 28px)) !important;
           pointer-events: auto;
         }
 
