@@ -61377,145 +61377,808 @@
                         "rYku9/i2HLbt": {
                           "content": "Generate password"
                         },
-                        "wUv1G/jwdR3": {
-                          "content": "Password length"
-                        },
-                        "wUv1G/xRO7M": {
-                          "content": "16"
-                        },
-                        "wsbCw": {
-                          "content": "16 characters"
-                        },
-                        "FI41w": {
-                          "content": "GENERATED PASSWORD"
-                        },
-                        "PJ500": {
-                          "content": "vN7!qP2#Lm9@Xc4$"
-                        },
-                        "bHgbZ": {
-                          "content": "Uppercase, lowercase, and numbers"
-                        },
-                        "h15I7W": {
-                          "content": "Included in this password"
-                        },
-                        "kmqzL": {
-                          "content": "Symbols"
-                        },
-                        "kuFjz": {
-                          "content": "Included for stronger entropy"
-                        },
-                        "ZlFBQ": {
-                          "content": "Exclude ambiguous characters"
-                        },
-                        "COJ9f": {
-                          "content": "Avoid 0, O, l, and I"
-                        },
-                        "J1sd8": {
-                          "content": "SUCCESS",
-                          "fill": "$success"
-                        },
-                        "TjTOD": {
-                          "fill": "$success-soft"
-                        },
-                        "TjTOD/fF9w0": {
-                          "icon": "circle-check",
-                          "fill": "$success"
-                        },
-                        "TjTOD/TK55X": {
-                          "content": "Result ready",
-                          "fill": "$success"
-                        },
-                        "TjTOD/dTfwI": {
-                          "content": "Generated locally. Save it in a password manager and do not reuse it.",
-                          "enabled": false
-                        },
-                        "T2x7B": {
+                        "sT8cp": {
                           "type": "frame",
-                          "id": "N3c7Et",
-                          "name": "Password Result Summary",
-                          "width": 420,
-                          "fill": "$surface-muted",
-                          "cornerRadius": "$r-md",
-                          "layout": "vertical",
-                          "gap": 12,
-                          "padding": 14,
+                          "id": "lWQiu",
+                          "name": "Password Generator Workspace",
+                          "width": "fill_container",
+                          "height": "fill_container",
                           "children": [
                             {
                               "type": "frame",
-                              "id": "RHa12",
-                              "name": "Password Strength Header",
+                              "id": "ZEY68",
+                              "name": "Password Output Panel",
                               "width": "fill_container",
-                              "justifyContent": "space_between",
-                              "alignItems": "center",
+                              "height": "fill_container",
+                              "fill": "$surface-muted",
+                              "layout": "vertical",
+                              "gap": 14,
+                              "padding": 20,
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "lShJo",
-                                  "name": "Password Length",
-                                  "fill": "$fg-primary",
-                                  "content": "16 characters",
-                                  "fontFamily": "$font-heading",
-                                  "fontSize": 14,
-                                  "fontWeight": "600"
+                                  "type": "frame",
+                                  "id": "kIU4h",
+                                  "name": "Results Header",
+                                  "width": "fill_container",
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "N2HAc",
+                                      "layout": "vertical",
+                                      "gap": 3,
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "D8vPt",
+                                          "fill": "$fg-secondary",
+                                          "content": "GENERATED PASSWORDS",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 11,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.6
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "U3AOV",
+                                          "fill": "$fg-primary",
+                                          "content": "Four unique results, generated locally",
+                                          "fontFamily": "$font-heading",
+                                          "fontSize": 18,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "EjS79",
+                                      "fill": "$success",
+                                      "content": "4 RESULTS",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 10,
+                                      "fontWeight": "600",
+                                      "letterSpacing": 0.5
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "FGlCO",
+                                  "name": "Password Quality Summary",
+                                  "width": "fill_container",
+                                  "gap": 10,
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "zYzL3",
+                                      "name": "Strength",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "layout": "vertical",
+                                      "gap": 3,
+                                      "padding": 12,
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "ee9kq",
+                                          "fill": "$fg-secondary",
+                                          "content": "Strength",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "BJGbU",
+                                          "fill": "$success",
+                                          "content": "STRONG",
+                                          "fontFamily": "$font-heading",
+                                          "fontSize": 14,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "B64sSu",
+                                      "name": "Estimated Entropy",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "layout": "vertical",
+                                      "gap": 3,
+                                      "padding": 12,
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "VHF5f",
+                                          "fill": "$fg-secondary",
+                                          "content": "Estimated entropy",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "XlLk1",
+                                          "fill": "$fg-primary",
+                                          "content": "104 bits",
+                                          "fontFamily": "$font-heading",
+                                          "fontSize": 14,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "b9AMvQ",
+                                      "name": "Character Sets",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "layout": "vertical",
+                                      "gap": 3,
+                                      "padding": 12,
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "Whlke",
+                                          "fill": "$fg-secondary",
+                                          "content": "Character sets",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "EKliL",
+                                          "fill": "$fg-primary",
+                                          "content": "4 of 4",
+                                          "fontFamily": "$font-heading",
+                                          "fontSize": 14,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "WdyDI",
+                                  "name": "Password List",
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 8,
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "uWJ1e",
+                                      "name": "Password 1",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "gap": 12,
+                                      "padding": [
+                                        10,
+                                        12
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "FHA1D",
+                                          "fill": "$fg-secondary",
+                                          "content": "01",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "cORdc",
+                                          "fill": "$fg-primary",
+                                          "textGrowth": "fixed-width",
+                                          "width": "fill_container",
+                                          "content": "vN7!qP2#Lm9@Xc4$",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 13,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "wQlgx",
+                                          "fill": "$success",
+                                          "content": "STRONG",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "id": "N9kodF",
+                                          "type": "ref",
+                                          "ref": "ODEcI",
+                                          "name": "Copy Password 1",
+                                          "descendants": {
+                                            "eTU0F": {
+                                              "icon": "copy"
+                                            },
+                                            "bJSEm": {
+                                              "content": "Copy"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "U4v80m",
+                                      "name": "Password 2",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "gap": 12,
+                                      "padding": [
+                                        10,
+                                        12
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "CynJ8",
+                                          "fill": "$fg-secondary",
+                                          "content": "02",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "ZMLZJ",
+                                          "fill": "$fg-primary",
+                                          "textGrowth": "fixed-width",
+                                          "width": "fill_container",
+                                          "content": "B8@fR2!wQ6#sT9&k",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 13,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "B851t6",
+                                          "fill": "$success",
+                                          "content": "STRONG",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "id": "WS1ul",
+                                          "type": "ref",
+                                          "ref": "ODEcI",
+                                          "name": "Copy Password 2",
+                                          "descendants": {
+                                            "eTU0F": {
+                                              "icon": "copy"
+                                            },
+                                            "bJSEm": {
+                                              "content": "Copy"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "NrPI9",
+                                      "name": "Password 3",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "gap": 12,
+                                      "padding": [
+                                        10,
+                                        12
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "sMntX",
+                                          "fill": "$fg-secondary",
+                                          "content": "03",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "k0ouv",
+                                          "fill": "$fg-primary",
+                                          "textGrowth": "fixed-width",
+                                          "width": "fill_container",
+                                          "content": "pZ4$yH7!mC2@vL8%",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 13,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "Rsxnn",
+                                          "fill": "$success",
+                                          "content": "STRONG",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "id": "mVIsx",
+                                          "type": "ref",
+                                          "ref": "ODEcI",
+                                          "name": "Copy Password 3",
+                                          "descendants": {
+                                            "eTU0F": {
+                                              "icon": "copy"
+                                            },
+                                            "bJSEm": {
+                                              "content": "Copy"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "wO0Ev",
+                                      "name": "Password 4",
+                                      "width": "fill_container",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": 1,
+                                      "gap": 12,
+                                      "padding": [
+                                        10,
+                                        12
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "zYPUC",
+                                          "fill": "$fg-secondary",
+                                          "content": "04",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "Zy8mW",
+                                          "fill": "$fg-primary",
+                                          "textGrowth": "fixed-width",
+                                          "width": "fill_container",
+                                          "content": "K3#dN9!xA5$qW7*r",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 13,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "Ne7Nz",
+                                          "fill": "$success",
+                                          "content": "STRONG",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        },
+                                        {
+                                          "id": "Vkjw6",
+                                          "type": "ref",
+                                          "ref": "ODEcI",
+                                          "name": "Copy Password 4",
+                                          "descendants": {
+                                            "eTU0F": {
+                                              "icon": "copy"
+                                            },
+                                            "bJSEm": {
+                                              "content": "Copy"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 },
                                 {
                                   "type": "text",
-                                  "id": "WfnyU",
-                                  "name": "Password Strength",
-                                  "fill": "$success",
-                                  "content": "STRONG",
+                                  "id": "Ii5Vy",
+                                  "name": "One Time Notice",
+                                  "fill": "$fg-secondary",
+                                  "content": "Passwords are not stored. Copy or download them before leaving this page.",
                                   "fontFamily": "$font-caption",
-                                  "fontSize": 10,
-                                  "fontWeight": "600",
-                                  "letterSpacing": 0.5
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "I85de",
+                                  "name": "Batch Actions",
+                                  "width": "fill_container",
+                                  "gap": 8,
+                                  "justifyContent": "end",
+                                  "children": [
+                                    {
+                                      "id": "ULNfj",
+                                      "type": "ref",
+                                      "ref": "ODEcI",
+                                      "name": "Copy All",
+                                      "descendants": {
+                                        "eTU0F": {
+                                          "icon": "copy"
+                                        },
+                                        "bJSEm": {
+                                          "content": "Copy all"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "krPOZ",
+                                      "type": "ref",
+                                      "ref": "ODEcI",
+                                      "name": "Download Batch",
+                                      "descendants": {
+                                        "eTU0F": {
+                                          "icon": "download"
+                                        },
+                                        "bJSEm": {
+                                          "content": "Download .txt"
+                                        }
+                                      }
+                                    }
+                                  ]
                                 }
                               ]
                             },
                             {
-                              "type": "text",
-                              "id": "LrSdM",
-                              "name": "Password Composition",
-                              "fill": "$fg-secondary",
-                              "textGrowth": "fixed-width",
-                              "width": "fill_container",
-                              "content": "4 character types · ambiguous characters excluded",
-                              "lineHeight": 1.45,
-                              "fontFamily": "$font-body",
-                              "fontSize": 12,
-                              "fontWeight": "normal"
-                            },
-                            {
                               "type": "frame",
-                              "id": "I6PeDx",
-                              "name": "Password Result Actions",
-                              "width": "fill_container",
-                              "gap": 8,
+                              "id": "K5oUwo",
+                              "name": "Password Settings Panel",
+                              "width": 460,
+                              "height": "fill_container",
+                              "fill": "$surface",
+                              "stroke": "$border-subtle",
+                              "strokeWidth": {
+                                "left": 1
+                              },
+                              "layout": "vertical",
+                              "gap": 14,
+                              "padding": 20,
                               "children": [
                                 {
-                                  "id": "BL7aM",
-                                  "type": "ref",
-                                  "ref": "ODEcI",
-                                  "name": "Copy Password",
-                                  "descendants": {
-                                    "eTU0F": {
-                                      "icon": "copy"
-                                    },
-                                    "bJSEm": {
-                                      "content": "Copy password"
-                                    }
-                                  }
+                                  "type": "text",
+                                  "id": "DjQkd",
+                                  "name": "Configuration Label",
+                                  "fill": "$fg-secondary",
+                                  "content": "PASSWORD RULES",
+                                  "fontFamily": "$font-caption",
+                                  "fontSize": 11,
+                                  "fontWeight": "600",
+                                  "letterSpacing": 0.6
                                 },
                                 {
-                                  "id": "PonRs",
-                                  "type": "ref",
-                                  "ref": "ODEcI",
-                                  "name": "Download Password",
-                                  "descendants": {
-                                    "eTU0F": {
-                                      "icon": "download"
+                                  "type": "frame",
+                                  "id": "iisLM",
+                                  "name": "Length and Count",
+                                  "width": "fill_container",
+                                  "gap": 12,
+                                  "children": [
+                                    {
+                                      "id": "b43fy",
+                                      "type": "ref",
+                                      "ref": "KYa0C",
+                                      "name": "Password Length",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "gasMG": {
+                                          "content": "Password length"
+                                        },
+                                        "yspKK": {
+                                          "content": "16"
+                                        },
+                                        "c97Mm": {
+                                          "content": "8–128 characters"
+                                        }
+                                      }
                                     },
-                                    "bJSEm": {
-                                      "content": "Download .txt"
+                                    {
+                                      "id": "rB2IC",
+                                      "type": "ref",
+                                      "ref": "KYa0C",
+                                      "name": "Password Count",
+                                      "width": "fill_container",
+                                      "descendants": {
+                                        "gasMG": {
+                                          "content": "How many"
+                                        },
+                                        "yspKK": {
+                                          "content": "4"
+                                        },
+                                        "c97Mm": {
+                                          "content": "Generate 1–100 passwords"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "zc966",
+                                  "name": "Independent Character Sets",
+                                  "width": "fill_container",
+                                  "layout": "vertical",
+                                  "gap": 10,
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "tefUs",
+                                      "name": "Uppercase A–Z",
+                                      "width": "fill_container",
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "ppdNS",
+                                          "name": "Uppercase A–Z Copy",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "bK1RE",
+                                              "fill": "$fg-primary",
+                                              "content": "Uppercase A–Z",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "o5xzAM",
+                                              "fill": "$fg-secondary",
+                                              "content": "Include capital letters",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "p8bC0",
+                                          "type": "ref",
+                                          "ref": "wsb4b",
+                                          "name": "Uppercase A–Z Toggle",
+                                          "fill": "$accent",
+                                          "justifyContent": "end"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "iMPbZ",
+                                      "name": "Lowercase a–z",
+                                      "width": "fill_container",
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "I8qo3",
+                                          "name": "Lowercase a–z Copy",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "h5v67",
+                                              "fill": "$fg-primary",
+                                              "content": "Lowercase a–z",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "LQYoI",
+                                              "fill": "$fg-secondary",
+                                              "content": "Include lowercase letters",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "klBdQ",
+                                          "type": "ref",
+                                          "ref": "wsb4b",
+                                          "name": "Lowercase a–z Toggle",
+                                          "fill": "$accent",
+                                          "justifyContent": "end"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "iKspI",
+                                      "name": "Numbers 0–9",
+                                      "width": "fill_container",
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "f9g3gv",
+                                          "name": "Numbers 0–9 Copy",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "G27W2",
+                                              "fill": "$fg-primary",
+                                              "content": "Numbers 0–9",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "j2fMsJ",
+                                              "fill": "$fg-secondary",
+                                              "content": "Include numeric characters",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "VUTxx",
+                                          "type": "ref",
+                                          "ref": "wsb4b",
+                                          "name": "Numbers 0–9 Toggle",
+                                          "fill": "$accent",
+                                          "justifyContent": "end"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "eS21l",
+                                      "name": "Symbols !@#$",
+                                      "width": "fill_container",
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "O3XtmN",
+                                          "name": "Symbols !@#$ Copy",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "D9PkQp",
+                                              "fill": "$fg-primary",
+                                              "content": "Symbols !@#$",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "Q45zT",
+                                              "fill": "$fg-secondary",
+                                              "content": "Include special characters",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "sMn6G",
+                                          "type": "ref",
+                                          "ref": "wsb4b",
+                                          "name": "Symbols !@#$ Toggle",
+                                          "fill": "$accent",
+                                          "justifyContent": "end"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "ZG8NP",
+                                      "name": "Exclude ambiguous characters",
+                                      "width": "fill_container",
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "l7B6B",
+                                          "name": "Exclude ambiguous characters Copy",
+                                          "layout": "vertical",
+                                          "gap": 2,
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "O7E4E",
+                                              "fill": "$fg-primary",
+                                              "content": "Exclude ambiguous characters",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "TSNzt",
+                                              "fill": "$fg-secondary",
+                                              "content": "Avoid 0, O, l, and I",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "id": "MAMCw",
+                                          "type": "ref",
+                                          "ref": "wsb4b",
+                                          "name": "Exclude ambiguous characters Toggle",
+                                          "fill": "$border-strong",
+                                          "justifyContent": "start"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "V0SsV",
+                                  "name": "Validation Hint",
+                                  "fill": "$fg-secondary",
+                                  "content": "At least one character set must remain enabled.",
+                                  "fontFamily": "$font-caption",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "id": "aknMG",
+                                  "type": "ref",
+                                  "ref": "wm1rh",
+                                  "name": "Generate Passwords",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "i2HLbt": {
+                                      "content": "Generate 4 passwords"
                                     }
                                   }
                                 }
@@ -91024,11 +91687,199 @@
                         "pp22B": {
                           "icon": "stamp"
                         },
-                        "aUHsS/MAI0Q": {
-                          "content": "Drop one PDF here"
+                        "aUHsS": {
+                          "type": "frame",
+                          "id": "M5I3hX",
+                          "name": "Watermark Page Preview",
+                          "width": "fill_container",
+                          "height": 210,
+                          "fill": "$surface-muted",
+                          "cornerRadius": "$r-xl",
+                          "stroke": "$border-strong",
+                          "strokeWidth": 1,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "S7aoO",
+                              "layoutPosition": "absolute",
+                              "x": 16,
+                              "y": 14,
+                              "name": "Preview Label",
+                              "fill": "$surface",
+                              "cornerRadius": "$r-full",
+                              "stroke": "$border-subtle",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                6,
+                                10
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "PtFUy",
+                                  "width": 13,
+                                  "height": 13,
+                                  "icon": "eye",
+                                  "library": "lucide",
+                                  "fill": "$accent"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "U8iewE",
+                                  "fill": "$fg-secondary",
+                                  "content": "LIVE PAGE PREVIEW",
+                                  "fontFamily": "$font-caption",
+                                  "fontSize": 10,
+                                  "fontWeight": "600",
+                                  "letterSpacing": 0.4
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "hg2Wa",
+                              "layoutPosition": "absolute",
+                              "x": 310,
+                              "y": 15,
+                              "name": "PDF Page 1",
+                              "width": 280,
+                              "height": 180,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-sm",
+                              "stroke": "$border-strong",
+                              "strokeWidth": 1,
+                              "effect": {
+                                "type": "shadow",
+                                "shadowType": "outer",
+                                "color": "#00000014",
+                                "offset": {
+                                  "x": 0,
+                                  "y": 3
+                                },
+                                "blur": 10
+                              },
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "XZutE",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 16,
+                                  "fill": "$fg-primary",
+                                  "content": "SERVICE PROPOSAL",
+                                  "fontFamily": "$font-heading",
+                                  "fontSize": 11,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": "$r-full",
+                                  "id": "d4rAJ",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 39,
+                                  "fill": "$border-strong",
+                                  "width": 160,
+                                  "height": 4
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": "$r-full",
+                                  "id": "qC3NV",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 51,
+                                  "fill": "$border-subtle",
+                                  "width": 238,
+                                  "height": 3
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": "$r-full",
+                                  "id": "sTPV2",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 60,
+                                  "fill": "$border-subtle",
+                                  "width": 220,
+                                  "height": 3
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": "$r-full",
+                                  "id": "Q5gjg",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 108,
+                                  "fill": "$border-subtle",
+                                  "width": 238,
+                                  "height": 3
+                                },
+                                {
+                                  "type": "rectangle",
+                                  "cornerRadius": "$r-full",
+                                  "id": "D239x",
+                                  "layoutPosition": "absolute",
+                                  "x": 18,
+                                  "y": 117,
+                                  "fill": "$border-subtle",
+                                  "width": 190,
+                                  "height": 3
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "x94wlF",
+                                  "layoutPosition": "absolute",
+                                  "x": 48,
+                                  "y": 88,
+                                  "name": "Watermark Overlay",
+                                  "opacity": 0.38,
+                                  "rotation": -25,
+                                  "fill": "$danger",
+                                  "content": "CONFIDENTIAL",
+                                  "fontFamily": "$font-heading",
+                                  "fontSize": 22,
+                                  "fontWeight": "700",
+                                  "letterSpacing": 1.2
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "B8fSRK",
+                              "layoutPosition": "absolute",
+                              "x": 16,
+                              "y": 170,
+                              "name": "Preview Page Status",
+                              "fill": "$accent-soft",
+                              "cornerRadius": "$r-md",
+                              "padding": [
+                                6,
+                                9
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "JIxGr",
+                                  "fill": "$accent",
+                                  "content": "Page 1 of 14 · center · −25°",
+                                  "fontFamily": "$font-caption",
+                                  "fontSize": 10,
+                                  "fontWeight": "600"
+                                }
+                              ]
+                            }
+                          ]
                         },
-                        "aUHsS/mCEa5": {
-                          "content": "PDF · up to 100 MB · processed locally"
+                        "F1yrZi": {
+                          "content": "PDF · 1 FILE · 14 PAGES"
+                        },
+                        "aofqz": {
+                          "content": "Preview reflects current text, placement, opacity, size, and rotation"
                         },
                         "OgBHF/DQxUI/ykfgO": {
                           "icon": "file-text"
@@ -91039,29 +91890,293 @@
                         "OgBHF/c6TxUx": {
                           "content": "14 pages · 3.6 MB"
                         },
-                        "I4mhE/m7UaH9": {
-                          "content": "Watermark settings"
+                        "srS2g": {
+                          "type": "frame",
+                          "id": "L37nYo",
+                          "x": 20,
+                          "y": 356,
+                          "name": "Watermarked PDF Result",
+                          "enabled": false,
+                          "width": "fill_container(940)",
+                          "fill": "$success-soft",
+                          "cornerRadius": "$r-md",
+                          "stroke": "$border-subtle",
+                          "strokeWidth": 1,
+                          "gap": 12,
+                          "padding": 14,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "pgkhF",
+                              "name": "Result Icon",
+                              "width": 34,
+                              "height": 34,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-md",
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "DewTv",
+                                  "name": "Completed Icon",
+                                  "width": 18,
+                                  "height": 18,
+                                  "icon": "circle-check",
+                                  "library": "lucide",
+                                  "fill": "$success"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "hv6of",
+                              "name": "Result Copy",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "JIMO3",
+                                  "name": "Result Title",
+                                  "fill": "$fg-primary",
+                                  "content": "Watermarked PDF ready",
+                                  "fontFamily": "$font-heading",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "RoSCg",
+                                  "name": "Result Metadata",
+                                  "fill": "$fg-secondary",
+                                  "content": "proposal-watermarked.pdf · 14 pages · processed locally",
+                                  "fontFamily": "$font-body",
+                                  "fontSize": 11,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            },
+                            {
+                              "id": "XoWFa",
+                              "type": "ref",
+                              "ref": "wm1rh",
+                              "name": "Download Watermarked PDF",
+                              "descendants": {
+                                "i2HLbt": {
+                                  "content": "Download PDF"
+                                }
+                              }
+                            }
+                          ]
                         },
-                        "I4mhE/rwuVl/zthem": {
-                          "content": "Watermark text"
+                        "I4mhE": {
+                          "type": "frame",
+                          "id": "c7s7j",
+                          "name": "Watermark Controls",
+                          "width": "fill_container",
+                          "fill": "$surface",
+                          "cornerRadius": "$r-xl",
+                          "stroke": "$border-subtle",
+                          "strokeWidth": 1,
+                          "layout": "vertical",
+                          "gap": 8,
+                          "padding": 14,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "vveVJ",
+                              "name": "Watermark Controls Header",
+                              "width": "fill_container",
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ogdPf",
+                                  "fill": "$fg-primary",
+                                  "content": "Watermark settings",
+                                  "fontFamily": "$font-heading",
+                                  "fontSize": 16,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "r0SIF",
+                                  "fill": "$accent",
+                                  "content": "TEXT MODE",
+                                  "fontFamily": "$font-caption",
+                                  "fontSize": 10,
+                                  "fontWeight": "600",
+                                  "letterSpacing": 0.4
+                                }
+                              ]
+                            },
+                            {
+                              "id": "j411eb",
+                              "type": "ref",
+                              "ref": "hZUnl",
+                              "name": "Text or Image Watermark",
+                              "width": "fill_container",
+                              "descendants": {
+                                "H5p32": {
+                                  "content": "Text"
+                                },
+                                "C0SjRZ": {
+                                  "content": "Image"
+                                }
+                              }
+                            },
+                            {
+                              "id": "Kitba",
+                              "type": "ref",
+                              "ref": "KYa0C",
+                              "name": "Watermark Text",
+                              "width": "fill_container",
+                              "descendants": {
+                                "gasMG": {
+                                  "content": "Watermark text"
+                                },
+                                "yspKK": {
+                                  "content": "CONFIDENTIAL"
+                                },
+                                "c97Mm": {
+                                  "enabled": false
+                                }
+                              }
+                            },
+                            {
+                              "type": "frame",
+                              "id": "jOaqL",
+                              "name": "Pages and Position",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "children": [
+                                {
+                                  "id": "Q4t6s",
+                                  "type": "ref",
+                                  "ref": "NcoS9",
+                                  "name": "Watermark Pages",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "zthem": {
+                                      "content": "Pages"
+                                    },
+                                    "JtSjO": {
+                                      "content": "All pages"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "qggid",
+                                  "type": "ref",
+                                  "ref": "NcoS9",
+                                  "name": "Watermark Position",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "zthem": {
+                                      "content": "Position"
+                                    },
+                                    "JtSjO": {
+                                      "content": "Center"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "OebSR",
+                              "name": "Opacity Size Rotation",
+                              "width": "fill_container",
+                              "gap": 8,
+                              "children": [
+                                {
+                                  "id": "AYXOZ",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Watermark Opacity",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Opacity"
+                                    },
+                                    "yspKK": {
+                                      "content": "35%"
+                                    },
+                                    "c97Mm": {
+                                      "enabled": false
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "FfMgG",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Watermark Size",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Size"
+                                    },
+                                    "yspKK": {
+                                      "content": "48 pt"
+                                    },
+                                    "c97Mm": {
+                                      "enabled": false
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "l6B7VW",
+                                  "type": "ref",
+                                  "ref": "KYa0C",
+                                  "name": "Watermark Rotation",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "gasMG": {
+                                      "content": "Rotation"
+                                    },
+                                    "yspKK": {
+                                      "content": "−25°"
+                                    },
+                                    "c97Mm": {
+                                      "enabled": false
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "id": "sx90g",
+                              "type": "ref",
+                              "ref": "wm1rh",
+                              "name": "Apply Watermark",
+                              "width": "fill_container",
+                              "descendants": {
+                                "i2HLbt": {
+                                  "content": "Apply watermark to 14 pages"
+                                }
+                              }
+                            }
+                          ]
                         },
-                        "I4mhE/rwuVl/JtSjO": {
-                          "content": "CONFIDENTIAL"
-                        },
-                        "I4mhE/azgSB": {
-                          "content": "Placement"
-                        },
-                        "I4mhE/gKDYG": {
-                          "content": "Centered · 35% opacity"
-                        },
-                        "I4mhE/ZwTWS/i2HLbt": {
-                          "content": "Add watermark"
+                        "elMDq": {
+                          "enabled": true
                         },
                         "elMDq/ENy3q": {
                           "content": "Watermark PDF output · ready to save"
                         },
                         "elMDq/eYQxA/i2HLbt": {
                           "content": "Download watermarked PDF"
+                        },
+                        "entpc": {
+                          "content": "Completed · output ready"
+                        },
+                        "sh6po": {
+                          "content": "Watermark applied locally · source file unchanged"
                         }
                       }
                     },
@@ -176661,7 +177776,6 @@
       "y": 0,
       "name": "Pages/DevTools — Workbench Families",
       "width": 1536,
-      "height": 3692,
       "fill": "#E9EBEF",
       "layout": "vertical",
       "gap": 80,
