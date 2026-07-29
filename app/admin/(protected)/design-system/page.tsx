@@ -626,9 +626,9 @@ export default function DesignSystemPage() {
                     Jump through a long-running workflow
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Move across the rail to preview each chapter. Use the arrow
-                    keys, Home, or End when the scrubber is focused, then press
-                    Enter to choose a chapter.
+                    Hover or tap a tick to preview its chapter. On touch, tap
+                    it again to choose. With a keyboard, use the arrow keys,
+                    Home, or End to move, then press Enter or Space to choose.
                   </p>
                   <p className="mt-4 font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary">
                     Current · {workflowChapters[selectedChapterIndex].title}

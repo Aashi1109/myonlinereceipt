@@ -130,6 +130,8 @@ export function ChapterScrubber({
   const activeRef = React.useRef(0);
   const focusedRef = React.useRef<number | null>(null);
   const hoveringRef = React.useRef(false);
+  const lastPointerTypeRef = React.useRef<string | null>(null);
+  const touchPreviewRef = React.useRef<number | null>(null);
 
   const lastIndex = chapters.length - 1;
   const optionId = (index: number) => `${baseId}-option-${index}`;
@@ -278,9 +280,21 @@ export function ChapterScrubber({
     setEngaged(false);
   }
 
+  function handlePointerCancel(event: React.PointerEvent<HTMLDivElement>) {
+    hoveringRef.current = false;
+    focusedRef.current = null;
+    lastPointerTypeRef.current = null;
+    touchPreviewRef.current = null;
+    rawStrength.set(0);
+    setEngaged(false);
+    if (event.target instanceof HTMLElement) event.target.blur();
+  }
+
   function handleBlur(event: React.FocusEvent<HTMLDivElement>) {
     if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
     focusedRef.current = null;
+    lastPointerTypeRef.current = null;
+    touchPreviewRef.current = null;
     if (!hoveringRef.current) {
       rawStrength.set(0);
       setEngaged(false);
@@ -296,9 +310,19 @@ export function ChapterScrubber({
         const chapter = chapters[nextIndex];
         if (!chapter) return;
         event.preventDefault();
+        lastPointerTypeRef.current = null;
+        touchPreviewRef.current = null;
         onSelect?.(chapter, nextIndex);
         return;
       }
+      case "Escape":
+        event.preventDefault();
+        focusedRef.current = null;
+        touchPreviewRef.current = null;
+        rawStrength.set(0);
+        setEngaged(false);
+        if (event.target instanceof HTMLElement) event.target.blur();
+        return;
       case "ArrowDown":
       case "ArrowRight":
         nextIndex = Math.min(lastIndex, nextIndex + 1);
@@ -321,6 +345,18 @@ export function ChapterScrubber({
     buttonsRef.current[nextIndex]?.focus();
   }
 
+  if (chapters.length === 0) {
+    return (
+      <div
+        className={cn("text-sm text-muted-foreground", className)}
+        data-slot="chapter-scrubber-empty"
+        role="status"
+      >
+        No chapters available.
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("relative", className)}
@@ -337,13 +373,15 @@ export function ChapterScrubber({
         className="flex w-full flex-col"
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        onPointerCancel={handlePointerCancel}
         onPointerLeave={handlePointerLeave}
         onPointerMove={handlePointerMove}
         ref={listRef}
         role="listbox"
       >
         {chapters.map((chapter, index) => {
-          const current = index === currentIndex;
+          const current =
+            currentIndex !== undefined && index === normalizedCurrentIndex;
           const description =
             typeof chapter.description === "string"
               ? `. ${chapter.description}`
@@ -360,10 +398,26 @@ export function ChapterScrubber({
               )}
               id={optionId(index)}
               key={chapter.id}
-              onClick={() => onSelect?.(chapter, index)}
+              onClick={() => {
+                if (
+                  lastPointerTypeRef.current === "touch" &&
+                  touchPreviewRef.current !== index
+                ) {
+                  touchPreviewRef.current = index;
+                  engageAt(index, index);
+                  return;
+                }
+                lastPointerTypeRef.current = null;
+                touchPreviewRef.current = null;
+                onSelect?.(chapter, index);
+              }}
               onFocus={() => {
                 focusedRef.current = index;
                 engageAt(index, index);
+              }}
+              onPointerDown={(event) => {
+                lastPointerTypeRef.current = event.pointerType;
+                if (event.pointerType === "touch") engageAt(index, index);
               }}
               ref={(element) => {
                 buttonsRef.current[index] = element;
@@ -411,7 +465,7 @@ export function ChapterScrubber({
               {chapters[activeIndex].meta}
             </div>
           ) : null}
-          <div className="truncate font-heading text-sm leading-snug font-semibold tracking-[-0.01em]">
+          <div className="break-words font-heading text-sm leading-snug font-semibold tracking-[-0.01em]">
             {chapters[activeIndex].title}
           </div>
           {chapters[activeIndex].description ? (
