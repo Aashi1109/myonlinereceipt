@@ -28,7 +28,7 @@ export interface ChapterScrubberProps {
   radius?: number;
   currentIndex?: number;
   onActiveChange?: (chapter: Chapter | null, index: number) => void;
-  onSelect?: (chapter: Chapter, index: number) => void;
+  onSelect: (chapter: Chapter, index: number) => void;
   label?: string;
   className?: string;
 }
@@ -135,10 +135,24 @@ export function ChapterScrubber({
 
   const lastIndex = chapters.length - 1;
   const optionId = (index: number) => `${baseId}-option-${index}`;
+  const resolvedPeakLength = Number.isFinite(peakLength)
+    ? Math.max(24, peakLength)
+    : 56;
+  const resolvedRestLength = Number.isFinite(restLength)
+    ? clamp(restLength, 2, resolvedPeakLength)
+    : 14;
+  const resolvedRowHeight =
+    Number.isFinite(rowHeight) && rowHeight >= 24 ? rowHeight : 24;
+  const resolvedRadius =
+    Number.isFinite(radius) && radius > 0 ? radius : 4;
   const normalizedCurrentIndex =
     currentIndex === undefined || lastIndex < 0
       ? 0
-      : clamp(currentIndex, 0, lastIndex);
+      : clamp(
+          Number.isFinite(currentIndex) ? Math.round(currentIndex) : 0,
+          0,
+          lastIndex,
+        );
   const rovingIndex = engaged
     ? clamp(activeIndex, 0, Math.max(lastIndex, 0))
     : normalizedCurrentIndex;
@@ -234,12 +248,12 @@ export function ChapterScrubber({
       : flipped
         ? "right"
         : "left";
-  const totalHeight = chapters.length * rowHeight;
+  const totalHeight = chapters.length * resolvedRowHeight;
 
   const cardTop = useTransform(pointer, (position) => {
     const halfHeight = cardHeight / 2;
     const center = clamp(
-      (position + 0.5) * rowHeight,
+      (position + 0.5) * resolvedRowHeight,
       halfHeight,
       Math.max(halfHeight, totalHeight - halfHeight),
     );
@@ -265,7 +279,7 @@ export function ChapterScrubber({
     if (!list) return;
 
     const rect = list.getBoundingClientRect();
-    const row = (event.clientY - rect.top) / rowHeight - 0.5;
+    const row = (event.clientY - rect.top) / resolvedRowHeight - 0.5;
     hoveringRef.current = true;
     engageAt(clamp(row, -0.5, lastIndex + 0.5), Math.round(row));
   }
@@ -312,7 +326,7 @@ export function ChapterScrubber({
         event.preventDefault();
         lastPointerTypeRef.current = null;
         touchPreviewRef.current = null;
-        onSelect?.(chapter, nextIndex);
+        onSelect(chapter, nextIndex);
         return;
       }
       case "Escape":
@@ -362,7 +376,7 @@ export function ChapterScrubber({
       className={cn("relative", className)}
       data-slot="chapter-scrubber"
       ref={containerRef}
-      style={{ width: peakLength }}
+      style={{ width: resolvedPeakLength }}
     >
       <div
         aria-activedescendant={
@@ -409,7 +423,7 @@ export function ChapterScrubber({
                 }
                 lastPointerTypeRef.current = null;
                 touchPreviewRef.current = null;
-                onSelect?.(chapter, index);
+                onSelect(chapter, index);
               }}
               onFocus={() => {
                 focusedRef.current = index;
@@ -423,17 +437,17 @@ export function ChapterScrubber({
                 buttonsRef.current[index] = element;
               }}
               role="option"
-              style={{ height: rowHeight }}
+              style={{ height: resolvedRowHeight }}
               tabIndex={index === rovingIndex ? 0 : -1}
               type="button"
             >
               <ChapterTick
                 current={current}
                 index={index}
-                peakLength={peakLength}
+                peakLength={resolvedPeakLength}
                 pointer={pointer}
-                radius={radius}
-                restLength={restLength}
+                radius={resolvedRadius}
+                restLength={resolvedRestLength}
                 strength={strength}
               />
             </button>
@@ -456,8 +470,8 @@ export function ChapterScrubber({
             width: cardMaxWidth,
             x: cardX,
             ...(resolvedSide === "right"
-              ? { left: peakLength + CARD_GAP }
-              : { right: peakLength + CARD_GAP }),
+              ? { left: resolvedPeakLength + CARD_GAP }
+              : { right: resolvedPeakLength + CARD_GAP }),
           }}
         >
           {chapters[activeIndex].meta ? (
