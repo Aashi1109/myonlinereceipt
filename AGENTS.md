@@ -76,6 +76,10 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 - A shared workbench or component-family overview does not replace page coverage. When the task requires every implemented route or tool page, create and clearly label a separate complete page design for each route, while instancing the shared family component inside each page.
 - Preserve all previously created designs. Do not delete an existing page, screen, state, workbench, component, or design section unless the user explicitly requests deletion. Refactor in place or add new coverage instead.
 - Page-specific content, controls, states, and results must remain tailored to the implemented feature even when pages share the same reusable shell.
+- For developer-handoff tool flows, arrange materially different stages horizontally in user order: initial state, interaction/transition states, then final output. A stage may span multiple screens only when the workspace or available actions genuinely change.
+- Every flow screen must show what action produced it, what controls are now available, and the next valid action. A developer should not need to infer missing click behavior or ask how one screen reaches the next.
+- Do not duplicate generic empty, validation, processing, or completed screens when the shared state pattern already communicates them and the primary workspace is unchanged.
+- For Media tools, keep the reusable shell structural and make the main workspace operation-specific. The normal file-processing handoff is upload, uploaded-file interaction/preview, and final output with the download action in the right panel.
 
 ## Change and Artifact Hygiene
 
