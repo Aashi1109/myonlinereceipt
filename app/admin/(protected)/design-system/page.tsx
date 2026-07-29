@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
   CatalogCard,
+  ChapterScrubber,
   Checkbox,
   CompactAction,
   DownloadResult,
@@ -119,6 +120,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import type { Chapter } from "@smarttools/ui";
 
 const sections = [
   ["#foundations", "Foundations"],
@@ -147,6 +149,51 @@ const initialDocuments = [
   { id: "notes", label: "Internal notes" },
 ];
 
+const workflowChapters: Chapter[] = [
+  {
+    id: "upload",
+    title: "Add source files",
+    description: "Choose the files you want to process on this device.",
+    meta: "Step 01",
+  },
+  {
+    id: "review",
+    title: "Review the queue",
+    description: "Confirm file order, names, sizes, and compatibility.",
+    meta: "Step 02",
+  },
+  {
+    id: "settings",
+    title: "Adjust settings",
+    description: "Choose only the options needed for this output.",
+    meta: "Step 03",
+  },
+  {
+    id: "validate",
+    title: "Validate inputs",
+    description: "Resolve any unsupported files or missing requirements.",
+    meta: "Step 04",
+  },
+  {
+    id: "process",
+    title: "Process locally",
+    description: "Keep the task open while the browser prepares the result.",
+    meta: "Step 05",
+  },
+  {
+    id: "inspect",
+    title: "Inspect the result",
+    description: "Check the generated file details before saving it.",
+    meta: "Step 06",
+  },
+  {
+    id: "download",
+    title: "Download output",
+    description: "Save the finished file to your device.",
+    meta: "Step 07",
+  },
+];
+
 function Specimen({
   children,
   className,
@@ -168,6 +215,7 @@ function Specimen({
 
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
 
   return (
     <>
@@ -570,6 +618,34 @@ export default function DesignSystemPage() {
                 <BrandLockup href="/admin/design-system" name="Paperwork" />
               </Specimen>
             </div>
+            <Separator />
+            <Specimen label="Chapter navigation">
+              <div className="grid gap-8 rounded-xl border border-border bg-muted/60 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)] lg:items-center">
+                <div className="max-w-md">
+                  <p className="font-heading text-lg font-semibold">
+                    Jump through a long-running workflow
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Move across the rail to preview each chapter. Use the arrow
+                    keys, Home, or End when the scrubber is focused, then press
+                    Enter to choose a chapter.
+                  </p>
+                  <p className="mt-4 font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary">
+                    Current · {workflowChapters[selectedChapterIndex].title}
+                  </p>
+                </div>
+                <div className="flex min-h-64 items-center justify-start overflow-visible rounded-xl border border-border bg-card py-8 pr-4 pl-3 sm:justify-center sm:px-4">
+                  <ChapterScrubber
+                    chapters={workflowChapters}
+                    currentIndex={selectedChapterIndex}
+                    label="Tool workflow chapters"
+                    onSelect={(_, index) => setSelectedChapterIndex(index)}
+                    peakLength={52}
+                    radius={4.5}
+                  />
+                </div>
+              </div>
+            </Specimen>
           </SectionCard>
         </section>
 

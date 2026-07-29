@@ -57,6 +57,11 @@ export {
   CardHeader,
   CardTitle,
 } from "./components/card.tsx";
+export { ChapterScrubber } from "./components/ChapterScrubber.tsx";
+export type {
+  Chapter,
+  ChapterScrubberProps,
+} from "./components/ChapterScrubber.tsx";
 export { CheckboxControl };
 export {
   Empty,

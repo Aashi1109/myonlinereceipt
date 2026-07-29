@@ -2,9 +2,9 @@
 multi_agent = true
 
 [agents.ui_validator]
-description = "Read-only visual consistency, layout, scanability, responsive, and accessibility validation for SmartTools designs."
+description = "Read-only operation-fit, visual consistency, space economy, responsive, and accessibility validation for every SmartTools tool type."
 config_file = "agents/ui-validator.toml"
 
 [agents.end_user_validator]
-description = "Read-only end-user flow validation for problem fit, novice feasibility, feedback, recovery, and complete task handoff."
+description = "Read-only end-user flow validation for every SmartTools tool type, covering operation fit, novice feasibility, feedback, recovery, and complete handoff."
 config_file = "agents/end-user-validator.toml"
