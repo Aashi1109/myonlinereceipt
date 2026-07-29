@@ -86842,7 +86842,7 @@
       "x": 49950,
       "y": 0,
       "name": "Pages/Media PDF Tool Pages",
-      "width": 5904,
+      "width": 7600,
       "height": 23781,
       "fill": "#E9EBEF",
       "layout": "vertical",
@@ -89787,16 +89787,31 @@
               "type": "frame",
               "id": "KYYVF",
               "name": "Flow/Media — Split PDF · 5 Screens",
-              "fill": "$surface",
-              "gap": 16,
+              "fill": "$surface-muted",
+              "gap": 24,
+              "padding": 24,
               "children": [
                 {
                   "type": "frame",
                   "id": "L7itT",
                   "name": "Split PDF Flow Stage 01",
-                  "width": 1440,
+                  "width": 1472,
+                  "fill": "$surface",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000000A",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 2
+                  },
                   "layout": "vertical",
                   "gap": 8,
+                  "padding": 16,
                   "children": [
                     {
                       "type": "text",
@@ -90170,9 +90185,23 @@
                   "type": "frame",
                   "id": "E4Rua",
                   "name": "Split PDF Flow Stage 02A",
-                  "width": 1440,
+                  "width": 1472,
+                  "fill": "$surface",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000000A",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 2
+                  },
                   "layout": "vertical",
                   "gap": 8,
+                  "padding": 16,
                   "children": [
                     {
                       "type": "text",
@@ -93613,9 +93642,23 @@
                   "type": "frame",
                   "id": "b7l7c",
                   "name": "Split PDF Flow Stage 02B",
-                  "width": 1440,
+                  "width": 1472,
+                  "fill": "$surface",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000000A",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 2
+                  },
                   "layout": "vertical",
                   "gap": 8,
+                  "padding": 16,
                   "children": [
                     {
                       "type": "text",
@@ -97077,9 +97120,23 @@
                   "type": "frame",
                   "id": "EitcE",
                   "name": "Split PDF Flow Stage 02C",
-                  "width": 1440,
+                  "width": 1472,
+                  "fill": "$surface",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000000A",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 2
+                  },
                   "layout": "vertical",
                   "gap": 8,
+                  "padding": 16,
                   "children": [
                     {
                       "type": "text",
@@ -100568,9 +100625,23 @@
                   "type": "frame",
                   "id": "ogEFa",
                   "name": "Split PDF Flow Stage 03 Final Output",
-                  "width": 1440,
+                  "width": 1472,
+                  "fill": "$surface",
+                  "stroke": "$border-subtle",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#0000000A",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 2
+                  },
                   "layout": "vertical",
                   "gap": 8,
+                  "padding": 16,
                   "children": [
                     {
                       "type": "text",
