@@ -76,10 +76,18 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 - A shared workbench or component-family overview does not replace page coverage. When the task requires every implemented route or tool page, create and clearly label a separate complete page design for each route, while instancing the shared family component inside each page.
 - Preserve all previously created designs. Do not delete an existing page, screen, state, workbench, component, or design section unless the user explicitly requests deletion. Refactor in place or add new coverage instead.
 - Page-specific content, controls, states, and results must remain tailored to the implemented feature even when pages share the same reusable shell.
+- Before finalizing a new or materially changed tool flow, run both repo-local
+  design validators: `ui_validator` for visual consistency and accessibility
+  risks, and `end_user_validator` for problem fit, novice feasibility,
+  scanability, feedback, recovery, and complete handoff. These validators are
+  read-only. Resolve their substantive findings in the design, then capture
+  fresh screenshots and re-run both validators until the flow passes.
 - For developer-handoff tool flows, arrange materially different stages horizontally in user order: initial state, interaction/transition states, then final output. A stage may span multiple screens only when the workspace or available actions genuinely change.
 - Every flow screen must show what action produced it, what controls are now available, and the next valid action. A developer should not need to infer missing click behavior or ask how one screen reaches the next.
 - Do not duplicate generic empty, validation, processing, or completed screens when the shared state pattern already communicates them and the primary workspace is unchanged.
 - For Media tools, keep the reusable shell structural and make the main workspace operation-specific. The normal file-processing handoff is upload, uploaded-file interaction/preview, and final output with the download action in the right panel.
+- Before finalizing any tool screen or flow, inspect the current screenshots as an end user and require four explicit passes: problem fit, new-user feasibility, five-second scanability, and feedback/recovery. The user must be able to locate the purpose, input, primary action, settings, current state, result, and next action without outside explanation.
+- Do not finalize a flow with a dead end, an unexplained control, a generic placeholder where the operation requires a real preview, unclear validation or processing status, an error without recovery guidance, or a completed result without its expected copy/download/print/export action. Record the pain point, revise the design, and re-check the full flow.
 
 ## Change and Artifact Hygiene
 
