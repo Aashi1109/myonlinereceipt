@@ -18,6 +18,7 @@ Do not reorganize unrelated existing files during feature or bug work. New code 
 This is a pnpm monorepo with one Next.js application:
 
 - `app`, `lib`, `db`, and `public` — the root SmartTools application, including `/paperwork`, `/devtools`, `/media`, `/auth`, and `/admin` route scopes (port 3000).
+- `tools/*` — flat, application-owned tool definitions, execution adapters, and optional tool-owned workspaces keyed by stable definition key.
 - `packages/*` — code genuinely shared by multiple workspaces or a named standalone capability.
 - `services/*` — independently running backend services only, not shared helpers.
 - `tests/*` — repository-level regression and architecture tests.
@@ -40,6 +41,7 @@ Place code at the narrowest scope that owns it. Promote code only when a real se
 | Database client, schema, or bootstrap code | `db` and server-only modules |
 | Static browser-served asset | `public` |
 | Used by the application and a service or multiple packages | Existing `packages/<capability>` package; create one only when no package fits |
+| One tool's definition, execution adapter, result contract, or complete left workspace | `tools/<definition-key>` |
 | Repository regression test | `tests/*.test.mjs` |
 
 `app` owns Next.js routing: `page.tsx`, `layout.tsx`, `route.ts`, `loading.tsx`, `error.tsx`, and colocated implementation folders. Route handlers and pages should be thin adapters; reusable logic belongs at the ownership level above. Use `(group)` only to organize routes without changing URLs. A folder without a `page.tsx` does not create a public route.

@@ -321,7 +321,8 @@ test("developer tool variants share the canonical responsive workspace", async (
     },
     "json-viewer": {
       category: "JSON Tools",
-      description: "View JSON as tree",
+      description:
+        "Explore nested JSON in a searchable tree without uploading your data.",
       support: "Private by default",
       title: "JSON Viewer",
     },
@@ -537,7 +538,7 @@ test("developer tool variants share the canonical responsive workspace", async (
     const panels = Object.fromEntries(
       names.map((name) => [
         name,
-        content.locator(`:scope > [data-workspace-panel="${name}"]`),
+        content.locator(`[data-workspace-panel="${name}"]`),
       ]),
     );
     for (const panel of Object.values(panels)) await expect(panel).toBeAttached();
@@ -803,21 +804,26 @@ test("developer tool variants share the canonical responsive workspace", async (
     const { content, toolbar, workspace } = await openWorkspace("json-viewer");
     await expectNoFormatterChrome(toolbar, ["Minify"]);
     await expectPanels(content, ["input", "output"]);
-    for (const name of ["Load example", "Load broken example", "Beautify", "Minify", "Repair & clean"]) {
+    for (const name of [
+      "Load example",
+      "Load broken example",
+      "Beautify",
+      "Minify",
+      "Repair & clean",
+    ]) {
       await expect(toolbar.getByRole("button", { name, exact: true })).toBeVisible();
     }
     const clear = toolbar.getByRole("button", { name: "Clear", exact: true });
-    await expect(clear).toBeDisabled();
-    const outputPanel = content.locator(':scope > [data-workspace-panel="output"]');
-    await expect(outputPanel.getByRole("button", { name: "Copy", exact: true })).toBeDisabled();
-    await expect(outputPanel.getByRole("button", { name: "Download", exact: true })).toBeDisabled();
-    await toolbar.getByRole("button", { name: "Load example", exact: true }).click();
-    await expect(workspace.getByRole("region", { name: "JSON tree" })).toContainText(
-      "CodeUtilityKit",
-    );
     await expect(clear).toBeEnabled();
-    await expect(outputPanel.getByRole("button", { name: "Copy", exact: true })).toBeEnabled();
-    await expect(outputPanel.getByRole("button", { name: "Download", exact: true })).toBeEnabled();
+    const renderer = workspace.getByTestId("json-result-renderer");
+    await expect(renderer).toContainText("CodeUtilityKit");
+    await expect(
+      renderer.getByRole("button", { name: "Copy JSON result" }),
+    ).toBeEnabled();
+    await expect(
+      renderer.getByRole("button", { name: "Download JSON result" }),
+    ).toBeEnabled();
+    await expect(workspace.getByTestId("tool-workbench-rail")).toHaveCount(0);
   });
 
   expect({ consoleErrors, failedResponses }).toEqual({

@@ -5,13 +5,13 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import JsonWorkbench, {
   DataConversionWorkbench,
-  JsonViewerWorkbench,
   UtilityToolWorkbench,
 } from "../json-formatter/json-workbench";
 import {
   type UtilityToolResult,
   utilityToolDefinitions,
 } from "../../../lib/devtools/format-json";
+import { getUniversalToolWorkbench } from "../../../tools/client-registry";
 
 const AHREFS_DOMAIN_RATING_URL =
   "https://api.ahrefs.com/v3/public/domain-rating-free";
@@ -160,6 +160,19 @@ export default async function ToolPage({
     user: session ? { name: session.user.name } : null,
   };
 
+  const UniversalWorkbench = getUniversalToolWorkbench(tool.componentKey);
+  if (UniversalWorkbench) {
+    return (
+      <UniversalWorkbench
+        account={account}
+        category={tool.category ?? "Developer Tools"}
+        definitionKey={tool.componentKey}
+        description={tool.description}
+        title={tool.name}
+      />
+    );
+  }
+
   if (tool.componentKey === "json-formatter") {
     return (
       <JsonWorkbench
@@ -180,17 +193,6 @@ export default async function ToolPage({
         account={account}
         category={tool.category ?? "Developer Tools"}
         conversion={tool.componentKey}
-        description={tool.description}
-        title={tool.name}
-      />
-    );
-  }
-
-  if (tool.componentKey === "json-viewer") {
-    return (
-      <JsonViewerWorkbench
-        account={account}
-        category={tool.category ?? "Developer Tools"}
         description={tool.description}
         title={tool.name}
       />

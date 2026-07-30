@@ -334,9 +334,11 @@ export function ProductHeader({
 
 export type ToolPageShellProps = {
   badge?: ReactNode;
+  breadcrumbCurrent?: ReactNode;
   category: string;
   children: ReactNode;
   description: ReactNode;
+  eyebrow?: ReactNode;
   footer?: ReactNode;
   headerActions?: ReactNode;
   productHref: string;
@@ -344,6 +346,7 @@ export type ToolPageShellProps = {
   skipHref?: string;
   skipLabel?: ReactNode;
   showIntro?: boolean;
+  showCategoryInBreadcrumb?: boolean;
   systemControls?: ReactNode;
   title: string;
   workspaceClassName?: string;
@@ -352,9 +355,11 @@ export type ToolPageShellProps = {
 
 export function ToolPageShell({
   badge,
+  breadcrumbCurrent,
   category,
   children,
   description,
+  eyebrow,
   footer,
   headerActions,
   productHref,
@@ -362,6 +367,7 @@ export function ToolPageShell({
   skipHref = "#tool-workspace",
   skipLabel = "Skip to tool workspace",
   showIntro = true,
+  showCategoryInBreadcrumb = true,
   systemControls,
   title,
   workspaceClassName,
@@ -386,7 +392,7 @@ export function ToolPageShell({
 
       <main className="flex-1 bg-card">
         <section className="bg-card">
-          <AppContainer className="max-w-[1440px] pt-6">
+          <AppContainer className="max-w-[1440px] px-4 pt-4 sm:px-6 lg:px-10">
             <nav aria-label="Breadcrumb" className="flex min-h-8 items-center">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 font-caption text-xs font-normal text-muted-foreground">
                 <li>
@@ -406,18 +412,22 @@ export function ToolPageShell({
                     {productName}
                   </a>
                 </li>
-                <li aria-hidden="true" className="text-input">›</li>
-                <li>
-                  <a
-                    className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    href={`${productHref}?category=${encodeURIComponent(category)}`}
-                  >
-                    {category}
-                  </a>
-                </li>
+                {showCategoryInBreadcrumb ? (
+                  <>
+                    <li aria-hidden="true" className="text-input">›</li>
+                    <li>
+                      <a
+                        className="rounded-sm outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        href={`${productHref}?category=${encodeURIComponent(category)}`}
+                      >
+                        {category}
+                      </a>
+                    </li>
+                  </>
+                ) : null}
                 <li aria-hidden="true" className="text-input">›</li>
                 <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
-                  {title}
+                  {breadcrumbCurrent ?? title}
                 </li>
               </ol>
             </nav>
@@ -426,10 +436,10 @@ export function ToolPageShell({
         {!showIntro ? <h1 className="sr-only">{title}</h1> : null}
         {showIntro ? (
           <section className="bg-card">
-            <AppContainer className="max-w-[1440px] pt-[18px]">
+            <AppContainer className="max-w-[1440px] px-4 pt-[18px] sm:px-6 lg:px-10">
               <ToolPageIntro
                 badge={badge}
-                category={category}
+                category={eyebrow ?? category}
                 description={description}
                 title={title}
               />
@@ -438,7 +448,10 @@ export function ToolPageShell({
         ) : null}
 
         <AppContainer
-          className={cn("max-w-[1440px] pt-[18px] pb-8 outline-none", workspaceClassName)}
+          className={cn(
+            "max-w-[1440px] px-4 pt-[18px] pb-8 outline-none sm:px-6 lg:px-10",
+            workspaceClassName,
+          )}
           id={workspaceId}
           tabIndex={-1}
         >

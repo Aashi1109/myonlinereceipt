@@ -118,6 +118,7 @@ test("Tailwind and the shared theme are imported once at the root layout", async
   );
   const rootStyles = stylesheets.find(({ path }) => path === "globals.css");
   const layout = await readText("app/layout.tsx");
+  const theme = await readText("packages/ui/src/theme.css");
 
   assert.ok(rootStyles);
   assert.match(
@@ -146,6 +147,13 @@ test("Tailwind and the shared theme are imported once at the root layout", async
     1,
   );
   assert.match(layout, /import ["']\.\/globals\.css["']/);
+  assert.match(layout, /\bGeist_Mono\b/);
+  assert.match(layout, /variable:\s*["']--font-geist-mono["']/);
+  assert.match(layout, /\bgeistMono\.variable\b/);
+  assert.match(
+    theme,
+    /--font-mono:\s*var\(--font-geist-mono,\s*["']Geist Mono["']\),\s*ui-monospace,\s*monospace;/,
+  );
 });
 
 test("frontend navigation and browser tests use one origin with scoped paths", async () => {

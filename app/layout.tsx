@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Caveat, Funnel_Sans, Geist, Inter } from "next/font/google";
+import {
+  Caveat,
+  Funnel_Sans,
+  Geist,
+  Geist_Mono,
+  Inter,
+} from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -12,6 +18,12 @@ const geist = Geist({
   display: "swap",
   subsets: ["latin"],
   variable: "--font-geist",
+});
+
+const geistMono = Geist_Mono({
+  display: "swap",
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
 });
 
 const funnelSans = Funnel_Sans({
@@ -35,7 +47,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      className={`${inter.variable} ${geist.variable} ${funnelSans.variable} ${caveat.variable} print:bg-white`}
+      className={`${inter.variable} ${geist.variable} ${geistMono.variable} ${funnelSans.variable} ${caveat.variable} print:bg-white`}
       lang="en"
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased print:bg-white print:text-black">

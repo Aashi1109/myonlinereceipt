@@ -40,7 +40,11 @@ const devtoolsByCategory: readonly (readonly [
       ["json-to-csv", "JSON to CSV", "Convert JSON to CSV"],
       ["csv-to-json", "CSV to JSON", "Convert CSV to JSON"],
       ["json-formatter", "JSON Formatter", "Beautify & format JSON"],
-      ["json-viewer", "JSON Viewer", "View JSON as tree"],
+      [
+        "json-viewer",
+        "JSON Viewer",
+        "Explore nested JSON in a searchable tree without uploading your data.",
+      ],
       ["json-validator", "JSON Validator", "Validate JSON syntax"],
       [
         "json-to-typescript",

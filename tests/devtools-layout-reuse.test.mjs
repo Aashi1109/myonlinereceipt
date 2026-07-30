@@ -12,8 +12,18 @@ async function readText(path) {
 }
 
 test("all tool pages reuse a viewport-safe shared workbench shell", async () => {
-  const [workbench, mediaWorkbench, sharedWorkbench, sharedPatterns, ui] = await Promise.all([
+  const [
+    workbench,
+    jsonViewerWorkspace,
+    universalWorkbench,
+    mediaWorkbench,
+    sharedWorkbench,
+    sharedPatterns,
+    ui,
+  ] = await Promise.all([
     readText("app/devtools/json-formatter/json-workbench.tsx"),
+    readText("tools/json-viewer/workspace.tsx"),
+    readText("components/tool-workbench/UniversalWorkbench.tsx"),
     readText("app/media/components/MediaWorkbench.tsx"),
     readText("packages/ui/src/components/design-system-components.tsx"),
     readText("packages/ui/src/components/patterns.tsx"),
@@ -23,13 +33,20 @@ test("all tool pages reuse a viewport-safe shared workbench shell", async () => 
   assert.match(ui, /export function ToolPageShell\(/);
   assert.match(workbench, /<ToolPageShell/);
   assert.match(workbench, /<WorkbenchShell/);
+  assert.match(universalWorkbench, /<ToolPageShell/);
+  assert.match(universalWorkbench, /data-testid="tool-workspace"/);
+  assert.match(universalWorkbench, /h-\[calc\(100dvh-72px\)\]/);
+  assert.doesNotMatch(universalWorkbench, /max-\[64rem\]:h-auto/);
+  assert.doesNotMatch(universalWorkbench, /workspaceClassName="pt-0/);
+  assert.doesNotMatch(universalWorkbench, /tool-workbench-rail/);
+  assert.doesNotMatch(universalWorkbench, /min-h-20[^"]*border-y/);
   assert.match(mediaWorkbench, /<WorkbenchShell/);
   assert.match(sharedWorkbench, /max-h-\[calc\(100dvh-2rem\)\]/);
   assert.match(sharedWorkbench, /max-\[54rem\]:max-h-none/);
   assert.match(sharedPatterns, /function ToolSupportSections\(/);
   assert.match(ui, /ToolSupportSections/);
   assert.match(ui, /compact \? "min-h-\[72px\]" : "min-h-\[88px\]"/);
-  assert.match(ui, /max-w-\[1440px\] pt-\[18px\] pb-8/);
+  assert.match(ui, /max-w-\[1440px\] px-4 pt-\[18px\] pb-8/);
   assert.match(ui, /\?category=\$\{encodeURIComponent\(category\)\}/);
   assert.match(sharedPatterns, /text-\[26px\]/);
   assert.match(workbench, /w-\[560px\]/);
@@ -60,7 +77,8 @@ test("all tool pages reuse a viewport-safe shared workbench shell", async () => 
     );
   }
   assert.equal(
-    (workbench.match(/<JsonResultRenderer/g) ?? []).length,
+    (workbench.match(/<JsonResultRenderer/g) ?? []).length +
+      (jsonViewerWorkspace.match(/<JsonResultRenderer/g) ?? []).length,
     4,
     "formatter, viewer, and JSON-aware utility outputs should share one renderer while conversion panes keep the simpler designed output surface",
   );

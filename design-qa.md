@@ -86,3 +86,63 @@ page overflow.
    system.
 
 final result: passed
+
+---
+
+# JSON Viewer source editor design QA
+
+- Source visual truth: `/Users/ashishpal/Desktop/coding/projects/canopy/product-design.pen`, node `Gxpsl` (`Raw JSON Editor`)
+- User reference: `/var/folders/v3/xftm0p854d36xsmvr71qtkl80000gq/T/codex-clipboard-a50fb192-0bd2-40cb-8a4c-f242b7cf8278.png`
+- Source capture: `/tmp/json-viewer-design-qa/Gxpsl.png`
+- Implementation capture: `/tmp/json-viewer-design-qa/implementation-editor.png`
+- Capture viewport: 1440 × 674 CSS px at device scale 1
+- Source size: 520 × 448 px
+- Implementation size: 519 × 448 px; the one-pixel width difference is the live split-panel divider
+- State: default JSON Viewer example loaded
+
+## Full-view comparison evidence
+
+The Pencil source and browser-rendered implementation were opened together at
+the same density. The editor background, text hierarchy, whitespace, indentation,
+and ten-line example match. The implementation retains the required dynamic
+workbench height of `calc(100dvh - 72px)`.
+
+## Focused comparison evidence
+
+The normalized editor crops verify Geist Mono at 12 px with a 1.55 line height,
+18 px vertical padding, 16 px left inset, a 15 px line-number column, and a
+14 px gap before the JSON source. The source and implementation use the same
+`#F6F7F9`, `#A7ADB5`, and `#1A1A1A` design tokens. There are no image assets,
+icons, or changed copy in this surface.
+
+## Findings and fixes
+
+- P1: the textarea inherited the page's sans typography and larger line rhythm.
+  The editor now explicitly owns Geist Mono, 12 px type, and 1.55 line height.
+- P1: the line numbers lived in a wide, shaded, divided gutter. The gutter
+  decoration was removed and its exact Pencil column and gap measurements were
+  restored.
+- P2: the editor used a translucent background and 16 px vertical padding. It
+  now uses the solid muted surface token and the designed 18 px padding.
+
+## Interaction and verification
+
+- Input editing, repair, formatting, minification, selection, copying,
+  downloading, clearing, and undo passed in the focused desktop and mobile
+  Playwright flow.
+- Desktop and mobile workbench height equals the dynamic viewport height minus
+  the 72 px compact navigation.
+- Mobile stacked panes retain internal scrolling without horizontal overflow.
+- The capture reported one generic development-server 404 console message with
+  no failed document or subresource response; it did not affect the editor.
+
+## Comparison history
+
+1. The first live capture exposed the inherited sans textarea font and
+   mismatched code/line-number rows.
+2. The editor typography was isolated from the global textarea rule and its
+   gutter geometry was matched to the Pencil node.
+3. A fresh 519 × 448 browser crop was compared with the 520 × 448 source node;
+   no actionable P0, P1, or P2 visual differences remain.
+
+final result: passed
