@@ -5,7 +5,7 @@ import { Slot } from "radix-ui"
 import { cn } from "#lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap font-sans font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "inline-flex shrink-0 items-center justify-center whitespace-nowrap font-sans font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:border disabled:border-border disabled:bg-muted disabled:text-muted-foreground disabled:opacity-65 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -18,37 +18,35 @@ const buttonVariants = cva(
         secondary:
           "border border-input bg-card text-foreground hover:bg-muted",
         ghost:
-          "bg-transparent text-primary hover:bg-accent active:bg-accent",
+          "bg-transparent text-foreground hover:bg-accent active:bg-accent",
         "danger-subtle":
           "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-[46px] rounded-full px-[26px] text-[15px] has-[>svg]:px-5",
-        xs: "h-7 gap-1 rounded-lg px-2 text-[11px] has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 rounded-full px-4 text-[13px] has-[>svg]:px-3",
-        lg: "h-14 rounded-full px-[34px] text-[17px] has-[>svg]:px-7",
-        icon: "size-10 rounded-lg",
-        "icon-xs": "size-7 rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8 rounded-lg",
-        "icon-lg": "size-12 rounded-full [&_svg:not([class*='size-'])]:size-5",
+        default:
+          "h-11 gap-2 rounded-lg px-4 text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        xs: "h-8 gap-1.5 rounded-lg px-2.5 text-[11px] [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-9 gap-[7px] rounded-lg px-3 text-[13px] [&_svg:not([class*='size-'])]:size-[15px]",
+        md: "h-12 gap-2 rounded-lg px-[18px] text-[15px] [&_svg:not([class*='size-'])]:size-[18px]",
+        lg: "h-13 gap-2.5 rounded-lg px-5.5 text-base [&_svg:not([class*='size-'])]:size-5",
+        icon:
+          "size-11 rounded-lg [&_svg:not([class*='size-'])]:size-[18px]",
+        "icon-xs":
+          "size-8 rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-sm":
+          "size-9 rounded-lg [&_svg:not([class*='size-'])]:size-[17px]",
+        "icon-md":
+          "size-12 rounded-lg [&_svg:not([class*='size-'])]:size-5",
+        "icon-lg":
+          "size-13 rounded-lg [&_svg:not([class*='size-'])]:size-[22px]",
       },
     },
     compoundVariants: [
       {
-        variant: ["secondary", "outline"],
-        size: "default",
-        className: "h-11 px-[25px] text-[15px]",
-      },
-      {
-        variant: "destructive",
-        size: "default",
-        className: "px-6",
-      },
-      {
         variant: "ghost",
         size: "default",
-        className: "h-10 px-5 text-sm",
+        className: "text-sm text-primary",
       },
     ],
     defaultVariants: {

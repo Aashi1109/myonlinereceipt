@@ -1,6 +1,13 @@
 "use client";
 
-import { type KeyboardEvent, useEffect, useId, useState } from "react";
+import {
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from "react";
 import { Button, Input } from "@smarttools/ui";
 import {
   Brackets,
@@ -59,6 +66,54 @@ function pathsEqual(left: JsonTreePath, right: JsonTreePath) {
 
 function pathKey(path: JsonTreePath) {
   return JSON.stringify(path);
+}
+
+const JSON_TOKEN_PATTERN =
+  /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+function highlightJson(json: string): ReactNode[] {
+  const tokens: ReactNode[] = [];
+  let cursor = 0;
+
+  for (const match of json.matchAll(JSON_TOKEN_PATTERN)) {
+    const index = match.index;
+    if (index > cursor) tokens.push(json.slice(cursor, index));
+
+    if (match[1]) {
+      tokens.push(
+        <span
+          className={match[2] ? "font-semibold text-foreground" : "text-syntax-string"}
+          key={index}
+        >
+          {match[1]}
+        </span>,
+      );
+      if (match[2]) tokens.push(match[2]);
+    } else if (match[3] === "null") {
+      tokens.push(
+        <span className="text-violet-700 dark:text-violet-400" key={index}>
+          {match[3]}
+        </span>,
+      );
+    } else if (match[3]) {
+      tokens.push(
+        <span className="text-primary" key={index}>
+          {match[3]}
+        </span>,
+      );
+    } else {
+      tokens.push(
+        <span className="text-warning" key={index}>
+          {match[0]}
+        </span>,
+      );
+    }
+
+    cursor = index + match[0].length;
+  }
+
+  if (cursor < json.length) tokens.push(json.slice(cursor));
+  return tokens;
 }
 
 function nodeMatches(label: string, value: unknown, query: string): boolean {
@@ -164,7 +219,7 @@ function JsonTreeNode({
   const copyButton = showNodeCopyActions ? (
     <button
       aria-label={`Copy ${isRoot ? "root" : label} value`}
-      className="ml-2 grid size-11 shrink-0 place-items-center rounded text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+      className="relative ml-2 grid size-7 shrink-0 place-items-center rounded text-muted-foreground opacity-0 transition before:absolute before:inset-[-8px] before:content-[''] hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
         onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
@@ -327,6 +382,7 @@ export function JsonResultRenderer({
     selectedPath,
   );
   const formatted = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
+  const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
   const artifact = artifactValue ?? formatted;
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const resolvedSelectedPath = onSelect ? selectedPath : internalSelectedPath;
@@ -550,7 +606,9 @@ export function JsonResultRenderer({
           role="tabpanel"
           tabIndex={0}
         >
-          <pre className="min-w-max font-mono text-[0.8125rem] leading-6 text-foreground">{formatted}</pre>
+          <pre className="min-w-max font-mono text-[0.8125rem] leading-6 text-muted-foreground">
+            {highlightedFormatted}
+          </pre>
         </div>
       )}
     </section>

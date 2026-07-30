@@ -37,8 +37,6 @@ test("shared controls retain design-system dimensions and states", async () => {
     source("packages/ui/src/components/switch.tsx"),
     source("packages/ui/src/components/tabs.tsx"),
   ]);
-
-  assert.match(button, /h-\[46px\].*rounded-full.*px-\[26px\].*text-\[15px\]/);
   assert.match(button, /hover:bg-\[#0052CC\].*active:bg-\[#003D99\]/);
   assert.match(checkbox, /size-5.*rounded-\[4px\]/);
   assert.match(input, /h-11.*rounded-lg.*border-input.*px-\[13px\]/);

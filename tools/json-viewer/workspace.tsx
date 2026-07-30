@@ -67,53 +67,48 @@ export function JsonViewerToolbar() {
       </div>
 
       <Button
-        className="h-9 rounded-md px-3 max-[64rem]:h-11"
         disabled={!hasInput}
         onClick={() => void runtime.runCommand("repair")}
-        size="sm"
+        size="xs"
         type="button"
       >
-        <WandSparkles aria-hidden="true" className="size-4" />
+        <WandSparkles aria-hidden="true" className="size-3.5" />
         Repair &amp; clean
       </Button>
       <Button
-        className="h-9 rounded-md px-3 max-[64rem]:h-11"
         disabled={!hasValidResult}
         onClick={() => void runtime.runCommand("format")}
-        size="sm"
+        size="xs"
         type="button"
         variant="outline"
       >
-        <AlignLeft aria-hidden="true" className="size-4" />
+        <AlignLeft aria-hidden="true" className="size-3.5" />
         Beautify
       </Button>
       <Button
-        className="h-9 rounded-md px-2.5 max-[64rem]:h-11"
         disabled={!hasValidResult}
         onClick={() => void runtime.runCommand("minify")}
-        size="sm"
+        size="xs"
         type="button"
         variant="outline"
       >
-        <Minimize2 aria-hidden="true" className="size-4" />
+        <Minimize2 aria-hidden="true" className="size-3.5" />
         Minify
       </Button>
       <Button
         aria-label="Load example"
-        className="h-9 rounded-md px-2.5 max-[64rem]:h-11"
         onClick={() => runtime.setInput(VIEWER_EXAMPLE)}
-        size="sm"
+        size="xs"
         type="button"
         variant="outline"
       >
-        <FileJson aria-hidden="true" className="size-4" />
+        <FileJson aria-hidden="true" className="size-3.5" />
         Example
       </Button>
       <Button
         aria-label="Load broken example"
-        className="h-9  rounded-md px-2.5 max-[64rem]:h-11"
         onClick={() => runtime.setInput(VIEWER_BROKEN_EXAMPLE)}
-        size="sm"
+        size="xs"
         type="button"
         variant="outline"
       >
@@ -126,7 +121,7 @@ export function JsonViewerToolbar() {
         </span>
         <Select
           aria-label="Repair strategy"
-          className="h-9 gap-1 rounded-md pr-1 pl-[38px] text-[9px] max-[64rem]:h-11"
+          className="h-8 gap-1 rounded-md pr-1 pl-[40px] text-[9px] max-[64rem]:h-11"
           onChange={(event) =>
             runtime.updateSetting(
               "repairMode",
@@ -134,6 +129,7 @@ export function JsonViewerToolbar() {
             )
           }
           value={runtime.settings.repairMode}
+          size="sm"
         >
           <option value="remove">Remove broken</option>
           <option value="null">Set to null</option>
@@ -141,14 +137,13 @@ export function JsonViewerToolbar() {
       </div>
 
       <Button
-        className="h-9 rounded-md px-2.5 max-[64rem]:h-11"
         disabled={!hasInput}
         onClick={() => void runtime.runCommand("clear")}
-        size="sm"
+        size="xs"
         type="button"
         variant="destructive"
       >
-        <Trash2 aria-hidden="true" className="size-4" />
+        <Trash2 aria-hidden="true" className="size-3.5" />
         Clear
       </Button>
     </div>
@@ -204,7 +199,6 @@ export function JsonViewerWorkspace() {
       <EditorSurface
           actions={
             <Button
-              className="h-8 px-2 text-xs text-muted-foreground max-[64rem]:h-11"
               disabled={!runtime.input}
               onClick={() => void copyInput()}
               size="sm"
@@ -255,7 +249,6 @@ export function JsonViewerWorkspace() {
                   Error near line {inputIssue.line}, column {inputIssue.column}
                 </span>
                 <Button
-                  className="h-8"
                   onClick={focusInputIssue}
                   size="sm"
                   type="button"
@@ -292,7 +285,7 @@ export function JsonViewerWorkspace() {
               persistentSearch
               selectedPath={ROOT_JSON_TREE_PATH}
               showArtifactActions
-              showNodeCopyActions={false}
+              showNodeCopyActions={true}
               value={runtime.result.value}
             />
           ) : (

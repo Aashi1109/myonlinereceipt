@@ -320,6 +320,7 @@ export default function DesignSystemPage() {
                   <Button size="xs">Extra small</Button>
                   <Button size="sm">Small</Button>
                   <Button>Default</Button>
+                  <Button size="md">Medium</Button>
                   <Button size="lg">Large</Button>
                 </div>
               </Specimen>
@@ -333,6 +334,9 @@ export default function DesignSystemPage() {
                   </Button>
                   <Button aria-label="Notifications" size="icon" variant="outline">
                     <Bell />
+                  </Button>
+                  <Button aria-label="Add item" size="icon-md" variant="outline">
+                    <Plus />
                   </Button>
                   <Button aria-label="Upload file" size="icon-lg">
                     <Upload />
