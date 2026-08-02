@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "one two three",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "mode": "chars"
+      },
+      "expected": {
+        "output": "eerht owt eno",
+        "render": "text"
+      }
+    }
+  ]
+}

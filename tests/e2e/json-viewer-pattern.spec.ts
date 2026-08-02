@@ -7,6 +7,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   await context.grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: "http://localhost:3000",
   });
+  await page.addInitScript(() => {
+    window.localStorage.removeItem("smarttools:json-viewer:split-size");
+  });
   await page.goto("http://localhost:3000/devtools/json-viewer");
 
   const workbench = page.getByTestId("tool-workspace");
@@ -35,7 +38,41 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
     expect(await split.evaluate((element) => element.scrollHeight)).toBeGreaterThan(
       await split.evaluate((element) => element.clientHeight),
     );
+  } else {
+    const separator = workbench.getByRole("separator", {
+      name: "Resize workspace panels",
+    });
+    const collapsePrimary = workbench.getByRole("button", {
+      name: "Collapse primary panel",
+    });
+    const primaryPane = workbench.locator('[data-split-pane="primary"]');
+    await expect(separator).toHaveAttribute("aria-valuenow", "42");
+    await expect(collapsePrimary).toBeVisible();
+    const initialWidth = await primaryPane.evaluate(
+      (element) => element.getBoundingClientRect().width,
+    );
+
+    await separator.focus();
+    await page.keyboard.press("ArrowRight");
+    expect(
+      await primaryPane.evaluate(
+        (element) => element.getBoundingClientRect().width,
+      ),
+    ).toBeGreaterThan(initialWidth);
+
+    await collapsePrimary.click();
+    await expect(primaryPane).toBeHidden();
+    await page.setViewportSize({ height: 844, width: 390 });
+    await expect(primaryPane).toBeVisible();
+    await page.setViewportSize({ height: 720, width: 1280 });
+    await expect(primaryPane).toBeVisible();
   }
+  await expect(
+    workbench.locator('[data-purpose="editor"]'),
+  ).toHaveAttribute("data-state", "ready");
+  await expect(
+    workbench.locator('[data-purpose="inspector"]'),
+  ).toHaveAttribute("data-state", "ready");
   await expect(page.getByText("JSON TOOL", { exact: true })).toBeVisible();
   await expect(page.getByText("REPAIR & CLEAN", { exact: true })).toBeVisible();
   await expect(page.getByText("PRIVATE IN BROWSER", { exact: true })).toBeVisible();
@@ -112,7 +149,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   await expect(confirmation).toContainText("Confirm destructive repair");
   await expect(confirmation).toContainText("Removed: $[0].age");
   await expect(input).toHaveValue(brokenInput);
-  await expect(confirmation).toHaveAttribute("role", "dialog");
+  await expect(confirmation).toHaveAttribute("role", "alertdialog");
   await expect(confirmation).toHaveAttribute("aria-modal", "true");
   const cancelRepair = confirmation.getByRole("button", { name: "Cancel" });
   const applyRepair = confirmation.getByRole("button", {

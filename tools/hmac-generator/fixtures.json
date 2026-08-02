@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "message to sign",
+        "secondary": "secret"
+      },
+      "name": "definition example",
+      "settings": {
+        "algo": "sha256"
+      },
+      "expected": {
+        "output": "8a3646d7d465db2511084ee623f2f2ad8d1e60f7df8802edd348cb5d16d288bd",
+        "render": "text"
+      }
+    }
+  ]
+}

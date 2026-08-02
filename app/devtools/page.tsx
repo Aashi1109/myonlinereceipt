@@ -1,7 +1,14 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { ToolIcon } from "@/components/ToolIcon";
+import {
+  categoriesForApp,
+  FEATURED_TOOL_IDS,
+  TOOL_CATEGORIES,
+  type CategoryKey,
+} from "@/lib/tool-framework/categories";
+import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { getOptionalSession } from "@smarttools/auth/session";
-import { getAvailableTools } from "@smarttools/control-plane";
-import type { ResolvedTool } from "@smarttools/tool-catalog";
+import { getToolIcons, type ToolIconRow } from "@smarttools/database";
 import {
   AccountNavigation,
   AppContainer,
@@ -19,96 +26,28 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
-  Binary,
-  Braces,
-  CalendarClock,
-  Code2,
-  FileText,
-  GitBranch,
-  Hash,
-  KeyRound,
+  LayoutGrid,
   LockKeyhole,
-  Palette,
   Search,
-  SearchCheck,
   ShieldCheck,
-  Table2,
-  Type,
-  WandSparkles,
-  type LucideIcon,
 } from "lucide-react";
 import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";
 
-const TOOL_ICONS: Record<string, LucideIcon> = {
-  "json-formatter": Braces,
-  "json-to-csv": Table2,
-  "csv-to-json": Table2,
-};
-
-const QUICK_TOOL_KEYS = [
-  "json-formatter",
-  "json-viewer",
-  "json-to-csv",
-  "csv-to-json",
-  "csv-viewer",
-  "jwt-decoder",
-  "base64-encoder",
-  "sha256-generator",
-  "bcrypt-generator",
-  "password-generator",
-  "uuid-generator",
-  "regex-tester",
-] as const;
-
-const POPULAR_TOOL_KEYS = [
-  "json-to-csv",
-  "csv-to-json",
-  "json-formatter",
-  "jwt-decoder",
-  "json-viewer",
-  "password-generator",
-] as const;
-
-const CATEGORIES: readonly {
-  description: string;
-  icon: LucideIcon;
-  name: string;
-}[] = [
-  { name: "JSON Tools", description: "Format, validate, compare, and transform JSON.", icon: Braces },
-  { name: "CSV & Data Tools", description: "Convert, inspect, and clean tabular data.", icon: Table2 },
-  { name: "Text Tools", description: "Count, compare, sort, and reshape text.", icon: Type },
-  { name: "Encoding & Decoding", description: "Work with Base64, URLs, HTML, and binary data.", icon: Binary },
-  { name: "Hashing & Crypto", description: "Generate hashes and inspect common security formats.", icon: Hash },
-  { name: "JWT & API Tools", description: "Decode tokens and prepare API requests.", icon: KeyRound },
-  { name: "Web & Markup Tools", description: "Convert and inspect developer-facing markup.", icon: FileText },
-  { name: "Color & Design Tools", description: "Convert, inspect, and generate color values.", icon: Palette },
-  { name: "Date & Time Tools", description: "Convert timestamps and compare dates.", icon: CalendarClock },
-  { name: "Developer Generators", description: "Create IDs, passwords, mock data, and more.", icon: WandSparkles },
-  { name: "Diagram Tools", description: "Turn structured text into useful diagrams.", icon: GitBranch },
-  { name: "SEO & Domain Tools", description: "Inspect domains, DNS, and search metadata.", icon: SearchCheck },
-];
-
 const SECTION_HEADING_CLASS =
   "mb-8 items-end [&_h2]:text-2xl [&_h2]:font-black [&_h2]:tracking-[-0.03em] sm:[&_h2]:text-3xl";
+
+type IconRows = Readonly<Record<string, ToolIconRow>>;
 
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function selectTools(
-  tools: readonly ResolvedTool[],
-  componentKeys: readonly string[],
-): ResolvedTool[] {
-  return componentKeys.flatMap((componentKey) =>
-    tools.filter((tool) => tool.componentKey === componentKey),
-  );
+function isCategory(value: string): value is CategoryKey {
+  return Object.hasOwn(TOOL_CATEGORIES, value);
 }
 
-function ToolCard({ tool }: { tool: ResolvedTool }) {
-  if (!tool.slug) return null;
-  const Icon = TOOL_ICONS[tool.componentKey] ?? Code2;
-
+function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
   return (
     <CatalogCard
       action={
@@ -120,7 +59,13 @@ function ToolCard({ tool }: { tool: ResolvedTool }) {
       className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:nth-child(2)]:text-lg [&>span:nth-child(3)]:text-sm [&>span:nth-child(3)]:leading-6 [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 [&>span:last-child]:text-sm"
       description={tool.description}
       href={`/devtools/${tool.slug}`}
-      icon={<Icon aria-hidden="true" />}
+      icon={
+        <ToolIcon
+          name={tool.name}
+          row={icons[tool.toolId] ?? null}
+          toolId={tool.toolId}
+        />
+      }
       title={tool.name}
     />
   );
@@ -135,30 +80,39 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const [tools, session] = await Promise.all([
-    getAvailableTools("devtools"),
+  const [tools, icons, session] = await Promise.all([
+    getTools("devtools"),
+    getToolIcons(),
     getOptionalSession(requestHeaders),
   ]);
-  const category = tools.some((tool) => tool.category === requestedCategory)
-    ? requestedCategory
-    : "";
+  const category = isCategory(requestedCategory) ? requestedCategory : "";
   const normalizedQuery = query.toLocaleLowerCase();
   const filteredTools = tools.filter(
     (tool) =>
       (!category || tool.category === category) &&
       (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.category ?? ""}`
+        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`
           .toLocaleLowerCase()
           .includes(normalizedQuery)),
   );
-  const quickTools = selectTools(tools, QUICK_TOOL_KEYS).slice(0, 6);
-  const popularTools = selectTools(tools, POPULAR_TOOL_KEYS);
-  const availableCategories = CATEGORIES.map((item) => ({
-    ...item,
-    count: tools.filter((tool) => tool.category === item.name).length,
-  })).filter(({ count }) => count > 0);
+  // Featured ordering is per-deployment data, not code. Until it has a home
+  // beside `sort_order`, `FEATURED_TOOL_IDS` is empty and these sections
+  // simply do not render.
+  const featuredTools = FEATURED_TOOL_IDS.flatMap((toolId) =>
+    tools.filter((tool) => tool.toolId === toolId),
+  );
+  const availableCategories = categoriesForApp("devtools")
+    .map((key) => ({
+      count: tools.filter((tool) => tool.category === key).length,
+      description: TOOL_CATEGORIES[key].description,
+      key,
+      label: TOOL_CATEGORIES[key].label,
+    }))
+    .filter(({ count }) => count > 0);
   const hasFilter = Boolean(query || category);
-  const showAllTools = !hasFilter && first(params.view) === "all";
+  const showAllTools =
+    !hasFilter && (first(params.view) === "all" || featuredTools.length === 0);
+  const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const searchForm = (
     <form
       className="flex w-full items-center gap-2 rounded-2xl border border-input bg-background p-1.5 shadow-sm transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"
@@ -259,26 +213,24 @@ export default async function HomePage({
                   </a>
                 </div>
                 <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  {quickTools.map((tool, index) =>
-                    tool.slug ? (
-                      <a
-                        className="group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-                        href={`/devtools/${tool.slug}`}
-                        key={tool.id}
-                      >
-                        <span className="text-xs font-bold text-muted-foreground">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <span className="flex items-end justify-between gap-3 text-sm font-extrabold">
-                          {tool.name}
-                          <ArrowUpRight
-                            aria-hidden="true"
-                            className="size-4 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                          />
-                        </span>
-                      </a>
-                    ) : null,
-                  )}
+                  {featuredTools.slice(0, 6).map((tool, index) => (
+                    <a
+                      className="group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      href={`/devtools/${tool.slug}`}
+                      key={tool.toolId}
+                    >
+                      <span className="text-xs font-bold text-muted-foreground">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="flex items-end justify-between gap-3 text-sm font-extrabold">
+                        {tool.name}
+                        <ArrowUpRight
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        />
+                      </span>
+                    </a>
+                  ))}
                 </div>
               </nav>
             </AppContainer>
@@ -303,30 +255,35 @@ export default async function HomePage({
                 action={
                   showAllTools || category ? (
                     <CategoryFilter
-                      categories={availableCategories.map(({ name }) => name)}
+                      categories={availableCategories.map(({ key, label }) => ({
+                        label,
+                        value: key,
+                      }))}
                       value={category}
                     />
                   ) : null
                 }
                 className={`${SECTION_HEADING_CLASS} flex-col items-stretch sm:flex-row sm:items-end`}
                 description={
-                  showAllTools
+                  showAllTools && !category && !query
                     ? "Browse every available developer tool in one place."
                     : query
-                    ? `Matching “${query}”${category ? ` in ${category}` : ""}.`
-                    : `Tools in ${category}.`
+                      ? `Matching “${query}”${categoryLabel ? ` in ${categoryLabel}` : ""}.`
+                      : `Tools in ${categoryLabel}.`
                 }
                 title={
-                  showAllTools
+                  showAllTools && !category && !query
                     ? "All Tools"
                     : category && !query
-                      ? category
+                      ? categoryLabel
                       : "Search Results"
                 }
               />
               {filteredTools.length ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredTools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
+                  {filteredTools.map((tool) => (
+                    <ToolCard icons={icons} key={tool.toolId} tool={tool} />
+                  ))}
                 </div>
               ) : (
                 <EmptyState
@@ -367,7 +324,9 @@ export default async function HomePage({
                   title="Popular Tools"
                 />
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {popularTools.map((tool) => <ToolCard key={tool.id} tool={tool} />)}
+                  {featuredTools.map((tool) => (
+                    <ToolCard icons={icons} key={tool.toolId} tool={tool} />
+                  ))}
                 </div>
               </AppContainer>
             </section>
@@ -382,21 +341,21 @@ export default async function HomePage({
                 />
                 <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
                   {availableCategories.map(
-                    ({ count, description, icon: Icon, name }) => (
+                    ({ count, description, key, label }) => (
                       <a
                         className="group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
-                        href={`/devtools?category=${encodeURIComponent(name)}`}
-                        key={name}
+                        href={`/devtools?category=${encodeURIComponent(key)}`}
+                        key={key}
                       >
                         <IconTile
                           className="rounded-xl group-hover:bg-background"
                           size="sm"
                         >
-                          <Icon aria-hidden="true" className="size-5" />
+                          <LayoutGrid aria-hidden="true" className="size-5" />
                         </IconTile>
                         <span className="min-w-0 flex-1">
                           <strong className="block text-sm font-extrabold">
-                            {name}
+                            {label}
                           </strong>
                           <span className="mt-1 block text-sm leading-5 text-muted-foreground">
                             {description}

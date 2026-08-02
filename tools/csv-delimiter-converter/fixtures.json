@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,age\nAda,36",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "from": ",",
+        "to": ";"
+      },
+      "expected": {
+        "output": "name;age\nAda;36",
+        "render": "text"
+      }
+    }
+  ]
+}

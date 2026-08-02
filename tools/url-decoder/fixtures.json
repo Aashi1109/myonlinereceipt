@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "hello%20smart%20tools%3Factive%3Dtrue",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "hello smart tools?active=true",
+        "render": "text"
+      }
+    }
+  ]
+}

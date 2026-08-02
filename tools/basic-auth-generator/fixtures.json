@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Ada",
+        "secondary": "secret"
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Authorization: Basic QWRhOnNlY3JldA==",
+        "render": "text"
+      }
+    }
+  ]
+}

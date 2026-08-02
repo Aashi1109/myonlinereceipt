@@ -1,0 +1,61 @@
+/**
+ * Moved from the `heic-to-png` arm of `processImages` in
+ * `app/media/_workers/image.worker.ts:111-207`.
+ *
+ * The input allowlist (`allowedKinds`, image.worker.ts:604) and the PNG output
+ * format that the operation name used to imply are both stated here now. The
+ * encoder defaults (quality 0.8, background `#ffffff`, pngEffort 6) match what
+ * the old worker passed for this operation.
+ */
+
+import {
+  decodeImage,
+  encodeImage,
+  type DecodableImageKind,
+} from "../../lib/tool-framework/media/imageCodec.ts";
+import type { MediaOutputFile } from "../../lib/tool-framework/media/pdfDocument.ts";
+import {
+  createOutputFilename,
+  validateImageSelection,
+} from "../../lib/tool-framework/media/validation.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+const ALLOWED: readonly DecodableImageKind[] = ["heic"];
+
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  const selection = validateImageSelection(
+    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+  );
+  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+
+  const total = ctx.input.files.length;
+  const outputs: MediaOutputFile[] = [];
+  for (let index = 0; index < total; index += 1) {
+    ctx.signal.throwIfAborted();
+    ctx.progress({ completed: index, total, stage: "Decoding image" });
+    const input = ctx.input.files[index];
+    const { image } = await decodeImage(input, ALLOWED);
+    ctx.progress({ completed: index, total, stage: "Encoding image" });
+    const buffer = await encodeImage(image, "png");
+    outputs.push({
+      buffer,
+      filename: createOutputFilename(input.name, "png", "converted"),
+      mime: "image/png",
+      size: buffer.byteLength,
+    });
+    ctx.progress({ completed: index + 1, total, stage: "Image complete" });
+  }
+
+  return {
+    render: "files",
+    files: outputs,
+    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.data.byteLength, 0),
+    outputBytes: outputs.reduce((sum, output) => sum + output.size, 0),
+  };
+};
+
+export default run;

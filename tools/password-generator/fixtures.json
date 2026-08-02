@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "length": 16,
+        "count": 5,
+        "upper": true,
+        "lower": true,
+        "numbers": true,
+        "symbols": true
+      },
+      "expected": {
+        "render": "text",
+        "length": {
+          "max": 84,
+          "min": 84
+        },
+        "pattern": "^[a-zA-Z0-9\\n!#$%&()*+\\-=@\\[\\]\\^_{}]{84,84}$"
+      }
+    }
+  ]
+}

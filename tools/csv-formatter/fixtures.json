@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,note\n Ada ,\"Hello, world\"",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "delimiter": ","
+      },
+      "expected": {
+        "output": "name,note\nAda,\"Hello, world\"",
+        "render": "text"
+      }
+    }
+  ]
+}

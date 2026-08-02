@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "https://example.com/search?q=smart+tools&tag=dev&tag=web",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "{\n  \"q\": \"smart tools\",\n  \"tag\": [\n    \"dev\",\n    \"web\"\n  ]\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

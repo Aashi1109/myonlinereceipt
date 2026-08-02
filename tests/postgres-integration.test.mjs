@@ -20,6 +20,24 @@ import {
 import { sqlClient } from "../packages/database/src/index.ts";
 import { seedTemplates } from "../packages/invoice-templates/src/index.ts";
 
+/**
+ * The manifest, enumerated from `managed_tools` — the same source
+ * `lib/tool-framework/manifest.ts` uses, without pulling React into a plain
+ * Node test.
+ */
+async function toolManifest() {
+  const rows = await sqlClient`
+    SELECT tool_id, app, name, description FROM managed_tools
+  `;
+  return rows.map((row) => ({
+    id: row.tool_id,
+    app: row.app,
+    componentKey: row.tool_id.split(".")[1],
+    defaultName: row.name,
+    defaultDescription: row.description,
+  }));
+}
+
 const enabled =
   process.env.SMARTTOOLS_INTEGRATION === "1" &&
   Boolean(process.env.DATABASE_URL);
@@ -93,11 +111,21 @@ test(
 
     await setManagedToolEnabled(actorId, "devtools.json-formatter", false);
     assert.equal(
-      await getAvailableToolBySlug("devtools", "json-formatter"),
+      await getAvailableToolBySlug(
+        "devtools",
+        "json-formatter",
+        await toolManifest(),
+      ),
       undefined,
     );
     await setManagedToolEnabled(actorId, "devtools.json-formatter", true);
-    assert.ok(await getAvailableToolBySlug("devtools", "json-formatter"));
+    assert.ok(
+      await getAvailableToolBySlug(
+        "devtools",
+        "json-formatter",
+        await toolManifest(),
+      ),
+    );
 
     const seed = seedTemplates[0];
     const template = await createInvoiceTemplate(actorId, {

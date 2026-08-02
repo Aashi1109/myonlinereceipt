@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "body{color:#111;background:#fff}a:hover{text-decoration:underline}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "body {\n  color:#111;\n  background:#fff\n}\na:hover {\n  text-decoration:underline\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

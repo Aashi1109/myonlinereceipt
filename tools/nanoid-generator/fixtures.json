@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "count": 5,
+        "size": 21
+      },
+      "expected": {
+        "render": "text",
+        "length": {
+          "max": 109,
+          "min": 109
+        },
+        "pattern": "^[a-zA-Z0-9\\n\\-_]{109,109}$"
+      }
+    }
+  ]
+}

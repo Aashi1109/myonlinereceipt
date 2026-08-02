@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "topLeft": 16,
+        "topRight": 16,
+        "bottomRight": 16,
+        "bottomLeft": 16
+      },
+      "expected": {
+        "output": "border-radius: 16px 16px 16px 16px;",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -64,20 +64,25 @@ test("public tools use scoped server-resolved dynamic slugs", async () => {
     ),
   ]);
 
-  assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["']\)/);
+  assert.match(paperworkCatalog, /getAvailableTools\(["']paperwork["'][,)]/);
   assert.match(paperworkCatalog, /href=\{`\/paperwork\/\$\{tool\.slug\}`\}/);
   assert.match(paperworkTool, /getAvailableToolBySlug\(["']paperwork["']/);
   assert.match(paperworkTool, /notFound\(\)/);
   assert.match(paperworkTool, /componentKey/);
-  assert.match(devtoolsCatalog, /getAvailableTools\(["']devtools["']\)/);
+  // Devtools and Media resolve through the tool framework's catalogue; only
+  // Paperwork still reads the control plane directly.
+  assert.match(devtoolsCatalog, /getTools\(["']devtools["']\)/);
   assert.match(devtoolsCatalog, /`\/devtools\/\$\{tool\.slug\}`/);
   assert.doesNotMatch(devtoolsCatalog, /redirect\(/);
-  assert.match(devtoolsTool, /getAvailableToolBySlug\(["']devtools["']/);
+  assert.match(devtoolsTool, /resolveToolPage\(["']devtools["']/);
   assert.match(devtoolsTool, /notFound\(\)/);
-  assert.match(mediaCatalog, /getAvailableTools\(["']media["']\)/);
+  assert.match(mediaCatalog, /getTools\(["']media["']\)/);
   assert.match(mediaCatalog, /`\/media\/\$\{tool\.slug\}`/);
-  assert.match(mediaTool, /getAvailableToolBySlug\(["']media["']/);
+  assert.match(mediaTool, /resolveToolPage\(["']media["']/);
   assert.match(mediaTool, /notFound\(\)/);
+  // Prerendering a slug would need a redeploy per admin toggle.
+  assert.doesNotMatch(devtoolsTool, /export\s[^\n]*generateStaticParams/);
+  assert.doesNotMatch(mediaTool, /export\s[^\n]*generateStaticParams/);
 
   for (const path of [
     "app/paperwork/receipt-generator/page.tsx",
@@ -97,7 +102,9 @@ test("root scripts run the root-owned application directly", async () => {
 
   assert.match(packageJson.scripts.dev, /\bnext dev -p 3000$/);
   assert.match(packageJson.scripts["test:media"], /\bnode --test\b/);
-  assert.match(packageJson.scripts["test:media"], /app\/media/);
+  // The media processing source lives in the tool framework; `app/media/` is
+  // now only the route shell and holds nothing worth covering.
+  assert.match(packageJson.scripts["test:media"], /lib\/tool-framework\/media/);
   assert.doesNotMatch(packageJson.scripts.dev, /--filter/);
   assert.doesNotMatch(packageJson.scripts["test:media"], /--filter/);
   for (const script of [
@@ -241,7 +248,7 @@ test("Paperwork scoped persistence APIs check the owning tool", async () => {
 });
 
 test("Admin and Media ordering use the shared accessible drag-and-drop list", async () => {
-  const [editor, toolList, mediaWorkbench, orderableList] = await Promise.all([
+  const [editor, toolList, orderableList] = await Promise.all([
     readFile(
       new URL(
         "app/admin/(protected)/templates/[id]/components/TemplateEditor.tsx",
@@ -257,13 +264,6 @@ test("Admin and Media ordering use the shared accessible drag-and-drop list", as
       "utf8",
     ),
     readFile(
-      new URL(
-        "app/media/components/MediaWorkbench.tsx",
-        root,
-      ),
-      "utf8",
-    ),
-    readFile(
       new URL("packages/ui/src/components/OrderableList.tsx", root),
       "utf8",
     ),
@@ -273,12 +273,6 @@ test("Admin and Media ordering use the shared accessible drag-and-drop list", as
   assert.match(editor, /GripVertical/);
   assert.doesNotMatch(editor, /moveSection|ArrowUp|ArrowDown/);
   assert.match(toolList, /@smarttools\/ui\/components\/OrderableList/);
-  assert.match(mediaWorkbench, /@smarttools\/ui\/components\/OrderableList/);
-  assert.match(mediaWorkbench, /<OrderableList/);
-  assert.doesNotMatch(
-    mediaWorkbench,
-    /<ArrowUp|<ArrowDown|function moveFile|function movePage/,
-  );
   assert.match(orderableList, /KeyboardSensor/);
   assert.match(orderableList, /PointerSensor/);
   assert.match(orderableList, /sortableKeyboardCoordinates/);

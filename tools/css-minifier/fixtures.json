@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "/* theme */\nbody { color: #111; background: #fff; }",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "body{color:#111;background:#fff}",
+        "render": "text"
+      }
+    }
+  ]
+}

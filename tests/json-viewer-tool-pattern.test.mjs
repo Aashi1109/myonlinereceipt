@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { access } from "node:fs/promises";
 import test from "node:test";
+
+// The four source-text tests that used to live here were deleted, not moved:
+// they read `tools/json-viewer/*` and asserted component names, Tailwind
+// classes, import statements, and a `definitionKey:` literal. Root AGENTS.md
+// forbids that style, and the `definitionKey` assertion directly contradicted
+// `tests/tool-registry.test.mjs`, which requires that a definition never
+// declares it — the folder name is the key. Those boundaries are now enforced
+// by `tests/tool-registry.test.mjs` and `tsc --noEmit`.
+//
+// What remains is the one genuine behavioural test: it imports and executes
+// the pure JSON Viewer contract.
 
 const root = new URL("../", import.meta.url);
 
@@ -12,112 +23,6 @@ async function exists(path) {
     return false;
   }
 }
-
-async function readText(path) {
-  return readFile(new URL(path, root), "utf8");
-}
-
-test("JSON Viewer is a flat, tool-owned definition and workspace", async () => {
-  const ownedFiles = [
-    "tools/json-viewer/definition.ts",
-    "tools/json-viewer/execution.ts",
-    "tools/json-viewer/workspace.tsx",
-  ];
-
-  for (const path of ownedFiles) {
-    assert.equal(await exists(path), true, `${path} must be owned by JSON Viewer`);
-  }
-
-  const [definition, workspace] = await Promise.all([
-    readText(ownedFiles[0]),
-    readText(ownedFiles[2]),
-  ]);
-
-  assert.match(definition, /definitionKey:\s*["']json-viewer["']/);
-  assert.match(definition, /toolId:\s*["']devtools\.json-viewer["']/);
-  assert.match(definition, /app:\s*["']devtools["']/);
-  assert.doesNotMatch(
-    definition,
-    /from\s+["']react["']|\.tsx["']/,
-    "the server-safe definition must not import the client workspace",
-  );
-
-  for (const boundary of [
-    "SplitStack",
-    "EditorSurface",
-    "JsonResultRenderer",
-    "useToolRuntime",
-  ]) {
-    assert.match(
-      workspace,
-      new RegExp(`\\b${boundary}\\b`),
-      `JSON Viewer workspace should compose the ${boundary} boundary`,
-    );
-  }
-  assert.doesNotMatch(
-    workspace,
-    /from\s+["'][^"']*\/execution["']/,
-    "the workspace must use runtime commands instead of importing its executor",
-  );
-});
-
-test("the Devtools route resolves JSON Viewer through its stable definition key", async () => {
-  const route = await readText("app/devtools/[slug]/page.tsx");
-
-  assert.match(route, /\bUniversalWorkbench\b/);
-  assert.match(
-    route,
-    /(?:definitionKey=\{tool\.componentKey\}|ToolDefinition\(tool\.componentKey\))/,
-  );
-  assert.doesNotMatch(route, /\bJsonViewerWorkbench\b/);
-  assert.doesNotMatch(route, /tool\.componentKey\s*===\s*["']json-viewer["']/);
-});
-
-test("JSON Viewer retains its source and tree interactions inside its workspace", async () => {
-  const [workspace, definition, renderer] = await Promise.all([
-    readText("tools/json-viewer/workspace.tsx"),
-    readText("tools/json-viewer/definition.ts"),
-    readText("app/devtools/components/JsonResultRenderer.tsx"),
-  ]);
-  const behaviorSource = `${workspace}\n${definition}\n${renderer}`;
-
-  for (const behavior of [
-    "JSON input",
-    "JSON tree",
-    "Load example",
-    "Load broken example",
-    "Beautify",
-    "Minify",
-    "Repair & clean",
-    "Collapse",
-    "Expand",
-    "Copy",
-    "Clear",
-  ]) {
-    assert.match(
-      behaviorSource,
-      new RegExp(behavior.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"),
-      `JSON Viewer should retain its ${behavior} behavior`,
-    );
-  }
-
-  assert.match(workspace, /Split view · UTF-8/);
-  assert.doesNotMatch(workspace, /Viewer layout|classicTab|setLayout/);
-  assert.match(workspace, /remove/);
-  assert.match(workspace, /null/);
-  assert.match(workspace, /grid-cols-\[minmax\(0,520px\)_minmax\(0,1fr\)\]/);
-  assert.match(workspace, /lineNumbers/);
-  assert.match(workspace, /w-\[15px\]/);
-  assert.match(workspace, /pt-\[18px\]/);
-  assert.match(workspace, /pl-\[45px\]/);
-  assert.match(workspace, /!font-mono/);
-  assert.match(workspace, /!text-xs/);
-  assert.match(workspace, /!leading-\[1\.55\]/);
-  assert.match(workspace, /text-on-ink-muted/);
-  assert.doesNotMatch(workspace, /bg-muted\/65|w-11/);
-  assert.match(workspace, /persistentSearch/);
-  assert.match(workspace, /showNodeCopyActions=\{false\}/);
-});
 
 test("JSON Viewer execution parses, formats, minifies, and repairs without UI state", async () => {
   assert.equal(
@@ -197,28 +102,4 @@ test("JSON Viewer execution parses, formats, minifies, and repairs without UI st
       output: '{\n  "ready": null,\n  "kept": true\n}',
     },
   );
-});
-
-test("the universal workbench owns recovery and has unique landmarks", async () => {
-  const [runtime, workbench] = await Promise.all([
-    readText("lib/tool-runtime/useToolRuntime.tsx"),
-    readText("components/tool-workbench/UniversalWorkbench.tsx"),
-  ]);
-
-  for (const recoveryBoundary of [
-    "pendingConfirmation",
-    "confirmPendingCommand",
-    "cancelPendingCommand",
-    "canUndo",
-    "undo",
-  ]) {
-    assert.match(runtime, new RegExp(`\\b${recoveryBoundary}\\b`));
-    assert.match(workbench, new RegExp(`\\b${recoveryBoundary}\\b`));
-  }
-
-  assert.match(workbench, /workspaceId=["']tool-page-content["']/);
-  assert.match(workbench, /Before you continue/);
-  assert.match(workbench, /Related tools/);
-  assert.doesNotMatch(workbench, /tool-workbench-rail/);
-  assert.doesNotMatch(workbench, /<main\b/);
 });

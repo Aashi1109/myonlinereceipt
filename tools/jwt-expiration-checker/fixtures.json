@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJleHAiOjQxMDI0NDQ4MDB9.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Status: Active\nExpires: 2100-01-01T00:00:00.000Z\nIssued: not specified",
+        "render": "text"
+      }
+    }
+  ]
+}

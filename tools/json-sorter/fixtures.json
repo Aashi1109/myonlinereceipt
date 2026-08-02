@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"z\":1,\"a\":{\"d\":4,\"b\":2}}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove",
+        "indent": "2"
+      },
+      "expected": {
+        "output": "{\n  \"a\": {\n    \"b\": 2,\n    \"d\": 4\n  },\n  \"z\": 1\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

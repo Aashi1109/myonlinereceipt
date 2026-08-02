@@ -1,0 +1,17 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "https://example.com/\nhttps://example.com/about",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url><loc>https://example.com/</loc></url>\n  <url><loc>https://example.com/about</loc></url>\n</urlset>",
+        "render": "text",
+        "downloadName": "sitemap.xml"
+      }
+    }
+  ]
+}

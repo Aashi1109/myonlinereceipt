@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "&lt;strong&gt;Tom &amp; Ada&lt;/strong&gt;",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "<strong>Tom & Ada</strong>",
+        "render": "text"
+      }
+    }
+  ]
+}

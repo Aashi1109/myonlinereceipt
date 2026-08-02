@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "1704067200",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "ISO: 2024-01-01T00:00:00.000Z\nUTC: Mon, 01 Jan 2024 00:00:00 GMT\nLocal: 1/1/2024, 12:00:00 AM\nUnix seconds: 1704067200\nUnix milliseconds: 1704067200000",
+        "render": "text"
+      }
+    }
+  ]
+}

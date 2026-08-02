@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"name\":\"Ada\",\"active\":true,\"tags\":[\"admin\"]}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "export interface Root {\n  name: string;\n  active: boolean;\n  tags: string[];\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

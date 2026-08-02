@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "# Hello\n\n**Smart tools** stay focused.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "<h1>Hello</h1>\n<p><strong>Smart tools</strong> stay focused.</p>\n",
+        "render": "html"
+      }
+    }
+  ]
+}

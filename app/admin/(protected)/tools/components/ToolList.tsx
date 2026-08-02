@@ -1,6 +1,7 @@
 "use client";
 
-import type { ResolvedTool, ToolApp } from "@smarttools/tool-catalog";
+import type { ToolApp } from "@smarttools/tool-catalog";
+import type { AdminTool } from "../../../../../lib/tool-framework/manifest";
 import {
   OrderableList,
   type OrderableItemState,
@@ -24,26 +25,22 @@ import {
   Boxes,
   Braces,
   BriefcaseBusiness,
-  Calculator,
-  ChartNoAxesColumnIncreasing,
   ChevronDown,
-  ClipboardList,
   Ellipsis,
   Eye,
   EyeOff,
-  FileText,
   GripVertical,
   History,
   LayoutGrid,
-  ReceiptText,
   RotateCcw,
-  Route,
   Search,
   TriangleAlert,
-  UsersRound,
   type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ToolIcon } from "../../../../../components/ToolIcon";
+import type { ToolIconRow } from "../../../../../lib/tool-framework/icons";
 import {
   archiveToolAction,
   reorderToolsAction,
@@ -51,16 +48,11 @@ import {
   updateToolAction,
 } from "../../../actions";
 
-const TOOL_ICONS: Readonly<Record<string, LucideIcon>> = {
-  "1099-nec-tracker": UsersRound,
-  "expense-report": ChartNoAxesColumnIncreasing,
-  "invoice-generator": FileText,
-  "json-formatter": Braces,
-  "mileage-log": Route,
-  "quarterly-tax-estimator": Calculator,
-  "receipt-generator": ReceiptText,
-  "w9-request": ClipboardList,
-};
+/**
+ * Uploaded icons, keyed by tool id. Nothing here names a tool: a tool without
+ * a row falls back to its generated identicon inside `ToolIcon`.
+ */
+type ToolIcons = Readonly<Record<string, ToolIconRow>>;
 
 const GROUPS: readonly {
   app: ToolApp;
@@ -91,15 +83,15 @@ const GROUPS: readonly {
 type AppFilter = "all" | ToolApp;
 type VisibilityFilter = "all" | "visible" | "hidden" | "setup" | "archived";
 
-function sortByOrder(tools: readonly ResolvedTool[]) {
+function sortByOrder(tools: readonly AdminTool[]) {
   return [...tools].sort((left, right) => left.order - right.order);
 }
 
-function isVisible(tool: ResolvedTool) {
+function isVisible(tool: AdminTool) {
   return Boolean(tool.enabled && !tool.archived && tool.slug);
 }
 
-function matchesVisibility(tool: ResolvedTool, filter: VisibilityFilter) {
+function matchesVisibility(tool: AdminTool, filter: VisibilityFilter) {
   if (filter === "visible") return isVisible(tool);
   if (filter === "hidden") return Boolean(tool.slug && !tool.enabled && !tool.archived);
   if (filter === "setup") return !tool.slug && !tool.archived;
@@ -107,14 +99,17 @@ function matchesVisibility(tool: ResolvedTool, filter: VisibilityFilter) {
   return true;
 }
 
-function ToolStatus({ tool }: { tool: ResolvedTool }) {
+function ToolStatus({ tool }: { tool: AdminTool }) {
   if (tool.archived) return <StatusBadge variant="archived">Archived</StatusBadge>;
   if (!tool.slug) return <StatusBadge variant="warning">Setup required</StatusBadge>;
+  // The row exists but its code has not shipped, so visitors cannot reach it
+  // however this row is configured.
+  if (!tool.hasDefinition) return <StatusBadge variant="warning">Awaiting code</StatusBadge>;
   if (tool.enabled) return <StatusBadge variant="success">Visible</StatusBadge>;
   return <StatusBadge>Hidden</StatusBadge>;
 }
 
-function ToolToggle({ tool }: { tool: ResolvedTool }) {
+function ToolToggle({ tool }: { tool: AdminTool }) {
   const [checked, setChecked] = useState(tool.enabled);
   const [isPending, startTransition] = useTransition();
 
@@ -151,7 +146,7 @@ function ToolConfiguration({
   tool,
 }: {
   onClose: () => void;
-  tool: ResolvedTool;
+  tool: AdminTool;
 }) {
   return (
     <div className="border-t border-border bg-muted/40 px-5 py-5 sm:px-6">
@@ -266,14 +261,15 @@ function ToolDescription({ description }: { description: string }) {
 }
 
 function ToolRow({
+  iconRow,
   orderable,
   tool,
 }: {
+  iconRow: ToolIconRow | null;
   orderable: OrderableItemState;
-  tool: ResolvedTool;
+  tool: AdminTool;
 }) {
   const [isConfiguring, setIsConfiguring] = useState(false);
-  const Icon = tool.slug ? (TOOL_ICONS[tool.componentKey] ?? FileText) : TriangleAlert;
   const isSetupRequired = !tool.slug && !tool.archived;
 
   return (
@@ -303,7 +299,11 @@ function ToolRow({
             size="sm"
             tone="muted"
           >
-            <Icon strokeWidth={1.8} />
+            {isSetupRequired ? (
+              <TriangleAlert strokeWidth={1.8} />
+            ) : (
+              <ToolIcon name={tool.name} row={iconRow} size={20} toolId={tool.id} />
+            )}
           </IconTile>
           <span className="min-w-0 flex-1">
             <span className="block truncate font-heading text-[13px] font-semibold text-foreground">
@@ -333,17 +333,24 @@ function ToolRow({
               Finish setup
             </Button>
           ) : (
-            <Button
-              aria-expanded={isConfiguring}
-              aria-label={`Configure ${tool.name}`}
-              onClick={() => setIsConfiguring((open) => !open)}
-              size="icon-sm"
-              title={`Configure ${tool.name}`}
-              type="button"
-              variant="ghost"
-            >
-              <Ellipsis aria-hidden="true" className="size-4" />
-            </Button>
+            <>
+              <Button asChild size="sm" variant="secondary">
+                <Link href={`/admin/tools/${encodeURIComponent(tool.id)}`}>
+                  Content &amp; icon
+                </Link>
+              </Button>
+              <Button
+                aria-expanded={isConfiguring}
+                aria-label={`Configure ${tool.name}`}
+                onClick={() => setIsConfiguring((open) => !open)}
+                size="icon-sm"
+                title={`Configure ${tool.name}`}
+                type="button"
+                variant="ghost"
+              >
+                <Ellipsis aria-hidden="true" className="size-4" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -357,13 +364,15 @@ function ToolRow({
 function ToolGroup({
   app,
   canReorder,
+  icons,
   title,
   tools,
 }: {
   app: ToolApp;
   canReorder: boolean;
+  icons: ToolIcons;
   title: string;
-  tools: readonly ResolvedTool[];
+  tools: readonly AdminTool[];
 }) {
   const [items, setItems] = useState(() => sortByOrder(tools));
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(() => new Set());
@@ -373,7 +382,7 @@ function ToolGroup({
   useEffect(() => setItems(sortByOrder(tools)), [tools]);
 
   const categoryGroups = useMemo(() => {
-    const groups = new Map<string, ResolvedTool[]>();
+    const groups = new Map<string, AdminTool[]>();
     for (const tool of items) {
       const category = tool.category?.trim() || title;
       const categoryItems = groups.get(category) ?? [];
@@ -383,7 +392,7 @@ function ToolGroup({
     return [...groups.entries()];
   }, [items, title]);
 
-  function handleReorder(category: string, nextCategoryItems: ResolvedTool[]) {
+  function handleReorder(category: string, nextCategoryItems: AdminTool[]) {
     const previousItems = items;
     let categoryIndex = 0;
     const nextItems = items.map((tool) =>
@@ -455,7 +464,13 @@ function ToolGroup({
                 getId={(tool) => tool.id}
                 items={categoryItems}
                 onReorder={(nextItems) => handleReorder(category, nextItems)}
-                renderItem={(tool, orderable) => <ToolRow orderable={orderable} tool={tool} />}
+                renderItem={(tool, orderable) => (
+                  <ToolRow
+                    iconRow={icons[tool.id] ?? null}
+                    orderable={orderable}
+                    tool={tool}
+                  />
+                )}
               />
             ) : null}
           </div>
@@ -494,7 +509,12 @@ function RailItem({
   );
 }
 
-export function ToolList({ tools }: { tools: readonly ResolvedTool[] }) {
+export interface ToolListProps {
+  icons: ToolIcons;
+  tools: readonly AdminTool[];
+}
+
+export function ToolList({ icons, tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [appFilter, setAppFilter] = useState<AppFilter>("all");
@@ -730,6 +750,7 @@ export function ToolList({ tools }: { tools: readonly ResolvedTool[] }) {
                   <ToolGroup
                     app={group.app}
                     canReorder={canReorder}
+                    icons={icons}
                     key={group.app}
                     title={group.title}
                     tools={groupTools}

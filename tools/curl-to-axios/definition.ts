@@ -1,0 +1,66 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "devtools.curl-to-axios",
+  app: "devtools",
+  category: "jwt-api-tools",
+  keywords: [
+    "curl",
+    "axios",
+    "convert",
+    "http request",
+    "javascript",
+    "api client",
+    "code generator",
+  ],
+  name: "cURL to Axios",
+  description: "Convert a common cURL request to Axios code.",
+  input: {
+    kind: "text",
+    label: "cURL command",
+    placeholder: "Enter or paste curl command…",
+  },
+  settings: { fields: {} },
+  trigger: { mode: "manual", actionLabel: "Convert to Axios" },
+  layout: "source-result",
+  capabilities: { copy: true, download: true },
+  labels: {
+    empty: "Paste a curl command to convert it.",
+    ready: "Axios code is ready.",
+    running: "Converting…",
+  },
+  content: {
+    howToUse: [
+      "Paste the whole command, starting with `curl`. Quoting is parsed the way a shell would, so headers such as `-H 'Authorization: Bearer …'` come across intact.",
+      "Convert to get a single `await axios(config)` call with the method, URL, headers, and body filled in.",
+      "Check the result before running it: strip any credential that came along in a header, and confirm the method matches what you intended.",
+    ],
+    limitations: [
+      "A subset of flags is understood: `-X/--request`, `-H/--header`, `-d/--data/--data-raw/--data-binary`, and `-u/--user`. Anything else — `-F`, `--form`, `-b`, `--cookie`, `-k`, `--compressed`, `-o`, proxy and TLS flags — is silently ignored, not translated.",
+      "As with curl, supplying a body promotes an unspecified method from GET to POST.",
+      "A JSON body is parsed and embedded as an object; anything that is not valid JSON is passed through as a string. No `Content-Type` header is inferred either way.",
+      "`-u user:pass` becomes a Base64 `Authorization: Basic` header, so the credential ends up in plain sight in the generated code. Replace it with an environment variable before committing.",
+      "The URL must be absolute http or https. Repeated `-d` flags do not concatenate the way curl does — only the last one is used.",
+    ],
+    faq: [
+      {
+        q: "Why is my `--form` upload missing?",
+        a: "Multipart flags are not supported. Build a `FormData` object by hand and pass it as `data`.",
+      },
+      {
+        q: "Do I need to set Content-Type for a JSON body?",
+        a: "Axios sets `application/json` automatically when `data` is a plain object, which is what a parsed JSON body becomes here. Add the header explicitly if you send a string.",
+      },
+      {
+        q: "Is my command sent anywhere?",
+        a: "No. Parsing and code generation happen entirely in this browser tab, and no request is made.",
+      },
+    ],
+    examples: [
+      {
+        label: "GET with a bearer token",
+        text: "curl https://api.example.com/users -H 'Authorization: Bearer token'",
+      },
+    ],
+  },
+} as const satisfies ToolSpec;

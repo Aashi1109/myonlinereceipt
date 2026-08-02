@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"name\":\"Ada\",\"active\":true}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "name: Ada\nactive: true\n",
+        "render": "text"
+      }
+    }
+  ]
+}

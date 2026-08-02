@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "version": "v4",
+        "count": 5,
+        "hyphens": true,
+        "upper": false
+      },
+      "expected": {
+        "render": "text",
+        "length": {
+          "max": 184,
+          "min": 184
+        },
+        "pattern": "^[a-z0-9\\n\\-]{184,184}$"
+      }
+    }
+  ]
+}

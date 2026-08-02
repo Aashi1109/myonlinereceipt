@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Smart tools make repeated work faster. They should remain easy to trust.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "countHyphenated": true,
+        "ignoreNumbers": false,
+        "excludeEmails": true
+      },
+      "expected": {
+        "output": "Words: 12\nCharacters: 72\nCharacters without spaces: 61\nSentences: 2\nParagraphs: 1\nLines: 1\nReading time: 1 minute",
+        "render": "text"
+      }
+    }
+  ]
+}

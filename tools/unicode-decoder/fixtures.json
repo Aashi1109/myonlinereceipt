@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Hello \\u{1F44B}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Hello 👋",
+        "render": "text"
+      }
+    }
+  ]
+}

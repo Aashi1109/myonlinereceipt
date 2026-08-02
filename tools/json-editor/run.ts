@@ -1,0 +1,21 @@
+/**
+ * Moved verbatim from the `json-editor` case in `lib/devtools/format-json.ts`.
+ * The repair pass is the shared `parseUtilityJson`, not a reimplementation.
+ */
+
+import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import { parseUtilityJson } from "../../lib/devtools/shared/json-input.ts";
+
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const indentation = ctx.settings.indent === "4" ? 4 : 2;
+  const value = parseUtilityJson(ctx.input.text, {
+    repairMode: ctx.settings.repairMode,
+  });
+  return { render: "text", text: JSON.stringify(value, null, indentation) };
+};
+
+export default run;

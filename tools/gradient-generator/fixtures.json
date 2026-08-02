@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "#2563eb",
+        "secondary": "#7c3aed"
+      },
+      "name": "definition example",
+      "settings": {
+        "type": "linear",
+        "angle": 135
+      },
+      "expected": {
+        "output": "background: linear-gradient(135deg, #2563eb, #7c3aed);",
+        "render": "text"
+      }
+    }
+  ]
+}

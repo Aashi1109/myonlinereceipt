@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "[{\"name\":\"Ada\",\"role\":\"Admin\"},{\"name\":\"Lin\",\"role\":\"Editor\"}]",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "<table><thead><tr><th>name</th><th>role</th></tr></thead><tbody><tr><td>Ada</td><td>Admin</td></tr><tr><td>Lin</td><td>Editor</td></tr></tbody></table>",
+        "render": "html"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"store\":{\"book\":[{\"title\":\"Codex\"}]}}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove",
+        "path": "$.store.book[0].title"
+      },
+      "expected": {
+        "output": "\"Codex\"",
+        "render": "text"
+      }
+    }
+  ]
+}

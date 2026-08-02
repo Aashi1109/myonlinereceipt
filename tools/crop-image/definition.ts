@@ -1,0 +1,135 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "media.crop-image",
+  app: "media",
+  category: "image-editing",
+  keywords: [
+    "crop",
+    "image",
+    "trim",
+    "aspect ratio",
+    "jpg",
+    "png",
+    "webp",
+    "cut",
+  ],
+  name: "Crop Image",
+  description: "Crop an image freely or to a common aspect ratio.",
+  input: {
+    kind: "files",
+    label: "Source image",
+    accept: "image/jpeg,image/png,image/webp",
+    multiple: false,
+    engine: "image",
+    maxBytes: 26_214_400,
+  },
+  settings: {
+    fields: {
+      cropAspect: {
+        kind: "select",
+        label: "Aspect ratio",
+        help: "Locks the drag handles in the preview. Typing a width or height directly releases the lock.",
+        default: "free",
+        choices: [
+          { label: "Free", value: "free" },
+          { label: "1:1", value: "1:1" },
+          { label: "4:3", value: "4:3" },
+          { label: "16:9", value: "16:9" },
+        ],
+      },
+      cropX: {
+        kind: "number",
+        label: "X",
+        help: "Distance from the left edge of the image, in pixels.",
+        default: 0,
+        min: 0,
+        suffix: "px",
+      },
+      cropY: {
+        kind: "number",
+        label: "Y",
+        help: "Distance from the top edge of the image, in pixels.",
+        default: 0,
+        min: 0,
+        suffix: "px",
+      },
+      cropWidth: {
+        kind: "number",
+        label: "Width",
+        default: 0,
+        min: 0,
+        suffix: "px",
+      },
+      cropHeight: {
+        kind: "number",
+        label: "Height",
+        default: 0,
+        min: 0,
+        suffix: "px",
+      },
+      outputFormat: {
+        kind: "select",
+        label: "Output format",
+        help: "Original keeps the source format. Choose PNG when the image has transparency you need to keep.",
+        default: "original",
+        choices: [
+          { label: "Original format", value: "original" },
+          { label: "JPEG", value: "jpeg" },
+          { label: "PNG", value: "png" },
+          { label: "WebP", value: "webp" },
+        ],
+      },
+      quality: {
+        kind: "slider",
+        label: "Quality",
+        help: "Applies to JPEG and WebP output. PNG is lossless and ignores it.",
+        default: 80,
+        min: 30,
+        max: 100,
+        suffix: "%",
+      },
+    },
+  },
+  trigger: { mode: "manual", actionLabel: "Crop image" },
+  layout: "file-processor",
+  capabilities: { cancel: true, download: true, progress: true },
+  labels: {
+    empty: "Add an image to crop.",
+    ready: "Crop area is ready.",
+    running: "Cropping image…",
+  },
+  content: {
+    howToUse: [
+      "Add a single JPG, PNG, or WebP. It is decoded in your browser — the image is never uploaded.",
+      "Drag the crop box on the preview, or type X, Y, Width, and Height in pixels. X and Y are measured from the top-left corner.",
+      "Pick an aspect ratio to lock the box to 1:1, 4:3, or 16:9. Typing a width or height directly switches back to Free.",
+      "Choose an output format and quality, then run the crop and download the result.",
+    ],
+    limitations: [
+      "One image per run. Crop a batch by repeating the tool, or resize them together with a different tool.",
+      "HEIC is not accepted here, because the preview cannot be rendered for it. Convert to JPG or PNG first.",
+      "The crop box is clamped to the image bounds, so a box larger than the image simply yields the whole image.",
+      "Choosing JPEG flattens transparency onto white. Keep PNG or WebP if the source has an alpha channel.",
+      "Images must be 25 MiB or smaller and under 100 megapixels.",
+    ],
+    faq: [
+      {
+        q: "Where is the origin for X and Y?",
+        a: "The top-left corner of the image, which is the usual convention for raster images — unlike PDFs, where it is the bottom-left.",
+      },
+      {
+        q: "Why can I not add a HEIC file?",
+        a: "The crop UI needs a live preview and browsers cannot render HEIC directly. Convert it to JPG or PNG first, then crop.",
+      },
+      {
+        q: "Does cropping re-encode the image?",
+        a: "Yes. The image is decoded, cropped, and re-encoded, so a JPEG source loses a little quality even at 100%. Choose PNG output if you need that avoided.",
+      },
+      {
+        q: "Why did the aspect ratio reset to Free?",
+        a: "Typing a width or height directly is an explicit override, so the lock is released rather than silently fighting your input.",
+      },
+    ],
+  },
+} as const satisfies ToolSpec;

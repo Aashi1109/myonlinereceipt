@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "url": "https://example.com",
+        "source": "newsletter",
+        "medium": "email",
+        "campaign": "launch",
+        "term": "",
+        "content": "",
+        "normalization": "preserve",
+        "existingQuery": "merge"
+      },
+      "expected": {
+        "output": "https://example.com/?utm_source=newsletter&utm_medium=email&utm_campaign=launch",
+        "render": "text"
+      }
+    }
+  ]
+}

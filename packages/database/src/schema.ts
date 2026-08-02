@@ -225,8 +225,41 @@ export const managedToolsTable = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => [unique("managed_tools_app_slug_unique").on(table.app, table.slug)],
+  (table) => [
+    unique("managed_tools_app_slug_unique").on(table.app, table.slug),
+    unique("managed_tools_app_sort_order_unique").on(table.app, table.order),
+  ],
 );
+
+export const toolContentTable = pgTable("tool_content", {
+  toolId: text("tool_id")
+    .primaryKey()
+    .references(() => managedToolsTable.toolId, { onDelete: "cascade" }),
+  category: text("category"),
+  keywords: text("keywords").array(),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  contentDoc: jsonb("content_doc").$type<unknown>(),
+  docVersion: integer("doc_version").default(1).notNull(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const toolIconsTable = pgTable("tool_icons", {
+  toolId: text("tool_id")
+    .primaryKey()
+    .references(() => managedToolsTable.toolId, { onDelete: "cascade" }),
+  publicId: text("public_id").notNull(),
+  version: text("version").notNull(),
+  format: text("format").$type<"png">().notNull(),
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
 
 export const featureOverridesTable = pgTable(
   "feature_overrides",

@@ -1,0 +1,45 @@
+/**
+ * Moved verbatim from the `meta-tag-generator` case in
+ * `lib/devtools/format-json.ts`. Every interpolated value passes through the
+ * shared `escapeHtml` exactly as it did before — the escaping is not widened,
+ * narrowed, or re-implemented, because this tool emits markup from user input.
+ */
+
+import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
+import { escapeHtml } from "../../lib/devtools/shared/text.ts";
+import { safeUrl } from "../../lib/devtools/shared/url.ts";
+import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const title = escapeHtml(requireUtilityInput(ctx.input.text, "Page title"));
+  const description = escapeHtml(
+    requireUtilityInput(ctx.input.secondary ?? "", "Meta description"),
+  );
+  const keywords = ctx.settings.keywords.trim();
+  const author = ctx.settings.author.trim();
+  const canonical = ctx.settings.canonical.trim();
+  const image = ctx.settings.image.trim();
+  if (canonical) safeUrl(canonical, "Canonical URL");
+  if (image) safeUrl(image, "Open Graph image URL");
+  return {
+    render: "text",
+    text: [
+      `<title>${title}</title>`,
+      `<meta name="description" content="${description}">`,
+      ...(keywords ? [`<meta name="keywords" content="${escapeHtml(keywords)}">`] : []),
+      ...(author ? [`<meta name="author" content="${escapeHtml(author)}">`] : []),
+      ...(canonical ? [`<link rel="canonical" href="${escapeHtml(canonical)}">`] : []),
+      `<meta property="og:title" content="${title}">`,
+      `<meta property="og:description" content="${description}">`,
+      ...(canonical ? [`<meta property="og:url" content="${escapeHtml(canonical)}">`] : []),
+      ...(image ? [`<meta property="og:image" content="${escapeHtml(image)}">`] : []),
+    ].join("\n"),
+    downloadName: "meta-tags.html",
+  };
+};
+
+export default run;

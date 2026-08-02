@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Alpha\nBeta\nalpha\nGamma",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "ci": false,
+        "trim": true
+      },
+      "expected": {
+        "output": "Alpha\nBeta\nalpha\nGamma",
+        "render": "text"
+      }
+    }
+  ]
+}

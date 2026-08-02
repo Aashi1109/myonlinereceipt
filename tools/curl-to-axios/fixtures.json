@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "curl https://api.example.com/users -H 'Authorization: Bearer token'",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "const { data } = await axios({\n  \"method\": \"get\",\n  \"url\": \"https://api.example.com/users\",\n  \"headers\": {\n    \"Authorization\": \"Bearer token\"\n  }\n});",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
@@ -8,8 +9,28 @@ import { cn } from "#lib/utils"
 
 const EMPTY_VALUE = "__smarttools_select_empty_value__"
 
+const selectTriggerVariants = cva(
+  "group/select-trigger flex w-full min-w-0 items-center justify-between gap-2.5 overflow-hidden rounded-lg border border-input bg-card text-left font-sans whitespace-nowrap text-foreground outline-none transition-[border-color,box-shadow] disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-on-ink-muted disabled:opacity-70 data-[placeholder]:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 aria-invalid:border-validation aria-invalid:ring-2 aria-invalid:ring-validation/15 [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap",
+  {
+    variants: {
+      size: {
+        xs: "h-8 px-2.5 text-[11px]",
+        sm: "h-9 px-3 text-[13px]",
+        default: "h-11 px-4 text-sm",
+        md: "h-12 px-[18px] text-[15px]",
+        lg: "h-13 px-5.5 text-base",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  },
+)
+
+type SelectSize = NonNullable<VariantProps<typeof selectTriggerVariants>["size"]>
+
 type LegacySelectProps = Omit<React.ComponentProps<"select">, "size"> & {
-  size?: "sm" | "default"
+  size?: SelectSize
 }
 
 function hasNativeOptions(children: React.ReactNode): boolean {
@@ -62,6 +83,24 @@ function findEmptyLabel(children: React.ReactNode): React.ReactNode {
   return undefined
 }
 
+function findOptionLabel(
+  children: React.ReactNode,
+  selectedValue: string,
+): React.ReactNode {
+  for (const child of React.Children.toArray(children)) {
+    if (!React.isValidElement<React.ComponentProps<"option"> & { label?: string }>(child)) continue
+    if (
+      child.type === "option" &&
+      String(child.props.value ?? textContent(child.props.children)) === selectedValue
+    ) {
+      return child.props.children ?? child.props.label
+    }
+    const nested = findOptionLabel(child.props.children, selectedValue)
+    if (nested !== undefined) return nested
+  }
+  return undefined
+}
+
 function LegacySelect({
   children,
   className,
@@ -106,7 +145,9 @@ function LegacySelect({
         id={id}
         size={size}
       >
-        <SelectValue placeholder={findEmptyLabel(children) ?? "Select…"} />
+        <SelectValue placeholder={findEmptyLabel(children) ?? "Select…"}>
+          {findOptionLabel(children, selectedValue)}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>{renderNativeOptions(children)}</SelectContent>
     </SelectPrimitive.Root>
@@ -122,7 +163,7 @@ type SelectProps = Omit<
   defaultValue?: React.ComponentProps<"select">["defaultValue"]
   id?: string
   onChange?: React.ChangeEventHandler<HTMLSelectElement>
-  size?: "sm" | "default"
+  size?: SelectSize
   value?: React.ComponentProps<"select">["value"]
   "aria-describedby"?: string
   "aria-errormessage"?: string
@@ -161,21 +202,21 @@ function SelectTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "sm" | "default"
+  size?: SelectSize
 }) {
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "group/select-trigger flex h-11 w-full min-w-0 items-center justify-between gap-2.5 overflow-hidden rounded-lg border border-input bg-card px-[13px] py-3 text-left font-sans text-sm whitespace-nowrap text-foreground outline-none transition-[border-color,box-shadow] disabled:pointer-events-none disabled:cursor-not-allowed disabled:border-border disabled:bg-muted disabled:text-on-ink-muted disabled:opacity-70 data-[placeholder]:text-muted-foreground data-[size=sm]:h-8 data-[size=sm]:py-1 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 aria-invalid:border-validation aria-invalid:ring-2 aria-invalid:ring-validation/15 [&_[data-slot=select-value]]:min-w-0 [&_[data-slot=select-value]]:flex-1 [&_[data-slot=select-value]]:overflow-hidden [&_[data-slot=select-value]]:text-ellipsis [&_[data-slot=select-value]]:whitespace-nowrap",
+        selectTriggerVariants({ size }),
         className,
       )}
       {...props}
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-[transform,color] group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:text-primary" />
+        <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-[transform,color] group-data-[size=xs]/select-trigger:size-3.5 group-data-[size=sm]/select-trigger:size-[15px] group-data-[size=md]/select-trigger:size-[18px] group-data-[size=lg]/select-trigger:size-5 group-data-[state=open]/select-trigger:rotate-180 group-data-[state=open]/select-trigger:text-primary" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -303,4 +344,6 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  selectTriggerVariants,
 }
+export type { SelectProps, SelectSize }

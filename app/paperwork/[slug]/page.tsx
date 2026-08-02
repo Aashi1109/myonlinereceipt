@@ -8,6 +8,7 @@ import type { DocumentType } from "@smarttools/invoice-templates";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import App from "@/app/paperwork/components/App";
+import { getToolManifest } from "@/lib/tool-framework/manifest";
 
 const DOCUMENT_TYPE_BY_COMPONENT_KEY: Record<string, DocumentType> = {
   "invoice-generator": "invoice",
@@ -26,9 +27,10 @@ export default async function ToolPage({
 }) {
   const { slug } = await params;
   const requestHeaders = await headers();
+  const manifest = await getToolManifest();
   const [tool, tools, session] = await Promise.all([
-    getAvailableToolBySlug("paperwork", slug),
-    getAvailableTools("paperwork"),
+    getAvailableToolBySlug("paperwork", slug, manifest),
+    getAvailableTools("paperwork", manifest),
     getOptionalSession(requestHeaders),
   ]);
 

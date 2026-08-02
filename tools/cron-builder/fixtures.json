@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "0",
+        "secondary": "9"
+      },
+      "name": "definition example",
+      "settings": {
+        "dayOfMonth": "*",
+        "month": "*",
+        "dayOfWeek": "1-5",
+        "dialect": "standard",
+        "timezone": "utc",
+        "commandLabel": ""
+      },
+      "expected": {
+        "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5",
+        "render": "text"
+      }
+    }
+  ]
+}

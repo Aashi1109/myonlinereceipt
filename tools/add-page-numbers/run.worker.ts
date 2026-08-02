@@ -1,0 +1,73 @@
+/**
+ * Moved from `addPageNumbers` in `app/media/_workers/pdf.worker.ts:611-638`,
+ * plus the shared preflight from `processPdf` (`pdf.worker.ts:91-98`).
+ *
+ * `buildJobOptions` assembled `position` from two separate options
+ * (`MediaWorkbench.tsx:1602`, `1658-1659`); the `position` field kind holds the
+ * combined nine-point anchor directly, so the two collapse into one setting and
+ * `positionedBox` takes it unchanged.
+ */
+
+import {
+  enforcePageLimit,
+  loadPdf,
+  pdfOutput,
+  positionedBox,
+  validatePdfInput,
+} from "../../lib/tool-framework/media/pdfDocument.ts";
+import {
+  createOutputFilename,
+  validatePdfSelection,
+} from "../../lib/tool-framework/media/validation.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  const selection = validatePdfSelection(
+    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+  );
+  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  for (const file of ctx.input.files) validatePdfInput(file);
+
+  const { StandardFonts, rgb } = await import("pdf-lib");
+  const input = ctx.input.files[0];
+  const pdf = await loadPdf(input);
+  enforcePageLimit(input, pdf.getPageCount(), false);
+  ctx.signal.throwIfAborted();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const total = pdf.getPageCount();
+  pdf.getPages().forEach((page, index) => {
+    const number = ctx.settings.start + index;
+    const value =
+      ctx.settings.format === "page-number"
+        ? `Page ${number}`
+        : ctx.settings.format === "number-of-total"
+          ? `${number} / ${ctx.settings.start + total - 1}`
+          : String(number);
+    const width = font.widthOfTextAtSize(value, ctx.settings.fontSize);
+    ctx.progress({ completed: index, total, stage: "Numbering PDF page" });
+    page.drawText(value, {
+      ...positionedBox(page, width, ctx.settings.fontSize, ctx.settings.position),
+      color: rgb(0.1, 0.1, 0.1),
+      font,
+      size: ctx.settings.fontSize,
+    });
+    ctx.progress({ completed: index + 1, total, stage: "Page complete" });
+  });
+  const numbered = pdfOutput(
+    await pdf.save(),
+    createOutputFilename(input.name, "pdf", "numbered"),
+  );
+
+  return {
+    render: "files",
+    files: [numbered],
+    inputBytes: input.data.byteLength,
+    outputBytes: numbered.size,
+  };
+};
+
+export default run;

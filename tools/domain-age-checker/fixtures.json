@@ -1,0 +1,26 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "error": "Enter a valid domain name."
+      },
+      "input": {
+        "primary": "not a domain",
+        "secondary": ""
+      },
+      "name": "rejects a hostname that does not normalize",
+      "settings": {}
+    },
+    {
+      "expected": {
+        "error": "Domain is required."
+      },
+      "input": {
+        "primary": "   ",
+        "secondary": ""
+      },
+      "name": "rejects blank input before any request",
+      "settings": {}
+    }
+  ]
+}

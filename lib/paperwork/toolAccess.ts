@@ -1,5 +1,7 @@
 import { getAvailableToolBySlug } from "@smarttools/control-plane";
 
+import { getToolManifest } from "../tool-framework/manifest";
+
 const STORAGE_TOOL_SLUGS: Readonly<Record<string, string>> = {
   paperwork_kit_invoice_draft: "invoice-generator",
   "paperworkkit.invoice.summary": "invoice-generator",
@@ -24,7 +26,7 @@ export class PaperworkToolAccessError extends Error {
 export async function requireAvailablePaperworkTool(
   slug: string,
 ): Promise<void> {
-  if (!(await getAvailableToolBySlug("paperwork", slug))) {
+  if (!(await getAvailableToolBySlug("paperwork", slug, await getToolManifest()))) {
     throw new PaperworkToolAccessError(404);
   }
 }
@@ -40,8 +42,9 @@ export async function requireAvailableToolForStorageKey(
 export async function requireAnyAvailablePaperworkTool(
   slugs: readonly string[],
 ): Promise<void> {
+  const manifest = await getToolManifest();
   const tools = await Promise.all(
-    slugs.map((slug) => getAvailableToolBySlug("paperwork", slug)),
+    slugs.map((slug) => getAvailableToolBySlug("paperwork", slug, manifest)),
   );
   if (!tools.some(Boolean)) throw new PaperworkToolAccessError(404);
 }

@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"name\":\"Ada\",\"active\":true}",
+        "secondary": "{\"name\":\"Ada\",\"active\":false,\"role\":\"admin\"}"
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "~ $.active: true → false\n+ $.role: \"admin\"",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -1,8 +1,41 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-import { toolManifest } from "../packages/tool-catalog/src/index.ts";
+import { TOOL_SLUG_PATTERN } from "../packages/tool-catalog/src/index.ts";
+
+const drizzleUrl = new URL("../packages/database/drizzle/", import.meta.url);
+
+/**
+ * Every `managed_tools` seed row across every migration, in applied order.
+ *
+ * Seeds are append-only across files, so the shape that matters is the union
+ * a fully migrated database ends up holding — not the contents of any one
+ * file, and not a count. Tuples are one per line, and only the first three
+ * columns (`tool_id`, `app`, `slug`) are read, so an apostrophe inside a
+ * later `name`/`description` column cannot confuse the parse.
+ */
+async function seededManagedTools() {
+  const files = (await readdir(drizzleUrl))
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+  const rows = [];
+
+  for (const file of files) {
+    const sql = await readFile(new URL(file, drizzleUrl), "utf8");
+    for (const statement of sql.split(";")) {
+      if (!/INSERT INTO managed_tools\b/i.test(statement)) continue;
+      for (const line of statement.split("\n")) {
+        const tuple = /^\s*\(\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',/.exec(line);
+        if (tuple) {
+          rows.push({ file, toolId: tuple[1], app: tuple[2], slug: tuple[3] });
+        }
+      }
+    }
+  }
+
+  return rows;
+}
 
 const migrationUrl = new URL(
   "../packages/database/drizzle/0001_auth_control_plane.sql",
@@ -62,12 +95,40 @@ test("the migration runner seeds invoice templates only for an empty catalog", a
   assert.match(runner, /INSERT INTO invoice_templates/i);
 });
 
-test("the Media migration expands only managed tool ownership and seeds every tool", async () => {
+test("every applied managed_tools seed forms one consistent catalogue", async () => {
+  const rows = await seededManagedTools();
+  assert.ok(rows.length > 0, "no managed_tools seed rows were parsed");
+
+  const byToolId = new Map();
+  const byAppSlug = new Map();
+  const duplicateToolIds = [];
+  const duplicateAppSlugs = [];
+  const invalidSlugs = [];
+
+  for (const row of rows) {
+    const appSlug = `${row.app}/${row.slug}`;
+    const where = `${row.file}: ${row.toolId}`;
+    if (byToolId.has(row.toolId)) {
+      duplicateToolIds.push(`${where} (first seeded in ${byToolId.get(row.toolId)})`);
+    }
+    if (byAppSlug.has(appSlug)) {
+      duplicateAppSlugs.push(`${where} -> ${appSlug} (first seeded in ${byAppSlug.get(appSlug)})`);
+    }
+    if (!TOOL_SLUG_PATTERN.test(row.slug)) invalidSlugs.push(`${where} -> ${row.slug}`);
+    byToolId.set(row.toolId, row.file);
+    byAppSlug.set(appSlug, row.file);
+  }
+
+  assert.deepEqual(duplicateToolIds, [], "managed_tools.tool_id is the primary key");
+  assert.deepEqual(duplicateAppSlugs, [], "managed_tools carries UNIQUE (app, slug)");
+  assert.deepEqual(invalidSlugs, [], "every seeded slug must be a routable slug");
+});
+
+test("the Media migration expands only managed tool ownership", async () => {
   const [sql, schema] = await Promise.all([
     readFile(mediaMigrationUrl, "utf8"),
     readFile(schemaUrl, "utf8"),
   ]);
-  const mediaTools = toolManifest.filter((tool) => tool.app === "media");
 
   assert.match(sql, /DROP CONSTRAINT IF EXISTS managed_tools_app_check/i);
   assert.match(
@@ -75,16 +136,6 @@ test("the Media migration expands only managed tool ownership and seeds every to
     /ADD CONSTRAINT managed_tools_app_check[\s\S]+app IN \('paperwork', 'devtools', 'media'\)/i,
   );
   assert.match(sql, /ON CONFLICT \(tool_id\) DO NOTHING/i);
-  assert.equal(mediaTools.length, 30);
-  assert.equal((sql.match(/\('media\.[^']+'/g) ?? []).length, 30);
-  for (const [order, tool] of mediaTools.entries()) {
-    assert.ok(
-      sql.includes(
-        `('${tool.id}', 'media', '${tool.componentKey}', '${tool.defaultName}', '${tool.defaultDescription}', ${order}, TRUE, FALSE)`,
-      ),
-      tool.id,
-    );
-  }
 
   assert.match(
     schema,

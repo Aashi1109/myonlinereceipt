@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "#3366ff",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "rgb(51, 102, 255)",
+        "render": "text"
+      }
+    }
+  ]
+}

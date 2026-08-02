@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "2026-01-01T00:00:00Z",
+        "secondary": "2026-01-03T00:00:00Z"
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "2 days (48 hours)",
+        "render": "text"
+      }
+    }
+  ]
+}

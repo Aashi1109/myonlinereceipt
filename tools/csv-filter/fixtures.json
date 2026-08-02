@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,role\nAda,Admin\nLin,Editor",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "delimiter": ",",
+        "query": "Admin",
+        "column": ""
+      },
+      "expected": {
+        "output": "name,role\nAda,Admin",
+        "render": "text"
+      }
+    }
+  ]
+}

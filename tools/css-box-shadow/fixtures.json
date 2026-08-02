@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "#0f172a",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "x": 0,
+        "y": 12,
+        "blur": 30,
+        "spread": -8,
+        "inset": false
+      },
+      "expected": {
+        "output": "box-shadow: 0px 12px 30px -8px #0f172a;",
+        "render": "text"
+      }
+    }
+  ]
+}

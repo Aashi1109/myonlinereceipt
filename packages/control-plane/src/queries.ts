@@ -30,6 +30,7 @@ import {
   mergeToolManifest,
   type ResolvedTool,
   type ToolApp,
+  type ToolManifestEntry,
 } from "@smarttools/tool-catalog";
 import {
   mergeFeatureOverrides,
@@ -43,22 +44,37 @@ export class AuthorizationError extends Error {
 
 export const featureManifest: readonly FeatureManifestEntry[] = [];
 
-export async function getManagedTools(): Promise<ResolvedTool[]> {
-  if (!isDatabaseConfigured()) return mergeToolManifest();
-  return mergeToolManifest(await db.select().from(managedToolsTable));
+/**
+ * Tools that exist in code, resolved against their stored rows.
+ *
+ * The manifest is the map, so a stored row named by no entry is dropped. That
+ * is the right gate for a public surface and the wrong one for the admin
+ * catalogue, which manages rows and must see them all — admin enumerates
+ * `managed_tools` itself through `lib/tool-framework/manifest.ts`.
+ */
+export async function getManagedTools(
+  manifest: readonly ToolManifestEntry[],
+): Promise<ResolvedTool[]> {
+  if (!isDatabaseConfigured()) return mergeToolManifest([], manifest);
+  return mergeToolManifest(
+    await db.select().from(managedToolsTable),
+    manifest,
+  );
 }
 
 export async function getAvailableTools(
   app: ToolApp,
+  manifest: readonly ToolManifestEntry[],
 ): Promise<ResolvedTool[]> {
-  return getEnabledTools(await getManagedTools(), app);
+  return getEnabledTools(await getManagedTools(manifest), app);
 }
 
 export async function getAvailableToolBySlug(
   app: ToolApp,
   slug: string,
+  manifest: readonly ToolManifestEntry[],
 ): Promise<ResolvedTool | undefined> {
-  return findAvailableToolBySlug(await getManagedTools(), app, slug);
+  return findAvailableToolBySlug(await getManagedTools(manifest), app, slug);
 }
 
 export async function getFeatures(

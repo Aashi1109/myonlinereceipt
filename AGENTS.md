@@ -105,9 +105,23 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 
 ## Testing and Verification
 
-Tests use `node:test` and `node:assert`; name repository tests `tests/*.test.mjs`. Add one focused regression test for non-trivial bug fixes and architecture rules.
+Tests use `node:test` and `node:assert`; name repository tests `tests/*.test.mjs`.
+Add tests for logical changes: business rules, validation, data
+transformations, state transitions, execution behaviour, API or database
+boundaries, and regression-prone logic. Tests must verify externally observable
+outcomes rather than implementation details.
 
-Use TDD only for non-trivial business logic, complex behavior, or regression-prone bug fixes where a test adds real value. Otherwise, use the relevant build, lint, typecheck, or validation command.
+Use TDD only for logical or behavioural changes where a test adds real value.
+For basic UI changes, use the relevant typecheck or lint command and inspect the
+rendered interface.
+
+Do not add tests that read source files and assert imports, component names, JSX
+text, utility classes, or other implementation structure. Do not add regression
+tests for component placement, styling, spacing, copy, or other visual-only
+changes. Verify those changes with the relevant typecheck or lint command and
+rendered UI inspection.
+Enforce architecture boundaries with typechecking, linting, or dependency
+tooling instead of source-text assertions.
 
 For code changes:
 

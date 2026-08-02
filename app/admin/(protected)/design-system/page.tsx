@@ -59,6 +59,7 @@ import {
   Label,
   MetricCard,
   PageHero,
+  PdfViewer,
   ProcessingStatus,
   ProductHeader,
   RightPanelResult,
@@ -120,7 +121,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { Chapter } from "@smarttools/ui";
+import type { Chapter, PdfOutlineItem } from "@smarttools/ui";
 
 const sections = [
   ["#foundations", "Foundations"],
@@ -148,6 +149,14 @@ const initialDocuments = [
   { id: "invoice", label: "Invoice details" },
   { id: "notes", label: "Internal notes" },
 ];
+
+const controlSizes = [
+  ["xs", "Extra small"],
+  ["sm", "Small"],
+  ["default", "Default"],
+  ["md", "Medium"],
+  ["lg", "Large"],
+] as const;
 
 const workflowChapters: Chapter[] = [
   {
@@ -194,6 +203,27 @@ const workflowChapters: Chapter[] = [
   },
 ];
 
+const handbookOutline: PdfOutlineItem[] = [
+  { expanded: true, id: "welcome", page: 1, title: "Welcome" },
+  { expanded: true, id: "getting-started", page: 2, title: "Getting started" },
+  { depth: 1, id: "installation", page: 3, title: "Installation" },
+  { depth: 1, id: "workspace-tour", page: 5, title: "Workspace tour" },
+  { expanded: true, id: "core-workflows", page: 8, title: "Core workflows" },
+  { depth: 1, id: "review", page: 9, title: "Review & approve" },
+  { depth: 1, id: "sharing", page: 12, title: "Share documents" },
+  { expanded: true, id: "automation", page: 16, title: "Automation" },
+  { depth: 1, id: "rules", page: 17, title: "Rules & triggers" },
+  { expanded: true, id: "appendix", page: 22, title: "Appendix" },
+];
+
+function handbookSectionAtPage(page: number) {
+  return (
+    [...handbookOutline]
+      .filter((item) => item.page <= page)
+      .sort((left, right) => right.page - left.page)[0] ?? handbookOutline[0]
+  );
+}
+
 function Specimen({
   children,
   className,
@@ -215,7 +245,9 @@ function Specimen({
 
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
+  const [handbookPage, setHandbookPage] = useState(9);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
+  const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
     <>
@@ -493,6 +525,48 @@ export default function DesignSystemPage() {
             </SectionCard>
 
             <SectionCard>
+              <SectionHeading
+                className="mb-0"
+                description="Five shared dimensions map directly to the current Pencil controls."
+                title="Input and select sizes"
+              />
+              <div className="grid gap-6 sm:grid-cols-2">
+                <Specimen label="Text inputs">
+                  <div className="space-y-4">
+                    {controlSizes.map(([size, label]) => (
+                      <div className="grid gap-2" key={size}>
+                        <Label htmlFor={`input-${size}`}>{label}</Label>
+                        <Input
+                          id={`input-${size}`}
+                          placeholder={`${label} input`}
+                          size={size}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </Specimen>
+                <Specimen label="Select inputs">
+                  <div className="space-y-4">
+                    {controlSizes.map(([size, label]) => (
+                      <div className="grid gap-2" key={size}>
+                        <Label htmlFor={`select-${size}`}>{label}</Label>
+                        <Select defaultValue="selected">
+                          <SelectTrigger id={`select-${size}`} size={size}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="selected">{label} select</SelectItem>
+                            <SelectItem value="alternate">Alternate option</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </Specimen>
+              </div>
+            </SectionCard>
+
+            <SectionCard>
               <SectionHeading className="mb-0" title="Selection controls" />
               <Checkbox
                 defaultChecked
@@ -519,6 +593,24 @@ export default function DesignSystemPage() {
                   ))}
                 </RadioGroup>
               </div>
+              <Separator />
+              <Specimen label="Radio sizes">
+                <RadioGroup
+                  className="flex flex-wrap items-center gap-6"
+                  defaultValue="default"
+                >
+                  {controlSizes.map(([size, label]) => (
+                    <div className="flex items-center gap-2.5" key={size}>
+                      <RadioGroupItem
+                        id={`radio-${size}`}
+                        size={size}
+                        value={size}
+                      />
+                      <Label htmlFor={`radio-${size}`}>{label}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </Specimen>
             </SectionCard>
 
             <SectionCard>
@@ -642,13 +734,62 @@ export default function DesignSystemPage() {
                   <ChapterScrubber
                     chapters={workflowChapters}
                     currentIndex={selectedChapterIndex}
+                    hoverLengthMultiplier={52 / 14}
                     label="Tool workflow chapters"
                     onSelect={(_, index) => setSelectedChapterIndex(index)}
-                    peakLength={52}
                     radius={4.5}
                   />
                 </div>
               </div>
+            </Specimen>
+            <Separator />
+            <Specimen label="PDF viewer">
+              <PdfViewer
+                className="rounded-xl border border-border"
+                currentPage={handbookPage}
+                fileName="employee-handbook.pdf"
+                onPageChange={setHandbookPage}
+                outline={handbookOutline}
+                pageCount={24}
+                pagePreviewDetail="A4 → Letter · fit content"
+              >
+                <article
+                  className="flex h-full min-h-[26rem] flex-col gap-3 px-9 py-7"
+                  key={handbookSection.id}
+                >
+                  <p className="font-caption text-[9px] font-semibold uppercase tracking-[0.06em] text-primary">
+                    {String(handbookPage).padStart(2, "0")} /{" "}
+                    {handbookSection.title}
+                  </p>
+                  <h3 className="font-heading text-[22px] font-semibold text-foreground">
+                    {handbookSection.id === "review"
+                      ? "Review documents with confidence"
+                      : handbookSection.title}
+                  </h3>
+                  <span className="h-0.5 w-15 bg-primary" />
+                  <p className="max-w-xl text-[11px] leading-[1.5] text-muted-foreground">
+                    Keep decisions moving with focused review queues, clear
+                    ownership, and an audit-ready history.
+                  </p>
+                  {[
+                    ["Assign reviewers", "Route each document to the right person."],
+                    ["Resolve feedback", "Track comments without losing context."],
+                    ["Approve and share", "Publish a clean, verified final copy."],
+                  ].map(([title, description]) => (
+                    <div className="flex items-center gap-2.5" key={title}>
+                      <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                      <div>
+                        <p className="text-[11px] font-semibold text-foreground">
+                          {title}
+                        </p>
+                        <p className="text-[9px] text-muted-foreground">
+                          {description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </article>
+              </PdfViewer>
             </Specimen>
           </SectionCard>
         </section>

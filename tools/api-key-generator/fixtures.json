@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "prefix": "sk",
+        "length": 32,
+        "count": 3
+      },
+      "expected": {
+        "render": "text",
+        "length": {
+          "max": 107,
+          "min": 107
+        },
+        "pattern": "^[a-zA-Z0-9\\n\\-_]{107,107}$"
+      }
+    }
+  ]
+}

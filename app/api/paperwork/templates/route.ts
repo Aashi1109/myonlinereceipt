@@ -8,6 +8,8 @@ import {
 } from "@smarttools/invoice-templates";
 import { NextResponse } from "next/server";
 
+import { getToolManifest } from "@/lib/tool-framework/manifest";
+
 export async function GET(request: Request) {
   try {
     const documentTypes = new URL(request.url).searchParams.getAll("documentType");
@@ -24,7 +26,7 @@ export async function GET(request: Request) {
     const validatedDocumentType = parsedDocumentType.data;
     const componentKey =
       getDocumentDefinition(validatedDocumentType).toolComponentKey;
-    const tools = await getAvailableTools("paperwork");
+    const tools = await getAvailableTools("paperwork", await getToolManifest());
     if (!tools.some((tool) => tool.componentKey === componentKey)) {
       return NextResponse.json({ error: "Tool not found." }, { status: 404 });
     }

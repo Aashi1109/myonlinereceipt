@@ -1,0 +1,38 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "error": "DNS record types may only include A, AAAA, MX, TXT, NS, and CNAME."
+      },
+      "input": {
+        "primary": "example.com",
+        "secondary": ""
+      },
+      "name": "rejects a record type outside the allowlist before any request",
+      "settings": {
+        "types": "ANY",
+        "recordView": "records",
+        "recursive": true,
+        "includeTtl": true,
+        "checkDnssec": false
+      }
+    },
+    {
+      "expected": {
+        "error": "Enter a valid domain name."
+      },
+      "input": {
+        "primary": "not a domain",
+        "secondary": ""
+      },
+      "name": "rejects a hostname that does not normalize",
+      "settings": {
+        "types": "A",
+        "recordView": "records",
+        "recursive": true,
+        "includeTtl": true,
+        "checkDnssec": false
+      }
+    }
+  ]
+}

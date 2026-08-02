@@ -1,6 +1,8 @@
 "use client";
 
-import { toolManifest, type ToolApp } from "@smarttools/tool-catalog";
+import type { ToolApp } from "@smarttools/tool-catalog";
+import type { CatalogTool } from "@/lib/tool-framework/catalog";
+import { TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import {
   Braces,
   Calculator,
@@ -33,6 +35,14 @@ export type AuthProjectPaths = {
 
 type MenuName = "documents" | "developer" | null;
 
+/**
+ * The devtools index filters on the category *label*, so the query value has to
+ * come from `TOOL_CATEGORIES` — a hand-written label silently 404s the filter.
+ */
+function categoryHref(key: CategoryKey) {
+  return `/${TOOL_CATEGORIES[key].app}?category=${encodeURIComponent(TOOL_CATEGORIES[key].label)}`;
+}
+
 const categoryMenus = {
   documents: [
     { href: "/paperwork/invoice-generator", icon: FileText, label: "Invoices" },
@@ -40,17 +50,11 @@ const categoryMenus = {
     { href: "/paperwork/expense-report", icon: Calculator, label: "Expenses" },
   ],
   developer: [
-    { href: "/devtools?category=JSON+Tools", icon: Braces, label: "JSON tools" },
-    { href: "/devtools?category=CSV+%26+Data+Tools", icon: Table2, label: "CSV tools" },
-    { href: "/devtools?category=Web+%26+URL+Tools", icon: Code2, label: "Web tools" },
+    { href: categoryHref("json-tools"), icon: Braces, label: "JSON tools" },
+    { href: categoryHref("csv-data-tools"), icon: Table2, label: "CSV tools" },
+    { href: categoryHref("web-markup-tools"), icon: Code2, label: "Web tools" },
   ],
 } as const;
-
-function toolHref(app: ToolApp, componentKey: string) {
-  if (app === "devtools") return `/devtools/${componentKey}`;
-  if (app === "media") return `/media/${componentKey}`;
-  return `/paperwork/${componentKey}`;
-}
 
 function ToolIcon({ app, name }: { app: ToolApp; name: string }) {
   const Icon = app === "media"
@@ -70,7 +74,18 @@ function ToolIcon({ app, name }: { app: ToolApp; name: string }) {
   );
 }
 
-export function AuthDiscoveryNavigation({ projects }: { projects: AuthProjectPaths }) {
+/**
+ * `tools` is the database-backed catalogue, resolved server-side by
+ * `getTools()` and handed down as a prop: this is a client component, and a
+ * tool's public URL is only ever `tool.href`, never derived from a folder name.
+ */
+export function AuthDiscoveryNavigation({
+  projects,
+  tools,
+}: {
+  projects: AuthProjectPaths;
+  tools: readonly CatalogTool[];
+}) {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -85,21 +100,20 @@ export function AuthDiscoveryNavigation({ projects }: { projects: AuthProjectPat
     const normalized = stableQuery.trim().toLowerCase();
     if (!normalized) return [];
 
-    return toolManifest
-      .filter((tool) => tool.defaultEnabled !== false)
+    return tools
       .filter((tool) =>
         [
-          tool.defaultName,
-          tool.defaultDescription,
-          tool.category ?? "",
-          ...(tool.keywords ?? []),
+          tool.name,
+          tool.description,
+          TOOL_CATEGORIES[tool.category].label,
+          ...tool.keywords,
         ]
           .join(" ")
           .toLowerCase()
           .includes(normalized),
       )
       .slice(0, 6);
-  }, [stableQuery]);
+  }, [stableQuery, tools]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -194,7 +208,7 @@ export function AuthDiscoveryNavigation({ projects }: { projects: AuthProjectPat
                 event.preventDefault();
                 setActiveResult((current) => Math.max(current - 1, 0));
               } else if (event.key === "Enter" && results[activeResult]) {
-                window.location.assign(toolHref(results[activeResult].app, results[activeResult].componentKey));
+                window.location.assign(results[activeResult].href);
               }
             }}
             placeholder="Search 150+ tools"
@@ -241,15 +255,15 @@ export function AuthDiscoveryNavigation({ projects }: { projects: AuthProjectPat
                     <a
                       aria-selected={index === activeResult}
                       className="auth-search-result"
-                      href={toolHref(tool.app, tool.componentKey)}
-                      key={tool.id}
+                      href={tool.href}
+                      key={tool.toolId}
                       onMouseEnter={() => setActiveResult(index)}
                       role="option"
                     >
-                      <ToolIcon app={tool.app} name={tool.defaultName} />
+                      <ToolIcon app={tool.app} name={tool.name} />
                       <span>
-                        <strong>{tool.defaultName}</strong>
-                        <small>{tool.category ?? (tool.app === "paperwork" ? "Documents" : "Media")}</small>
+                        <strong>{tool.name}</strong>
+                        <small>{TOOL_CATEGORIES[tool.category].label}</small>
                       </span>
                     </a>
                   ))}

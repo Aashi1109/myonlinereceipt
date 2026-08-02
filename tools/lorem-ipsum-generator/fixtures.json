@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "paragraphs": 3
+      },
+      "expected": {
+        "output": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat nibh sed velit luctus, vitae facilisis justo luctus. Praesent commodo sem at augue posuere, non suscipit ipsum viverra.\n\nInteger feugiat nibh sed velit luctus, vitae facilisis justo luctus. Praesent commodo sem at augue posuere, non suscipit ipsum viverra. Donec vitae lectus sed neque efficitur consequat.\n\nPraesent commodo sem at augue posuere, non suscipit ipsum viverra. Donec vitae lectus sed neque efficitur consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        "render": "text"
+      }
+    }
+  ]
+}

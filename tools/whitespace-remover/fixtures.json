@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "  Hello    smart tools  \n\n  Next line.  ",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "mode": "extra"
+      },
+      "expected": {
+        "output": "Hello smart tools\n\nNext line.",
+        "render": "text"
+      }
+    }
+  ]
+}

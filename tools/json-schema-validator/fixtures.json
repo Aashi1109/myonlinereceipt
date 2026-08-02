@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"name\":\"Ada\",\"age\":36}",
+        "secondary": "{\"type\":\"object\",\"required\":[\"name\"],\"properties\":{\"name\":{\"type\":\"string\"},\"age\":{\"type\":\"number\"}}}"
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Valid against schema.",
+        "render": "text"
+      }
+    }
+  ]
+}

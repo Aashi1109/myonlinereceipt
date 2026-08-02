@@ -4,8 +4,6 @@ import * as React from "react";
 import {
   motion,
   useMotionValue,
-  useReducedMotion,
-  useSpring,
   useTransform,
   type MotionValue,
 } from "motion/react";
@@ -21,22 +19,27 @@ export interface Chapter {
 
 export interface ChapterScrubberProps {
   chapters: Chapter[];
+  density?: "compact" | "default";
   side?: "left" | "right";
-  peakLength?: number;
   restLength?: number;
+  hoverLengthMultiplier?: number;
   rowHeight?: number;
   radius?: number;
   currentIndex?: number;
   onActiveChange?: (chapter: Chapter | null, index: number) => void;
   onSelect: (chapter: Chapter, index: number) => void;
+  previewCardClassName?: string;
+  previewCardGap?: number;
+  previewCardWidth?: number;
+  previewDelayMs?: number;
+  renderPreview?: (chapter: Chapter, index: number) => React.ReactNode;
+  showPreviewCard?: boolean;
   label?: string;
   className?: string;
 }
 
 const CARD_MAX_WIDTH = 260;
 const CARD_GAP = 20;
-const POINTER_SPRING = { stiffness: 700, damping: 52, mass: 0.5 };
-const STRENGTH_SPRING = { stiffness: 260, damping: 30, mass: 0.6 };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -44,13 +47,16 @@ function clamp(value: number, min: number, max: number) {
 
 function waveStrength(distance: number, radius: number) {
   if (distance >= radius) return 0;
-  return 0.5 * (1 + Math.cos(Math.PI * (distance / radius)));
+  const standardDeviation = radius / 2.25;
+  return Math.exp(-0.5 * (distance / standardDeviation) ** 2);
 }
 
 type ChapterTickProps = {
+  active: boolean;
   current: boolean;
+  hoverLengthMultiplier: number;
+  initialLength: number;
   index: number;
-  peakLength: number;
   pointer: MotionValue<number>;
   radius: number;
   restLength: number;
@@ -58,9 +64,11 @@ type ChapterTickProps = {
 };
 
 const ChapterTick = React.memo(function ChapterTick({
+  active,
   current,
+  hoverLengthMultiplier,
+  initialLength,
   index,
-  peakLength,
   pointer,
   radius,
   restLength,
@@ -69,64 +77,67 @@ const ChapterTick = React.memo(function ChapterTick({
   const width = useTransform(() => {
     const rise =
       strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
+    const peakLength = initialLength * hoverLengthMultiplier;
     return restLength + rise * (peakLength - restLength);
   });
   const opacity = useTransform(() => {
+    if (active) return 1;
     const rise =
       strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
-    const restingOpacity = current ? 0.72 : 0.48;
-    return restingOpacity + rise * (1 - restingOpacity);
+    const restingOpacity = current ? 0.82 : 0.46;
+    return restingOpacity + rise * (0.72 - restingOpacity);
   });
-  const scaleY = useTransform(() => {
-    const rise =
-      strength.get() * waveStrength(Math.abs(index - pointer.get()), radius);
-    return 1 + rise * 0.4;
-  });
-
   return (
     <motion.span
       aria-hidden="true"
       className={cn(
         "block h-0.5 rounded-full",
-        current ? "bg-primary" : "bg-foreground",
+        active
+          ? "bg-foreground"
+          : current
+            ? "bg-primary"
+            : "bg-muted-foreground",
       )}
-      style={{ opacity, scaleY, width }}
+      style={{ opacity, width }}
     />
   );
 });
 
 export function ChapterScrubber({
   chapters,
+  density = "default",
   side = "right",
-  peakLength = 56,
   restLength = 14,
+  hoverLengthMultiplier = 4,
   rowHeight = 24,
   radius = 4,
   currentIndex,
   onActiveChange,
   onSelect,
+  previewCardClassName,
+  previewCardGap = CARD_GAP,
+  previewCardWidth,
+  previewDelayMs = 0,
+  renderPreview,
+  showPreviewCard = true,
   label = "Chapters",
   className,
 }: ChapterScrubberProps) {
-  const prefersReducedMotion = useReducedMotion();
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const buttonsRef = React.useRef<Array<HTMLButtonElement | null>>([]);
   const baseId = React.useId();
 
-  const rawPointer = useMotionValue(0);
-  const rawStrength = useMotionValue(0);
-  const springPointer = useSpring(rawPointer, POINTER_SPRING);
-  const springStrength = useSpring(rawStrength, STRENGTH_SPRING);
-  const pointer = prefersReducedMotion ? rawPointer : springPointer;
-  const strength = prefersReducedMotion ? rawStrength : springStrength;
+  const pointer = useMotionValue(0);
+  const strength = useMotionValue(0);
 
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [cardHeight, setCardHeight] = React.useState(0);
   const [cardMaxWidth, setCardMaxWidth] = React.useState(CARD_MAX_WIDTH);
   const [engaged, setEngaged] = React.useState(false);
   const [flipped, setFlipped] = React.useState(false);
+  const [previewCardReady, setPreviewCardReady] = React.useState(false);
   const activeRef = React.useRef(0);
   const focusedRef = React.useRef<number | null>(null);
   const hoveringRef = React.useRef(false);
@@ -135,14 +146,28 @@ export function ChapterScrubber({
 
   const lastIndex = chapters.length - 1;
   const optionId = (index: number) => `${baseId}-option-${index}`;
-  const resolvedPeakLength = Number.isFinite(peakLength)
-    ? Math.max(24, peakLength)
-    : 56;
   const resolvedRestLength = Number.isFinite(restLength)
-    ? clamp(restLength, 2, resolvedPeakLength)
+    ? clamp(restLength, 2, 80)
     : 14;
+  const resolvedHoverLengthMultiplier = Number.isFinite(hoverLengthMultiplier)
+    ? clamp(hoverLengthMultiplier, 1, 12)
+    : 4;
+  const resolvedPeakLength =
+    resolvedRestLength * resolvedHoverLengthMultiplier;
+  const resolvedPreviewCardGap = Number.isFinite(previewCardGap)
+    ? Math.max(0, previewCardGap)
+    : CARD_GAP;
+  const resolvedPreviewCardWidth = Number.isFinite(previewCardWidth)
+    ? Math.min(
+        cardMaxWidth,
+        clamp(previewCardWidth ?? CARD_MAX_WIDTH, 96, CARD_MAX_WIDTH),
+      )
+    : cardMaxWidth;
+  const minimumRowHeight = density === "compact" ? 5 : 24;
   const resolvedRowHeight =
-    Number.isFinite(rowHeight) && rowHeight >= 24 ? rowHeight : 24;
+    Number.isFinite(rowHeight) && rowHeight >= minimumRowHeight
+      ? rowHeight
+      : minimumRowHeight;
   const resolvedRadius =
     Number.isFinite(radius) && radius > 0 ? radius : 4;
   const normalizedCurrentIndex =
@@ -156,6 +181,14 @@ export function ChapterScrubber({
   const rovingIndex = engaged
     ? clamp(activeIndex, 0, Math.max(lastIndex, 0))
     : normalizedCurrentIndex;
+
+  function updatePointer(nextPointer: number) {
+    pointer.set(nextPointer);
+  }
+
+  function updateStrength(nextStrength: number) {
+    strength.set(nextStrength);
+  }
 
   const commitActive = React.useCallback((index: number) => {
     if (index === activeRef.current) return;
@@ -171,7 +204,27 @@ export function ChapterScrubber({
     );
   }, [activeIndex, chapters, engaged, onActiveChange]);
 
+  React.useEffect(() => {
+    if (!engaged || !showPreviewCard) {
+      setPreviewCardReady(false);
+      return;
+    }
+
+    const resolvedDelay = Number.isFinite(previewDelayMs)
+      ? Math.max(0, previewDelayMs)
+      : 0;
+    if (resolvedDelay === 0) {
+      setPreviewCardReady(true);
+      return;
+    }
+
+    setPreviewCardReady(false);
+    const timer = window.setTimeout(() => setPreviewCardReady(true), resolvedDelay);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, engaged, previewDelayMs, showPreviewCard]);
+
   React.useLayoutEffect(() => {
+    if (!showPreviewCard || !previewCardReady) return;
     const card = cardRef.current;
     if (!card) return;
 
@@ -183,10 +236,10 @@ export function ChapterScrubber({
     const observer = new ResizeObserver(measure);
     observer.observe(card);
     return () => observer.disconnect();
-  }, [activeIndex]);
+  }, [activeIndex, previewCardReady, renderPreview, showPreviewCard]);
 
   React.useEffect(() => {
-    if (!engaged) return;
+    if (!engaged || !showPreviewCard) return;
     const container = containerRef.current;
     if (!container) return;
 
@@ -194,8 +247,9 @@ export function ChapterScrubber({
     const updatePlacement = () => {
       const rect = container.getBoundingClientRect();
       const viewportWidth = view?.innerWidth ?? 0;
-      const rightSpace = viewportWidth - rect.right - CARD_GAP - 8;
-      const leftSpace = rect.left - CARD_GAP - 8;
+      const rightSpace =
+        viewportWidth - rect.right - resolvedPreviewCardGap - 8;
+      const leftSpace = rect.left - resolvedPreviewCardGap - 8;
       let openRight = side === "right";
 
       if (
@@ -225,7 +279,13 @@ export function ChapterScrubber({
       view?.removeEventListener("resize", updatePlacement);
       observer.disconnect();
     };
-  }, [activeIndex, engaged, side]);
+  }, [
+    activeIndex,
+    engaged,
+    resolvedPreviewCardGap,
+    showPreviewCard,
+    side,
+  ]);
 
   React.useEffect(() => {
     if (lastIndex < 0) {
@@ -268,8 +328,8 @@ export function ChapterScrubber({
 
   function engageAt(pointerRow: number, activeAt: number) {
     if (lastIndex < 0) return;
-    rawPointer.set(pointerRow);
-    rawStrength.set(1);
+    updatePointer(pointerRow);
+    updateStrength(1);
     commitActive(clamp(activeAt, 0, lastIndex));
     setEngaged(true);
   }
@@ -287,10 +347,10 @@ export function ChapterScrubber({
   function handlePointerLeave() {
     hoveringRef.current = false;
     if (focusedRef.current !== null) {
-      rawPointer.set(focusedRef.current);
+      updatePointer(focusedRef.current);
       return;
     }
-    rawStrength.set(0);
+    updateStrength(0);
     setEngaged(false);
   }
 
@@ -299,7 +359,7 @@ export function ChapterScrubber({
     focusedRef.current = null;
     lastPointerTypeRef.current = null;
     touchPreviewRef.current = null;
-    rawStrength.set(0);
+    updateStrength(0);
     setEngaged(false);
     if (event.target instanceof HTMLElement) event.target.blur();
   }
@@ -310,7 +370,7 @@ export function ChapterScrubber({
     lastPointerTypeRef.current = null;
     touchPreviewRef.current = null;
     if (!hoveringRef.current) {
-      rawStrength.set(0);
+      updateStrength(0);
       setEngaged(false);
     }
   }
@@ -333,7 +393,7 @@ export function ChapterScrubber({
         event.preventDefault();
         focusedRef.current = null;
         touchPreviewRef.current = null;
-        rawStrength.set(0);
+        updateStrength(0);
         setEngaged(false);
         if (event.target instanceof HTMLElement) event.target.blur();
         return;
@@ -414,6 +474,7 @@ export function ChapterScrubber({
               key={chapter.id}
               onClick={() => {
                 if (
+                  showPreviewCard &&
                   lastPointerTypeRef.current === "touch" &&
                   touchPreviewRef.current !== index
                 ) {
@@ -442,9 +503,11 @@ export function ChapterScrubber({
               type="button"
             >
               <ChapterTick
+                active={engaged && index === activeIndex}
                 current={current}
+                hoverLengthMultiplier={resolvedHoverLengthMultiplier}
+                initialLength={resolvedRestLength}
                 index={index}
-                peakLength={resolvedPeakLength}
                 pointer={pointer}
                 radius={resolvedRadius}
                 restLength={resolvedRestLength}
@@ -455,38 +518,45 @@ export function ChapterScrubber({
         })}
       </div>
 
-      {chapters[activeIndex] ? (
+      {showPreviewCard && previewCardReady && chapters[activeIndex] ? (
         <motion.div
           aria-hidden="true"
           className={cn(
             "pointer-events-none absolute z-10 rounded-xl border border-border bg-popover px-4 py-3.5 text-popover-foreground shadow-lg",
             resolvedSide === "right" ? "origin-left" : "origin-right",
+            previewCardClassName,
           )}
           ref={cardRef}
           style={{
             opacity: strength,
             scale: cardScale,
             top: cardTop,
-            width: cardMaxWidth,
+            width: resolvedPreviewCardWidth,
             x: cardX,
             ...(resolvedSide === "right"
-              ? { left: resolvedPeakLength + CARD_GAP }
-              : { right: resolvedPeakLength + CARD_GAP }),
+              ? { left: resolvedPeakLength + resolvedPreviewCardGap }
+              : { right: resolvedPeakLength + resolvedPreviewCardGap }),
           }}
         >
-          {chapters[activeIndex].meta ? (
-            <div className="mb-1 font-caption text-xs font-semibold tabular-nums text-muted-foreground">
-              {chapters[activeIndex].meta}
-            </div>
-          ) : null}
-          <div className="break-words font-heading text-sm leading-snug font-semibold tracking-[-0.01em]">
-            {chapters[activeIndex].title}
-          </div>
-          {chapters[activeIndex].description ? (
-            <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-              {chapters[activeIndex].description}
-            </p>
-          ) : null}
+          {renderPreview ? (
+            renderPreview(chapters[activeIndex], activeIndex)
+          ) : (
+            <>
+              {chapters[activeIndex].meta ? (
+                <div className="mb-1 font-caption text-xs font-semibold tabular-nums text-muted-foreground">
+                  {chapters[activeIndex].meta}
+                </div>
+              ) : null}
+              <div className="break-words font-heading text-sm leading-snug font-semibold tracking-[-0.01em]">
+                {chapters[activeIndex].title}
+              </div>
+              {chapters[activeIndex].description ? (
+                <div className="mt-1 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                  {chapters[activeIndex].description}
+                </div>
+              ) : null}
+            </>
+          )}
         </motion.div>
       ) : null}
     </div>

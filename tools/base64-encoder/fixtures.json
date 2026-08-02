@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Hello 👋",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "urlSafe": false
+      },
+      "expected": {
+        "output": "SGVsbG8g8J+Riw==",
+        "render": "text"
+      }
+    }
+  ]
+}

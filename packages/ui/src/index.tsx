@@ -62,6 +62,11 @@ export type {
   Chapter,
   ChapterScrubberProps,
 } from "./components/ChapterScrubber.tsx";
+export { PdfViewer } from "./components/PdfViewer.tsx";
+export type {
+  PdfOutlineItem,
+  PdfViewerProps,
+} from "./components/PdfViewer.tsx";
 export { CheckboxControl };
 export {
   Empty,
@@ -83,7 +88,8 @@ export {
   FieldTitle,
   Field as FieldRoot,
 } from "./components/field.tsx";
-export { Input } from "./components/input.tsx";
+export { Input, inputVariants } from "./components/input.tsx";
+export type { InputProps } from "./components/input.tsx";
 export { Label } from "./components/label.tsx";
 export {
   Select,
@@ -96,8 +102,15 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  selectTriggerVariants,
 } from "./components/select.tsx";
-export { RadioGroup, RadioGroupItem } from "./components/radio-group.tsx";
+export type { SelectProps, SelectSize } from "./components/select.tsx";
+export {
+  RadioGroup,
+  RadioGroupItem,
+  radioGroupItemVariants,
+} from "./components/radio-group.tsx";
+export type { RadioGroupItemProps } from "./components/radio-group.tsx";
 export {
   DataConversionWorkbench,
   JsonFormatterWorkbench,
@@ -134,6 +147,27 @@ export {
   UniversalProductHeader,
 } from "./components/patterns.tsx";
 export { Separator } from "./components/separator.tsx";
+export {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  usePanelRef,
+} from "./components/resizable.tsx";
+export { ScrollArea, ScrollBar } from "./components/scroll-area.tsx";
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./components/alert-dialog.tsx";
 export { toast, Toaster } from "./components/sonner.tsx";
 export { Switch } from "./components/switch.tsx";
 export {

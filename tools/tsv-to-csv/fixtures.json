@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name\tage\nAda\t36",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "name,age\nAda,36",
+        "render": "text"
+      }
+    }
+  ]
+}

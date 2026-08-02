@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"valid\":true}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Valid JSON\nRoot type: object",
+        "render": "text"
+      }
+    }
+  ]
+}

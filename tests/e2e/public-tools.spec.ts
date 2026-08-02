@@ -1,59 +1,38 @@
-import { expect, test } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 
-import {
-  seededManagedTools,
-  toolManifest,
-} from "../../packages/tool-catalog/src/index";
+import { expect, test } from "@playwright/test";
+
+import { slugFromName } from "../../packages/tool-catalog/src/index";
+import type { ToolSpec } from "../../lib/tool-framework/spec";
 
 const DEVTOOLS_URL = "http://localhost:3000/devtools";
-const AVAILABLE_DEVTOOL_HREFS = seededManagedTools
-  .filter(
-    (tool) =>
-      tool.toolId.startsWith("devtools.") &&
-      tool.enabled &&
-      !tool.archived,
-  )
-  .flatMap((tool) => (tool.slug ? [`/${tool.slug}`] : []))
-  .sort();
-const DEVTOOLS_CATEGORY_COUNT = new Set(
-  toolManifest.flatMap((tool) =>
-    tool.app === "devtools" && tool.category ? [tool.category] : [],
-  ),
-).size;
 
-test("domain rating checker is wired to an Ahrefs server action", async () => {
-  const [routeSource, workbenchSource] = await Promise.all([
-  readFile(
-      new URL("../../app/devtools/[slug]/page.tsx", import.meta.url),
-      "utf8",
-    ),
-    readFile(
-      new URL(
-        "../../app/devtools/json-formatter/json-workbench.tsx",
-        import.meta.url,
+// The shipped tools are the folders under `tools/`, walked the same way the
+// seed walks them. There is no bundled list to read instead.
+const TOOLS_URL = new URL("../../tools/", import.meta.url);
+const DEVTOOL_SPECS = (
+  await Promise.all(
+    (await readdir(TOOLS_URL, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map(
+        async (entry) =>
+          (
+            (await import(
+              new URL(`${entry.name}/definition.ts`, TOOLS_URL).href
+            )) as { default: ToolSpec }
+          ).default,
       ),
-      "utf8",
-    ),
-  ]);
+  )
+).filter((spec) => spec.app === "devtools");
 
-  expect(routeSource).toContain('"use server"');
-  expect(routeSource).toContain(
-    "https://api.ahrefs.com/v3/public/domain-rating-free",
-  );
-  expect(routeSource).toContain("process.env.AHREFS_API_KEY");
-  expect(routeSource).toContain("headers.Authorization = `Bearer ${apiKey}`");
-  expect(routeSource).toContain("new URLSearchParams");
-  expect(routeSource).toContain('cache: "no-store"');
-  expect(routeSource).toContain("AbortSignal.timeout(10_000)");
-  expect(routeSource).toContain('"Domain Rating by Ahrefs"');
-  expect(routeSource).toMatch(
-    /tool\.componentKey === "domain-rating-checker"[\s\S]*?checkDomainRatingAction/,
-  );
-  expect(workbenchSource).toMatch(
-    /serverAction\s*\?\s*await serverAction\(primary\)/,
-  );
-});
+// Seeding gives every folder a slug and enables it, so every shipped devtool is
+// a public route.
+const AVAILABLE_DEVTOOL_HREFS = DEVTOOL_SPECS.map(
+  (spec) => `/${spec.slug ?? slugFromName(spec.name)}`,
+).sort();
+const DEVTOOLS_CATEGORY_COUNT = new Set(
+  DEVTOOL_SPECS.map((spec) => spec.category),
+).size;
 
 test.describe("Devtools catalog navigation", () => {
   test("homepage uses public availability language", async ({ page }) => {

@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "/admin\n/private",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "allowAll": false,
+        "sitemap": "https://example.com/sitemap.xml",
+        "crawlDelay": 0
+      },
+      "expected": {
+        "output": "User-agent: *\nDisallow: /admin\nDisallow: /private\nSitemap: https://example.com/sitemap.xml",
+        "render": "text",
+        "downloadName": "robots.txt"
+      }
+    }
+  ]
+}

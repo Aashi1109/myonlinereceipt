@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Hello 👋",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Characters: 7\nCharacters without spaces: 6\nWords: 2\nLines: 1\nUTF-8 bytes: 10",
+        "render": "text"
+      }
+    }
+  ]
+}

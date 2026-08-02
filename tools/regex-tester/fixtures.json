@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "\\b[A-Z][a-z]+\\b",
+        "secondary": "Ada and Lin build Smart Tools."
+      },
+      "name": "definition example",
+      "settings": {
+        "flags": "g"
+      },
+      "expected": {
+        "output": "{\n  \"count\": 4,\n  \"matches\": [\n    {\n      \"index\": 0,\n      \"match\": \"Ada\",\n      \"groups\": null\n    },\n    {\n      \"index\": 8,\n      \"match\": \"Lin\",\n      \"groups\": null\n    },\n    {\n      \"index\": 18,\n      \"match\": \"Smart\",\n      \"groups\": null\n    },\n    {\n      \"index\": 24,\n      \"match\": \"Tools\",\n      \"groups\": null\n    }\n  ]\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

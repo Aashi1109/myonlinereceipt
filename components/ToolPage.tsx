@@ -1,0 +1,528 @@
+"use client";
+
+/**
+ * The single renderer for every tool.
+ *
+ * It knows nothing about any individual tool. Everything it needs arrives as
+ * data (`spec`, resolved by `lib/tool-framework/catalog.ts` from the database
+ * row), and the two dynamic imports below are bundler context modules over
+ * `tools/*` — a lookup by folder name, never an enumeration.
+ *
+ * The folder key is `definitionKey`, which the catalogue derives from `toolId`.
+ * It is never derived from the public slug: a slug is admin-owned and plenty of
+ * live tools have one that differs from their folder name.
+ *
+ * EXECUTION HOST. A tool declares its host by which run file it ships, so the
+ * host is resolved by trying to load one, not by consulting a list:
+ *
+ *   `tools/<key>/run.ts`        -> main thread, through `createExecute`
+ *   `tools/<key>/run.worker.ts` -> the one tool worker, through `useToolRun`
+ *   `tools/<key>/run.server.ts` -> `POST /api/tools/<key>`
+ *
+ * The main-thread import template ends in the static suffix `/run`, so the
+ * context module it creates contains `run.ts` and nothing else: neither
+ * `run.worker` nor `run.server` matches `^\./.*\/run$`, so neither is reachable
+ * from this module — a worker tool's run function cannot be pulled onto the
+ * main thread even by mistake.
+ */
+
+import { Button } from "@smarttools/ui";
+import { Loader2, Play } from "lucide-react";
+import {
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactElement,
+} from "react";
+
+import { UniversalWorkbench } from "@/components/UniversalWorkbench";
+import { DEFAULT_WORKSPACES } from "@/components/workspaces";
+import {
+  workspaceFileId,
+  type WorkspaceInputState,
+  type WorkspaceProps,
+} from "@/components/workspaces/SourceResultWorkspace";
+import { createExecute } from "@/lib/tool-framework/host";
+import type { ToolResult } from "@/lib/tool-framework/result";
+import { ToolError, type ToolRun, type ToolRunInput } from "@/lib/tool-framework/run";
+import type { SettingsOf, SettingsSpec } from "@/lib/tool-framework/settings";
+import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
+import { useToolRun } from "@/lib/tool-framework/useToolRun";
+import {
+  createWorkerInput,
+  type ToolRunRequestInput,
+  type WorkerInputFile,
+} from "@/lib/tool-framework/workerProtocol";
+import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
+import type {
+  ToolDefinition,
+  ToolExecutionOutcome,
+  ToolRuntimeSpec,
+  ToolSettings,
+  ToolValidationIssue,
+} from "@/lib/tool-runtime/types";
+
+/** A run function whose settings type is only known at runtime. */
+type LoadedRun = ToolRun<SettingsOf<SettingsSpec>>;
+
+type RuntimeSettings = Readonly<Record<string, unknown>>;
+
+const EMPTY_INPUT: WorkspaceInputState = { files: [], text: "" };
+/** The tool's own settings live in `ToolPage`; the runtime holds none. */
+const RUNTIME_SETTINGS: ToolSettings = {};
+const NO_ISSUES: readonly ToolValidationIssue[] = [];
+/** A file the browser could not type still has to reach the size/accept checks. */
+const FALLBACK_MIME = "application/octet-stream";
+
+// ---------------------------------------------------------------------------
+// Module resolution by folder name.
+// ---------------------------------------------------------------------------
+
+function isMissingModule(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code: unknown = (error as { code?: unknown }).code;
+  return (
+    code === "MODULE_NOT_FOUND" ||
+    code === "ERR_MODULE_NOT_FOUND" ||
+    /cannot find module/i.test(error.message)
+  );
+}
+
+function readExport(module: unknown, name: string): unknown {
+  if (typeof module !== "object" || module === null) return undefined;
+  // Own properties only — never read a value through a poisoned prototype.
+  return Object.hasOwn(module, name)
+    ? (module as Record<string, unknown>)[name]
+    : undefined;
+}
+
+/**
+ * Loads a tool's main-thread run function, or `null` when it ships none.
+ *
+ * A folder without `run.ts` is the normal case for the worker and server hosts,
+ * not an error; a `run.ts` that throws while evaluating is a bug and rethrows.
+ */
+async function loadMainThreadRun(key: string): Promise<LoadedRun | null> {
+  let module: unknown;
+  try {
+    module = await import(`../tools/${key}/run`);
+  } catch (error: unknown) {
+    if (isMissingModule(error)) return null;
+    throw error;
+  }
+  const run = readExport(module, "default") ?? readExport(module, "run");
+  return typeof run === "function" ? (run as LoadedRun) : null;
+}
+
+/**
+ * The tool's own workspace when it ships one, otherwise the shared workspace
+ * for its declared layout.
+ *
+ * A missing file, or one that does not default-export a workspace, falls back
+ * rather than throwing — most tools ship no `workspace.tsx` at all.
+ */
+function resolveWorkspace(
+  key: string,
+  layout: ToolSpec["layout"],
+): ComponentType<WorkspaceProps> {
+  const fallback = { default: DEFAULT_WORKSPACES[layout] };
+  return lazy(async () => {
+    let module: unknown;
+    try {
+      module = await import(`../tools/${key}/workspace`);
+    } catch (error: unknown) {
+      if (isMissingModule(error)) return fallback;
+      throw error;
+    }
+    const workspace = readExport(module, "default");
+    return typeof workspace === "function"
+      ? { default: workspace as ComponentType<WorkspaceProps> }
+      : fallback;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Input adapters.
+// ---------------------------------------------------------------------------
+
+function isEmptyInput(kind: ToolInputSpec["kind"], input: WorkspaceInputState): boolean {
+  switch (kind) {
+    // Every value comes from the settings, so there is nothing to be empty of.
+    case "none":
+      return false;
+    case "files":
+      return input.files.length === 0;
+    default:
+      return input.text.trim() === "" && input.files.length === 0;
+  }
+}
+
+async function toRunInput(input: WorkspaceInputState): Promise<ToolRunInput> {
+  return {
+    files: await Promise.all(
+      input.files.map(async (file) => ({
+        data: await file.arrayBuffer(),
+        id: workspaceFileId(file),
+        mime: file.type || FALLBACK_MIME,
+        name: file.name,
+      })),
+    ),
+    secondary: input.secondary,
+    text: input.text,
+  };
+}
+
+async function toWorkerFiles(
+  files: readonly File[],
+): Promise<readonly WorkerInputFile[]> {
+  return Promise.all(
+    files.map(async (file) =>
+      createWorkerInput(
+        workspaceFileId(file),
+        await file.arrayBuffer(),
+        file.name,
+        file.type || FALLBACK_MIME,
+      ),
+    ),
+  );
+}
+
+function toOutcome(result: ToolResult): ToolExecutionOutcome<ToolResult> {
+  return { artifacts: result.artifacts, facts: result.stats, result };
+}
+
+// ---------------------------------------------------------------------------
+// Hosts.
+// ---------------------------------------------------------------------------
+
+/** Turns the worker's job state into the promise the runtime's `execute` needs. */
+function useWorkerHost(): (
+  request: ToolRunRequestInput,
+  signal: AbortSignal,
+) => Promise<ToolResult> {
+  const { cancel, state, start } = useToolRun();
+  const pending = useRef<{
+    reject: (reason: unknown) => void;
+    resolve: (result: ToolResult) => void;
+  } | null>(null);
+
+  useEffect(() => {
+    const waiter = pending.current;
+    if (!waiter || state.status === "idle" || state.status === "running") return;
+    pending.current = null;
+    if (state.status === "completed" && state.result) {
+      waiter.resolve(state.result);
+      return;
+    }
+    if (state.status === "failed") {
+      waiter.reject(
+        new ToolError(
+          state.error?.code ?? "processing-failed",
+          state.error?.message ?? "This tool could not finish.",
+          state.error?.recovery,
+        ),
+      );
+      return;
+    }
+    waiter.reject(new DOMException("Aborted", "AbortError"));
+  }, [state]);
+
+  return useCallback(
+    (request, signal) =>
+      new Promise<ToolResult>((resolve, reject) => {
+        pending.current = { reject, resolve };
+        signal.addEventListener("abort", cancel, { once: true });
+        start(request);
+      }),
+    [cancel, start],
+  );
+}
+
+function readServerResult(payload: unknown): ToolResult {
+  const result = readExport(payload, "result");
+  if (typeof result === "object" && result !== null && "render" in result) {
+    return result as ToolResult;
+  }
+  const error = readExport(payload, "error");
+  const code = readExport(error, "code");
+  const message = readExport(error, "message");
+  const recovery = readExport(error, "recovery");
+  throw new ToolError(
+    typeof code === "string" ? code : "processing-failed",
+    typeof message === "string" ? message : "This tool could not finish.",
+    typeof recovery === "string" ? recovery : undefined,
+  );
+}
+
+async function runOnServer(
+  key: string,
+  input: WorkspaceInputState,
+  settings: RuntimeSettings,
+  signal: AbortSignal,
+): Promise<ToolResult> {
+  const response = await fetch(`/api/tools/${encodeURIComponent(key)}`, {
+    body: JSON.stringify({
+      secondary: input.secondary,
+      settings,
+      text: input.text,
+    }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+    signal,
+  });
+  let payload: unknown = null;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new ToolError("processing-failed", "This tool returned an invalid response.");
+  }
+  return readServerResult(payload);
+}
+
+// ---------------------------------------------------------------------------
+// Chrome shared with the workbench's toolbar and workspace slots.
+// ---------------------------------------------------------------------------
+
+interface ToolChrome {
+  readonly onSettingChange: (key: string, value: unknown) => void;
+  readonly onValidationChange: (reason: string | null) => void;
+  readonly settings: RuntimeSettings;
+  readonly spec: ToolSpec;
+  readonly title: string;
+  readonly validationReason: string | null;
+  readonly Workspace: ComponentType<WorkspaceProps>;
+}
+
+const ToolChromeContext = createContext<ToolChrome | null>(null);
+
+function useToolChrome(): ToolChrome {
+  const chrome = useContext(ToolChromeContext);
+  if (!chrome) throw new Error("Tool chrome is only available inside ToolPage.");
+  return chrome;
+}
+
+function useRuntime() {
+  return useToolRuntime<WorkspaceInputState, ToolSettings, ToolResult>();
+}
+
+function ToolToolbar(): ReactElement {
+  const chrome = useToolChrome();
+  const runtime = useRuntime();
+  const running = runtime.lifecycle === "running";
+  const trigger = chrome.spec.trigger;
+  const blocked =
+    running ||
+    chrome.validationReason !== null ||
+    runtime.lifecycle === "empty" ||
+    runtime.lifecycle === "invalid";
+
+  return (
+    <div className="flex w-full min-w-0 items-center justify-between gap-3">
+      <p className="min-w-0 truncate text-sm font-semibold">{chrome.title}</p>
+      {trigger.mode === "manual" ? (
+        <Button disabled={blocked} onClick={runtime.run} size="sm" type="button">
+          {running ? (
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          ) : (
+            <Play aria-hidden="true" className="size-4" />
+          )}
+          {trigger.actionLabel}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function ToolWorkspaceSlot(): ReactElement {
+  const chrome = useToolChrome();
+  const runtime = useRuntime();
+  const Workspace = chrome.Workspace;
+  const running = runtime.lifecycle === "running";
+
+  return (
+    <Suspense fallback={null}>
+      <Workspace
+        disabled={running}
+        error={runtime.error || undefined}
+        input={runtime.input}
+        onInputChange={runtime.setInput}
+        onSettingChange={chrome.onSettingChange}
+        onValidationChange={chrome.onValidationChange}
+        result={runtime.result}
+        running={running}
+        settings={chrome.settings}
+        spec={chrome.spec}
+      />
+    </Suspense>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// The page.
+// ---------------------------------------------------------------------------
+
+function defaultSettings(spec: ToolSpec): RuntimeSettings {
+  return Object.fromEntries(
+    Object.entries(spec.settings.fields).map(([key, field]) => [key, field.default]),
+  );
+}
+
+/**
+ * The legacy `ToolDefinition` the workbench frame still consumes, derived from
+ * the spec rather than declared a second time. `iconKey` is empty because icons
+ * are database-owned data now, and the settings list is empty because
+ * `SettingsPanel` renders the spec's own typed fields.
+ */
+function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefinition {
+  return {
+    app: spec.app,
+    capabilities: spec.capabilities ?? {},
+    definitionKey,
+    iconKey: "",
+    input: {
+      // The frame reads no input field; "none" has no legacy counterpart.
+      kind: spec.input.kind === "files" ? "files" : spec.input.kind === "fields" ? "fields" : "text",
+      label: spec.input.kind === "none" ? spec.name : spec.input.label,
+    },
+    labels: {
+      empty: spec.labels.empty,
+      primaryAction:
+        spec.trigger.mode === "manual" ? spec.trigger.actionLabel : undefined,
+      ready: spec.labels.ready,
+      running: spec.labels.running,
+    },
+    settings: [],
+    toolId: spec.toolId,
+    trigger: {
+      debounceMs: spec.trigger.mode === "live" ? spec.trigger.debounceMs : undefined,
+      mode: spec.trigger.mode,
+    },
+  };
+}
+
+export interface ToolPageProps {
+  account: { returnTo: string; user: { name: string } | null };
+  category: string;
+  /** The tool's folder under `tools/`. Never the public slug. */
+  definitionKey: string;
+  description: string;
+  relatedTools: readonly { href: string; label: string }[];
+  spec: ToolSpec;
+  title: string;
+}
+
+export default function ToolPage({
+  account,
+  category,
+  definitionKey,
+  description,
+  relatedTools,
+  spec,
+  title,
+}: ToolPageProps): ReactElement {
+  const [settings, setSettings] = useState<RuntimeSettings>(() => defaultSettings(spec));
+  const [validationReason, setValidationReason] = useState<string | null>(null);
+  const runOnWorker = useWorkerHost();
+
+  const onSettingChange = useCallback((key: string, value: unknown) => {
+    setSettings((current) => ({ ...current, [key]: value }));
+  }, []);
+
+  const execute = useCallback(
+    async (
+      input: WorkspaceInputState,
+      _runtimeSettings: ToolSettings,
+      signal: AbortSignal,
+    ): Promise<ToolExecutionOutcome<ToolResult>> => {
+      const run = await loadMainThreadRun(definitionKey);
+      if (run) {
+        // `parseSettings` treats this as `unknown` and coerces every declared
+        // field, so the runtime's flat-scalar view is not the trust boundary.
+        return createExecute(spec, run)(
+          await toRunInput(input),
+          settings as ToolSettings,
+          signal,
+        );
+      }
+
+      try {
+        const result = await runOnWorker(
+          {
+            files: await toWorkerFiles(input.files),
+            key: definitionKey,
+            secondary: input.secondary,
+            settings,
+            text: input.text,
+          },
+          signal,
+        );
+        return toOutcome(result);
+      } catch (error: unknown) {
+        // The worker reports a folder with no `run.worker` as an unknown tool;
+        // that is the signal to fall through to the server host.
+        if (!(error instanceof ToolError) || error.code !== "unknown-tool") throw error;
+      }
+
+      return toOutcome(await runOnServer(definitionKey, input, settings, signal));
+    },
+    [definitionKey, runOnWorker, settings, spec],
+  );
+
+  // Memoised on purpose: `useToolRuntime` keys its effects on the whole spec, so
+  // a new object every render would re-enter execution forever.
+  const runtimeSpec = useMemo<
+    ToolRuntimeSpec<WorkspaceInputState, ToolSettings, ToolResult>
+  >(
+    () => ({
+      debounceMs: spec.trigger.mode === "live" ? spec.trigger.debounceMs : undefined,
+      execute,
+      initialInput: EMPTY_INPUT,
+      initialSettings: RUNTIME_SETTINGS,
+      isEmpty: (input) => isEmptyInput(spec.input.kind, input),
+      trigger: spec.trigger.mode,
+      validate: () => NO_ISSUES,
+    }),
+    [execute, spec],
+  );
+
+  const Workspace = useMemo(
+    () => resolveWorkspace(definitionKey, spec.layout),
+    [definitionKey, spec.layout],
+  );
+
+  const chrome = useMemo<ToolChrome>(
+    () => ({
+      onSettingChange,
+      onValidationChange: setValidationReason,
+      settings,
+      spec,
+      title,
+      validationReason,
+      Workspace,
+    }),
+    [onSettingChange, settings, spec, title, validationReason, Workspace],
+  );
+
+  return (
+    <ToolChromeContext.Provider value={chrome}>
+      <UniversalWorkbench
+        account={account}
+        category={category}
+        definition={toWorkbenchDefinition(spec, definitionKey)}
+        description={description}
+        relatedTools={relatedTools}
+        runtimeSpec={runtimeSpec}
+        title={title}
+        Toolbar={ToolToolbar}
+        Workspace={ToolWorkspaceSlot}
+      />
+    </ToolChromeContext.Provider>
+  );
+}

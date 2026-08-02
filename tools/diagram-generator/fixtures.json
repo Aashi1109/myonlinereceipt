@@ -1,0 +1,15 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "error": "Mermaid diagram rendering requires a browser."
+      },
+      "input": {
+        "primary": "flowchart LR\n  A[Input] --> B[Transform] --> C[Output]",
+        "secondary": ""
+      },
+      "name": "no DOM available",
+      "settings": {}
+    }
+  ]
+}

@@ -17,7 +17,6 @@ import {
   createAdvancedTemplateConfig,
   seedTemplates,
 } from "../packages/invoice-templates/src/index.ts";
-import { toolManifest } from "../packages/tool-catalog/src/index.ts";
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
@@ -56,6 +55,23 @@ function permissionRows(access) {
       roleIsSystem: false,
     },
   ];
+}
+
+/**
+ * The stored roster for one app. Reordering enumerates `managed_tools`, never a
+ * bundled list, so the rows the transaction reads are what defines "complete".
+ */
+function toolRoster(toolIds, app) {
+  return toolIds.map((toolId, order) => ({
+    toolId,
+    app,
+    slug: toolId.split(".")[1],
+    name: toolId,
+    description: `Stored ${toolId}.`,
+    order,
+    enabled: true,
+    archived: false,
+  }));
 }
 
 function createFakeTransaction(selectResults) {
@@ -273,8 +289,20 @@ test("audit metadata recursively redacts authentication material", () => {
 });
 
 test("tool setup validates and stores a code-owned slug with its audit event", async () => {
+  // A setup-required row: seeded (or created by an admin) with no route yet.
+  const setupRequired = {
+    toolId: "devtools.json-formatter",
+    app: "devtools",
+    slug: null,
+    name: "JSON Formatter",
+    description: "Format JSON.",
+    order: 0,
+    enabled: false,
+    archived: false,
+  };
+
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), [], []],
+    [permissionRows({ tools: { edit: true } }), [setupRequired], []],
     async (state) => {
       await updateManagedTool("actor", "devtools.json-formatter", {
         slug: "json-formatter",
@@ -308,7 +336,7 @@ test("tool reordering stores one contiguous app order and one audit event", asyn
   ];
 
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), []],
+    [permissionRows({ tools: { edit: true } }), toolRoster(toolIds, "paperwork")],
     async (state) => {
       await reorderManagedTools("actor", "paperwork", toolIds);
 
@@ -330,18 +358,19 @@ test("tool reordering stores one contiguous app order and one audit event", asyn
   );
 });
 
-test("tool reordering accepts the complete Media registry", async () => {
-  const toolIds = toolManifest
-    .filter((tool) => tool.app === "media")
-    .map((tool) => tool.id)
-    .reverse();
+test("tool reordering accepts a complete app roster in reverse", async () => {
+  const roster = toolRoster(
+    Array.from({ length: 30 }, (_, index) => `media.stored-tool-${index}`),
+    "media",
+  );
+  const toolIds = roster.map((tool) => tool.toolId).reverse();
 
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), []],
+    [permissionRows({ tools: { edit: true } }), roster],
     async (state) => {
       await reorderManagedTools("actor", "media", toolIds);
 
-      assert.equal(toolIds.length, 30);
+      assert.ok(toolIds.length > 0, "the roster must not be empty");
       assert.deepEqual(
         toolIds.map((toolId) =>
           state.inserts.find(
@@ -378,9 +407,22 @@ test("tool reordering rejects incomplete, duplicate, and cross-app orders", asyn
     ],
   ];
 
+  const paperworkRoster = toolRoster(
+    [
+      "paperwork.invoice-generator",
+      "paperwork.receipt-generator",
+      "paperwork.expense-report",
+      "paperwork.mileage-log",
+      "paperwork.quarterly-tax-estimator",
+      "paperwork.w9-request",
+      "paperwork.1099-nec-tracker",
+    ],
+    "paperwork",
+  );
+
   for (const toolIds of invalidOrders) {
     await withFakeDatabase(
-      [permissionRows({ tools: { edit: true } })],
+      [permissionRows({ tools: { edit: true } }), paperworkRoster],
       async (state) => {
         await assert.rejects(
           () => reorderManagedTools("actor", "paperwork", toolIds),
@@ -419,23 +461,7 @@ test("a saved tool slug is immutable and failed changes are not audited", async 
   );
 });
 
-test("seeded tools can be toggled before their first override and archiving disables them", async () => {
-  await withFakeDatabase(
-    [permissionRows({ tools: { toggle: true } }), []],
-    async (state) => {
-      await setManagedToolEnabled(
-        "actor",
-        "devtools.json-formatter",
-        true,
-      );
-      const write = state.inserts.find(
-        ({ table }) => table === managedToolsTable,
-      );
-      assert.equal(write.values.slug, "json-formatter");
-      assert.equal(write.values.enabled, true);
-    },
-  );
-
+test("stored tools toggle, and archiving disables them", async () => {
   const stored = {
     toolId: "devtools.json-formatter",
     app: "devtools",
@@ -446,6 +472,18 @@ test("seeded tools can be toggled before their first override and archiving disa
     enabled: true,
     archived: false,
   };
+  await withFakeDatabase(
+    [permissionRows({ tools: { toggle: true } }), [{ ...stored, enabled: false }]],
+    async (state) => {
+      await setManagedToolEnabled("actor", stored.toolId, true);
+      const write = state.inserts.find(
+        ({ table }) => table === managedToolsTable,
+      );
+      assert.equal(write.values.slug, stored.slug);
+      assert.equal(write.values.enabled, true);
+    },
+  );
+
   await withFakeDatabase(
     [permissionRows({ tools: { archive: true } }), [stored]],
     async (state) => {
@@ -490,15 +528,25 @@ test("seeded tools can be toggled before their first override and archiving disa
   );
 });
 
-test("tool edits reject invalid ownership, slugs, and text", async () => {
+test("tool edits reject unknown tools, invalid slugs, and blank text", async () => {
+  // With the row as the only registry, a tool id nobody stored simply does not
+  // exist — there is no bundled entry left for it to fall back to.
+  const storedRows = [
+    {
+      toolId: "devtools.json-formatter",
+      app: "devtools",
+      slug: "json-formatter",
+      name: "JSON Formatter",
+      description: "Format JSON.",
+      order: 0,
+      enabled: true,
+      archived: false,
+    },
+  ];
   const cases = [
-    [
-      [{ app: "paperwork" }],
-      { name: "Valid" },
-      /ownership does not match/,
-    ],
-    [[], { slug: "Admin" }, /slug is invalid or reserved/],
-    [[], { name: " " }, /Tool name is required/],
+    [[], { name: "Valid" }, /Unknown tool/],
+    [storedRows, { slug: "Admin" }, /slug is invalid or reserved/],
+    [storedRows, { name: " " }, /Tool name is required/],
   ];
   for (const [storedRows, input, error] of cases) {
     await withFakeDatabase(

@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "He said \\\"hello\\\".\\nNext line.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "He said \"hello\".\nNext line.",
+        "render": "text"
+      }
+    }
+  ]
+}

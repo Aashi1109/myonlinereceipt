@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "password",
+        "secondary": "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi."
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "No match",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -123,12 +123,14 @@ export type ToolDefinition = {
     cancel?: boolean;
     copy?: boolean;
     download?: boolean;
+    network?: boolean;
   };
   definitionKey: string;
+  iconKey: string;
   input: {
-    kind: "text";
+    kind: "fields" | "files" | "text";
     label: string;
-    maxLength: number;
+    maxLength?: number;
   };
   labels: {
     empty: string;
@@ -139,6 +141,7 @@ export type ToolDefinition = {
   primaryCommand?: string;
   primaryCommandVisibleWhen?: readonly ToolLifecycle[];
   settings: readonly ToolSelectSettingDefinition[];
+  toolbarSize?: "compact" | "default";
   toolId: string;
   trigger: {
     debounceMs?: number;
@@ -154,6 +157,10 @@ export type ToolPageComponentProps = {
   category: string;
   definitionKey: string;
   description: string;
+  relatedTools?: readonly {
+    href: string;
+    label: string;
+  }[];
   title: string;
 };
 

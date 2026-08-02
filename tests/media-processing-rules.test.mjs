@@ -1,21 +1,14 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 
-import { toolManifest } from "../packages/tool-catalog/src/index.ts";
-import {
-  IMAGE_WORKER_OPERATIONS,
-  MEDIA_WORKER_OPERATIONS,
-  PDF_WORKER_OPERATIONS,
-  isImageWorkerOperation,
-  isPdfWorkerOperation,
-} from "../app/media/_workers/operations.ts";
+import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 import {
   QpdfAdapterError,
   buildQpdfArguments,
   preservePdfWithQpdf,
-} from "../app/media/_workers/qpdfAdapter.ts";
+} from "../lib/tool-framework/media/qpdf.ts";
 import {
   PdfPreflightError,
   assertStructuralPdfInspection,
@@ -25,18 +18,8 @@ import {
   hasTransparentPixels,
   inspectPdfBeforeStructuralRewrite,
   processStructuralPages,
-} from "../app/media/_workers/workerRules.ts";
+} from "../lib/tool-framework/media/pdfRules.ts";
 
-import {
-  IMAGE_COMPRESSION_PRESETS,
-  IMAGE_TO_PDF_QUALITY_PRESETS,
-  MEDIA_TOOL_SLUGS,
-  PNG_COMPRESSION_PRESETS,
-  SOCIAL_IMAGE_PRESETS,
-  STRONG_PDF_COMPRESSION_PRESETS,
-  getMediaToolDefinition,
-  mediaToolDefinitions,
-} from "../app/media/_lib/tools.ts";
 import {
   calculateResizeDimensions,
   fitRect,
@@ -44,7 +27,7 @@ import {
   normalizeCropRect,
   readExifOrientation,
   rotatedDimensions,
-} from "../app/media/_lib/geometry.ts";
+} from "../lib/tool-framework/media/geometry.ts";
 import {
   MEDIA_LIMITS,
   createOutputFilename,
@@ -59,19 +42,21 @@ import {
   validateImageSelection,
   validateMediaSignature,
   validatePdfSelection,
-} from "../app/media/_lib/validation.ts";
+} from "../lib/tool-framework/media/validation.ts";
 import {
+  INSPECT_THUMBNAIL_WIDTH,
   beginWorkerJob,
-  createInspectPdfMessage,
   cancelWorkerJob,
-  createStartWorkerMessage,
+  createToolInspectRequest,
+  createToolJobState,
+  createToolWorkerRequest,
   createWorkerInput,
-  createWorkerJobState,
-  getOutputTransferables,
-  getPdfInspectionTransferables,
-  getStartTransferables,
+  getRequestTransferables,
+  getResultTransferables,
+  isToolWorkerMessage,
+  isToolWorkerResponse,
   reduceWorkerJobState,
-} from "../app/media/_lib/workerProtocol.ts";
+} from "../lib/tool-framework/workerProtocol.ts";
 
 const EXPECTED_TOOLS_BY_CATEGORY = {
   "PDF Conversion": ["image-to-pdf", "pdf-to-jpg", "pdf-to-png"],
@@ -116,162 +101,253 @@ const requireFromMedia = createRequire(
   new URL("../package.json", import.meta.url),
 );
 
-test("the Media runtime defines exactly the 30 public tool routes", () => {
+const TOOLS_URL = new URL("../tools/", import.meta.url);
+
+/**
+ * The source of truth for what Media ships is the set of `tools/*\/definition.ts`
+ * files, loaded exactly the way `tests/tool-registry.test.mjs` loads them: read
+ * the folder names off disk, import each definition, keep the ones whose spec
+ * declares `app: "media"`. There is deliberately no second catalogue to compare
+ * against — the duplicate that used to live in `app/media/_lib/tools.ts` was
+ * deleted rather than ported.
+ */
+const mediaTools = (
+  await Promise.all(
+    (await readdir(TOOLS_URL, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+      .map(async (folder) => {
+        const spec = (await import(new URL(`${folder}/definition.ts`, TOOLS_URL)))
+          .default;
+        return { folder, spec };
+      }),
+  )
+).filter(({ spec }) => spec.app === "media");
+
+const mediaToolByFolder = new Map(
+  mediaTools.map((tool) => [tool.folder, tool.spec]),
+);
+
+async function toolSource(folder, file) {
+  return readFile(new URL(`${folder}/${file}`, TOOLS_URL), "utf8");
+}
+
+test("the Media runtime defines exactly the public tool routes, one per folder", () => {
   const expected = Object.values(EXPECTED_TOOLS_BY_CATEGORY).flat();
 
-  assert.deepEqual(MEDIA_TOOL_SLUGS, expected);
-  assert.equal(mediaToolDefinitions.length, 30);
-  assert.equal(new Set(mediaToolDefinitions.map(({ slug }) => slug)).size, 30);
-  for (const [category, slugs] of Object.entries(EXPECTED_TOOLS_BY_CATEGORY)) {
+  assert.deepEqual([...mediaToolByFolder.keys()].sort(), [...expected].sort());
+  assert.equal(mediaTools.length, expected.length);
+
+  for (const [label, folders] of Object.entries(EXPECTED_TOOLS_BY_CATEGORY)) {
     assert.deepEqual(
-      mediaToolDefinitions
-        .filter((tool) => tool.category === category)
-        .map(({ slug }) => slug),
-      slugs,
+      mediaTools
+        .filter(({ spec }) => TOOL_CATEGORIES[spec.category].label === label)
+        .map(({ folder }) => folder)
+        .sort(),
+      [...folders].sort(),
+      label,
     );
   }
 
-  for (const tool of mediaToolDefinitions) {
-    assert.equal(tool.operation, tool.slug);
-    assert.match(tool.title, /\S/);
-    assert.match(tool.description, /\S/);
-    assert.match(tool.accept, /^(application|image)\//);
-    assert.ok(tool.engine === "image" || tool.engine === "pdf");
-    assert.equal(typeof tool.multiple, "boolean");
+  for (const { folder, spec } of mediaTools) {
+    assert.equal(spec.toolId, `media.${folder}`, folder);
+    assert.equal(TOOL_CATEGORIES[spec.category].app, "media", folder);
+    assert.match(spec.name, /\S/, folder);
+    assert.match(spec.description, /\S/, folder);
+    assert.equal(spec.input.kind, "files", folder);
+    assert.match(spec.input.accept, /^(application|image)\//, folder);
+    assert.ok(
+      spec.input.engine === "image" || spec.input.engine === "pdf",
+      folder,
+    );
+    assert.equal(typeof (spec.input.multiple ?? false), "boolean", folder);
   }
-  assert.equal(getMediaToolDefinition("not-a-tool"), undefined);
+  assert.equal(mediaToolByFolder.get("not-a-tool"), undefined);
 });
 
-test("every Media catalog entry resolves to exactly one runtime implementation", () => {
-  const catalogSlugs = toolManifest
-    .filter(({ app }) => app === "media")
-    .map(({ componentKey }) => componentKey);
+test("every Media catalog entry resolves to exactly one runtime implementation", async () => {
+  // The folder walk above is the catalogue. There is no bundled list left to
+  // compare it against, and reintroducing one is what this suite exists to
+  // prevent — so uniqueness is asserted on the folders themselves.
+  const catalogKeys = mediaTools.map(({ spec }) => spec.toolId.split(".")[1]);
 
-  assert.deepEqual(catalogSlugs, MEDIA_TOOL_SLUGS);
-  assert.equal(
-    catalogSlugs.every((slug) => getMediaToolDefinition(slug) !== undefined),
-    true,
+  assert.deepEqual([...catalogKeys].sort(), [...mediaToolByFolder.keys()].sort());
+  assert.equal(new Set(catalogKeys).size, catalogKeys.length);
+
+  // One run module per folder, and it is the worker variant: every media tool
+  // decodes bytes off the main thread.
+  const runFiles = await Promise.all(
+    mediaTools.map(async ({ folder }) => {
+      const entries = await readdir(new URL(`${folder}/`, TOOLS_URL));
+      return [folder, entries.filter((name) => /^run\.[a-z.]*ts$/.test(name))];
+    }),
   );
+  for (const [folder, files] of runFiles) {
+    assert.deepEqual(files, ["run.worker.ts"], folder);
+  }
+
+  // The image/pdf engine split is total and disjoint, which is what the old
+  // IMAGE_WORKER_OPERATIONS / PDF_WORKER_OPERATIONS partition guaranteed.
+  const byEngine = { image: [], pdf: [] };
+  for (const { folder, spec } of mediaTools) byEngine[spec.input.engine].push(folder);
   assert.deepEqual(
-    [...MEDIA_WORKER_OPERATIONS].sort(),
-    [...MEDIA_TOOL_SLUGS].sort(),
-  );
-  assert.deepEqual(
-    IMAGE_WORKER_OPERATIONS.filter((slug) => PDF_WORKER_OPERATIONS.includes(slug)),
+    byEngine.image.filter((folder) => byEngine.pdf.includes(folder)),
     [],
   );
   assert.equal(
-    IMAGE_WORKER_OPERATIONS.length + PDF_WORKER_OPERATIONS.length,
-    MEDIA_TOOL_SLUGS.length,
+    byEngine.image.length + byEngine.pdf.length,
+    mediaTools.length,
   );
-  assert.equal(IMAGE_WORKER_OPERATIONS.every(isImageWorkerOperation), true);
-  assert.equal(IMAGE_WORKER_OPERATIONS.some(isPdfWorkerOperation), false);
-  assert.equal(PDF_WORKER_OPERATIONS.every(isPdfWorkerOperation), true);
-  assert.equal(PDF_WORKER_OPERATIONS.some(isImageWorkerOperation), false);
 });
 
 test("crop rejects HEIC at the public input boundary", () => {
-  const crop = getMediaToolDefinition("crop-image");
+  const crop = mediaToolByFolder.get("crop-image");
 
   assert.ok(crop);
-  assert.doesNotMatch(crop.accept, /image\/hei[cf]/);
-  assert.match(crop.accept, /image\/jpeg/);
-  assert.match(crop.accept, /image\/png/);
-  assert.match(crop.accept, /image\/webp/);
+  assert.doesNotMatch(crop.input.accept, /image\/hei[cf]/);
+  assert.match(crop.input.accept, /image\/jpeg/);
+  assert.match(crop.input.accept, /image\/png/);
+  assert.match(crop.input.accept, /image\/webp/);
+  assert.equal(crop.input.multiple ?? false, false);
 });
 
-test("workbench cleanup invalidates async continuations before releasing resources", async () => {
+test("the tool worker uses the classic runtime emitted by the production build", async () => {
   const source = await readFile(
-    new URL(
-      "../app/media/components/MediaWorkbench.tsx",
-      import.meta.url,
-    ),
-    "utf8",
-  );
-  const cleanup = source.indexOf("return () => {");
-  const generation = source.indexOf(
-    "lifecycleGenerationRef.current += 1;",
-    cleanup,
-  );
-  const activeJob = source.indexOf("activeJobIdRef.current = null;", cleanup);
-  const inspectionJob = source.indexOf("inspectionJobIdRef.current = null;", cleanup);
-  const terminate = source.indexOf("workerRef.current?.terminate();", cleanup);
-
-  assert.ok(cleanup >= 0);
-  assert.ok(generation > cleanup && generation < terminate);
-  assert.ok(activeJob > cleanup && activeJob < terminate);
-  assert.ok(inspectionJob > cleanup && inspectionJob < terminate);
-  assert.ok(
-    (source.match(/isCurrentLifecycle\(lifecycleToken\)/g) ?? []).length >= 6,
-  );
-});
-
-test("media workers use the classic runtime emitted by the production build", async () => {
-  const source = await readFile(
-    new URL(
-      "../app/media/components/MediaWorkbench.tsx",
-      import.meta.url,
-    ),
+    new URL("../lib/tool-framework/useToolRun.ts", import.meta.url),
     "utf8",
   );
 
-  assert.equal((source.match(/new Worker\(/g) ?? []).length, 3);
+  assert.ok((source.match(/new Worker\(/g) ?? []).length > 0);
   assert.doesNotMatch(source, /type:\s*["']module["']/);
 });
 
-test("preset mappings preserve the product defaults and engine values", () => {
-  assert.deepEqual(IMAGE_COMPRESSION_PRESETS, {
-    best: { quality: 0.9 },
-    balanced: { quality: 0.8 },
-    smallest: { quality: 0.6 },
-  });
-  assert.deepEqual(PNG_COMPRESSION_PRESETS, {
-    fast: { effort: 3 },
-    balanced: { effort: 6 },
-    maximum: { effort: 9 },
-  });
-  assert.equal(
-    Object.values(PNG_COMPRESSION_PRESETS).some((preset) => "quality" in preset),
-    false,
+test("worker teardown invalidates async continuations before releasing resources", async () => {
+  const source = await readFile(
+    new URL("../lib/tool-framework/useToolRun.ts", import.meta.url),
+    "utf8",
   );
-  assert.deepEqual(IMAGE_TO_PDF_QUALITY_PRESETS, {
-    original: { quality: 1, reencode: false },
-    balanced: { quality: 0.82, reencode: true },
-    small: { quality: 0.65, reencode: true },
-  });
-  assert.deepEqual(STRONG_PDF_COMPRESSION_PRESETS, {
-    high: { dpi: 150, quality: 0.85 },
-    balanced: { dpi: 120, quality: 0.75 },
-    smallest: { dpi: 96, quality: 0.6 },
-  });
+  const dispatch = source.indexOf("const dispatch = useCallback(");
+  const terminate = source.indexOf("terminate();", dispatch);
+  const spawn = source.indexOf("new Worker(", dispatch);
+  const guard = source.indexOf("if (workerRef.current !== worker) return;", dispatch);
+
+  assert.ok(dispatch >= 0);
+  // The previous worker is killed before a new one can post into the same state.
+  assert.ok(terminate > dispatch && terminate < spawn);
+  // A message from a worker that is no longer current never reaches the reducer.
+  assert.ok(guard > spawn);
+  assert.ok(source.indexOf("reduceWorkerJobState(", guard) > guard);
+  // Unmount tears the worker down.
+  assert.match(source, /useEffect\(\(\) => terminate, \[terminate\]\)/);
+  assert.match(source, /workerRef\.current\?\.terminate\(\);/);
 });
 
-test("social image presets map every published target to exact dimensions", () => {
-  assert.deepEqual(SOCIAL_IMAGE_PRESETS, {
-    "instagram-square": { label: "Instagram square", width: 1080, height: 1080 },
-    "instagram-portrait": {
-      label: "Instagram portrait",
-      width: 1080,
-      height: 1350,
-    },
-    "story-reel": { label: "Story / Reel", width: 1080, height: 1920 },
-    "youtube-thumbnail": {
-      label: "YouTube thumbnail",
-      width: 1280,
-      height: 720,
-    },
-    "x-landscape": { label: "X landscape", width: 1600, height: 900 },
-    "linkedin-landscape": {
-      label: "LinkedIn landscape",
-      width: 1200,
-      height: 627,
-    },
-    "facebook-landscape": {
-      label: "Facebook landscape",
-      width: 1200,
-      height: 630,
-    },
-  });
+/**
+ * The numeric encoder tables moved into the tool that owns them, as private
+ * module constants in `tools/<key>/run.worker.ts` — a tool's quality curve is
+ * nobody else's business. They are asserted from source rather than imported so
+ * that nothing has to be exported purely for a test.
+ */
+test("preset mappings preserve the product defaults and engine values", async () => {
+  const compressImage = await toolSource("compress-image", "run.worker.ts");
+  assert.match(
+    compressImage,
+    /preset === "best"\s*\?\s*0\.9\s*:\s*preset === "smallest"\s*\?\s*0\.6\s*:\s*0\.8/,
+  );
+  assert.match(
+    compressImage,
+    /PNG_COMPRESSION_PRESETS = \{\s*fast: \{ effort: 3 \},\s*balanced: \{ effort: 6 \},\s*maximum: \{ effort: 9 \},\s*\}/,
+  );
+  assert.doesNotMatch(
+    compressImage,
+    /PNG_COMPRESSION_PRESETS = \{[^}]*\{[^}]*quality/,
+  );
+
+  const imageToPdf = await toolSource("image-to-pdf", "run.worker.ts");
+  assert.match(
+    imageToPdf,
+    /original: \{ quality: 1, reencode: false \},\s*balanced: \{ quality: 0\.82, reencode: true \},\s*small: \{ quality: 0\.65, reencode: true \},/,
+  );
+
+  const compressPdf = await toolSource("compress-pdf", "run.worker.ts");
+  assert.match(
+    compressPdf,
+    /high: \{ dpi: 150, quality: 0\.85 \},\s*balanced: \{ dpi: 120, quality: 0\.75 \},\s*smallest: \{ dpi: 96, quality: 0\.6 \},/,
+  );
+
+  // The choices and defaults each tool publishes are the definition's job.
+  assert.deepEqual(
+    mediaToolByFolder
+      .get("compress-image")
+      .settings.fields.preset.choices.map(({ value }) => value),
+    ["best", "balanced", "smallest", "fast", "maximum"],
+  );
+  assert.equal(
+    mediaToolByFolder.get("compress-image").settings.fields.preset.default,
+    "balanced",
+  );
+  assert.deepEqual(
+    mediaToolByFolder
+      .get("image-to-pdf")
+      .settings.fields.quality.choices.map(({ value }) => value),
+    ["original", "balanced", "small"],
+  );
+  assert.deepEqual(
+    mediaToolByFolder
+      .get("compress-pdf")
+      .settings.fields.strongPreset.choices.map(({ value }) => value),
+    ["high", "balanced", "smallest"],
+  );
+  assert.equal(
+    mediaToolByFolder.get("compress-pdf").settings.fields.strongPreset.default,
+    "balanced",
+  );
+});
+
+test("social image presets map every published target to exact dimensions", async () => {
+  const EXPECTED = {
+    "instagram-square": ["Instagram square", 1080, 1080],
+    "instagram-portrait": ["Instagram portrait", 1080, 1350],
+    "story-reel": ["Story / Reel", 1080, 1920],
+    "youtube-thumbnail": ["YouTube thumbnail", 1280, 720],
+    "x-landscape": ["X landscape", 1600, 900],
+    "linkedin-landscape": ["LinkedIn landscape", 1200, 627],
+    "facebook-landscape": ["Facebook landscape", 1200, 630],
+  };
+
+  // What the picker offers, and the size each option promises the user.
+  const { choices, default: fallback } = mediaToolByFolder.get(
+    "social-media-image-resizer",
+  ).settings.fields.preset;
+  assert.deepEqual(
+    Object.fromEntries(
+      choices.map(({ value, label, detail }) => [value, [label, detail]]),
+    ),
+    Object.fromEntries(
+      Object.entries(EXPECTED).map(([value, [label, width, height]]) => [
+        value,
+        [label, `${width} × ${height}`],
+      ]),
+    ),
+  );
+  assert.equal(fallback, "instagram-square");
+
+  // What the encoder actually resizes to, which must agree with the promise.
+  const source = await toolSource("social-media-image-resizer", "run.worker.ts");
+  for (const [value, [label, width, height]] of Object.entries(EXPECTED)) {
+    assert.match(
+      source,
+      new RegExp(
+        `"${value}": \\{\\s*label: "${label.replaceAll("/", "\\/")}",\\s*width: ${width},\\s*height: ${height},?\\s*\\}`,
+      ),
+      value,
+    );
+  }
+  assert.equal(
+    (source.match(/^\s{2}"[a-z-]+": \{/gm) ?? []).length,
+    Object.keys(EXPECTED).length,
+  );
 });
 
 test("media signatures are detected from bytes rather than extensions", () => {
@@ -734,19 +810,19 @@ test("crop, rotation, and EXIF orientation helpers keep pixels in bounds", () =>
   );
 });
 
-test("worker starts expose transferable buffers with only sanitized metadata", () => {
+test("worker runs expose transferable buffers with only sanitized metadata", () => {
   const data = Uint8Array.of(1, 2, 3).buffer;
   const input = createWorkerInput(
     "file-1",
     data,
     "../private/photo?.jpg",
-    "image/jpeg",
+    "IMAGE/JPEG",
   );
-  const message = createStartWorkerMessage({
-    jobId: "job-1",
-    operation: "jpg-to-png",
+  const message = createToolWorkerRequest({
+    jobId: " job-1 ",
+    key: " jpg-to-png ",
     files: [input],
-    options: {},
+    settings: {},
   });
 
   assert.equal(message.files[0].data, data);
@@ -756,17 +832,25 @@ test("worker starts expose transferable buffers with only sanitized metadata", (
     size: 3,
   });
   assert.deepEqual(
-    { type: message.type, jobId: message.jobId, operation: message.operation },
-    { type: "start", jobId: "job-1", operation: "jpg-to-png" },
+    { type: message.type, jobId: message.jobId, key: message.key },
+    { type: "run", jobId: "job-1", key: "jpg-to-png" },
   );
-  assert.deepEqual(getStartTransferables(message), [data]);
-  assert.throws(
-    () => createStartWorkerMessage({ ...message, operation: "unknown" }),
-    /Unknown media operation/,
+  assert.deepEqual(getRequestTransferables(message), [data]);
+
+  // The same buffer sent twice is transferred once — transferring a detached
+  // buffer throws.
+  assert.deepEqual(
+    getRequestTransferables({ ...message, files: [input, input] }),
+    [data],
   );
+  assert.deepEqual(
+    getRequestTransferables({ ...message, files: [] }),
+    [],
+  );
+  assert.equal(isToolWorkerMessage(message), true);
 });
 
-test("worker protocol rejects malformed starts and exposes output transferables", () => {
+test("worker protocol rejects malformed runs and exposes result transferables", () => {
   const data = new ArrayBuffer(1);
   const file = createWorkerInput("file-1", data, "photo.jpg", "image/jpeg");
 
@@ -781,156 +865,249 @@ test("worker protocol rejects malformed starts and exposes output transferables"
   );
   assert.throws(
     () =>
-      createStartWorkerMessage({
+      createToolWorkerRequest({
         jobId: " ",
-        operation: "jpg-to-png",
+        key: "jpg-to-png",
         files: [file],
-        options: {},
+        settings: {},
       }),
     /job ID/,
   );
   assert.throws(
     () =>
-      createStartWorkerMessage({
+      createToolWorkerRequest({
         jobId: "job",
-        operation: "jpg-to-png",
-        files: [],
-        options: {},
+        key: "  ",
+        files: [file],
+        settings: {},
       }),
-    /at least one file/,
+    /tool key/,
   );
-  assert.throws(() => beginWorkerJob(createWorkerJobState(), " "), /job ID/);
+  assert.throws(() => beginWorkerJob(createToolJobState(), " "), /job ID/);
+
+  // Untrusted structured-clone payloads are shape-checked in both directions.
+  assert.equal(isToolWorkerMessage({ type: "run", jobId: "job" }), false);
+  assert.equal(isToolWorkerMessage({ type: "cancel", jobId: "" }), false);
+  assert.equal(isToolWorkerMessage({ type: "cancel", jobId: "job" }), true);
+  assert.equal(isToolWorkerResponse({ type: "canceled", jobId: "job" }), true);
+  assert.equal(isToolWorkerResponse({ type: "success", jobId: "job" }), false);
+  assert.equal(
+    isToolWorkerResponse({
+      type: "success",
+      jobId: "job",
+      result: { render: "files" },
+    }),
+    true,
+  );
 
   const output = new ArrayBuffer(2);
   assert.deepEqual(
-    getOutputTransferables({
-      type: "complete",
-      jobId: "job",
-      outputs: [
+    getResultTransferables({
+      render: "files",
+      files: [
         { buffer: output, mime: "image/png", filename: "a.png", size: 2 },
         { buffer: output, mime: "image/png", filename: "b.png", size: 2 },
       ],
-      inputBytes: 4,
-      outputBytes: 4,
     }),
     [output],
   );
+  assert.deepEqual(getResultTransferables({ render: "text", text: "ok" }), []);
 });
 
-test("PDF inspection messages keep page previews typed and transferable", () => {
-  const input = createWorkerInput(
+test("page inspection requests keep one document and a positive thumbnail width", () => {
+  const file = createWorkerInput(
     "pdf-1",
     new ArrayBuffer(8),
     "document.pdf",
     "application/pdf",
   );
-  assert.deepEqual(createInspectPdfMessage(" inspect-1 ", input, 160), {
-    type: "inspect-pdf",
-    jobId: "inspect-1",
-    input,
-    thumbnailWidth: 160,
-  });
-  assert.throws(() => createInspectPdfMessage("", input), /job ID/);
-  assert.throws(() => createInspectPdfMessage("inspect", input, 0), /positive integer/);
-
-  const thumbnail = new ArrayBuffer(4);
   assert.deepEqual(
-    getPdfInspectionTransferables({
-      type: "pdf-inspection",
+    createToolInspectRequest({ jobId: " inspect-1 ", key: "crop-pdf", file }),
+    {
+      type: "inspect",
       jobId: "inspect-1",
-      pageCount: 2,
-      thumbnails: [
-        { pageNumber: 1, width: 160, height: 200, mime: "image/jpeg", buffer: thumbnail },
-        { pageNumber: 2, width: 160, height: 200, mime: "image/jpeg", buffer: thumbnail },
-      ],
+      key: "crop-pdf",
+      files: [file],
+      thumbnailWidth: INSPECT_THUMBNAIL_WIDTH,
+    },
+  );
+  assert.equal(
+    createToolInspectRequest({
+      jobId: "inspect-1",
+      key: "crop-pdf",
+      file,
+      thumbnailWidth: 160,
+    }).thumbnailWidth,
+    160,
+  );
+  assert.throws(
+    () => createToolInspectRequest({ jobId: "", key: "crop-pdf", file }),
+    /job ID/,
+  );
+  assert.throws(
+    () =>
+      createToolInspectRequest({
+        jobId: "inspect",
+        key: "crop-pdf",
+        file,
+        thumbnailWidth: 0,
+      }),
+    /positive integer/,
+  );
+
+  // Exactly one document per inspection — page geometry belongs to one file.
+  assert.equal(
+    isToolWorkerMessage({
+      type: "inspect",
+      jobId: "j",
+      key: "crop-pdf",
+      files: [file, file],
+      thumbnailWidth: 180,
     }),
-    [thumbnail],
+    false,
   );
 });
 
 test("worker job state ignores stale responses and cannot complete after cancellation", () => {
-  let state = beginWorkerJob(createWorkerJobState(), "job-1");
-  state = reduceWorkerJobState(state, {
+  const idle = createToolJobState();
+  const started = beginWorkerJob(idle, "job-1");
+  assert.deepEqual(idle, createToolJobState(), "beginWorkerJob must not mutate");
+  assert.deepEqual(
+    { status: started.status, jobId: started.jobId },
+    { status: "running", jobId: "job-1" },
+  );
+
+  // A response addressed to another job never advances the running job.
+  const stale = reduceWorkerJobState(started, {
     type: "progress",
     jobId: "other-job",
-    current: 9,
     completed: 9,
     total: 9,
     stage: "encode",
   });
-  assert.equal(state.progress, null);
+  assert.equal(stale, started);
+  assert.equal(stale.progress, null);
 
-  state = reduceWorkerJobState(state, {
+  const progressed = reduceWorkerJobState(started, {
     type: "progress",
     jobId: "job-1",
-    current: 2,
     completed: 1,
     total: 4,
     stage: "decode",
   });
-  assert.deepEqual(state.progress, {
-    current: 2,
+  assert.deepEqual(progressed.progress, {
     completed: 1,
     total: 4,
     stage: "decode",
   });
+  assert.equal(started.progress, null, "reduce must not mutate its input");
 
-  const canceled = cancelWorkerJob(state);
+  const canceled = cancelWorkerJob(progressed);
   assert.deepEqual(canceled.message, { type: "cancel", jobId: "job-1" });
   assert.equal(canceled.state.status, "canceled");
-  assert.deepEqual(
+  assert.equal(canceled.state.progress, null);
+  assert.equal(progressed.status, "running", "cancel must not mutate its input");
+
+  // Terminal states are frozen: a late success for the same job changes nothing.
+  assert.equal(
     reduceWorkerJobState(canceled.state, {
-      type: "complete",
+      type: "success",
       jobId: "job-1",
-      outputs: [
-        {
-          buffer: new ArrayBuffer(1),
-          mime: "image/png",
-          filename: "photo.png",
-          size: 1,
-        },
-      ],
-      inputBytes: 3,
-      outputBytes: 1,
+      result: { render: "files", files: [] },
     }),
     canceled.state,
   );
-  assert.equal(cancelWorkerJob(createWorkerJobState()), null);
+  // Only a running job can be cancelled.
+  assert.equal(cancelWorkerJob(createToolJobState()), null);
+  assert.equal(cancelWorkerJob(canceled.state), null);
+  // And an idle state ignores every response.
+  assert.equal(
+    reduceWorkerJobState(idle, {
+      type: "progress",
+      jobId: "job-1",
+      completed: 1,
+      total: 2,
+      stage: "decode",
+    }),
+    idle,
+  );
 });
 
-test("worker failures and completions produce terminal state with size statistics", () => {
-  const running = beginWorkerJob(createWorkerJobState(), "job-2");
-  const failed = reduceWorkerJobState(running, {
-    type: "failure",
-    jobId: "job-2",
-    code: "memory-limit",
-    message: "This file needs more memory than the browser can provide.",
-  });
+test("worker failures, cancellations, and successes produce frozen terminal state", () => {
+  const failed = reduceWorkerJobState(
+    beginWorkerJob(createToolJobState(), "job-2"),
+    {
+      type: "failure",
+      jobId: "job-2",
+      code: "memory-limit",
+      message: "This file needs more memory than the browser can provide.",
+      recovery: "Try a smaller file.",
+    },
+  );
   assert.equal(failed.status, "failed");
+  assert.equal(failed.progress, null);
   assert.deepEqual(failed.error, {
     code: "memory-limit",
     message: "This file needs more memory than the browser can provide.",
+    recovery: "Try a smaller file.",
   });
+  assert.equal(
+    reduceWorkerJobState(failed, {
+      type: "success",
+      jobId: "job-2",
+      result: { render: "text", text: "too late" },
+    }),
+    failed,
+  );
 
-  const output = {
-    buffer: new ArrayBuffer(2),
-    mime: "application/pdf",
-    filename: "merged.pdf",
-    size: 2,
+  const result = {
+    render: "files",
+    files: [
+      {
+        buffer: new ArrayBuffer(2),
+        mime: "application/pdf",
+        filename: "merged.pdf",
+        size: 2,
+      },
+    ],
   };
   const complete = reduceWorkerJobState(
-    beginWorkerJob(createWorkerJobState(), "job-3"),
-    {
-      type: "complete",
-      jobId: "job-3",
-      outputs: [output],
-      inputBytes: 5,
-      outputBytes: 2,
-    },
+    beginWorkerJob(createToolJobState(), "job-3"),
+    { type: "success", jobId: "job-3", result },
   );
   assert.equal(complete.status, "completed");
-  assert.deepEqual(complete.outputs, [output]);
-  assert.deepEqual(complete.sizes, { inputBytes: 5, outputBytes: 2 });
+  assert.equal(complete.progress, null);
+  assert.deepEqual(complete.result, result);
+
+  const inspected = reduceWorkerJobState(
+    beginWorkerJob(createToolJobState(), "job-4"),
+    {
+      type: "inspected",
+      jobId: "job-4",
+      pageCount: 2,
+      previews: [
+        { pageNumber: 1, pageWidth: 612, pageHeight: 792 },
+        { pageNumber: 2, pageWidth: 612, pageHeight: 792 },
+      ],
+    },
+  );
+  assert.equal(inspected.status, "completed");
+  assert.equal(inspected.pageCount, 2);
+  assert.equal(inspected.previews.length, 2);
+
+  const stopped = reduceWorkerJobState(
+    beginWorkerJob(createToolJobState(), "job-5"),
+    { type: "canceled", jobId: "job-5" },
+  );
+  assert.equal(stopped.status, "canceled");
+  assert.equal(
+    reduceWorkerJobState(stopped, {
+      type: "success",
+      jobId: "job-5",
+      result: { render: "text", text: "too late" },
+    }),
+    stopped,
+  );
 });
 
 function riff(chunkType, payload) {

@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "correct horse battery staple",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "rounds": 4
+      },
+      "expected": {
+        "render": "text",
+        "length": {
+          "max": 60,
+          "min": 60
+        },
+        "pattern": "^[a-zA-Z0-9$./]{60,60}$"
+      }
+    }
+  ]
+}

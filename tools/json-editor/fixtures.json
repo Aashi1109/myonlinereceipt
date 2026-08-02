@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{ name: 'Ada', active: true, }",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove",
+        "indent": "2"
+      },
+      "expected": {
+        "output": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

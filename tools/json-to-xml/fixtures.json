@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"user\":{\"name\":\"Ada\",\"active\":true}}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root><user><name>Ada</name><active>true</active></user></root>",
+        "render": "text"
+      }
+    }
+  ]
+}

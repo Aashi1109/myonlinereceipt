@@ -1,0 +1,48 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "error": "Enter a domain or HTTP(S) URL."
+      },
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "blank input is rejected before any request",
+      "settings": {}
+    },
+    {
+      "expected": {
+        "error": "Enter a valid public domain."
+      },
+      "input": {
+        "primary": "127.0.0.1",
+        "secondary": ""
+      },
+      "name": "an IP literal is rejected before any request",
+      "settings": {}
+    },
+    {
+      "expected": {
+        "error": "Enter a valid domain or HTTP(S) URL."
+      },
+      "input": {
+        "primary": "file:///etc/passwd",
+        "secondary": ""
+      },
+      "name": "a non-HTTP scheme is rejected before any request",
+      "settings": {}
+    },
+    {
+      "expected": {
+        "error": "Enter a valid domain or HTTP(S) URL."
+      },
+      "input": {
+        "primary": "http://user:pw@example.com",
+        "secondary": ""
+      },
+      "name": "embedded credentials are rejected before any request",
+      "settings": {}
+    }
+  ]
+}

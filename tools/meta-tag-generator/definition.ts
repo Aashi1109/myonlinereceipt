@@ -1,0 +1,113 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "devtools.meta-tag-generator",
+  app: "devtools",
+  category: "developer-generators",
+  keywords: [
+    "meta tags",
+    "seo",
+    "open graph",
+    "og",
+    "canonical",
+    "description",
+    "head",
+  ],
+  name: "Meta Tag Generator",
+  description: "Generate common search and social meta tags.",
+  input: {
+    kind: "fields",
+    label: "Page title and description",
+    fields: [
+      {
+        channel: "text",
+        label: "Page title",
+        placeholder: "Enter or paste page title…",
+        required: true,
+      },
+      {
+        channel: "secondary",
+        label: "Meta description",
+        placeholder: "Enter or paste meta description…",
+        required: true,
+        multiline: true,
+      },
+    ],
+  },
+  settings: {
+    fields: {
+      keywords: {
+        kind: "text",
+        label: "Keywords",
+        help: "Ignored by every major search engine. Left in for the handful of internal search tools that still read it.",
+        default: "developer tools, utilities",
+      },
+      author: {
+        kind: "text",
+        label: "Author",
+        default: "SmartTools",
+      },
+      canonical: {
+        kind: "text",
+        label: "Canonical URL",
+        help: "Must be an absolute http or https URL.",
+        default: "https://example.com/tools",
+      },
+      image: {
+        kind: "text",
+        label: "Open Graph image URL",
+        help: "Must be absolute. Social crawlers cannot resolve a relative path.",
+        default: "https://example.com/og.png",
+      },
+    },
+  },
+  trigger: {
+    mode: "manual",
+    actionLabel: "Generate meta tags",
+  },
+  layout: "source-result",
+  capabilities: {
+    copy: true,
+    download: true,
+  },
+  labels: {
+    empty: "Enter a page title and description to generate meta tags.",
+    ready: "Meta tags are ready.",
+    running: "Generating meta tags…",
+  },
+  content: {
+    howToUse: [
+      "Enter the page title and meta description. Aim for roughly 60 characters of title and 155 of description before search results truncate them.",
+      "Fill in the canonical and Open Graph image URLs if you have them — both must be absolute, and both are validated before anything is emitted.",
+      "Generate, then paste the block inside your page's head. Every value is HTML-escaped, so an apostrophe or ampersand in the title cannot break out of its attribute.",
+    ],
+    limitations: [
+      "Title and description are required; the other four fields are optional and their tags are omitted when left blank.",
+      "No Twitter card tags, no viewport, and no charset are emitted — those belong to your template, not to this block.",
+      "The keywords tag is ignored by every major search engine. It is generated for completeness only.",
+      "Length is not enforced. Nothing warns you that a 300-character description will be truncated in results.",
+      "Relative canonical and image URLs are rejected, because social crawlers cannot resolve them.",
+    ],
+    faq: [
+      {
+        q: "Do I still need the keywords tag?",
+        a: "No. Google, Bing, and the rest have ignored it for over a decade. Leave it blank unless an internal search tool reads it.",
+      },
+      {
+        q: "Why was my image URL rejected?",
+        a: "It must be an absolute http or https URL. A path such as /og.png cannot be fetched by a crawler that has no page context.",
+      },
+      {
+        q: "Where does this block go?",
+        a: "Inside head, and only once per page. A second canonical or og:title tag makes the page ambiguous to crawlers.",
+      },
+    ],
+    examples: [
+      {
+        label: "Product page",
+        text: "Smart Tools",
+        secondary: "Fast private utilities for everyday work.",
+      },
+    ],
+  },
+} as const satisfies ToolSpec;

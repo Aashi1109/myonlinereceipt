@@ -1,0 +1,30 @@
+/**
+ * Moved verbatim from the `html-viewer` case in
+ * `lib/devtools/format-json.ts` (line 2713): the input is returned unchanged
+ * with an html output kind, guarded only by the required-input check.
+ *
+ * CONTAINMENT — unchanged, and deliberately not widened. The source never
+ * sanitised the markup; it relied on the renderer, which puts the value in
+ * `<iframe sandbox="" srcDoc={…}>`. An empty `sandbox` attribute is the most
+ * restrictive setting there is: no scripts, no forms, no popups, no
+ * navigation, no same-origin access. The `render: "html"` branch of
+ * `components/ResultView.tsx` uses exactly the same empty `sandbox=""` iframe
+ * as the legacy `outputKind === "html"` branch in
+ * `components/UtilityToolPrimitives.tsx`, so the containment is identical
+ * before and after this migration.
+ *
+ * Adding a sanitiser here would be a behaviour change (it would silently
+ * rewrite the user's markup, which is the one thing a viewer must not do);
+ * removing the sandbox would be an XSS hole. Neither was done.
+ */
+
+import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
+
+export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
+  render: "html",
+  html: requireUtilityInput(ctx.input.text, "HTML source"),
+});
+
+export default run;

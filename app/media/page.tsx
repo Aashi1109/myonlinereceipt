@@ -1,7 +1,13 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
+import { ToolIcon } from "@/components/ToolIcon";
+import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
+import {
+  categoriesForApp,
+  TOOL_CATEGORIES,
+  type CategoryKey,
+} from "@/lib/tool-framework/categories";
 import { getOptionalSession } from "@smarttools/auth/session";
-import { getAvailableTools } from "@smarttools/control-plane";
-import type { ResolvedTool } from "@smarttools/tool-catalog";
+import { getToolIcons, type ToolIconRow } from "@smarttools/database";
 import {
   AccountNavigation,
   AppContainer,
@@ -18,67 +24,37 @@ import {
   buttonVariants,
 } from "@smarttools/ui";
 import {
-  FileImage,
-  Files,
-  Image as ImageIcon,
-  Images,
+  LayoutGrid,
   LockKeyhole,
-  Minimize2,
   Search,
   ShieldCheck,
-  Sparkles,
   Zap,
-  type LucideIcon,
 } from "lucide-react";
 import { headers } from "next/headers";
 
-const CATEGORIES: readonly {
-  description: string;
-  icon: LucideIcon;
-  name: string;
-}[] = [
-  {
-    name: "PDF Conversion",
-    description: "Move between images and PDF pages without uploading files.",
-    icon: FileImage,
-  },
-  {
-    name: "PDF Organization",
-    description: "Merge, split, reorder, rotate, crop, and resize PDF pages.",
-    icon: Files,
-  },
-  {
-    name: "PDF Optimization",
-    description: "Compress, watermark, and number documents locally.",
-    icon: Minimize2,
-  },
-  {
-    name: "Image Conversion",
-    description: "Convert JPG, PNG, WebP, and HEIC images in your browser.",
-    icon: ImageIcon,
-  },
-  {
-    name: "Image Editing",
-    description: "Resize, crop, rotate, combine, and optimize images.",
-    icon: Images,
-  },
-];
+type IconRows = Readonly<Record<string, ToolIconRow>>;
 
 function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-function ToolCard({ tool }: { tool: ResolvedTool }) {
-  if (!tool.slug) return null;
-  const category = CATEGORIES.find(({ name }) => name === tool.category);
-  const Icon = category?.icon ?? Sparkles;
+function isCategory(value: string): value is CategoryKey {
+  return Object.hasOwn(TOOL_CATEGORIES, value);
+}
 
+function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
   return (
     <CatalogCard
       action="Open tool →"
       description={tool.description}
       href={`/media/${tool.slug}`}
-      icon={<Icon aria-hidden="true" />}
+      icon={
+        <ToolIcon
+          name={tool.name}
+          row={icons[tool.toolId] ?? null}
+          toolId={tool.toolId}
+        />
+      }
       status={<StatusBadge variant="success">Browser only</StatusBadge>}
       title={tool.name}
     />
@@ -94,19 +70,19 @@ export default async function HomePage({
   const params = await searchParams;
   const query = first(params.q).trim().slice(0, 80);
   const requestedCategory = first(params.category).slice(0, 80);
-  const category = CATEGORIES.some(({ name }) => name === requestedCategory)
-    ? requestedCategory
-    : "";
-  const [tools, session] = await Promise.all([
-    getAvailableTools("media"),
+  const category = isCategory(requestedCategory) ? requestedCategory : "";
+  const [tools, icons, session] = await Promise.all([
+    getTools("media"),
+    getToolIcons(),
     getOptionalSession(requestHeaders),
   ]);
   const normalizedQuery = query.toLocaleLowerCase();
+  const categoryLabel = category ? TOOL_CATEGORIES[category].label : "";
   const filteredTools = tools.filter(
     (tool) =>
       (!category || tool.category === category) &&
       (!normalizedQuery ||
-        `${tool.name} ${tool.description} ${tool.category ?? ""} ${tool.keywords?.join(" ") ?? ""}`
+        `${tool.name} ${tool.description} ${tool.keywords.join(" ")}`
           .toLocaleLowerCase()
           .includes(normalizedQuery)),
   );
@@ -170,7 +146,7 @@ export default async function HomePage({
             {[
               [`${tools.length}`, "Enabled tools"],
               ["100%", "On-device"],
-              ["2", "Dedicated workers"],
+              ["1", "Shared worker runner"],
               ["0", "File uploads"],
             ].map(([value, label]) => (
               <div className="px-4 py-3 text-center" key={label}>
@@ -196,9 +172,9 @@ export default async function HomePage({
               }
               description={
                 query
-                  ? `Matching “${query}”${category ? ` in ${category}` : ""}.`
+                  ? `Matching “${query}”${categoryLabel ? ` in ${categoryLabel}` : ""}.`
                   : category
-                    ? `Enabled tools in ${category}.`
+                    ? `Enabled tools in ${categoryLabel}.`
                     : "Choose one focused workflow. Every operation stays in this browser."
               }
               title={query || category ? "Search results" : "All media tools"}
@@ -206,7 +182,7 @@ export default async function HomePage({
             {filteredTools.length ? (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredTools.map((tool) => (
-                  <ToolCard key={tool.id} tool={tool} />
+                  <ToolCard icons={icons} key={tool.toolId} tool={tool} />
                 ))}
               </div>
             ) : (
@@ -230,20 +206,24 @@ export default async function HomePage({
               title="Browse by category"
             />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {CATEGORIES.map(({ description, icon: Icon, name }) => {
-                const count = tools.filter((tool) => tool.category === name).length;
+              {categoriesForApp("media").map((key) => {
+                const count = tools.filter((tool) => tool.category === key).length;
                 return (
                   <a
                     className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    href={`/media?category=${encodeURIComponent(name)}`}
-                    key={name}
+                    href={`/media?category=${encodeURIComponent(key)}`}
+                    key={key}
                   >
                     <IconTile className="rounded-xl" size="sm">
-                      <Icon aria-hidden="true" className="size-5" />
+                      <LayoutGrid aria-hidden="true" className="size-5" />
                     </IconTile>
                     <span className="min-w-0">
-                      <strong className="block text-sm font-extrabold group-hover:text-primary">{name}</strong>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+                      <strong className="block text-sm font-extrabold group-hover:text-primary">
+                        {TOOL_CATEGORIES[key].label}
+                      </strong>
+                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                        {TOOL_CATEGORIES[key].description}
+                      </span>
                       <span className="mt-2 block text-xs font-bold text-primary">{count} enabled</span>
                     </span>
                   </a>

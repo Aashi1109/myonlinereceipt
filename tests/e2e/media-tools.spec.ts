@@ -1,22 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { Buffer } from "node:buffer";
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 
 const PLATFORM_ORIGIN = process.env.PLATFORM_E2E_ORIGIN ?? "http://localhost:3000";
 const MEDIA_URL = process.env.MEDIA_E2E_URL ?? `${PLATFORM_ORIGIN}/media`;
 const requireFromMedia = createRequire(
   new URL("../../package.json", import.meta.url),
-);
-const pdfWorkerAvailable = existsSync(
-  fileURLToPath(
-    new URL(
-      "../../app/media/_workers/pdf.worker.ts",
-      import.meta.url,
-    ),
-  ),
 );
 
 test("Media Tools is discoverable and unknown routes fail closed", async ({ page }) => {
@@ -339,7 +329,6 @@ test("Preserve Document runs through qpdf and returns an openable PDF", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name.includes("mobile"), "Desktop covers qpdf processing.");
-  test.skip(!pdfWorkerAvailable, "The PDF worker has not landed yet.");
   test.setTimeout(90_000);
   const qpdfResponses: { status: number; url: string }[] = [];
   page.on("response", (response) => {

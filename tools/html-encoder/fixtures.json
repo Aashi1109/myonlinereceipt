@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "<button title=\"Save & close\">Save</button>",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "&lt;button title=&quot;Save &amp; close&quot;&gt;Save&lt;/button&gt;",
+        "render": "text"
+      }
+    }
+  ]
+}

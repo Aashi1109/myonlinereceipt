@@ -1,0 +1,23 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Smart Tools",
+        "secondary": "Fast private utilities for everyday work."
+      },
+      "name": "definition example",
+      "settings": {
+        "url": "https://example.com/tools",
+        "siteName": "SmartTools",
+        "image": "",
+        "platform": "facebook",
+        "layout": "landscape",
+        "imageFit": "cover"
+      },
+      "expected": {
+        "output": "<article data-platform=\"facebook\" style=\"max-width:600px;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;font-family:system-ui,sans-serif\"><div aria-label=\"Image preview placeholder\" style=\"height:315px;background:linear-gradient(135deg,#1d4ed8,#7c3aed)\"></div><div style=\"padding:16px\"><small>SmartTools</small><h2>Smart Tools</h2><p>Fast private utilities for everyday work.</p></div></article>\n<!-- Generated tags\n<meta property=\"og:title\" content=\"Smart Tools\">\n<meta property=\"og:description\" content=\"Fast private utilities for everyday work.\">\n<meta property=\"og:url\" content=\"https://example.com/tools\">\n<meta property=\"og:site_name\" content=\"SmartTools\">\n-->",
+        "render": "html"
+      }
+    }
+  ]
+}

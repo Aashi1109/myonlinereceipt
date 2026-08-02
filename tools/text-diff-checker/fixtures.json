@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "alpha\nbeta\ngamma",
+        "secondary": "alpha\nbeta updated\ngamma"
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "  alpha\n- beta\n+ beta updated\n  gamma",
+        "render": "text"
+      }
+    }
+  ]
+}

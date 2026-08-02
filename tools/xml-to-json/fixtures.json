@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "<user id=\"1\"><name>Ada</name><active>true</active></user>",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "{\n  \"user\": {\n    \"@id\": \"1\",\n    \"name\": \"Ada\",\n    \"active\": \"true\"\n  }\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

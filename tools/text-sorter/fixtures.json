@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Banana\napple\nCherry",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "order": "asc",
+        "ci": true
+      },
+      "expected": {
+        "output": "apple\nBanana\nCherry",
+        "render": "text"
+      }
+    }
+  ]
+}

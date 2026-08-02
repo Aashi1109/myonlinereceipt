@@ -1,4 +1,4 @@
-import type { JsonTransformResult } from "../../lib/devtools/format-json.ts";
+import type { JsonTransformResult } from "../../lib/devtools/shared/json.ts";
 
 export type JsonViewerExecutionResult =
   | {

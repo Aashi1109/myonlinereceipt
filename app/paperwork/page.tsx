@@ -1,6 +1,7 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getAvailableTools } from "@smarttools/control-plane";
+import { getToolManifest } from "@/lib/tool-framework/manifest";
 import {
   AccountNavigation,
   CatalogCard,
@@ -33,7 +34,7 @@ const TOOL_ICONS: Record<string, LucideIcon> = {
 export default async function HomePage() {
   const requestHeaders = await headers();
   const [tools, session] = await Promise.all([
-    getAvailableTools("paperwork"),
+    getAvailableTools("paperwork", await getToolManifest()),
     getOptionalSession(requestHeaders),
   ]);
 

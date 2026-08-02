@@ -1,0 +1,80 @@
+/**
+ * Moved from `deletePdfPages` (`app/media/_workers/pdf.worker.ts:337-358`),
+ * plus the shared preflight from `processPdf` (`pdf.worker.ts:91-98`).
+ *
+ * `buildJobOptions` turned the raw string into page numbers with `pageList`
+ * (`MediaWorkbench.tsx:1702-1706`) and threw a `RangeError` the workbench
+ * caught. That parse is now `parsePageSelection`, and the failure is a
+ * `ToolError` like every other.
+ */
+
+import {
+  checkedPages,
+  enforcePageLimit,
+  loadPdf,
+  pdfOutput,
+  reportStructuralProgress,
+  validatePdfInput,
+} from "../../lib/tool-framework/media/pdfDocument.ts";
+import { processStructuralPages } from "../../lib/tool-framework/media/pdfRules.ts";
+import {
+  createOutputFilename,
+  validatePdfSelection,
+} from "../../lib/tool-framework/media/validation.ts";
+import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
+import {
+  parsePageSelection,
+  type SettingsOf,
+} from "../../lib/tool-framework/settings.ts";
+
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  const input = ctx.input.files[0];
+  if (!input) throw new ToolError("no-files", "Choose a PDF to delete pages from.");
+  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  if (!selection.ok) throw new ToolError(selection.code, selection.message);
+  validatePdfInput(input);
+
+  const pdf = await loadPdf(input);
+  const count = pdf.getPageCount();
+  enforcePageLimit(input, count, false);
+
+  const requested = parsePageSelection(ctx.settings.pages, count);
+  const pages = checkedPages(
+    requested === "all" ? Array.from({ length: count }, (_, i) => i + 1) : requested,
+    count,
+  );
+  if (pages.length >= count) {
+    throw new ToolError("empty-document", "At least one PDF page must remain.");
+  }
+  ctx.signal.throwIfAborted();
+
+  // Descending, so each removal leaves the indexes of the pages still to be
+  // removed unchanged.
+  const descending = [...pages].sort((a, b) => b - a);
+  await processStructuralPages(
+    descending,
+    (index) => index + 1,
+    "Deleting PDF page",
+    reportStructuralProgress(ctx.progress),
+    (index) => {
+      ctx.signal.throwIfAborted();
+      pdf.removePage(index);
+    },
+  );
+
+  const output = pdfOutput(
+    await pdf.save(),
+    createOutputFilename(input.name, "pdf", "pages-deleted"),
+  );
+  return {
+    render: "files",
+    files: [output],
+    inputBytes: input.data.byteLength,
+    outputBytes: output.size,
+  };
+};
+
+export default run;

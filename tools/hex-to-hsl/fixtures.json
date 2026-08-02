@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "#3366ff",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "hsl(225, 100%, 60%)",
+        "render": "text"
+      }
+    }
+  ]
+}

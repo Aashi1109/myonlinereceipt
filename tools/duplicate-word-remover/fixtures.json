@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "smart tools make tools simple and smart",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "smart tools make simple and",
+        "render": "text"
+      }
+    }
+  ]
+}

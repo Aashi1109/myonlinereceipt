@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,note\nAda,\"Hello, world\"",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "name\tnote\nAda\tHello, world",
+        "render": "text"
+      }
+    }
+  ]
+}

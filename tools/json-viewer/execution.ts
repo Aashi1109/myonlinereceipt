@@ -3,7 +3,7 @@ import {
   repairJson,
   transformJson,
   type JsonTransformResult,
-} from "../../lib/devtools/format-json.ts";
+} from "../../lib/devtools/shared/json.ts";
 
 import type { JsonViewerExecutionResult } from "./result.ts";
 

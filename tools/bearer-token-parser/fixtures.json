@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "{\n  \"token\": \"eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.\",\n  \"header\": {\n    \"alg\": \"none\"\n  },\n  \"payload\": {\n    \"sub\": \"123\"\n  }\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

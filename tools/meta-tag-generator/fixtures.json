@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Smart Tools",
+        "secondary": "Fast private utilities for everyday work."
+      },
+      "name": "definition example",
+      "settings": {
+        "keywords": "developer tools, utilities",
+        "author": "SmartTools",
+        "canonical": "https://example.com/tools",
+        "image": "https://example.com/og.png"
+      },
+      "expected": {
+        "output": "<title>Smart Tools</title>\n<meta name=\"description\" content=\"Fast private utilities for everyday work.\">\n<meta name=\"keywords\" content=\"developer tools, utilities\">\n<meta name=\"author\" content=\"SmartTools\">\n<link rel=\"canonical\" href=\"https://example.com/tools\">\n<meta property=\"og:title\" content=\"Smart Tools\">\n<meta property=\"og:description\" content=\"Fast private utilities for everyday work.\">\n<meta property=\"og:url\" content=\"https://example.com/tools\">\n<meta property=\"og:image\" content=\"https://example.com/og.png\">",
+        "render": "text",
+        "downloadName": "meta-tags.html"
+      }
+    }
+  ]
+}

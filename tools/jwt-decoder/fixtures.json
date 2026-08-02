@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJleHAiOjQxMDI0NDQ4MDB9.",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "{\n  \"header\": {\n    \"alg\": \"none\",\n    \"typ\": \"JWT\"\n  },\n  \"payload\": {\n    \"sub\": \"123\",\n    \"exp\": 4102444800\n  },\n  \"timestamps\": {\n    \"exp\": \"2100-01-01T00:00:00.000Z\"\n  },\n  \"signature\": \"\"\n}",
+        "render": "text"
+      }
+    }
+  ]
+}

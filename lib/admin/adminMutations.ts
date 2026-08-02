@@ -23,7 +23,10 @@ import {
   managedToolsTable,
   ne,
   rolesTable,
+  toolContentTable,
+  toolIconsTable,
   userRolesTable,
+  type ToolIconRow,
 } from "@smarttools/database";
 import {
   createAdvancedTemplateConfig,
@@ -39,8 +42,8 @@ import {
 import {
   assertToolSlugImmutable,
   isValidToolSlug,
-  seededManagedTools,
-  toolManifest,
+  slugFromName,
+  TOOL_SLUG_PATTERN,
   type ManagedTool,
   type ToolApp,
 } from "@smarttools/tool-catalog";
@@ -49,6 +52,14 @@ import {
   type FeatureApp,
   type FeatureManifestEntry,
 } from "@smarttools/control-plane";
+import { z } from "zod";
+import {
+  isCategoryKey,
+  TOOL_CATEGORIES,
+  type CategoryKey,
+} from "../tool-framework/categories.ts";
+import { TOOL_CONTENT_DOC_VERSION } from "../tool-framework/content.ts";
+import { uploadToolIcon } from "../tool-framework/cloudinary.ts";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type ToolRow = typeof managedToolsTable.$inferSelect;
@@ -223,30 +234,15 @@ async function writeAudit(
   });
 }
 
-function getToolManifestEntry(toolId: string) {
-  const entries = toolManifest.filter((entry) => entry.id === toolId);
-  if (entries.length !== 1) throw new Error(`Unknown tool: ${toolId}.`);
-  return entries[0];
-}
-
-function getToolFallback(toolId: string): ToolRow {
-  const entry = getToolManifestEntry(toolId);
-  const seed = seededManagedTools.find((tool) => tool.toolId === toolId);
-  if (!seed) throw new Error(`Missing tool seed: ${toolId}.`);
-
-  return {
-    ...seed,
-    app: entry.app,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
+/**
+ * The row is the tool. There is no bundled list to fall back to, so a tool id
+ * with no `managed_tools` row does not exist — which is also what makes a row
+ * created before its folder ships fully manageable here.
+ */
 async function getToolForUpdate(
   transaction: Transaction,
   toolId: string,
 ): Promise<ToolRow> {
-  const entry = getToolManifestEntry(toolId);
   const [stored] = await transaction
     .select()
     .from(managedToolsTable)
@@ -254,10 +250,8 @@ async function getToolForUpdate(
     .limit(1)
     .for("update");
 
-  if (stored && stored.app !== entry.app) {
-    throw new Error("Stored tool ownership does not match its manifest.");
-  }
-  return stored ?? getToolFallback(toolId);
+  if (!stored) throw new Error(`Unknown tool: ${toolId}.`);
+  return stored;
 }
 
 async function saveTool(
@@ -294,6 +288,142 @@ async function saveTool(
   return saved;
 }
 
+/**
+ * The database half of a tool, created before its folder exists.
+ *
+ * A tool is two halves: `tools/<key>/definition.ts` plus a run file (shipped by
+ * a deploy — a deployed app cannot write files), and a `managed_tools` row.
+ * This creates the row only, and that is safe in both directions:
+ *
+ *  - `seedManagedTools` inserts with `onConflictDoNothing` on `tool_id`, so
+ *    every later deploy leaves the name, description, slug and order typed here
+ *    exactly as they are.
+ *  - `catalog.ts` resolves the folder from `toolId.split(".")[1]` and drops any
+ *    row whose `definition.ts` does not import, so a row with no code is
+ *    invisible to visitors rather than a 404.
+ *
+ * The one irreversible field is the slug: `prevent_saved_tool_slug_change`,
+ * `assertToolSlugImmutable` and `unique(app, slug)` freeze it, and the seed
+ * *fails the deploy* if the shipped definition later declares a different one.
+ */
+export interface ManagedToolDraft {
+  readonly app: string;
+  /** The folder under `tools/`, and the second half of the tool id. */
+  readonly key: string;
+  readonly name: string;
+  readonly description: string;
+  /** Blank falls back to `slugFromName(name)`. */
+  readonly slug?: string;
+  readonly category: string;
+}
+
+/** Paperwork is a separate product surface and is not scaffolded this way. */
+type CreatableToolApp = "devtools" | "media";
+
+function creatableApp(value: unknown): CreatableToolApp {
+  if (value !== "devtools" && value !== "media") {
+    throw new Error('Tool app must be "devtools" or "media".');
+  }
+  return value;
+}
+
+export async function createManagedTool(
+  actorUserId: string,
+  input: ManagedToolDraft,
+): Promise<ToolRow> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+    if (!isRecord(input)) throw new Error("Tool details must be an object.");
+
+    const app = creatableApp(input.app);
+    const key = requiredText(input.key, "Folder key", 80);
+    if (!TOOL_SLUG_PATTERN.test(key)) {
+      throw new Error(
+        "Folder key must be lowercase words joined by single hyphens.",
+      );
+    }
+    const name = requiredText(input.name, "Tool name", 160);
+    const description = requiredText(input.description, "Tool description");
+
+    const category = requiredText(input.category, "Tool category", 64);
+    if (!isCategoryKey(category) || TOOL_CATEGORIES[category].app !== app) {
+      throw new Error(`Tool category is not registered for ${app}.`);
+    }
+
+    // The picker shows this live, but the default is recomputed here so a
+    // hand-posted form cannot slip a slug past it.
+    const requested = typeof input.slug === "string" ? input.slug.trim() : "";
+    const slug = requested || slugFromName(name);
+    if (!isValidToolSlug(app, slug)) {
+      throw new Error("Tool slug is invalid or reserved.");
+    }
+
+    // The folder is derived from the tool id, which is why the id is derived
+    // from the key rather than typed.
+    const toolId = `${app}.${key}`;
+
+    // One locked read answers all three uniqueness questions. `for("update")`
+    // also serializes two admins creating at once: the second read blocks on
+    // the first transaction's locks and re-reads after it commits, so it sees
+    // the new row and orders above it. `unique(app, sort_order)` from
+    // migration 0005 stays the backstop, and it rolls the whole insert back.
+    const siblings = await transaction
+      .select({
+        toolId: managedToolsTable.toolId,
+        slug: managedToolsTable.slug,
+        order: managedToolsTable.order,
+      })
+      .from(managedToolsTable)
+      .where(eq(managedToolsTable.app, app))
+      .for("update");
+
+    if (siblings.some((tool) => tool.toolId === toolId)) {
+      throw new Error(`Tool ${toolId} already exists.`);
+    }
+    if (siblings.some((tool) => tool.slug === slug)) {
+      throw new Error("Tool slug is already in use.");
+    }
+
+    const order =
+      siblings.reduce((highest, tool) => Math.max(highest, tool.order), -1) + 1;
+
+    // Disabled: a tool with no code must not be publishable by accident.
+    const [created] = await transaction
+      .insert(managedToolsTable)
+      .values({
+        toolId,
+        app,
+        slug,
+        name,
+        description,
+        order,
+        enabled: false,
+        archived: false,
+      })
+      .returning();
+
+    // The seed writes an all-null row here; this one carries the category the
+    // admin chose. Discarding it would mean asking for a value and then
+    // throwing it away — and unlike the seed, there is no `definition.ts` yet
+    // for the resolver to fall back to. Every other column stays NULL, so it
+    // still inherits from code the moment the folder ships.
+    //
+    // Left unpublished (`publishedAt` NULL): until the code exists there is
+    // nothing to publish, and `resolveContent` treats an unpublished row as
+    // "use the code values".
+    await transaction.insert(toolContentTable).values({ toolId, category });
+
+    await writeAudit(transaction, actorUserId, "tool.create", "tool", toolId, {
+      app,
+      key,
+      slug,
+      category,
+      order,
+    });
+    return created;
+  });
+}
+
 export async function updateManagedTool(
   actorUserId: string,
   toolId: string,
@@ -304,9 +434,8 @@ export async function updateManagedTool(
     if (!isRecord(input)) throw new Error("Tool changes must be an object.");
 
     const current = await getToolForUpdate(transaction, toolId);
-    const entry = getToolManifestEntry(toolId);
     const slug = Object.hasOwn(input, "slug") ? input.slug : current.slug;
-    if (slug !== null && !isValidToolSlug(entry.app, slug)) {
+    if (slug !== null && !isValidToolSlug(current.app, slug)) {
       throw new Error("Tool slug is invalid or reserved.");
     }
     assertToolSlugImmutable(current.slug, slug ?? null);
@@ -324,7 +453,7 @@ export async function updateManagedTool(
         .from(managedToolsTable)
         .where(
           and(
-            eq(managedToolsTable.app, entry.app),
+            eq(managedToolsTable.app, current.app),
             eq(managedToolsTable.slug, slug),
             ne(managedToolsTable.toolId, toolId),
           ),
@@ -335,7 +464,7 @@ export async function updateManagedTool(
 
     const next = {
       toolId,
-      app: entry.app,
+      app: current.app,
       slug: slug ?? null,
       name,
       description,
@@ -359,9 +488,15 @@ export async function reorderManagedTools(
 ): Promise<void> {
   return db.transaction(async (transaction) => {
     await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
-    const expectedIds = new Set<string>(
-      toolManifest.filter((tool) => tool.app === app).map((tool) => tool.id),
-    );
+    // The app's stored rows are the roster; a locked read means a concurrent
+    // create cannot land between the count check and the writes.
+    const stored = await transaction
+      .select()
+      .from(managedToolsTable)
+      .where(eq(managedToolsTable.app, app))
+      .for("update");
+    const expectedIds = new Set(stored.map((tool) => tool.toolId));
+
     if (expectedIds.size === 0) throw new Error("Tool app is invalid.");
     if (
       !Array.isArray(toolIds) ||
@@ -372,21 +507,12 @@ export async function reorderManagedTools(
       throw new Error(`Tool order must contain every registered ${app} tool exactly once.`);
     }
 
-    const stored = await transaction
-      .select()
-      .from(managedToolsTable)
-      .where(inArray(managedToolsTable.toolId, [...expectedIds]))
-      .for("update");
-    if (stored.some((tool) => tool.app !== app)) {
-      throw new Error("Stored tool ownership does not match its manifest.");
-    }
-    const storedById = new Map(stored.map((tool) => [tool.toolId, tool]));
     const orderById = new Map(toolIds.map((toolId, order) => [toolId, order]));
 
-    for (const toolId of expectedIds) {
+    for (const tool of stored) {
       await saveTool(transaction, {
-        ...(storedById.get(toolId) ?? getToolFallback(toolId)),
-        order: orderById.get(toolId)!,
+        ...tool,
+        order: orderById.get(tool.toolId)!,
       });
     }
 
@@ -438,6 +564,379 @@ export async function setManagedToolArchived(
       archived,
     });
     return saved;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Database-owned tool content.
+//
+// Every `tool_content` column is nullable and NULL means "fall back to
+// `tools/<key>/definition.ts`" — that is what keeps a freshly shipped folder
+// working with no row at all. So a blank string or an empty list CLEARS the
+// override rather than storing an empty one, matching `resolveContent`, which
+// treats blank text and empty arrays as "not set" on read.
+//
+// Rows are written through the transaction (not through the `packages/database`
+// helpers, which own their own connection) so the write and its audit event
+// commit together, exactly like every other mutation in this file.
+// ---------------------------------------------------------------------------
+
+export const MAX_TOOL_ICON_BYTES = 1_048_576;
+
+/**
+ * Upload credentials live only on the server; this reports whether they exist
+ * so the admin UI can disable uploads with a message instead of failing at the
+ * end of a form submission. Local development and CI have no Cloudinary account.
+ */
+export function iconUploadsConfigured(): boolean {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME?.trim() &&
+      process.env.CLOUDINARY_API_KEY?.trim() &&
+      process.env.CLOUDINARY_API_SECRET?.trim(),
+  );
+}
+
+/** The shape `contentDoc` is validated against before it is stored. */
+export type ToolContentDocEdit = {
+  readonly howToUse: readonly string[];
+  readonly limitations?: readonly string[];
+  readonly faq?: readonly { readonly q: string; readonly a: string }[];
+  readonly examples?: readonly {
+    readonly label: string;
+    readonly text: string;
+    readonly secondary?: string;
+  }[];
+  readonly relatedToolIds?: readonly string[];
+};
+
+export type ToolContentEdit = {
+  readonly category: string | null;
+  readonly keywords: readonly string[] | null;
+  readonly seoTitle: string | null;
+  readonly seoDescription: string | null;
+  /** Untrusted jsonb: validated against {@link ToolContentDocEdit} on write. */
+  readonly contentDoc: unknown;
+};
+
+export type ToolIconUpload = {
+  readonly bytes: Uint8Array;
+  readonly mimeType: string;
+};
+
+const CONTENT_FIELDS = [
+  "category",
+  "keywords",
+  "seoTitle",
+  "seoDescription",
+  "contentDoc",
+] as const;
+
+const CONTENT_DOC_KEYS = [
+  "howToUse",
+  "limitations",
+  "faq",
+  "examples",
+  "relatedToolIds",
+] as const;
+
+function boundedText(maxLength: number) {
+  return z.string().trim().min(1).max(maxLength);
+}
+
+/**
+ * Deliberately at least as strict as the schema `resolveContent` validates with
+ * on read: a document this accepts must never be one the resolver silently
+ * discards.
+ */
+const contentDocEditSchema = z.object({
+  howToUse: z.array(boundedText(400)).min(1).max(20),
+  limitations: z.array(boundedText(400)).max(20).optional(),
+  faq: z
+    .array(z.object({ q: boundedText(300), a: boundedText(2_000) }))
+    .max(20)
+    .optional(),
+  examples: z
+    .array(
+      z.object({
+        label: boundedText(120),
+        text: boundedText(4_000),
+        secondary: boundedText(4_000).optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
+  relatedToolIds: z.array(boundedText(120)).max(12).optional(),
+});
+
+/** Blank is "inherit from code", never "override with empty". */
+function optionalText(
+  value: unknown,
+  label: string,
+  maxLength: number,
+): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") throw new Error(`${label} must be text.`);
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > maxLength) {
+    throw new Error(`${label} must be ${maxLength} characters or fewer.`);
+  }
+  return trimmed;
+}
+
+function optionalTextList(
+  value: unknown,
+  label: string,
+  maxCount: number,
+  maxLength: number,
+): string[] | null {
+  if (value === null || value === undefined) return null;
+  if (!Array.isArray(value)) throw new Error(`${label} must be a list.`);
+  const cleaned = value.flatMap((entry) => {
+    const text = optionalText(entry, label, maxLength);
+    return text === null ? [] : [text];
+  });
+  if (cleaned.length > maxCount) {
+    throw new Error(`${label} must have ${maxCount} entries or fewer.`);
+  }
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/** Validated on write, not only in the picker. */
+function toolContentCategory(value: unknown): CategoryKey | null {
+  const category = optionalText(value, "Tool category", 64);
+  if (category === null) return null;
+  if (!isCategoryKey(category)) {
+    throw new Error("Tool category is not a registered category.");
+  }
+  return category;
+}
+
+function toolContentDoc(
+  value: unknown,
+  toolId: string,
+  knownToolIds: ReadonlySet<string>,
+): Record<string, unknown> | null {
+  if (value === null || value === undefined) return null;
+  if (!isRecord(value)) {
+    throw new Error("Tool content document must be an object.");
+  }
+
+  const isEmpty = CONTENT_DOC_KEYS.every((key) => {
+    const entry = value[key];
+    return (
+      entry === null ||
+      entry === undefined ||
+      (Array.isArray(entry) && entry.length === 0)
+    );
+  });
+  if (isEmpty) return null;
+
+  const parsed = contentDocEditSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new Error(
+      `Tool content document is invalid: ${
+        parsed.error.issues[0]?.message ?? "unknown shape"
+      }.`,
+    );
+  }
+
+  for (const relatedToolId of parsed.data.relatedToolIds ?? []) {
+    if (relatedToolId === toolId) {
+      throw new Error("A tool cannot be related to itself.");
+    }
+    if (!knownToolIds.has(relatedToolId)) {
+      throw new Error(
+        `Related tools must be tool ids, not slugs: ${relatedToolId} is not registered.`,
+      );
+    }
+  }
+
+  // Stamped with the version the resolver understands; an unversioned or stale
+  // document falls back to the code content instead of going live.
+  return { version: TOOL_CONTENT_DOC_VERSION, ...parsed.data };
+}
+
+export async function updateToolContent(
+  actorUserId: string,
+  toolId: string,
+  input: ToolContentEdit,
+): Promise<void> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+    if (!isRecord(input)) throw new Error("Tool content must be an object.");
+
+    const current = await getToolForUpdate(transaction, toolId);
+    // Related tools are validated against the stored roster, so a curated link
+    // can only point at a tool that exists.
+    const knownToolIds = new Set(
+      (
+        await transaction
+          .select({ toolId: managedToolsTable.toolId })
+          .from(managedToolsTable)
+      ).map((row) => row.toolId),
+    );
+    const values = {
+      category: toolContentCategory(input.category),
+      keywords: optionalTextList(input.keywords, "Tool keywords", 24, 60),
+      seoTitle: optionalText(input.seoTitle, "SEO title", 160),
+      seoDescription: optionalText(input.seoDescription, "SEO description", 320),
+      contentDoc: toolContentDoc(input.contentDoc, toolId, knownToolIds),
+      docVersion: TOOL_CONTENT_DOC_VERSION,
+      updatedAt: new Date(),
+    };
+
+    // `tool_content.tool_id` references `managed_tools`, so the parent row has
+    // to exist before the child row can.
+    await saveTool(transaction, current);
+    await transaction
+      .insert(toolContentTable)
+      .values({ toolId, ...values })
+      .onConflictDoUpdate({ target: toolContentTable.toolId, set: values });
+
+    await writeAudit(
+      transaction,
+      actorUserId,
+      "tool.content-edit",
+      "tool",
+      toolId,
+      {
+        overrides: CONTENT_FIELDS.filter((field) => values[field] !== null),
+      },
+    );
+  });
+}
+
+/**
+ * `published_at` is what makes the stored row live: while it is NULL the code
+ * values are served no matter what else the row holds.
+ */
+export async function setToolContentPublished(
+  actorUserId: string,
+  toolId: string,
+  published: boolean,
+): Promise<void> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "toggle");
+    assertBoolean(published, "Tool content published state");
+    await getToolForUpdate(transaction, toolId);
+
+    const [stored] = await transaction
+      .select({ toolId: toolContentTable.toolId })
+      .from(toolContentTable)
+      .where(eq(toolContentTable.toolId, toolId))
+      .limit(1)
+      .for("update");
+    if (!stored) throw new Error("Save tool content before publishing it.");
+
+    await transaction
+      .update(toolContentTable)
+      .set({ publishedAt: published ? new Date() : null, updatedAt: new Date() })
+      .where(eq(toolContentTable.toolId, toolId));
+
+    await writeAudit(
+      transaction,
+      actorUserId,
+      "tool.content-publish",
+      "tool",
+      toolId,
+      { published },
+    );
+  });
+}
+
+/**
+ * Size first, then SVG by MIME *and* by leading bytes — a renamed `.png` that
+ * is really SVG markup is a stored-XSS vector, so the sniff is not optional.
+ * `uploadToolIcon` repeats both checks and pins a raster `allowed_formats`;
+ * this is the boundary copy, rejected before any database or network work.
+ */
+function assertUploadableIcon(bytes: unknown, mimeType: unknown): asserts bytes is Uint8Array {
+  if (!(bytes instanceof Uint8Array)) {
+    throw new Error("The icon must be uploaded as binary data.");
+  }
+  if (bytes.byteLength > MAX_TOOL_ICON_BYTES) {
+    throw new Error("The icon must be 1 MB or smaller.");
+  }
+  if (bytes.byteLength === 0) throw new Error("The icon file is empty.");
+
+  const normalizedMimeType =
+    typeof mimeType === "string"
+      ? (mimeType.split(";", 1)[0]?.trim().toLowerCase() ?? "")
+      : "";
+  const leadingBytes = new TextDecoder()
+    .decode(bytes.subarray(0, 512))
+    .toLowerCase();
+  if (
+    normalizedMimeType === "image/svg+xml" ||
+    leadingBytes.includes("<svg") ||
+    leadingBytes.includes("<?xml")
+  ) {
+    throw new Error("SVG icons are not supported.");
+  }
+}
+
+export async function saveToolIcon(
+  actorUserId: string,
+  toolId: string,
+  upload: ToolIconUpload,
+): Promise<ToolIconRow> {
+  if (!isRecord(upload)) throw new Error("Icon upload must be an object.");
+  assertUploadableIcon(upload.bytes, upload.mimeType);
+  const mimeType = String(upload.mimeType);
+
+  await db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+    await getToolForUpdate(transaction, toolId);
+  });
+
+  // Signed, server-side upload. It runs between the two transactions on
+  // purpose: a network round trip must not hold row locks open.
+  const uploaded = await uploadToolIcon(toolId, upload.bytes, mimeType);
+  if (!uploaded.ok) throw new Error(uploaded.reason);
+  const { publicId, version, format, width, height, updatedAt } = uploaded.row;
+  const values = { publicId, version, format, width, height, updatedAt };
+
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+    const current = await getToolForUpdate(transaction, toolId);
+    await saveTool(transaction, current);
+    await transaction
+      .insert(toolIconsTable)
+      .values({ toolId, ...values })
+      .onConflictDoUpdate({ target: toolIconsTable.toolId, set: values });
+
+    await writeAudit(
+      transaction,
+      actorUserId,
+      "tool.icon-upload",
+      "tool",
+      toolId,
+      { publicId, format },
+    );
+    return uploaded.row;
+  });
+}
+
+/** Removing the row falls the tool back to its generated identicon. */
+export async function removeToolIcon(
+  actorUserId: string,
+  toolId: string,
+): Promise<void> {
+  return db.transaction(async (transaction) => {
+    await requireTransactionPermission(transaction, actorUserId, "tools", "edit");
+    await getToolForUpdate(transaction, toolId);
+    await transaction
+      .delete(toolIconsTable)
+      .where(eq(toolIconsTable.toolId, toolId));
+    await writeAudit(
+      transaction,
+      actorUserId,
+      "tool.icon-remove",
+      "tool",
+      toolId,
+      {},
+    );
   });
 }
 

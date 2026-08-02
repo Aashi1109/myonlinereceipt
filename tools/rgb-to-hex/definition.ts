@@ -1,0 +1,67 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "devtools.rgb-to-hex",
+  app: "devtools",
+  category: "color-design-tools",
+  keywords: [
+    "rgb",
+    "rgba",
+    "hex",
+    "color",
+    "convert",
+    "css",
+    "alpha",
+  ],
+  name: "RGB to HEX",
+  description: "Convert RGB or RGBA colors to HEX.",
+  input: {
+    kind: "text",
+    label: "RGB color",
+    placeholder: "Enter or paste rgb color…",
+  },
+  settings: {
+    fields: {},
+  },
+  trigger: {
+    mode: "live",
+  },
+  layout: "source-result",
+  capabilities: {
+    copy: true,
+  },
+  labels: {
+    empty: "Enter an rgb() or rgba() value to convert it.",
+    ready: "HEX value ready.",
+    running: "Converting…",
+  },
+  content: {
+    howToUse: [
+      "Type or paste a CSS colour in rgb(51, 102, 255) or rgba(51, 102, 255, 0.5) form. Output updates as you type.",
+      "Channels are 0–255 and alpha is 0–1. Fractional channels are rounded to the nearest integer.",
+      "An opaque colour converts to #RRGGBB; anything with alpha below 1 converts to the eight-digit #RRGGBBAA form.",
+    ],
+    limitations: [
+      "Only the legacy comma-separated syntax is accepted. The modern space-separated form rgb(51 102 255 / 50%) is not parsed.",
+      "Percentage channels such as rgb(20%, 40%, 100%) are not supported — use 0–255 values.",
+      "Alpha is quantised to 8 bits on the way to hex, so 0.5 becomes 80 and round-trips back as 0.502.",
+      "Named colours and hsl() input are not accepted here.",
+    ],
+    faq: [
+      {
+        q: "Why is my output eight digits?",
+        a: "The input had an alpha below 1. #RRGGBBAA is the hex form with alpha; drop the last two digits to lose transparency.",
+      },
+      {
+        q: "Is the output uppercase?",
+        a: "Yes, hex digits are uppercased. CSS is case-insensitive, so lowercase it freely if your style guide prefers that.",
+      },
+    ],
+    examples: [
+      {
+        label: "Opaque blue",
+        text: "rgb(51, 102, 255)",
+      },
+    ],
+  },
+} as const satisfies ToolSpec;

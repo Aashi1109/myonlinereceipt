@@ -163,7 +163,6 @@ test("frontend navigation and browser tests use one origin with scoped paths", a
     authPage,
     adminTools,
     devtoolsPage,
-    devtoolsRuntime,
     playwright,
   ] = await Promise.all([
     readText(".env.example"),
@@ -172,8 +171,9 @@ test("frontend navigation and browser tests use one origin with scoped paths", a
     readText(
       "app/admin/(protected)/tools/components/ToolList.tsx",
     ),
-    readText("app/devtools/page.tsx"),
-    readText("lib/devtools/format-json.ts"),
+    // Category labels moved out of the catalogue page into the one registry —
+    // now the single source, so there is no second copy left to cross-check.
+    readText("lib/tool-framework/categories.ts"),
     readText("playwright.config.ts"),
   ]);
 
@@ -191,9 +191,7 @@ test("frontend navigation and browser tests use one origin with scoped paths", a
   }
   assert.match(adminTools, /app:\s*["']media["']/);
   assert.match(devtoolsPage, /Web & Markup Tools/);
-  assert.match(devtoolsRuntime, /Web & Markup Tools/);
   assert.doesNotMatch(devtoolsPage, /PDF & Document Tools/);
-  assert.doesNotMatch(devtoolsRuntime, /PDF & Document Tools/);
   assert.match(playwright, /APP_URL:\s*["']http:\/\/localhost:3000["']/);
   assert.match(playwright, /webServer:\s*\{/);
   assert.match(playwright, /command:\s*["']pnpm dev["']/);

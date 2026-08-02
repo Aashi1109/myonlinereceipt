@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "<main><h1>Hello</h1><p>Smart tools</p></main>",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "<main>\n  <h1>\n    Hello\n  </h1>\n  <p>\n    Smart tools\n  </p>\n</main>",
+        "render": "text"
+      }
+    }
+  ]
+}

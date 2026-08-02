@@ -10,7 +10,7 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${development ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' blob: data:",
+  "img-src 'self' blob: data: https://res.cloudinary.com",
   "font-src 'self'",
   `connect-src 'self'${development ? " ws: http:" : ""}`,
   "worker-src 'self' blob:",
@@ -54,7 +54,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     resolveAlias: {
       "@": appRoot,
+      // Browser shims for Node builtins pulled in transitively by the paperwork
+      // PDF stack (@pdfme/*, @react-pdf/renderer, fontkit). No first-party code
+      // imports these. Mirrors the webpack() aliases below so `next build` and
+      // `next dev` resolve identically.
       module: { browser: "./lib/paperwork/browserEmptyModule.ts" },
+      "fs/promises": { browser: "./lib/paperwork/browserEmptyModule.ts" },
+      url: { browser: "./lib/paperwork/browserEmptyModule.ts" },
+      zlib: { browser: "./lib/paperwork/browserEmptyModule.ts" },
     },
   },
   webpack(config, { isServer, webpack }) {

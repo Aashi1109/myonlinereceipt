@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,role\nAda,Admin",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "delimiter": ","
+      },
+      "expected": {
+        "output": "<table><thead><tr><th>name</th><th>role</th></tr></thead><tbody><tr><td>Ada</td><td>Admin</td></tr></tbody></table>",
+        "render": "html"
+      }
+    }
+  ]
+}

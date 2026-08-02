@@ -1,0 +1,65 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "devtools.iso-date-converter",
+  app: "devtools",
+  category: "date-time-tools",
+  keywords: [
+    "iso 8601",
+    "date",
+    "utc",
+    "unix",
+    "timestamp",
+    "convert",
+    "timezone",
+  ],
+  name: "ISO Date Converter",
+  description: "Normalize date input and show ISO, UTC, local, and Unix values.",
+  input: {
+    kind: "text",
+    label: "Date input",
+    placeholder: "Enter or paste date input…",
+  },
+  settings: { fields: {} },
+  trigger: { mode: "live", debounceMs: 200 },
+  layout: "source-result",
+  capabilities: { copy: true },
+  labels: {
+    empty: "Enter a date or a Unix timestamp to normalize it.",
+    ready: "Date forms are ready.",
+    running: "Converting date…",
+  },
+  content: {
+    howToUse: [
+      "Paste an ISO 8601 string, a date the browser can parse, or a bare Unix timestamp. Values under 100000000000 are read as seconds; anything larger is read as milliseconds.",
+      "All four forms appear at once: ISO 8601 for APIs and logs, RFC 1123 UTC for HTTP headers, a human-readable local form, and the Unix epoch in seconds.",
+      "Use the ISO line when you need an unambiguous value to store or send — it always carries the UTC offset.",
+      "Include an explicit offset in your input (`+05:30`, `Z`) whenever you can. Without one, the browser assumes local time and the answer depends on the machine.",
+    ],
+    limitations: [
+      "The `Local` line is formatted with the `en-US` locale so the output is stable across machines; it is not localised to your own regional format.",
+      "The `Local` line still reflects your machine's time zone, so two people in different zones see different local values for the same instant.",
+      "Parsing of non-ISO strings is delegated to the browser and is not standardised. `03/04/2026` is read as March 4 in some engines and April 3 in others — use ISO to avoid the ambiguity.",
+      "Unix output is truncated to whole seconds, so sub-second precision is lost.",
+      "Leap seconds are not represented, and years outside roughly ±275,760 from 1970 cannot be represented at all.",
+    ],
+    faq: [
+      {
+        q: "Is my timestamp in seconds or milliseconds?",
+        a: "A bare number below 100,000,000,000 is treated as seconds and anything above as milliseconds. Ten-digit values are seconds; thirteen-digit values are milliseconds.",
+      },
+      {
+        q: "Why is the local time not in my country's format?",
+        a: "The local line is deliberately pinned to `en-US` so the same input produces the same output on every machine. It is a stable rendering, not a localised one.",
+      },
+      {
+        q: "Why did my date come out a day off?",
+        a: "Almost always a missing offset. A date-only string like `2026-07-22` is parsed as UTC midnight, which is the previous day in the Americas.",
+      },
+    ],
+    examples: [
+      { label: "ISO with offset", text: "2026-07-22T12:30:00+05:30" },
+      { label: "Unix seconds", text: "1784703600" },
+    ],
+  },
+} as const satisfies ToolSpec;

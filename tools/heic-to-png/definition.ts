@@ -1,0 +1,66 @@
+import type { ToolSpec } from "../../lib/tool-framework/spec";
+
+export default {
+  toolId: "media.heic-to-png",
+  app: "media",
+  category: "image-conversion",
+  keywords: [
+    "heic",
+    "heif",
+    "png",
+    "convert",
+    "iphone",
+    "photo",
+    "lossless",
+    "batch",
+  ],
+  name: "HEIC to PNG",
+  description: "Convert HEIC images to PNG.",
+  input: {
+    kind: "files",
+    label: "HEIC images",
+    accept: "image/heic,image/heif",
+    multiple: true,
+    engine: "image",
+    maxFiles: 50,
+    maxBytes: 26_214_400,
+  },
+  settings: { fields: {} },
+  trigger: { mode: "manual", actionLabel: "Convert to PNG" },
+  layout: "file-processor",
+  capabilities: { cancel: true, download: true, progress: true },
+  labels: {
+    empty: "Add HEIC images to convert them to PNG.",
+    ready: "Conversion settings are ready.",
+    running: "Converting HEIC images…",
+  },
+  content: {
+    howToUse: [
+      "Add the HEIC or HEIF photos your iPhone or iPad produced. Decoding and PNG encoding run in your browser, so nothing is uploaded.",
+      "There is nothing to configure: PNG is lossless and the original pixel dimensions are kept, so the output matches the decoded HEIC exactly.",
+      "Run the conversion and download the PNGs. Each is named after its source, so a batch stays easy to match up.",
+      "Choose PNG over JPG here when the photo is going into further editing and you do not want a second round of lossy compression.",
+    ],
+    limitations: [
+      "Multi-image HEIC files are rejected. Bursts and Live Photo containers hold several frames, and this tool converts single images only.",
+      "PNG files from phone photos are large — often five to ten times the HEIC. PNG stores every pixel losslessly, and photographs do not compress that way.",
+      "Converting to PNG cannot recover detail HEIC's lossy encoder discarded; it only prevents further loss from here on.",
+      "Metadata is dropped. EXIF, GPS, and colour-profile data do not survive decoding, though recorded orientation is applied to the pixels.",
+      "Each image must be 25 MiB or smaller, up to 50 files per run, and no more than 100 megapixels once decoded.",
+    ],
+    faq: [
+      {
+        q: "PNG or JPG for my iPhone photos?",
+        a: "JPG for sharing and storage; PNG when the photo goes straight into an editor, or when a tool in your pipeline only reads PNG.",
+      },
+      {
+        q: "Why was my photo rejected?",
+        a: "Almost certainly a multi-image HEIC — a burst or Live Photo. Those brands are detected in the file header and refused rather than guessing which frame you wanted.",
+      },
+      {
+        q: "Is my location data removed?",
+        a: "Yes. The image is decoded to raw pixels and re-encoded, so GPS coordinates and every other EXIF field are gone from the PNG.",
+      },
+    ],
+  },
+} as const satisfies ToolSpec;

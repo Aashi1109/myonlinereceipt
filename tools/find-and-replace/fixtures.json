@@ -1,0 +1,21 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "red green red",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "find": "red",
+        "replace": "blue",
+        "regex": false,
+        "ci": false
+      },
+      "expected": {
+        "output": "blue green blue",
+        "render": "text"
+      }
+    }
+  ]
+}

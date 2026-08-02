@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "abc",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "900150983cd24fb0d6963f7d28e17f72",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "// greeting\nfunction greet(name) { return 'Hello ' + name; }",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "function greet(name){return 'Hello '+name;}",
+        "render": "text"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"user\":{\"name\":\"Ada\",\"roles\":[{\"name\":\"Admin\"}]}}",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "repairMode": "remove"
+      },
+      "expected": {
+        "output": "user\nuser.name\nuser.roles\nuser.roles[].name",
+        "render": "text"
+      }
+    }
+  ]
+}

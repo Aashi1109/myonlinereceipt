@@ -3,11 +3,16 @@
 import { Label, Select } from "@smarttools/ui";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+export interface CategoryFilterOption {
+  label: string;
+  value: string;
+}
+
 export function CategoryFilter({
   categories,
   value,
 }: {
-  categories: readonly string[];
+  categories: readonly CategoryFilterOption[];
   value: string;
 }) {
   const pathname = usePathname();
@@ -38,8 +43,8 @@ export function CategoryFilter({
       >
         <option value="">All categories</option>
         {categories.map((category) => (
-          <option key={category} value={category}>
-            {category}
+          <option key={category.value} value={category.value}>
+            {category.label}
           </option>
         ))}
       </Select>

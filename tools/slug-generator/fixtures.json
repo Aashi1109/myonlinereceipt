@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "Hello, Smart Tools!",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "hello-smart-tools",
+        "render": "text"
+      }
+    }
+  ]
+}

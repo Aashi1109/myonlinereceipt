@@ -1,302 +1,161 @@
 "use client";
 
-import { Button, Select, Textarea } from "@smarttools/ui";
+/**
+ * The source-result layout with one substitution: a collapsible tree in place
+ * of the shared `json-tree` renderer, which always renders every branch fully
+ * expanded. Expanding and collapsing branches is what this tool is for — its
+ * own `definition.ts` documents it as step two — so it is the one part the
+ * shared surfaces cannot express from the spec.
+ *
+ * Everything else (the input pane, the settings pane, the empty/loading/error
+ * states) is the shared implementation, unmodified.
+ */
+
+import { Button } from "@smarttools/ui";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
+
+import { SplitStack } from "@/components/Stacks";
+import { WorkspaceSurface } from "@/components/Surfaces";
 import {
-  AlignLeft,
-  Braces,
-  Copy,
-  FileJson,
-  Minimize2,
-  Trash2,
-  WandSparkles,
-} from "lucide-react";
-import {
-  useRef,
-} from "react";
+  SettingsSurface,
+  WorkspaceInputSurface,
+  type WorkspaceProps,
+} from "@/components/workspaces/SourceResultWorkspace";
 
-import {
-  JsonResultRenderer,
-  ROOT_JSON_TREE_PATH,
-} from "@/app/devtools/components/JsonResultRenderer";
-import { SplitStack } from "@/components/tool-workbench/stacks";
-import { EditorSurface, EmptySurface } from "@/components/tool-workbench/surfaces";
-import { MAX_JSON_INPUT_CHARS } from "@/lib/devtools/format-json";
-import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
+/** Branches at or below this depth start expanded; deeper ones start closed. */
+const DEFAULT_OPEN_DEPTH = 1;
 
-import type { JsonViewerExecutionResult } from "./result";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
-export type JsonViewerSettings = {
-  repairMode: "remove" | "null";
-};
+function primitiveJson(value: unknown): string {
+  if (value === null) return "null";
+  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(String(value));
+}
 
-type SuccessfulJsonViewerResult = Extract<
-  JsonViewerExecutionResult,
-  { ok: true }
->;
+interface JsonBranchProps {
+  depth: number;
+  entries: readonly (readonly [string, unknown])[];
+  label: string | null;
+  summary: string;
+}
 
-export const VIEWER_EXAMPLE = `{
-  "name": "CodeUtilityKit",
-  "version": 2,
-  "active": true,
-  "tags": ["json", "viewer", "free"],
-  "author": {
-    "name": "Dev",
-    "url": "https://codeutilitykit.com"
-  }
-}`;
-
-const VIEWER_BROKEN_EXAMPLE =
-  `[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]`;
-
-export function JsonViewerToolbar() {
-  const runtime = useToolRuntime<
-    string,
-    JsonViewerSettings,
-    SuccessfulJsonViewerResult
-  >();
-  const hasInput = Boolean(runtime.input);
-  const hasValidResult = runtime.lifecycle === "completed";
-
+function JsonBranch({ depth, entries, label, summary }: JsonBranchProps) {
+  const [open, setOpen] = useState(depth <= DEFAULT_OPEN_DEPTH);
   return (
-    <div className="flex w-full min-w-max items-center gap-2 max-[64rem]:min-w-0 max-[64rem]:flex-wrap">
-      <div
-        aria-hidden="true"
-        className="mr-auto grid size-[34px] shrink-0 place-items-center rounded-md bg-foreground text-background"
-      >
-        <Braces className="size-[18px]" strokeWidth={2.25} />
-      </div>
-
+    <div className="font-mono text-xs leading-6">
       <Button
-        disabled={!hasInput}
-        onClick={() => void runtime.runCommand("repair")}
-        size="xs"
+        aria-expanded={open}
+        className="h-6 gap-1 px-1 font-mono text-xs font-normal"
+        onClick={() => setOpen((current) => !current)}
+        size="sm"
         type="button"
+        variant="ghost"
       >
-        <WandSparkles aria-hidden="true" className="size-3.5" />
-        Repair &amp; clean
+        {open ? (
+          <ChevronDown aria-hidden="true" className="size-3.5" />
+        ) : (
+          <ChevronRight aria-hidden="true" className="size-3.5" />
+        )}
+        {label ? <span className="font-semibold text-foreground">{label}: </span> : null}
+        <span className="text-muted-foreground">{summary}</span>
       </Button>
-      <Button
-        disabled={!hasValidResult}
-        onClick={() => void runtime.runCommand("format")}
-        size="xs"
-        type="button"
-        variant="outline"
-      >
-        <AlignLeft aria-hidden="true" className="size-3.5" />
-        Beautify
-      </Button>
-      <Button
-        disabled={!hasValidResult}
-        onClick={() => void runtime.runCommand("minify")}
-        size="xs"
-        type="button"
-        variant="outline"
-      >
-        <Minimize2 aria-hidden="true" className="size-3.5" />
-        Minify
-      </Button>
-      <Button
-        aria-label="Load example"
-        onClick={() => runtime.setInput(VIEWER_EXAMPLE)}
-        size="xs"
-        type="button"
-        variant="outline"
-      >
-        <FileJson aria-hidden="true" className="size-3.5" />
-        Example
-      </Button>
-      <Button
-        aria-label="Load broken example"
-        onClick={() => runtime.setInput(VIEWER_BROKEN_EXAMPLE)}
-        size="xs"
-        type="button"
-        variant="outline"
-      >
-        Broken example
-      </Button>
-
-      <div className="relative shrink-0">
-        <span className="pointer-events-none absolute top-1/2 left-2 z-10 -translate-y-1/2 font-caption text-[8px] font-extrabold tracking-[0.06em] text-muted-foreground">
-          REPAIR
-        </span>
-        <Select
-          aria-label="Repair strategy"
-          className="h-8 gap-1 rounded-md pr-1 pl-[40px] text-[9px] max-[64rem]:h-11"
-          onChange={(event) =>
-            runtime.updateSetting(
-              "repairMode",
-              event.target.value as JsonViewerSettings["repairMode"],
-            )
-          }
-          value={runtime.settings.repairMode}
-          size="sm"
-        >
-          <option value="remove">Remove broken</option>
-          <option value="null">Set to null</option>
-        </Select>
-      </div>
-
-      <Button
-        disabled={!hasInput}
-        onClick={() => void runtime.runCommand("clear")}
-        size="xs"
-        type="button"
-        variant="destructive"
-      >
-        <Trash2 aria-hidden="true" className="size-3.5" />
-        Clear
-      </Button>
+      {open ? (
+        <div className="border-l border-border pl-4">
+          {entries.map(([key, entry]) => (
+            <JsonTreeNode depth={depth + 1} key={key} name={key} value={entry} />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export function JsonViewerStatusMeta() {
-  return <>Split view · UTF-8</>;
+interface JsonTreeNodeProps {
+  depth: number;
+  name?: string;
+  value: unknown;
 }
 
-export function JsonViewerWorkspace() {
-  const runtime = useToolRuntime<
-    string,
-    JsonViewerSettings,
-    SuccessfulJsonViewerResult
-  >();
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const lineNumbersRef = useRef<HTMLPreElement>(null);
-  const inputIssue = runtime.issues.find((issue) => issue.target === "input");
-  const lineNumbers = Array.from(
-    { length: Math.max(1, runtime.input.split(/\r\n|\r|\n/).length) },
-    (_, index) => index + 1,
-  ).join("\n");
-
-  async function copyInput() {
-    try {
-      await navigator.clipboard.writeText(runtime.input);
-      runtime.setNotice("Input copied.");
-    } catch {
-      runtime.setNotice("Copy failed. Select the input and copy it manually.");
-    }
-  }
-
-  function focusInputIssue() {
-    if (!inputRef.current || !inputIssue?.line || !inputIssue.column) return;
-    const lines = runtime.input.split(/\r\n|\r|\n/);
-    const precedingLength = lines
-      .slice(0, Math.max(0, inputIssue.line - 1))
-      .reduce((total, line) => total + line.length + 1, 0);
-    const offset = Math.min(
-      runtime.input.length,
-      precedingLength + Math.max(0, inputIssue.column - 1),
-    );
-    inputRef.current.focus();
-    inputRef.current.setSelectionRange(
-      offset,
-      Math.min(runtime.input.length, offset + 1),
+function JsonTreeNode({ depth, name, value }: JsonTreeNodeProps) {
+  const label = name === undefined ? null : JSON.stringify(name);
+  if (Array.isArray(value)) {
+    return (
+      <JsonBranch
+        depth={depth}
+        entries={value.map((entry, index) => [String(index), entry] as const)}
+        label={label}
+        summary={`Array(${value.length})`}
+      />
     );
   }
+  if (isRecord(value)) {
+    const entries = Object.entries(value);
+    return (
+      <JsonBranch
+        depth={depth}
+        entries={entries}
+        label={label}
+        summary={`Object(${entries.length})`}
+      />
+    );
+  }
+  return (
+    <div className="pl-[1.625rem] font-mono text-xs leading-6">
+      {label ? <span className="font-semibold text-foreground">{label}: </span> : null}
+      <span className="text-primary">{primitiveJson(value)}</span>
+    </div>
+  );
+}
+
+export default function JsonViewerWorkspace(props: WorkspaceProps) {
+  const tree = props.result?.render === "json-tree" ? props.result : null;
+  const state = props.error
+    ? "error"
+    : props.running
+      ? "loading"
+      : tree
+        ? "ready"
+        : "empty";
 
   return (
-    <SplitStack className="relative grid-cols-[minmax(0,520px)_minmax(0,1fr)]">
-      <EditorSurface
-          actions={
-            <Button
-              disabled={!runtime.input}
-              onClick={() => void copyInput()}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <Copy aria-hidden="true" className="size-3.5" />
-              Copy
-            </Button>
+    <SplitStack className="h-full" defaultSize={72} minSize={52}>
+      <SplitStack className="h-full" defaultSize={50} minSize={30} orientation="vertical">
+        <WorkspaceInputSurface
+          disabled={props.disabled}
+          input={props.input}
+          inputSpec={props.spec.input}
+          onInputChange={props.onInputChange}
+        />
+        <WorkspaceSurface
+          className="h-full"
+          contentClassName="p-4"
+          purpose="inspector"
+          scroll="content"
+          state={state}
+          stateDescription={props.error ?? (props.running ? props.spec.labels.running : props.spec.labels.empty)}
+          stateTitle={
+            props.error
+              ? "JSON tree unavailable"
+              : props.running
+                ? props.spec.labels.running
+                : "Interactive tree will appear here"
           }
-          className="border-r border-border max-[64rem]:min-h-[494px] max-[64rem]:border-r-0 max-[64rem]:border-b"
-          data-workspace-panel="input"
-          title="JSON input"
+          title="JSON tree"
         >
-          <div className="relative flex min-h-0 flex-1 overflow-hidden bg-muted">
-            <pre
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 left-4 z-10 w-[15px] overflow-hidden pt-[18px] text-right font-mono text-xs leading-[1.55] text-on-ink-muted"
-              ref={lineNumbersRef}
-            >
-              {lineNumbers}
-            </pre>
-            <Textarea
-              aria-errormessage={
-                runtime.lifecycle === "invalid"
-                  ? "json-viewer-validation-0"
-                  : undefined
-              }
-              aria-invalid={runtime.lifecycle === "invalid"}
-              aria-label="JSON input"
-              className="h-full min-h-0 flex-1 resize-none rounded-none border-0 bg-transparent pt-[18px] pr-4 pb-[18px] pl-[45px] !font-mono !text-xs !leading-[1.55] shadow-none focus-visible:ring-2 focus-visible:ring-inset"
-              id="json-viewer-input"
-              maxLength={MAX_JSON_INPUT_CHARS}
-              onChange={(event) => runtime.setInput(event.target.value)}
-              onScroll={(event) => {
-                if (lineNumbersRef.current) {
-                  lineNumbersRef.current.scrollTop = event.currentTarget.scrollTop;
-                }
-              }}
-              placeholder="Paste JSON to explore — even broken JSON can be repaired."
-              ref={inputRef}
-              spellCheck={false}
-              value={runtime.input}
-            />
-            {inputIssue?.line && inputIssue.column ? (
-              <div className="absolute right-3 bottom-3 left-[58px] flex items-center justify-between gap-3 rounded-md border border-destructive/25 bg-card/95 px-3 py-2 text-xs text-destructive shadow-sm">
-                <span>
-                  Error near line {inputIssue.line}, column {inputIssue.column}
-                </span>
-                <Button
-                  onClick={focusInputIssue}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  Go to error
-                </Button>
-              </div>
-            ) : null}
-          </div>
-      </EditorSurface>
-
-      <section
-          aria-label="JSON tree"
-          className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-card max-[64rem]:h-[60dvh] max-[64rem]:min-h-[30rem] max-[64rem]:max-h-[36rem]"
-          data-surface="result"
-          data-workspace-panel="output"
-        >
-          {runtime.result ? (
-            <JsonResultRenderer
-              artifactValue={runtime.input}
-              compact
-              downloadName="smarttools-json-viewer.json"
-              formattedValue={runtime.result.formattedValue}
-              label="JSON tree"
-              onCopy={async (value, label) => {
-                try {
-                  await navigator.clipboard.writeText(value);
-                  runtime.setNotice(`${label} copied.`);
-                } catch {
-                  runtime.setNotice("Copy failed. Select the value manually.");
-                }
-              }}
-              persistentSearch
-              selectedPath={ROOT_JSON_TREE_PATH}
-              showArtifactActions
-              showNodeCopyActions={true}
-              value={runtime.result.value}
-            />
-          ) : (
-            <EmptySurface>
-              {runtime.issues[0]?.message ??
-                (runtime.lifecycle === "running"
-                  ? "Parsing JSON…"
-                  : "Interactive tree will appear here.")}
-            </EmptySurface>
-          )}
-      </section>
+          {tree ? <JsonTreeNode depth={0} value={tree.value} /> : null}
+        </WorkspaceSurface>
+      </SplitStack>
+      <SettingsSurface
+        disabled={props.disabled}
+        onSettingChange={props.onSettingChange}
+        settings={props.settings}
+        spec={props.spec}
+      />
     </SplitStack>
   );
 }

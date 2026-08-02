@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "32",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {
+        "from": "px",
+        "to": "rem",
+        "base": 16
+      },
+      "expected": {
+        "output": "2rem",
+        "render": "text"
+      }
+    }
+  ]
+}

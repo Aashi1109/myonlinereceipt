@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "48656c6c6f20f09f918b",
+        "secondary": ""
+      },
+      "name": "definition example",
+      "settings": {},
+      "expected": {
+        "output": "Hello 👋",
+        "render": "text"
+      }
+    }
+  ]
+}
