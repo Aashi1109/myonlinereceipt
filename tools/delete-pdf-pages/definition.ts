@@ -45,6 +45,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Delete pages" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PG-" },
   labels: {
     empty: "Add a PDF to remove pages.",
     ready: "Page selection is ready.",

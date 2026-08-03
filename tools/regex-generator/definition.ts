@@ -47,6 +47,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true },
+  workbenchMark: { text: "RX+", tone: "contrast" },
   labels: {
     empty: "Choose a pattern preset and target language.",
     ready: "Pattern is ready.",

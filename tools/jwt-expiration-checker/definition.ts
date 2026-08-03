@@ -38,6 +38,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "JEX", tone: "contrast" },
   labels: {
     empty: "Paste a JWT to check its validity window.",
     ready: "JWT validity window is ready.",

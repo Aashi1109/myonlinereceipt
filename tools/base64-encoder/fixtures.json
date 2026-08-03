@@ -10,6 +10,7 @@
         "urlSafe": false
       },
       "expected": {
+        "downloadName": "encoded-base64.txt",
         "output": "SGVsbG8g8J+Riw==",
         "render": "text"
       }

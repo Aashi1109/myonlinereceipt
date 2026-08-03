@@ -42,6 +42,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Remove duplicates" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "ROW-" },
   labels: {
     empty: "Paste CSV with a header row to remove duplicate rows.",
     ready: "Deduplicated CSV is ready.",

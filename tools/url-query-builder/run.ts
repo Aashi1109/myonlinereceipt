@@ -33,7 +33,7 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
       line.slice(separator + 1).trim(),
     );
   }
-  return { render: "text", text: url.toString() };
+  return { render: "text", text: url.toString(), downloadName: "built-url.txt" };
 };
 
 export default run;

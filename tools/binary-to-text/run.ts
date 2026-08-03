@@ -22,6 +22,7 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
       text: new TextDecoder("utf-8", { fatal: true }).decode(
         Uint8Array.from(chunks, (chunk) => Number.parseInt(chunk, 2)),
       ),
+      downloadName: "decoded-text.txt",
     };
   } catch {
     throw new ToolError(

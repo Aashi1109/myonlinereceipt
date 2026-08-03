@@ -38,6 +38,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Validate against schema" },
   capabilities: { copy: true },
+  workbenchMark: { text: "JSV", tone: "contrast" },
   labels: {
     empty: "Paste JSON data and a schema to validate it.",
     ready: "JSON Schema validation is complete.",

@@ -30,6 +30,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to PNG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "W2PN" },
   labels: {
     empty: "Drop up to 50 static WebP images (25 MiB each) to convert to PNG.",
     ready: "The WebP images are ready to convert to PNG.",

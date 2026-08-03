@@ -15,6 +15,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to TSV" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "C>T" },
   labels: {
     empty: "Paste comma-separated rows to convert them to TSV.",
     ready: "Tab-separated text is ready.",

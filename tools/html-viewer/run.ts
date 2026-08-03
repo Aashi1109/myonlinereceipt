@@ -25,6 +25,7 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
   render: "html",
   html: requireUtilityInput(ctx.input.text, "HTML source"),
+  downloadName: "preview.html",
 });
 
 export default run;

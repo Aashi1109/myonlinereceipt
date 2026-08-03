@@ -107,6 +107,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Resize images" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "1:1", tone: "accent" },
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to resize for social media.",

@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format CSS" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "CSS+" },
   labels: {
     empty: "Paste CSS to format its indentation.",
     ready: "Formatted CSS is ready.",

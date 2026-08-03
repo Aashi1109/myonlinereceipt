@@ -31,6 +31,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Extract pages" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PGX" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 200 MiB) to extract selected pages.",
     ready: "The PDF and page selection are ready.",

@@ -30,6 +30,7 @@ export const run: ToolRun<Record<string, never>> = async (
   return {
     render: "text",
     text: `MD5    ${md5(primary)}\nSHA-1  ${sha1}\nSHA-256 ${sha256}\nSHA-512 ${sha512}`,
+    downloadName: "checksums.txt",
   };
 };
 

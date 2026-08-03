@@ -30,6 +30,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to PNG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "H2PN", tone: "accent" },
   labels: {
     empty: "Drop up to 50 HEIC or HEIF images, 25 MiB each, to convert them to PNG.",
     ready: "HEIC images are ready to convert to PNG.",

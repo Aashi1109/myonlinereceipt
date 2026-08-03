@@ -76,6 +76,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Check DNS" },
   capabilities: { copy: true, download: true, network: true },
+  workbenchMark: { text: "DNS" },
   labels: {
     empty: "Enter a public domain to look up its DNS records.",
     ready: "DNS lookup results are ready.",

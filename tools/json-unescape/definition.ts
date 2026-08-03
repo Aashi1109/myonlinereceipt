@@ -22,6 +22,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Unescape" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "\\J", tone: "contrast" },
   labels: {
     empty: "Provide JSON-escaped string content to decode.",
     ready: "Unescaped text is ready.",

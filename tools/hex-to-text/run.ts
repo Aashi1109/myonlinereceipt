@@ -31,6 +31,7 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
     return {
       render: "text",
       text: new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+      downloadName: "decoded-text.txt",
     };
   } catch {
     throw new ToolError(

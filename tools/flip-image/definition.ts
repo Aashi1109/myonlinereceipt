@@ -63,6 +63,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Flip images" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "FLIP" },
   labels: {
     empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to flip them.",
     ready: "The images and flip settings are ready.",

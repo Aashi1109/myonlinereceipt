@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Minify CSS" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "CSS-" },
   labels: {
     empty: "Paste CSS to remove comments and unnecessary whitespace.",
     ready: "Minified CSS is ready.",

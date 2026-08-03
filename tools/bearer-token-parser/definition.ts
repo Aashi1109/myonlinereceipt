@@ -30,6 +30,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Parse token" },
   capabilities: { copy: true },
+  workbenchMark: { text: "BEAR" },
   labels: {
     empty: "Enter an Authorization header or raw bearer token to parse it.",
     ready: "Parsed bearer token details are ready.",

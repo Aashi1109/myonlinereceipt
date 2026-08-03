@@ -15,6 +15,7 @@ export default {
   ],
   name: "SHA1 Generator",
   description: "Generate a legacy SHA-1 digest.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate SHA-1" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "S1", tone: "accent" },
   labels: {
     empty: "Enter the text you want to hash with SHA-1.",
     ready: "SHA-1 digest is ready.",

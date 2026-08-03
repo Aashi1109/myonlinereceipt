@@ -14,6 +14,7 @@ import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
   render: "text",
   text: decodeBase64(requireUtilityInput(ctx.input.text, "Base64 input")),
+  downloadName: "decoded.txt",
 });
 
 export default run;

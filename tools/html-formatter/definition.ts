@@ -15,6 +15,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format HTML" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "</>", tone: "contrast" },
   labels: {
     empty: "Paste HTML to indent it.",
     ready: "Formatted HTML is ready.",

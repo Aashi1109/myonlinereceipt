@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode JWT" },
   capabilities: { copy: true },
+  workbenchMark: { text: "JWT", tone: "contrast" },
   labels: {
     empty: "Provide a JWT to decode its header and claims.",
     ready: "Decoded JWT details are ready.",

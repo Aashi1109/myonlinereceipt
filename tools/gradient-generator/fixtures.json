@@ -11,6 +11,7 @@
         "angle": 135
       },
       "expected": {
+        "downloadName": "gradient.css",
         "output": "background: linear-gradient(135deg, #2563eb, #7c3aed);",
         "render": "text"
       }

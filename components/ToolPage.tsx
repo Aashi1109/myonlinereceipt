@@ -371,6 +371,7 @@ function ToolToolbar(): ReactElement {
           className={exampleVariant === "link" ? "no-underline hover:no-underline" : undefined}
           disabled={running}
           onClick={() => loadExample(0)}
+          style={{ height: 44 }}
           type="button"
           variant={exampleVariant}
         >
@@ -382,8 +383,8 @@ function ToolToolbar(): ReactElement {
           aria-label="Choose an example"
           className={
             exampleVariant === "outline"
-              ? "w-auto"
-              : "w-auto border-transparent bg-transparent text-primary [&>svg]:text-primary"
+              ? "!h-11 w-auto"
+              : "!h-11 w-auto border-transparent bg-transparent text-primary [&>svg]:text-primary"
           }
           disabled={running}
           onChange={(event) => loadExample(Number(event.target.value))}
@@ -405,16 +406,18 @@ function ToolToolbar(): ReactElement {
       <Button
         disabled={running}
         onClick={reset}
+        style={{ height: 44 }}
         type="button"
         variant="outline"
       >
         Reset
       </Button>
-      {!hasSettings && primaryAction ? (
+      {!hasSettings && chrome.spec.input.kind === "files" && primaryAction ? (
         <Button
           aria-busy={primaryAction.running || undefined}
           disabled={primaryAction.disabled}
           onClick={primaryAction.onRun}
+          style={{ height: 44 }}
           type="button"
         >
           {primaryAction.running ? (
@@ -441,6 +444,7 @@ function ToolWorkspaceSlot(): ReactElement {
         disabled={running}
         error={runtime.error || undefined}
         input={runtime.input}
+        lifecycle={runtime.lifecycle}
         onInputChange={runtime.setInput}
         onSettingChange={chrome.onSettingChange}
         onToolbarActionsChange={chrome.setToolbarActions}
@@ -619,6 +623,7 @@ export default function ToolPage({
       <UniversalWorkbench
         account={account}
         category={category}
+        content={spec.content}
         definition={toWorkbenchDefinition(spec, definitionKey)}
         description={description}
         relatedTools={relatedTools}

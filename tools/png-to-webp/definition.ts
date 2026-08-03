@@ -42,6 +42,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to WebP" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PN2W", tone: "accent" },
   labels: {
     empty: "Drop up to 50 PNG files (.png, 25 MiB each) to convert them to WebP.",
     ready: "The PNG files and WebP settings are ready.",

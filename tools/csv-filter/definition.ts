@@ -50,6 +50,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Filter rows" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "FILT" },
   labels: {
     empty: "Paste CSV with a header row to filter its rows.",
     ready: "Filtered CSV is ready.",

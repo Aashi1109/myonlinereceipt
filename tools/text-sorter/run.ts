@@ -20,6 +20,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       .split(/\r\n|\r|\n/)
       .sort((left, right) => left.localeCompare(right, undefined, { sensitivity }) * direction)
       .join("\n"),
+    downloadName: "sorted-text.txt",
   };
 };
 

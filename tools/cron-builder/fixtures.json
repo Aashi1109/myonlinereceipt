@@ -15,6 +15,7 @@
         "commandLabel": ""
       },
       "expected": {
+        "downloadName": "cron-schedule.txt",
         "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5",
         "render": "text"
       }

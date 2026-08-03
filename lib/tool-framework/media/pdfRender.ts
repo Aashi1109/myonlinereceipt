@@ -70,9 +70,14 @@ export async function forEachRenderedPdfPage(
     progress,
     rasterLimit = true,
   } = request;
+  const renderScheduler = {
+    requestAnimationFrame: (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(performance.now()), 0),
+    cancelAnimationFrame: (handle: number) => clearTimeout(handle),
+  };
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/legacy/build/pdf.worker.mjs",
+    "../../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
     import.meta.url,
   ).toString();
   let loadingTask: ReturnType<typeof pdfjs.getDocument> | null = null;
@@ -106,12 +111,17 @@ export async function forEachRenderedPdfPage(
         context.fillRect(0, 0, width, height);
       }
       progress?.({ completed: index, total: pages.length, stage: "Rendering PDF page" });
-      await page.render({
-        background: background === "white" ? "#ffffff" : "rgba(0,0,0,0)",
-        canvas: null,
-        canvasContext: context as unknown as CanvasRenderingContext2D,
-        viewport,
-      }).promise;
+      Object.assign(globalThis, { window: renderScheduler });
+      try {
+        await page.render({
+          background: background === "white" ? "#ffffff" : "rgba(0,0,0,0)",
+          canvas: null,
+          canvasContext: context as unknown as CanvasRenderingContext2D,
+          viewport,
+        }).promise;
+      } finally {
+        Reflect.deleteProperty(globalThis, "window");
+      }
       if (color !== "original") applyColorMode(context, width, height, color);
       try {
         await onPage(

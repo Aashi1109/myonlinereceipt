@@ -12,6 +12,7 @@
         "column": ""
       },
       "expected": {
+        "downloadName": "filtered-data.txt",
         "output": "name,role\nAda,Admin",
         "render": "text"
       }

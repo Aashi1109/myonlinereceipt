@@ -38,6 +38,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Format CSV" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "CSV+" },
   labels: {
     empty: "Paste CSV to normalize its quoting, spacing, and rows.",
     ready: "Formatted CSV is ready.",

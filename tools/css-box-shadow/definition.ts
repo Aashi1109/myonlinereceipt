@@ -81,6 +81,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 120 },
   capabilities: { copy: true },
+  workbenchMark: { text: "SHDW" },
   labels: {
     empty: "Enter a HEX shadow color to build a CSS box-shadow declaration.",
     ready: "CSS box-shadow declaration is ready.",

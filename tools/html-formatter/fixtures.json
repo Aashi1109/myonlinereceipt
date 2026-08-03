@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "formatted.html",
         "output": "<main>\n  <h1>\n    Hello\n  </h1>\n  <p>\n    Smart tools\n  </p>\n</main>",
         "render": "text"
       }

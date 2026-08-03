@@ -58,6 +58,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "AXIO" },
   labels: {
     empty: "Paste a cURL command to generate Axios code.",
     ready: "Axios request code is ready.",

@@ -48,6 +48,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         ? `<img src="${escapedImage}" alt="" style="display:block;width:100%;height:${imageHeight}px;object-fit:${imageFit === "contain" ? "contain" : "cover"}">`
         : `<div aria-label="Image preview placeholder" style="height:${imageHeight}px;background:linear-gradient(135deg,#1d4ed8,#7c3aed)"></div>`
     }<div style="padding:16px"><small>${siteName || escapedUrl}</small><h2>${title}</h2><p>${description}</p></div></article>\n<!-- Generated tags\n${tags.join("\n")}\n-->`,
+    downloadName: "open-graph-preview.html",
   };
 };
 

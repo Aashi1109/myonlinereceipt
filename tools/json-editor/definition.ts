@@ -38,6 +38,7 @@ export default {
   },
   trigger: { mode: "live" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "JED", tone: "contrast" },
   labels: {
     empty: "Paste JSON to repair and reformat it.",
     ready: "Formatted JSON is ready.",

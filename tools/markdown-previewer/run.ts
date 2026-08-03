@@ -17,7 +17,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const source = requireUtilityInput(ctx.input.text, "Markdown input");
   const { marked } = await import("marked");
   ctx.signal.throwIfAborted();
-  return { render: "html", html: String(await marked.parse(source)) };
+  return {
+    render: "html",
+    html: String(await marked.parse(source)),
+    downloadName: "preview.html",
+  };
 };
 
 export default run;

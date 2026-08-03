@@ -15,6 +15,7 @@ export default {
   ],
   name: "Text Sorter",
   description: "Sort lines ascending or descending.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Lines of text",
@@ -41,6 +42,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Sort lines" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "A-Z" },
   labels: {
     empty: "Enter one item per line to sort the list.",
     ready: "Sorted lines are ready.",

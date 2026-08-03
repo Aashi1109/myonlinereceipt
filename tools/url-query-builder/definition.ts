@@ -36,6 +36,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Build URL" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "?+=" },
   labels: {
     empty: "Provide a base URL and any key=value query rows to build the URL.",
     ready: "The URL is ready to copy or download.",

@@ -69,6 +69,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "A?", tone: "accent" },
   labels: {
     empty: "Choose a length and character set, then generate.",
     ready: "Strings generated.",

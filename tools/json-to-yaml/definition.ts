@@ -51,6 +51,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "J>Y", tone: "contrast" },
   labels: {
     empty: "Paste JSON to convert it to YAML.",
     ready: "YAML is ready.",

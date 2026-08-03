@@ -38,6 +38,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to Markdown" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "C>M" },
   labels: {
     empty: "Paste CSV with a header row to build a Markdown table.",
     ready: "Markdown table is ready.",

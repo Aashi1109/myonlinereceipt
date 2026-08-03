@@ -14,6 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: encodeBase64(ctx.input.text, ctx.settings.urlSafe),
+  downloadName: "encoded-base64.txt",
 });
 
 export default run;

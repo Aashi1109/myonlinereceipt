@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "name,role,active\nMaya,Engineer,true\nNoah,Designer,false",
+        "secondary": ""
+      },
+      "name": "converts multiple rows and preserves values as strings",
+      "settings": {
+        "delimiter": ","
+      },
+      "expected": {
+        "downloadName": "data.json",
+        "output": "[\n  {\n    \"name\": \"Maya\",\n    \"role\": \"Engineer\",\n    \"active\": \"true\"\n  },\n  {\n    \"name\": \"Noah\",\n    \"role\": \"Designer\",\n    \"active\": \"false\"\n  }\n]",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "name;note\nMaya;\"Hello; world\"\nNoah;\"She said \"\"hi\"\"\"",
+        "secondary": ""
+      },
+      "name": "parses quoted semicolon-delimited fields",
+      "settings": {
+        "delimiter": ";"
+      },
+      "expected": {
+        "downloadName": "data.json",
+        "output": "[\n  {\n    \"name\": \"Maya\",\n    \"note\": \"Hello; world\"\n  },\n  {\n    \"name\": \"Noah\",\n    \"note\": \"She said \\\"hi\\\"\"\n  }\n]",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "name,name\nMaya,Engineer",
+        "secondary": ""
+      },
+      "name": "rejects duplicate headers",
+      "settings": {
+        "delimiter": ","
+      },
+      "expected": {
+        "error": "CSV headers must be unique."
+      }
+    }
+  ]
+}

@@ -39,6 +39,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live" },
   capabilities: { copy: true },
+  workbenchMark: { text: "DAYS" },
   labels: {
     empty: "Enter start and end dates to calculate the elapsed time.",
     ready: "Date difference is ready.",

@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "converted-yaml.json",
         "output": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
         "render": "text"
       }

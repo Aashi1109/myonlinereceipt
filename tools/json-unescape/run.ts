@@ -9,7 +9,11 @@ import type { ToolResult } from "../../lib/tool-framework/result.ts";
 
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
   try {
-    return { render: "text", text: JSON.parse(`"${ctx.input.text}"`) as string };
+    return {
+      render: "text",
+      text: JSON.parse(`"${ctx.input.text}"`) as string,
+      downloadName: "unescaped.txt",
+    };
   } catch {
     throw new ToolError(
       "invalid-escape",

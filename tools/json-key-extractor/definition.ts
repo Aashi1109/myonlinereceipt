@@ -29,6 +29,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Extract keys" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J.K", tone: "contrast" },
   labels: {
     empty: "Paste JSON to list its key paths.",
     ready: "Key paths are ready.",

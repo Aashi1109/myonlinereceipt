@@ -69,6 +69,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Crop PDF" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PCUT" },
   labels: {
     empty: "Add a PDF to set its visible crop area.",
     ready: "Crop area is ready to apply.",

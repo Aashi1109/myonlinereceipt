@@ -24,7 +24,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
           : mode === "blank"
             ? primary.replace(/^(?:\s*\r?\n)+/gmu, "")
             : primary.replace(/[ \t]+/g, " ").replace(/^ | $/gmu, "");
-  return { render: "text", text };
+  return { render: "text", text, downloadName: "cleaned-text.txt" };
 };
 
 export default run;

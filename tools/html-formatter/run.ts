@@ -50,6 +50,7 @@ function formatHtml(input: string): string {
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: formatHtml(ctx.input.text),
+  downloadName: "formatted.html",
 });
 
 export default run;

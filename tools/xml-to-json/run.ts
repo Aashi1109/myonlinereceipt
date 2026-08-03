@@ -79,6 +79,7 @@ function xmlToJson(input: string): unknown {
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: JSON.stringify(xmlToJson(requireUtilityInput(ctx.input.text, "XML input")), null, 2),
+  downloadName: "converted-xml.json",
 });
 
 export default run;

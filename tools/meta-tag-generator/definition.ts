@@ -68,6 +68,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "META", tone: "accent" },
   labels: {
     empty: "Provide a page title and meta description to generate the tags.",
     ready: "Meta tags are ready to copy or download.",

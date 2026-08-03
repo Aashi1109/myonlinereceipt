@@ -14,6 +14,7 @@ export default {
   ],
   name: "Base64 Decoder",
   description: "Decode Base64 text as UTF-8.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Base64 input",
@@ -22,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "64-" },
   labels: {
     empty: "Paste Base64 text to decode it as UTF-8.",
     ready: "Decoded UTF-8 text is ready.",

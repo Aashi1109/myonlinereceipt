@@ -62,6 +62,8 @@ export type {
   Chapter,
   ChapterScrubberProps,
 } from "./components/ChapterScrubber.tsx";
+export { OrderableList } from "./components/OrderableList.tsx";
+export type { OrderableItemState } from "./components/OrderableList.tsx";
 export { PdfViewer } from "./components/PdfViewer.tsx";
 export type {
   PdfOutlineItem,

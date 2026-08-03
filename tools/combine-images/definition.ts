@@ -84,6 +84,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Combine images" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "IMG+" },
   labels: {
     empty: "Add images to arrange into one canvas.",
     ready: "Canvas settings are ready.",

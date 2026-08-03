@@ -11,6 +11,7 @@ export default {
   keywords: ["bcrypt", "hash", "password", "salt", "cost", "rounds"],
   name: "Bcrypt Hash Generator",
   description: "Hash a password or text using bcrypt.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Password or text",
@@ -38,6 +39,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate bcrypt hash" },
   capabilities: { copy: true },
+  workbenchMark: { text: "BC#" },
   labels: {
     empty: "Enter a password or plain text to generate a bcrypt hash.",
     ready: "Bcrypt hash is ready.",

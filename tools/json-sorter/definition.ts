@@ -66,6 +66,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "JAZ", tone: "contrast" },
   labels: {
     empty: "Paste JSON to sort its keys.",
     ready: "Sorted JSON is ready.",

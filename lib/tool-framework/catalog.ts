@@ -142,7 +142,7 @@ async function buildTool(
     content: resolved.content,
     icon: resolveIcon(row.toolId, row.name, iconRow),
     href: `/${spec.app}/${row.slug}`,
-    spec,
+    spec: { ...spec, content: resolved.content },
   };
 }
 

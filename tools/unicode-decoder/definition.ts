@@ -15,6 +15,7 @@ export default {
   ],
   name: "Unicode Decoder",
   description: "Decode JavaScript-style Unicode escape sequences.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Unicode escapes",
@@ -30,6 +31,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "\\u>" },
   labels: {
     empty: "Enter text containing Unicode escapes to decode it.",
     ready: "Decoded text is ready.",

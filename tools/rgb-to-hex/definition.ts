@@ -37,6 +37,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "R2H", tone: "accent" },
   labels: {
     empty: "Enter the RGB or RGBA color you want to convert.",
     ready: "HEX color is ready.",

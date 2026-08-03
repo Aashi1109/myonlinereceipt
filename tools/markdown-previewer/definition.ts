@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "MDV", tone: "accent" },
   labels: {
     empty: "Write Markdown or load an example to preview it.",
     ready: "Rendered preview is current.",

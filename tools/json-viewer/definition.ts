@@ -21,6 +21,7 @@ export default {
   name: "JSON Viewer",
   description:
     "Explore nested JSON in a searchable tree without uploading your data.",
+  layout: "side-by-side",
   input: {
     kind: "text",
     label: "JSON input",
@@ -43,7 +44,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 120 },
   capabilities: { copy: true, download: true },
-  workbenchMark: { text: "{ }", tone: "contrast" },
+  workbenchMark: { text: "JV", tone: "contrast" },
   labels: {
     empty: "Paste JSON or load an example to begin.",
     ready: "Interactive tree ready · split view.",

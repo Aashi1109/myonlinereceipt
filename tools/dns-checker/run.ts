@@ -90,6 +90,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     return {
       render: "text",
       text: JSON.stringify(Object.fromEntries(records), null, 2),
+      downloadName: "dns-records.json",
     };
   }
 
@@ -111,6 +112,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   return {
     render: "text",
     text: rows.length ? rows.join("\n") : "NO_RECORDS\t—\tNo matching DNS records",
+    downloadName: "dns-records.txt",
   };
 };
 

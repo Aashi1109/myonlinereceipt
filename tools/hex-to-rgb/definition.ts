@@ -24,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live" },
   capabilities: { copy: true },
+  workbenchMark: { text: "RGB", tone: "accent" },
   labels: {
     empty: "Enter a HEX color to convert it to RGB.",
     ready: "RGB value is ready.",

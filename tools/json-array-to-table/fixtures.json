@@ -10,6 +10,7 @@
         "repairMode": "remove"
       },
       "expected": {
+        "downloadName": "table.html",
         "output": "<table><thead><tr><th>name</th><th>role</th></tr></thead><tbody><tr><td>Ada</td><td>Admin</td></tr><tr><td>Lin</td><td>Editor</td></tr></tbody></table>",
         "render": "html"
       }

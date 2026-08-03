@@ -10,6 +10,7 @@
         "mode": "chars"
       },
       "expected": {
+        "downloadName": "reversed-text.txt",
         "output": "eerht owt eno",
         "render": "text"
       }

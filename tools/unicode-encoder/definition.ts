@@ -15,6 +15,7 @@ export default {
   ],
   name: "Unicode Encoder",
   description: "Encode text as Unicode code-point escapes.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode Unicode" },
   capabilities: { copy: true },
+  workbenchMark: { text: ">\\u" },
   labels: {
     empty: "Enter text to encode non-ASCII characters as Unicode escapes.",
     ready: "Unicode-escaped text is ready.",

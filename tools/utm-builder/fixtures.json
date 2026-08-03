@@ -17,6 +17,7 @@
         "existingQuery": "merge"
       },
       "expected": {
+        "downloadName": "campaign-url.txt",
         "output": "https://example.com/?utm_source=newsletter&utm_medium=email&utm_campaign=launch",
         "render": "text"
       }

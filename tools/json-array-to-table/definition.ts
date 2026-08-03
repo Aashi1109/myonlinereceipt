@@ -52,6 +52,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "J[]", tone: "contrast" },
   labels: {
     empty: "Paste an array of JSON objects to build a table.",
     ready: "HTML table is ready.",

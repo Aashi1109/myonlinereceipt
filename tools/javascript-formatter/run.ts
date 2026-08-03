@@ -14,6 +14,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: formatDelimitedCode(ctx.input.text, "javascript"),
+  downloadName: "formatted.js",
 });
 
 export default run;

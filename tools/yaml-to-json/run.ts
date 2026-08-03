@@ -16,7 +16,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const { load } = await import("js-yaml");
   ctx.signal.throwIfAborted();
   try {
-    return { render: "text", text: JSON.stringify(load(ctx.input.text), null, 2) };
+    return {
+      render: "text",
+      text: JSON.stringify(load(ctx.input.text), null, 2),
+      downloadName: "converted-yaml.json",
+    };
   } catch (error) {
     throw new ToolError(
       "yaml-invalid",

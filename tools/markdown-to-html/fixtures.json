@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "converted.html",
         "output": "<h1>Hello</h1>\n<p><strong>Smart tools</strong> stay focused.</p>\n",
         "render": "html"
       }

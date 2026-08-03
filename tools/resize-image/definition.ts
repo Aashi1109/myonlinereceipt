@@ -115,6 +115,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Resize images" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "ISZ", tone: "accent" },
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to resize them.",

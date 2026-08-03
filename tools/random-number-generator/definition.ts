@@ -37,6 +37,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "#?", tone: "accent" },
   labels: {
     empty: "Choose a minimum, maximum, and quantity to generate.",
     ready: "Numbers are ready.",

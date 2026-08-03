@@ -38,6 +38,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Build table" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "TBL" },
   labels: {
     empty: "Paste CSV rows to generate HTML table markup.",
     ready: "HTML table markup is ready.",

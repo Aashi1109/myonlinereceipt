@@ -15,6 +15,7 @@ export default {
   ],
   name: "Hash Compare",
   description: "Compare two hashes without early exit.",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Two hashes to compare",
@@ -38,6 +39,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare hashes" },
   capabilities: { copy: true },
+  workbenchMark: { text: "==", tone: "contrast" },
   labels: {
     empty: "Enter two hashes to compare them without early exit.",
     ready: "Hash comparison is complete.",

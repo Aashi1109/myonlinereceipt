@@ -14,6 +14,7 @@ import { formatDelimitedCode } from "../../lib/devtools/shared/code.ts";
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
   render: "text",
   text: formatDelimitedCode(ctx.input.text, "css"),
+  downloadName: "formatted.css",
 });
 
 export default run;

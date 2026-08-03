@@ -43,6 +43,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 120 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J{}", tone: "contrast" },
   labels: {
     empty: "Paste JSON to format it.",
     ready: "Formatted JSON is ready.",

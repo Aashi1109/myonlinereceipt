@@ -31,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
+  workbenchMark: { text: "ISO", tone: "contrast" },
   labels: {
     empty: "Enter a date or a Unix timestamp to normalize it.",
     ready: "Converted date forms are ready.",

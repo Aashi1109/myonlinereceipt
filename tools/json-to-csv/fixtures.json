@@ -1,0 +1,50 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "[{\"name\":\"Maya\",\"role\":\"Engineer\"},{\"name\":\"Noah\",\"role\":\"Designer\"}]",
+        "secondary": ""
+      },
+      "name": "converts multiple object records",
+      "settings": {
+        "delimiter": ",",
+        "repairMode": "remove"
+      },
+      "expected": {
+        "downloadName": "data.csv",
+        "output": "name,role\nMaya,Engineer\nNoah,Designer",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "[{\"name\":\"Maya\",\"profile\":{\"city\":\"Pune\"},\"note\":\"Hello; world\"}]",
+        "secondary": ""
+      },
+      "name": "flattens nested objects and quotes the selected delimiter",
+      "settings": {
+        "delimiter": ";",
+        "repairMode": "off"
+      },
+      "expected": {
+        "downloadName": "data.csv",
+        "output": "name;profile.city;note\nMaya;Pune;\"Hello; world\"",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "[\"Maya\",\"Noah\"]",
+        "secondary": ""
+      },
+      "name": "rejects non-object rows",
+      "settings": {
+        "delimiter": ",",
+        "repairMode": "off"
+      },
+      "expected": {
+        "error": "Use a JSON object or an array of JSON objects."
+      }
+    }
+  ]
+}

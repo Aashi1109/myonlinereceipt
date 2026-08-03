@@ -46,7 +46,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     ),
   );
 
-  return { render: "text", text: serializeTable([header, ...filtered], delimiter) };
+  return {
+    render: "text",
+    text: serializeTable([header, ...filtered], delimiter),
+    downloadName: "filtered-data.txt",
+  };
 };
 
 export default run;

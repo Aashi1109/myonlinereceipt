@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "decoded-text.txt",
         "output": "Hello 👋",
         "render": "text"
       }

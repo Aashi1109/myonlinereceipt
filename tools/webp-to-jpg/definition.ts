@@ -48,6 +48,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "W2JP" },
   labels: {
     empty: "Drop up to 50 static WebP images (25 MiB each) to convert to JPG.",
     ready: "The WebP images and JPG settings are ready.",

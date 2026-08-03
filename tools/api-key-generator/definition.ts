@@ -45,6 +45,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "KEY" },
   labels: {
     empty: "Choose a prefix and length, then generate.",
     ready: "API keys are ready.",

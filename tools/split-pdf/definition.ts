@@ -52,6 +52,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Split PDF" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P|P", tone: "contrast" },
   labels: {
     empty: "Drop one PDF (up to 200 MiB) to split by page, interval, or range.",
     ready: "The PDF and split settings are ready.",

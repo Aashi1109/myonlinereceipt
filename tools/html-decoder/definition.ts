@@ -15,6 +15,7 @@ export default {
   ],
   name: "HTML Decoder",
   description: "Decode named and numeric HTML entities.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Encoded entities",
@@ -30,6 +31,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "&;>", tone: "contrast" },
   labels: {
     empty: "Paste text containing HTML entities to decode it.",
     ready: "Decoded HTML text is ready.",

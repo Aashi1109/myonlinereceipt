@@ -15,6 +15,7 @@ export default {
   ],
   name: "MD5 Generator",
   description: "Generate a legacy MD5 digest for compatibility checks.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate MD5" },
   capabilities: { copy: true },
+  workbenchMark: { text: "MD5", tone: "contrast" },
   labels: {
     empty: "Enter the text you want to hash with MD5.",
     ready: "MD5 digest is ready.",

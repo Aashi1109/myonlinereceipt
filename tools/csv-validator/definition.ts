@@ -53,6 +53,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "CSV?" },
   labels: {
     empty: "Paste CSV rows to validate their headers and field counts.",
     ready: "CSV structure is valid.",

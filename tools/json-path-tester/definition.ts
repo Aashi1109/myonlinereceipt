@@ -44,6 +44,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Evaluate path" },
   capabilities: { copy: true },
+  workbenchMark: { text: "$.", tone: "contrast" },
   labels: {
     empty: "Paste JSON and enter a path to evaluate.",
     ready: "JSONPath result is ready.",

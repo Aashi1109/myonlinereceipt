@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "built-url.txt",
         "output": "https://example.com/search?q=smart+tools&tag=dev&tag=web",
         "render": "text"
       }

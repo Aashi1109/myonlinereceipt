@@ -8,6 +8,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: serializeTable(parseUtilityTable(ctx.input.text, "\t"), ","),
+  downloadName: "table.csv",
 });
 
 export default run;

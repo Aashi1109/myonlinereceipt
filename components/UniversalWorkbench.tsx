@@ -26,7 +26,6 @@ import {
   Globe2,
   ListChecks,
   LockKeyhole,
-  ShieldCheck,
   Undo2,
   Wrench,
 } from "lucide-react";
@@ -36,7 +35,7 @@ import {
   ToolRuntimeProvider,
   useToolRuntime,
 } from "@/lib/tool-runtime/useToolRuntime";
-import type { ToolWorkbenchMark } from "@/lib/tool-framework/spec";
+import type { ToolContent, ToolWorkbenchMark } from "@/lib/tool-framework/spec";
 import type {
   ToolLifecycle,
   ToolDefinition,
@@ -50,6 +49,7 @@ type UniversalWorkbenchProps<
   Settings extends ToolSettings,
   Result,
 > = Omit<ToolPageComponentProps, "definitionKey"> & {
+  content: ToolContent;
   definition: ToolDefinition;
   runtimeSpec: ToolRuntimeSpec<Input, Settings, Result>;
   StatusMeta?: ComponentType;
@@ -58,33 +58,6 @@ type UniversalWorkbenchProps<
   workbenchMark?: ToolWorkbenchMark;
   Workspace: ComponentType;
 };
-
-const SUPPORT_ITEMS = [
-  {
-    icon: AlertTriangle,
-    iconClassName: "text-amber-700",
-    eyebrow: "Limitations",
-    title: "Know the boundaries",
-    description:
-      "Check supported formats, limits, and edge cases before relying on the result.",
-  },
-  {
-    icon: ShieldCheck,
-    iconClassName: "text-primary",
-    eyebrow: "Privacy",
-    title: "Your data stays local",
-    description:
-      "Inputs and generated output stay in this browser unless a network action is stated.",
-  },
-  {
-    icon: ListChecks,
-    iconClassName: "text-primary",
-    eyebrow: "How to use",
-    title: "Complete the task safely",
-    description:
-      "Add input, choose the needed options, run the tool, then verify the result.",
-  },
-] as const;
 
 function ConfirmationDialog({
   changes,
@@ -144,6 +117,7 @@ function WorkbenchFrame<
 >({
   account,
   category,
+  content,
   definition,
   description,
   relatedTools = [],
@@ -184,6 +158,20 @@ function WorkbenchFrame<
   const capabilityBadge =
     definition.labels.primaryAction?.toUpperCase() ??
     (isMedia ? "FILE TOOL" : "BROWSER TOOL");
+  const supportItems = [
+    ...(content.limitations?.length
+      ? [
+          {
+            icon: AlertTriangle,
+            eyebrow: "Limitations",
+            items: content.limitations,
+          },
+        ]
+      : []),
+    ...(content.howToUse.length
+      ? [{ icon: ListChecks, eyebrow: "How to use", items: content.howToUse }]
+      : []),
+  ];
 
   return (
     <ToolPageShell
@@ -321,34 +309,29 @@ function WorkbenchFrame<
         >
           Before you continue
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-3 max-[52rem]:grid-cols-1">
-          {SUPPORT_ITEMS.map((item) => {
+        <div
+          className={`mt-3 grid gap-3 max-[52rem]:grid-cols-1 ${supportItems.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+        >
+          {supportItems.map((item) => {
             const Icon = item.icon;
-            const title =
-              usesNetwork && item.eyebrow === "Privacy"
-                ? "The hostname leaves your browser"
-                : item.title;
-            const description =
-              usesNetwork && item.eyebrow === "Privacy"
-                ? "This lookup sends the hostname to the public DNS provider shown in the workspace."
-                : item.description;
             return (
-            <article
-              className="h-[114px] overflow-hidden rounded-lg border border-border bg-muted/55 px-4 py-3"
-              key={item.eyebrow}
-            >
-              <p className="flex items-center gap-2 font-caption text-[11px] font-extrabold tracking-[0.06em] uppercase">
-                <Icon
-                  aria-hidden="true"
-                  className={`size-4 ${item.iconClassName}`}
-                />
-                {item.eyebrow}
-              </p>
-              <h2 className="mt-1.5 text-base font-semibold leading-5">{title}</h2>
-              <p className="mt-0.5 text-sm leading-5 text-muted-foreground">
-                {description}
-              </p>
-            </article>
+              <article
+                className="rounded-lg border border-border bg-muted/55 px-4 py-3"
+                key={item.eyebrow}
+              >
+                <p className="flex items-center gap-2 font-caption text-[11px] font-extrabold tracking-[0.06em] uppercase">
+                  <Icon
+                    aria-hidden="true"
+                    className={`size-4 ${item.eyebrow === "Limitations" ? "text-amber-700" : "text-primary"}`}
+                  />
+                  {item.eyebrow}
+                </p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-4 text-sm leading-5 text-muted-foreground">
+                  {item.items.map((text, index) => (
+                    <li key={`${item.eyebrow}-${index}`}>{text}</li>
+                  ))}
+                </ul>
+              </article>
             );
           })}
         </div>

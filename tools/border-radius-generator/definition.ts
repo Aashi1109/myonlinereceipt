@@ -25,6 +25,7 @@ export default {
   },
   trigger: { mode: "live" },
   capabilities: { copy: true },
+  workbenchMark: { text: "BR" },
   labels: {
     empty: "Choose the four corner radii to generate CSS.",
     ready: "CSS is ready.",

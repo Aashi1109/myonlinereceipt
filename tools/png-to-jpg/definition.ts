@@ -48,6 +48,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PN2J", tone: "accent" },
   labels: {
     empty: "Drop up to 50 PNG files (.png, 25 MiB each) to convert them to JPG.",
     ready: "The PNG files and JPG settings are ready.",

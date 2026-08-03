@@ -37,6 +37,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: `<?xml version="1.0" encoding="UTF-8"?>\n${jsonToXml(value)}`,
+    downloadName: "converted.xml",
   };
 };
 

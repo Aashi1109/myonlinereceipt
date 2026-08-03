@@ -39,6 +39,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Check domain age" },
   capabilities: { network: true },
+  workbenchMark: { text: "AGE" },
   labels: {
     empty: "Enter a public domain to look up its RDAP registration record.",
     ready: "RDAP registration record is ready.",

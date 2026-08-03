@@ -24,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "DIAG" },
   labels: {
     empty: "Enter Mermaid source to render a diagram.",
     ready: "Diagram preview is ready.",

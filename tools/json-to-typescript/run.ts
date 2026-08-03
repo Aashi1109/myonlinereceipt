@@ -49,7 +49,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const value = parseUtilityJson(ctx.input.text, {
     repairMode: ctx.settings.repairMode,
   });
-  return { render: "text", text: jsonToTypeScript(value) };
+  return { render: "text", text: jsonToTypeScript(value), downloadName: "types.ts" };
 };
 
 export default run;

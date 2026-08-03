@@ -11,6 +11,7 @@
         "indent": "2"
       },
       "expected": {
+        "downloadName": "edited.json",
         "output": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
         "render": "text"
       }

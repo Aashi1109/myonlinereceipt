@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "preview.html",
         "output": "<h1>Preview</h1>\n<ul>\n<li>Fast</li>\n<li>Private</li>\n</ul>\n",
         "render": "html"
       }

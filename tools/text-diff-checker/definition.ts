@@ -15,6 +15,7 @@ export default {
   ],
   name: "Text Diff Checker",
   description: "Compare two texts line by line.",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Text Versions",
@@ -37,6 +38,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare text" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "+/-", tone: "contrast" },
   labels: {
     empty: "Provide the original and changed text to compare them.",
     ready: "Line-by-line comparison is ready.",

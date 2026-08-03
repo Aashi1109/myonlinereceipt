@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "formatted.js",
         "output": "function greet(name) {\n  if(name) {\n    return `Hello ${name}`;\n  }\n  return 'Hello';\n}",
         "render": "text"
       }

@@ -37,6 +37,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Reorder pages" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P<>", tone: "accent" },
   labels: {
     empty: "Add a PDF to reorder its pages.",
     ready: "Page order is ready.",

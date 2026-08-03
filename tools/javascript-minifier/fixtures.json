@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "minified.js",
         "output": "function greet(name){return 'Hello '+name;}",
         "render": "text"
       }

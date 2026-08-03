@@ -56,6 +56,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Add page numbers" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "#+" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 200 MiB) to add page numbers.",
     ready: "The PDF and page number settings are ready.",

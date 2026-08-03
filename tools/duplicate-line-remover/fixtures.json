@@ -11,6 +11,7 @@
         "trim": true
       },
       "expected": {
+        "downloadName": "unique-lines.txt",
         "output": "Alpha\nBeta\nalpha\nGamma",
         "render": "text"
       }

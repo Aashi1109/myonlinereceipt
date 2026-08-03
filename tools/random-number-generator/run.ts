@@ -31,6 +31,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "list",
     items: Array.from({ length: count }, () => String(min + secureRandomInt(max - min + 1))),
+    downloadName: "random-numbers.txt",
   };
 };
 

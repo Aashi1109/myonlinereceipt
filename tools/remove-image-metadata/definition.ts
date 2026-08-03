@@ -31,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Remove metadata" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "EXIF", tone: "accent" },
   labels: {
     empty:
       "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to remove their metadata.",

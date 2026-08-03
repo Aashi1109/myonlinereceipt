@@ -38,7 +38,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         sensitivity: "base",
       }) * direction,
   );
-  return { render: "text", text: serializeTable([header, ...rows], delimiter) };
+  return {
+    render: "text",
+    text: serializeTable([header, ...rows], delimiter),
+    downloadName: "sorted-data.txt",
+  };
 };
 
 export default run;

@@ -11,6 +11,7 @@
         "to": ";"
       },
       "expected": {
+        "downloadName": "converted-data.txt",
         "output": "name;age\nAda;36",
         "render": "text"
       }

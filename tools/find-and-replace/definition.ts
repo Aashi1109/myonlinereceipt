@@ -15,6 +15,7 @@ export default {
   ],
   name: "Find and Replace",
   description: "Replace literal text or regular-expression matches.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -35,6 +36,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Replace" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "RPLC" },
   labels: {
     empty: "Paste the text you want to search and replace.",
     ready: "Replaced text is ready.",

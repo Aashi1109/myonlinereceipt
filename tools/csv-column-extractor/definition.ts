@@ -35,6 +35,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Extract column" },
   capabilities: { copy: true },
+  workbenchMark: { text: "COL" },
   labels: {
     empty: "Paste delimited data with a header row to extract one column.",
     ready: "Extracted column is ready.",

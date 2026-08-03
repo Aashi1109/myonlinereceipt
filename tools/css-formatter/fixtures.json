@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "formatted.css",
         "output": "body {\n  color:#111;\n  background:#fff\n}\na:hover {\n  text-decoration:underline\n}",
         "render": "text"
       }

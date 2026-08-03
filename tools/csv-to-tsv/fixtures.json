@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "table.tsv",
         "output": "name\tnote\nAda\tHello, world",
         "render": "text"
       }

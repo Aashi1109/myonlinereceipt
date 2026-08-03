@@ -93,6 +93,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Crop image" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "ICUT" },
   labels: {
     empty: "Add an image to crop.",
     ready: "Crop area is ready.",

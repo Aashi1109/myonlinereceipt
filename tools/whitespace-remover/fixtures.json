@@ -10,6 +10,7 @@
         "mode": "extra"
       },
       "expected": {
+        "downloadName": "cleaned-text.txt",
         "output": "Hello smart tools\n\nNext line.",
         "render": "text"
       }

@@ -15,6 +15,7 @@ export default {
   ],
   name: "Text to Binary",
   description: "Encode UTF-8 text as binary bytes.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode as binary" },
   capabilities: { copy: true },
+  workbenchMark: { text: "T>B" },
   labels: {
     empty: "Enter text to encode as UTF-8 binary.",
     ready: "Binary bytes are ready.",

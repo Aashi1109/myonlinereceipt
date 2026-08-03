@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "preview.html",
         "output": "<article><h1>Hello</h1><p>Sandboxed preview.</p></article>",
         "render": "html"
       }

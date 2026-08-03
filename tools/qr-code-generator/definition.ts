@@ -72,6 +72,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate QR code" },
   capabilities: { download: true },
+  workbenchMark: { text: "QR", tone: "accent" },
   labels: {
     empty: "Enter the URL or text you want to encode in a QR code.",
     ready: "QR code is ready.",

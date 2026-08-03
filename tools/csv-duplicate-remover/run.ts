@@ -24,7 +24,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     seen.add(key);
     return true;
   });
-  return { render: "text", text: serializeTable([header, ...unique], delimiter) };
+  return {
+    render: "text",
+    text: serializeTable([header, ...unique], delimiter),
+    downloadName: "deduplicated-data.txt",
+  };
 };
 
 export default run;

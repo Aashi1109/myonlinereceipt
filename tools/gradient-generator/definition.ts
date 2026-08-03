@@ -61,6 +61,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "GRAD" },
   labels: {
     empty: "Enter two HEX colors to build a CSS gradient.",
     ready: "CSS gradient is ready.",

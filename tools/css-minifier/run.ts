@@ -20,6 +20,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => ({
     .replace(/\s*([{}:;,>+~])\s*/g, "$1")
     .replace(/;}/g, "}")
     .trim(),
+  downloadName: "minified.css",
 });
 
 export default run;

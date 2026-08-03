@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "unescaped.txt",
         "output": "He said \"hello\".\nNext line.",
         "render": "text"
       }

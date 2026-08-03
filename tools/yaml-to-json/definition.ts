@@ -15,6 +15,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to JSON" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "Y>J" },
   labels: {
     empty: "Enter YAML to convert it to JSON.",
     ready: "Converted JSON is ready.",

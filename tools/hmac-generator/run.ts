@@ -65,7 +65,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.settings.algo,
   );
   ctx.signal.throwIfAborted();
-  return { render: "text", text: digest };
+  return { render: "text", text: digest, downloadName: "hmac-digest.txt" };
 };
 
 export default run;

@@ -24,6 +24,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "html",
     html: tableToHtml(parseUtilityTable(ctx.input.text, delimiter)),
+    downloadName: "table.html",
   };
 };
 

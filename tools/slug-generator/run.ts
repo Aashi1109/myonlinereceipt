@@ -19,6 +19,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => ({
     .map((line) => words(line).map((word) => word.toLocaleLowerCase()).join("-"))
     .filter(Boolean)
     .join("\n"),
+  downloadName: "slugs.txt",
 });
 
 export default run;

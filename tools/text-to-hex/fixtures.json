@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "hex-output.txt",
         "output": "48656c6c6f20f09f918b",
         "render": "text"
       }

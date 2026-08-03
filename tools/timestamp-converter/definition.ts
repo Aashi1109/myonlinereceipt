@@ -32,6 +32,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
+  workbenchMark: { text: "UNIX" },
   labels: {
     empty: "Enter a Unix timestamp or a date to convert it.",
     ready: "Timestamp conversions are ready.",

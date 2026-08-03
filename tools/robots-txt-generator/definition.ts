@@ -48,6 +48,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate robots.txt" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "BOT", tone: "accent" },
   labels: {
     empty: "Enter the paths you want blocked, or switch on Allow all.",
     ready: "robots.txt is ready.",

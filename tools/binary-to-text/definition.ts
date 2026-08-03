@@ -15,6 +15,7 @@ export default {
   ],
   name: "Binary to Text",
   description: "Decode eight-bit binary bytes as UTF-8.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Binary input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode binary" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "B>T" },
   labels: {
     empty: "Paste whitespace-separated eight-bit binary bytes to decode.",
     ready: "Decoded UTF-8 text is ready.",

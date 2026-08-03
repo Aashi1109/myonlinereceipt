@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Escape" },
   capabilities: { copy: true },
+  workbenchMark: { text: "J\\", tone: "contrast" },
   labels: {
     empty: "Paste the raw text you want to embed in JSON.",
     ready: "Escaped string is ready.",

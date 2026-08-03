@@ -29,6 +29,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to XML" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J>X", tone: "contrast" },
   labels: {
     empty: "Paste JSON to convert it to XML.",
     ready: "XML is ready.",

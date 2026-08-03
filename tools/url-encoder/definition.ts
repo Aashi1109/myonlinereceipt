@@ -15,6 +15,7 @@ export default {
   ],
   name: "URL Encoder",
   description: "Percent-encode a URL or URL component.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text or URL",
@@ -32,6 +33,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Encode" },
   capabilities: { copy: true },
+  workbenchMark: { text: ">%" },
   labels: {
     empty: "Enter text or a URL to percent-encode it.",
     ready: "Percent-encoded value is ready.",

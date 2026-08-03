@@ -14,6 +14,7 @@ export default {
   ],
   name: "SHA256 Generator",
   description: "Generate a SHA-256 digest.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -29,6 +30,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "S256", tone: "accent" },
   labels: {
     empty: "Enter the text you want to hash with SHA-256.",
     ready: "SHA-256 digest is ready.",

@@ -38,6 +38,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
+  workbenchMark: { text: "VIEW" },
   labels: {
     empty: "Paste delimited rows to preview them as a table.",
     ready: "CSV table preview is ready.",

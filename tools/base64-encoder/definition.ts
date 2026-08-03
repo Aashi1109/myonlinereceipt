@@ -7,6 +7,7 @@ export default {
   keywords: ["base64", "encode", "url safe", "base64url", "utf-8", "data uri"],
   name: "Base64 Encoder",
   description: "Encode UTF-8 text as Base64.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -24,6 +25,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Encode" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "64+" },
   labels: {
     empty: "Enter text to encode it as Base64.",
     ready: "Base64 text is ready.",

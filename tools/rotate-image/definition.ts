@@ -66,6 +66,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Rotate images" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "I90", tone: "accent" },
   labels: {
     empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to rotate.",
     ready: "The images and rotation settings are ready.",

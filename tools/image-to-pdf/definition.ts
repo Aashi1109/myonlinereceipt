@@ -98,6 +98,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Create PDF" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "I2P", tone: "accent" },
   labels: {
     empty: "Add images to build a PDF.",
     ready: "PDF settings are ready.",

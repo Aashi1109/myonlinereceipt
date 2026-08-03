@@ -88,6 +88,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "CRN+" },
   labels: {
     empty: "Enter minute and hour fields to build a cron expression.",
     ready: "Cron expression is ready.",

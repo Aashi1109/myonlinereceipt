@@ -15,6 +15,7 @@ export default {
   ],
   name: "Text Case Converter",
   description: "Convert text between common naming and prose cases.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text to convert",
@@ -73,6 +74,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "Aa" },
   labels: {
     empty: "Enter text and choose the case to convert it.",
     ready: "Case-converted text is ready.",

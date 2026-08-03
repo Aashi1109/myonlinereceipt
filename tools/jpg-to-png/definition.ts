@@ -30,6 +30,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to PNG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "J2PN", tone: "accent" },
   labels: {
     empty: "Drop up to 50 JPG or JPEG images, 25 MiB each, to convert them to PNG.",
     ready: "JPG images are ready to convert to PNG.",

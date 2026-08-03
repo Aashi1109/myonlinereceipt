@@ -15,6 +15,7 @@ export default {
   ],
   name: "JSON Diff",
   description: "Compare two JSON values by path.",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "JSON documents to compare",
@@ -52,6 +53,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Compare JSON" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J!=", tone: "contrast" },
   labels: {
     empty: "Paste two JSON values to compare them.",
     ready: "JSON differences are ready.",

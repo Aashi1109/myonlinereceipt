@@ -61,6 +61,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "PWD", tone: "contrast" },
   labels: {
     empty: "Choose a length and character set, then generate.",
     ready: "Passwords generated.",

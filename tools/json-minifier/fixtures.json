@@ -10,6 +10,7 @@
         "repairMode": "remove"
       },
       "expected": {
+        "downloadName": "minified.json",
         "output": "{\"name\":\"Ada\",\"active\":true}",
         "render": "text"
       }

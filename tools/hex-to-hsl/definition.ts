@@ -31,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
+  workbenchMark: { text: "HSL", tone: "accent" },
   labels: {
     empty: "Enter a HEX color to convert it to HSL.",
     ready: "HSL value is ready.",

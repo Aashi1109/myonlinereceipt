@@ -10,6 +10,7 @@
         "algo": "sha256"
       },
       "expected": {
+        "downloadName": "hmac-digest.txt",
         "output": "8a3646d7d465db2511084ee623f2f2ad8d1e60f7df8802edd348cb5d16d288bd",
         "render": "text"
       }

@@ -11,7 +11,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const { marked } = await import("marked");
   const html = String(await marked.parse(source));
   ctx.signal.throwIfAborted();
-  return { render: "html", html };
+  return { render: "html", html, downloadName: "converted.html" };
 };
 
 export default run;

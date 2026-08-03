@@ -28,6 +28,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "LORE", tone: "accent" },
   labels: {
     empty: "Choose the number of paragraphs to generate.",
     ready: "Placeholder text is ready.",

@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "minified.css",
         "output": "body{color:#111;background:#fff}",
         "render": "text"
       }

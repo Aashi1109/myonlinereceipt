@@ -30,6 +30,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "T>C" },
   labels: {
     empty: "Enter tab-separated rows to convert them to CSV.",
     ready: "CSV output is ready.",

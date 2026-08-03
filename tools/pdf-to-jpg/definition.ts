@@ -59,6 +59,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P2JP", tone: "accent" },
   labels: {
     empty: "Drop one PDF, up to 200 MiB, to convert its pages to JPG.",
     ready: "PDF-to-JPG page settings are ready.",

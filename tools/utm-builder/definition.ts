@@ -83,6 +83,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Build campaign URL" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "UTM", tone: "accent" },
   labels: {
     empty: "Complete the destination and required campaign fields.",
     ready: "Campaign URL is ready.",

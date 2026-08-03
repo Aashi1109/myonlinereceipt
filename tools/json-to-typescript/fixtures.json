@@ -10,6 +10,7 @@
         "repairMode": "remove"
       },
       "expected": {
+        "downloadName": "types.ts",
         "output": "export interface Root {\n  name: string;\n  active: boolean;\n  tags: string[];\n}",
         "render": "text"
       }

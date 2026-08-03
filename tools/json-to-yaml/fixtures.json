@@ -10,6 +10,7 @@
         "repairMode": "remove"
       },
       "expected": {
+        "downloadName": "converted.yaml",
         "output": "name: Ada\nactive: true\n",
         "render": "text"
       }

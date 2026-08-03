@@ -7,6 +7,7 @@ export default {
   keywords: ["reverse", "backwards", "flip", "text", "words", "lines"],
   name: "Text Reverser",
   description: "Reverse characters, words, or lines.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text to reverse",
@@ -28,6 +29,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Reverse" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "cba" },
   labels: {
     empty: "Enter the text you want to reverse.",
     ready: "Reversed text is ready.",

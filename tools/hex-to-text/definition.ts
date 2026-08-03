@@ -15,6 +15,7 @@ export default {
   ],
   name: "Hex to Text",
   description: "Decode hexadecimal bytes as UTF-8.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Hex input",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode hex" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "0x>T", tone: "contrast" },
   labels: {
     empty: "Paste hexadecimal bytes to decode them as UTF-8.",
     ready: "Decoded UTF-8 text is ready.",

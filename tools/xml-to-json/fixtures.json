@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "converted-xml.json",
         "output": "{\n  \"user\": {\n    \"@id\": \"1\",\n    \"name\": \"Ada\",\n    \"active\": \"true\"\n  }\n}",
         "render": "text"
       }

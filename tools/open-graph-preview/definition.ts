@@ -90,6 +90,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "OG", tone: "accent" },
   labels: {
     empty: "Provide a title and description to preview the social card.",
     ready: "The social card preview is ready.",

@@ -90,6 +90,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Resize pages" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PSZ", tone: "accent" },
   labels: {
     empty: "Drop one PDF (up to 200 MiB) to resize its pages.",
     ready: "The PDF and page size settings are ready.",

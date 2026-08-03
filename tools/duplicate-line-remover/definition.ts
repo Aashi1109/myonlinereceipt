@@ -14,6 +14,7 @@ export default {
   ],
   name: "Duplicate Line Remover",
   description: "Remove repeated lines while preserving order.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -37,6 +38,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Remove duplicates" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "LN-" },
   labels: {
     empty: "Paste one item per line to remove repeated lines.",
     ready: "Deduplicated lines are ready.",

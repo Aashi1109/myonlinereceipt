@@ -14,6 +14,7 @@ export default {
   ],
   name: "URL Decoder",
   description: "Decode percent-encoded URL text.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Encoded input",
@@ -29,6 +30,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "%>" },
   labels: {
     empty: "Enter percent-encoded text to decode it.",
     ready: "Decoded text is ready.",

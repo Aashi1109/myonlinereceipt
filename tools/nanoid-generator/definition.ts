@@ -45,6 +45,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "NANO", tone: "accent" },
   labels: {
     empty: "Choose a count and size, then generate.",
     ready: "Identifiers are ready.",

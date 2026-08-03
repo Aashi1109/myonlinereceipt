@@ -299,13 +299,17 @@ export function WorkspaceInputSurface({
                   {field.secret ? (
                     <Button
                       aria-label={`${revealed ? "Hide" : "Show"} ${field.label}`}
+                      className="border-0 bg-transparent p-1.5 hover:bg-transparent"
                       disabled={disabled}
                       onClick={() => setRevealedSecrets((current) => ({ ...current, [field.channel]: !revealed }))}
                       size="icon"
+                      style={{ height: 44, width: 44 }}
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                     >
-                      {revealed ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                      <span className="grid size-8 place-items-center rounded-lg border border-input bg-card hover:bg-muted">
+                        {revealed ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                      </span>
                     </Button>
                   ) : null}
                 </div>

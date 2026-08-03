@@ -77,6 +77,7 @@ function textDiff(left: string, right: string): string {
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: textDiff(ctx.input.text, ctx.input.secondary ?? ""),
+  downloadName: "text-diff.txt",
 });
 
 export default run;

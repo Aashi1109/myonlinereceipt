@@ -32,6 +32,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       columns,
       ...rows.map((row) => columns.map((column) => String(row[column] ?? ""))),
     ]),
+    downloadName: "table.html",
   };
 };
 

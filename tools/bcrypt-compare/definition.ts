@@ -7,6 +7,7 @@ export default {
   keywords: ["bcrypt", "compare", "verify", "password", "hash", "check"],
   name: "Bcrypt Compare",
   description: "Check plain text against a bcrypt hash.",
+  layout: "side-by-side",
   input: {
     kind: "fields",
     label: "Password and bcrypt hash",
@@ -30,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare" },
   capabilities: { copy: true },
+  workbenchMark: { text: "BC?" },
   labels: {
     empty: "Enter a plain-text password and bcrypt hash to compare them.",
     ready: "Bcrypt comparison result is ready.",

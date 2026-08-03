@@ -16,6 +16,7 @@ export default {
   ],
   name: "HMAC Generator",
   description: "Generate an HMAC signature using a secret key.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Message and secret key",
@@ -53,6 +54,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate HMAC" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "MAC", tone: "contrast" },
   labels: {
     empty: "Enter a message and secret key to generate an HMAC.",
     ready: "HMAC digest is ready.",

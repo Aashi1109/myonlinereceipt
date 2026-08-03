@@ -31,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Parse query" },
   capabilities: { copy: true },
+  workbenchMark: { text: "?{}" },
   labels: {
     empty: "Enter a URL or query string to inspect its parameters.",
     ready: "Query parameters are ready.",

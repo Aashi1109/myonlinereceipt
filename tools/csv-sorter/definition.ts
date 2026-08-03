@@ -44,6 +44,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Sort rows" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "SORT" },
   labels: {
     empty: "Paste CSV with a header row to sort its rows.",
     ready: "Sorted CSV is ready.",

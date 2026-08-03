@@ -101,6 +101,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "UNIT" },
   labels: {
     empty: "Enter a number to convert between the selected CSS units.",
     ready: "Converted CSS value is ready.",

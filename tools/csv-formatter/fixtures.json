@@ -10,6 +10,7 @@
         "delimiter": ","
       },
       "expected": {
+        "downloadName": "formatted-data.txt",
         "output": "name,note\nAda,\"Hello, world\"",
         "render": "text"
       }

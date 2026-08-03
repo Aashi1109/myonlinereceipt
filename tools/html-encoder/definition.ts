@@ -7,6 +7,7 @@ export default {
   keywords: ["html", "encode", "entities", "escape", "xss", "sanitize"],
   name: "HTML Encoder",
   description: "Encode reserved HTML characters as entities.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "HTML or text",
@@ -15,6 +16,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode entities" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "<&;", tone: "contrast" },
   labels: {
     empty: "Paste HTML or text to escape its reserved characters.",
     ready: "HTML-escaped text is ready.",

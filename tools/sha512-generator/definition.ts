@@ -14,6 +14,7 @@ export default {
   ],
   name: "SHA512 Generator",
   description: "Generate a SHA-512 digest.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text to hash",
@@ -29,6 +30,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "S512", tone: "accent" },
   labels: {
     empty: "Enter the text you want to hash with SHA-512.",
     ready: "SHA-512 digest is ready.",

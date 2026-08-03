@@ -28,6 +28,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       return {
         render: "text",
         text: text.replace(new RegExp(find, ctx.settings.ci ? "giu" : "gu"), replacement),
+        downloadName: "replaced-text.txt",
       };
     } catch {
       throw new ToolError(
@@ -43,6 +44,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     text: ctx.settings.ci
       ? text.replace(new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "giu"), replacement)
       : text.replaceAll(find, replacement),
+    downloadName: "replaced-text.txt",
   };
 };
 

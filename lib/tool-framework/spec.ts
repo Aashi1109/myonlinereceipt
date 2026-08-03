@@ -99,6 +99,8 @@ export type ToolWorkbenchMark = {
   readonly tone?: "accent" | "contrast";
 };
 
+export type ToolLayout = "side-by-side" | "stacked";
+
 export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   /** `"<app>.<folderName>"`. Primary key in the database; never changes. */
   readonly toolId: string;
@@ -113,6 +115,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly settings: S;
   readonly trigger: ToolTrigger;
   readonly capabilities?: ToolCapabilities;
+  /** How the source and derived result share the main task surface. */
+  readonly layout?: ToolLayout;
   readonly workbenchMark?: ToolWorkbenchMark;
   readonly labels: ToolLabels;
   readonly content: ToolContent;

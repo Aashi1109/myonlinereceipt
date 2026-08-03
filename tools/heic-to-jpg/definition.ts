@@ -48,6 +48,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "H2JP", tone: "accent" },
   labels: {
     empty: "Drop up to 50 HEIC or HEIF images, 25 MiB each, to convert them to JPG.",
     ready: "HEIC-to-JPG settings are ready.",

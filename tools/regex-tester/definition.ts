@@ -47,6 +47,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 250 },
   capabilities: { copy: true },
+  workbenchMark: { text: "RX?", tone: "contrast" },
   labels: {
     empty: "Provide a regex pattern and test string to inspect the matches.",
     ready: "The regex matches are up to date.",

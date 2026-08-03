@@ -31,6 +31,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "X>J" },
   labels: {
     empty: "Enter XML to convert it to JSON.",
     ready: "Converted JSON is ready.",

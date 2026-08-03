@@ -26,6 +26,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => ({
       (__, offset) => LOREM_SENTENCES[(index + offset) % LOREM_SENTENCES.length],
     ).join(" "),
   ).join("\n\n"),
+  downloadName: "lorem-ipsum.txt",
 });
 
 export default run;

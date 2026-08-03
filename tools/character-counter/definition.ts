@@ -16,6 +16,7 @@ export default {
   ],
   name: "Character Counter",
   description: "Count characters, bytes, words, and lines.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text",
@@ -24,6 +25,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
+  workbenchMark: { text: "#CH" },
   labels: {
     empty: "Type or paste text to count its characters, words, lines, and bytes.",
     ready: "Text counts are ready.",

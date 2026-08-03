@@ -69,6 +69,7 @@ function stripCodeCommentsAndWhitespace(input: string): string {
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: stripCodeCommentsAndWhitespace(requireUtilityInput(ctx.input.text, "JavaScript input")),
+  downloadName: "minified.js",
 });
 
 export default run;

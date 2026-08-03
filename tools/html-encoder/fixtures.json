@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "encoded-html.txt",
         "output": "&lt;button title=&quot;Save &amp; close&quot;&gt;Save&lt;/button&gt;",
         "render": "text"
       }

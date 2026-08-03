@@ -19,6 +19,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Merge PDFs" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P+P", tone: "accent" },
   labels: {
     empty: "Add PDFs in the order they should be merged.",
     ready: "PDF order is ready.",

@@ -15,6 +15,7 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
   text: escapeHtml(ctx.input.text),
+  downloadName: "encoded-html.txt",
 });
 
 export default run;

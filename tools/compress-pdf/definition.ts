@@ -81,6 +81,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Compress PDF" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "PDF-" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 200 MiB) to compress it.",
     ready: "The PDF and compression settings are ready.",

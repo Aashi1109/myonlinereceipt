@@ -14,7 +14,7 @@ export const run: ToolRun<Record<string, never>> = async (
 ): Promise<ToolResult> => {
   const digest = await digestText(ctx.input.text, "SHA-1");
   ctx.signal.throwIfAborted();
-  return { render: "text", text: digest };
+  return { render: "text", text: digest, downloadName: "sha1-hash.txt" };
 };
 
 export default run;

@@ -93,6 +93,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Apply watermark" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "WM", tone: "accent" },
   labels: {
     empty: "Add a PDF to configure its watermark.",
     ready: "Watermark settings are ready.",

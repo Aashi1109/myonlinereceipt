@@ -25,6 +25,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       describeCron(expression),
       ...(commandLabel ? [`Label: ${commandLabel}`] : []),
     ].join("\n"),
+    downloadName: "cron-schedule.txt",
   };
 };
 

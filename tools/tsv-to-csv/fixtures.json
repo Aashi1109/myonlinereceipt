@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "table.csv",
         "output": "name,age\nAda,36",
         "render": "text"
       }

@@ -31,6 +31,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "M>H", tone: "contrast" },
   labels: {
     empty: "Provide Markdown to convert to HTML.",
     ready: "Converted HTML is ready.",

@@ -16,6 +16,7 @@ export default {
   ],
   name: "Checksum Generator",
   description: "Generate MD5, SHA-1, SHA-256, and SHA-512 text checksums.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -24,6 +25,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate checksums" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "SUM" },
   labels: {
     empty: "Enter text to generate MD5, SHA-1, SHA-256, and SHA-512 checksums.",
     ready: "Checksums are ready.",

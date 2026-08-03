@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format JavaScript" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "JS{}", tone: "contrast" },
   labels: {
     empty: "Paste JavaScript to indent it.",
     ready: "Formatted JavaScript is ready.",

@@ -38,6 +38,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "404", tone: "contrast" },
   labels: {
     empty: "Type a status code or phrase to search.",
     ready: "HTTP status matches are ready.",

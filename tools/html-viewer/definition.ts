@@ -23,6 +23,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 250 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "DOM", tone: "accent" },
   labels: {
     empty: "Paste HTML to render it in a sandboxed preview.",
     ready: "Preview is up to date.",

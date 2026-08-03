@@ -29,6 +29,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "JOK", tone: "contrast" },
   labels: {
     empty: "Provide JSON to validate its syntax.",
     ready: "JSON is valid.",

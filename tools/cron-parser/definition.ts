@@ -38,6 +38,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "CRN?" },
   labels: {
     empty: "Enter a five-field cron expression to parse it.",
     ready: "Cron schedule is ready.",

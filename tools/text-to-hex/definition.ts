@@ -7,6 +7,7 @@ export default {
   keywords: ["hex", "hexadecimal", "encode", "utf-8", "bytes", "dump"],
   name: "Text to Hex",
   description: "Encode UTF-8 text as hexadecimal bytes.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -15,6 +16,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode as hex" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "T>0x" },
   labels: {
     empty: "Enter text to encode as UTF-8 hexadecimal.",
     ready: "Hexadecimal bytes are ready.",

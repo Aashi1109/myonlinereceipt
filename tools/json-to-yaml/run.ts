@@ -10,7 +10,11 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   // Dynamic so js-yaml stays out of the initial bundle.
   const { dump } = await import("js-yaml");
   ctx.signal.throwIfAborted();
-  return { render: "text", text: dump(value, { noRefs: true, sortKeys: false }) };
+  return {
+    render: "text",
+    text: dump(value, { noRefs: true, sortKeys: false }),
+    downloadName: "converted.yaml",
+  };
 };
 
 export default run;

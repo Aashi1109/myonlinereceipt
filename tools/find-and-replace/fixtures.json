@@ -13,6 +13,7 @@
         "ci": false
       },
       "expected": {
+        "downloadName": "replaced-text.txt",
         "output": "blue green blue",
         "render": "text"
       }

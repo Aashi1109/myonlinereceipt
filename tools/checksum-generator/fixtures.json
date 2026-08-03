@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "checksums.txt",
         "output": "MD5    f11c72a98bf0b6e31f0b0af786a43ba7\nSHA-1  00337cfb20489c72b736b268fdba32c027bdd62b\nSHA-256 820eb62b7660a216f711bd0df37ac8a176b662a159959870edc200b857262daf\nSHA-512 31b8effa4df268c6bc579e4374b4336d45ef178178ac093c0081754aa0b8d84153b5c67bfb3a88546d9ec91ba7d29f676fbb9cd8a2f8ed2a9027470a89e41a55",
         "render": "text"
       }

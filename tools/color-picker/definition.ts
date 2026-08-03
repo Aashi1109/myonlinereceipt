@@ -31,6 +31,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
+  workbenchMark: { text: "PICK" },
   labels: {
     empty: "Enter a HEX color to view its HEX, RGB, and HSL forms.",
     ready: "Color values are ready.",

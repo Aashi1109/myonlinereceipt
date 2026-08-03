@@ -29,6 +29,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: serializeTable(parseUtilityTable(ctx.input.text, from), to),
+    downloadName: "converted-data.txt",
   };
 };
 

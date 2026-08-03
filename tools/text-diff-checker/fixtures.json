@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "text-diff.txt",
         "output": "  alpha\n- beta\n+ beta updated\n  gamma",
         "render": "text"
       }

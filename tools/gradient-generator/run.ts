@@ -24,6 +24,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ctx.settings.type === "radial"
         ? `background: radial-gradient(circle, ${start.trim()}, ${end.trim()});`
         : `background: linear-gradient(${ctx.settings.angle}deg, ${start.trim()}, ${end.trim()});`,
+    downloadName: "gradient.css",
   };
 };
 

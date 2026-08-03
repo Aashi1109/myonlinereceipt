@@ -37,6 +37,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate types" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J>TS", tone: "contrast" },
   labels: {
     empty: "Paste a sample JSON payload to generate interfaces.",
     ready: "TypeScript interfaces are ready.",

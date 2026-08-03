@@ -36,6 +36,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Minify" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "J-", tone: "contrast" },
   labels: {
     empty: "Paste JSON to strip its whitespace.",
     ready: "Minified JSON is ready.",

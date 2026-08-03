@@ -37,6 +37,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate schema" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "JSG", tone: "contrast" },
   labels: {
     empty: "Paste a representative JSON sample to infer a schema.",
     ready: "JSON Schema is ready.",

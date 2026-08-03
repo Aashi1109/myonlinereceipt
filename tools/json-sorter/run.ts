@@ -25,7 +25,11 @@ function sortJsonKeys(value: unknown): unknown {
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const indentation = ctx.settings.indent === "4" ? 4 : 2;
   const value = parseUtilityJson(ctx.input.text, { repairMode: ctx.settings.repairMode });
-  return { render: "text", text: JSON.stringify(sortJsonKeys(value), null, indentation) };
+  return {
+    render: "text",
+    text: JSON.stringify(sortJsonKeys(value), null, indentation),
+    downloadName: "sorted.json",
+  };
 };
 
 export default run;

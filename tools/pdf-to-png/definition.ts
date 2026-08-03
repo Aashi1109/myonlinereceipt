@@ -60,6 +60,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert to PNG" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P2PN", tone: "accent" },
   labels: {
     empty: "Drop one PDF (.pdf, up to 200 MiB) to convert its pages to PNG.",
     ready: "The PDF and PNG export settings are ready.",

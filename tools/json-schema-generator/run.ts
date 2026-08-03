@@ -41,7 +41,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const value = parseUtilityJson(ctx.input.text, {
     repairMode: ctx.settings.repairMode,
   });
-  return { render: "text", text: JSON.stringify(inferJsonSchema(value), null, 2) };
+  return {
+    render: "text",
+    text: JSON.stringify(inferJsonSchema(value), null, 2),
+    downloadName: "schema.json",
+  };
 };
 
 export default run;

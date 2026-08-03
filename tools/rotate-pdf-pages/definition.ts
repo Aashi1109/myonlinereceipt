@@ -48,6 +48,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Rotate pages" },
   capabilities: { cancel: true, download: true, progress: true },
+  workbenchMark: { text: "P90", tone: "accent" },
   labels: {
     empty: "Add a PDF to rotate pages.",
     ready: "Rotation settings are ready.",

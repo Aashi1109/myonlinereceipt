@@ -51,6 +51,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "UUID", tone: "accent" },
   labels: {
     empty: "Choose a version and generate.",
     ready: "UUIDs are ready.",

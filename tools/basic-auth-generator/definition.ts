@@ -35,6 +35,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate header" },
   capabilities: { copy: true },
+  workbenchMark: { text: "AUTH" },
   labels: {
     empty: "Enter a username and optional password to generate a Basic Authorization header.",
     ready: "Basic Authorization header is ready.",

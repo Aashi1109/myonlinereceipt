@@ -8,6 +8,7 @@
       "name": "definition example",
       "settings": {},
       "expected": {
+        "downloadName": "sha1-hash.txt",
         "output": "a9993e364706816aba3e25717850c26c9cd0d89d",
         "render": "text"
       }

@@ -1,6 +1,13 @@
 "use client";
 
-import { Button, SegmentedControl, ToolOptionsPanel } from "@smarttools/ui";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  SegmentedControl,
+  ToolOptionsPanel,
+} from "@smarttools/ui";
 import { Loader2 } from "lucide-react";
 import {
   type ReactNode,
@@ -14,7 +21,12 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { SplitStack } from "@/components/Stacks";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
 import type { ToolResult } from "@/lib/tool-framework/result";
-import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
+import type {
+  ToolInputSpec,
+  ToolLayout,
+  ToolSpec,
+} from "@/lib/tool-framework/spec";
+import type { ToolLifecycle } from "@/lib/tool-runtime/types";
 
 export interface WorkspaceInputState {
   readonly files: readonly File[];
@@ -43,6 +55,7 @@ export interface WorkspaceProps {
   disabled?: boolean;
   error?: string;
   input: WorkspaceInputState;
+  lifecycle: ToolLifecycle;
   onInputChange: (input: WorkspaceInputState) => void;
   onSettingChange: (key: string, value: unknown) => void;
   onToolbarActionsChange?: (actions: WorkspaceToolbarActions | null) => void;
@@ -104,11 +117,13 @@ function useNarrowWorkspace() {
 function InputResultWorkspace({
   defaultSize,
   input,
+  layout,
   minSize,
   result,
 }: {
   defaultSize: number;
   input: ReactNode;
+  layout: ToolLayout;
   minSize: number;
   result: ReactNode;
 }) {
@@ -134,7 +149,16 @@ function InputResultWorkspace({
   }
 
   return (
-    <SplitStack className="h-full" defaultSize={defaultSize} minSize={minSize}>
+    <SplitStack
+      className={
+        layout === "stacked"
+          ? "h-full [&_[data-purpose=result]_pre]:text-[11px]"
+          : "h-full"
+      }
+      defaultSize={defaultSize}
+      minSize={minSize}
+      orientation={layout === "stacked" ? "vertical" : "horizontal"}
+    >
       {input}
       {result}
     </SplitStack>
@@ -145,7 +169,7 @@ function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction>
   return (
     <Button
       aria-busy={action.running || undefined}
-      className="w-full"
+      className="!h-11 w-full"
       disabled={action.disabled}
       onClick={action.onRun}
       type="button"
@@ -155,6 +179,57 @@ function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction>
       ) : null}
       {action.label}
     </Button>
+  );
+}
+
+function ActionRailContent({ props }: { props: WorkspaceProps }) {
+  const state = props.error
+    ? {
+        description: "Review the input, correct the problem, and run the tool again.",
+        title: props.error,
+        variant: "destructive" as const,
+      }
+    : props.lifecycle === "running"
+      ? { description: "Keep this page open while the tool finishes.", title: props.spec.labels.running }
+      : props.lifecycle === "completed"
+        ? { description: "The result is ready in the workspace.", title: props.spec.labels.ready }
+        : props.lifecycle === "ready"
+          ? {
+              description: props.primaryAction
+                ? "The input is valid and the action is available."
+                : "The result updates automatically as the input changes.",
+              title: "Ready",
+            }
+          : {
+              description: props.spec.labels.empty,
+              title: "Waiting for input",
+            };
+
+  return (
+    <>
+      <Alert variant={state.variant}>
+        <AlertTitle>{state.title}</AlertTitle>
+        <AlertDescription>{state.description}</AlertDescription>
+      </Alert>
+      {props.spec.content.limitations?.length ? (
+        <section>
+          <h3 className="text-sm font-semibold">Keep in mind</h3>
+          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-5 text-muted-foreground">
+            {props.spec.content.limitations.map((item, index) => (
+              <li key={`limitation-${index}`}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      <section>
+        <h3 className="text-sm font-semibold">How to use</h3>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs leading-5 text-muted-foreground">
+          {props.spec.content.howToUse.map((item, index) => (
+            <li key={`step-${index}`}>{item}</li>
+          ))}
+        </ol>
+      </section>
+    </>
   );
 }
 
@@ -186,28 +261,34 @@ export function ToolWorkspace(props: WorkspaceProps) {
           onInputChange={props.onInputChange}
         />
       )}
+      layout={props.spec.layout ?? "side-by-side"}
       minSize={inputSplit.minSize}
       result={result}
     />
   );
 
-  if (!hasSettings) return primaryContent;
-
   return (
-    <SplitStack className="h-full" defaultSize={70} minSize={52}>
+    <SplitStack className="h-full" defaultSize={69} minSize={52}>
       {primaryContent}
       <ToolOptionsPanel
-        action={props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
-        className="h-full overflow-y-auto bg-card p-[22px]"
-        title="Options"
+        action={hasSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
+        className="h-full overflow-y-auto bg-card p-[18px]"
+        title={hasSettings ? "Options" : props.primaryAction ? "Action" : "Guidance"}
         variant="plain"
       >
-        <SettingsPanel
-          disabled={props.disabled}
-          onChange={props.onSettingChange}
-          spec={props.spec.settings}
-          values={props.settings}
-        />
+        {hasSettings ? (
+          <SettingsPanel
+            disabled={props.disabled}
+            onChange={props.onSettingChange}
+            spec={props.spec.settings}
+            values={props.settings}
+          />
+        ) : (
+          <>
+            {props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : null}
+            <ActionRailContent props={props} />
+          </>
+        )}
       </ToolOptionsPanel>
     </SplitStack>
   );

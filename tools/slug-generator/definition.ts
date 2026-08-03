@@ -15,6 +15,7 @@ export default {
   ],
   name: "Slug Generator",
   description: "Create lowercase URL-safe slugs.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Titles to slugify",
@@ -23,6 +24,7 @@ export default {
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate slugs" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "SLG" },
   labels: {
     empty: "Enter one or more titles to create URL-safe slugs.",
     ready: "URL-safe slugs are ready.",

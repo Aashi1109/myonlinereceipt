@@ -21,6 +21,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         : mode === "lines"
           ? text.split(/\r\n|\r|\n/u).reverse().join("\n")
           : Array.from(text).reverse().join(""),
+    downloadName: "reversed-text.txt",
   };
 };
 

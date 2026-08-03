@@ -45,7 +45,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     }
   }
 
-  return { render: "text", text: url.toString() };
+  return { render: "text", text: url.toString(), downloadName: "campaign-url.txt" };
 };
 
 export default run;

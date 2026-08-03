@@ -16,6 +16,7 @@ export default {
   name: "Word Counter",
   description:
     "Count words, characters, sentences, paragraphs, lines, and reading time.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text",
@@ -45,6 +46,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
+  workbenchMark: { text: "W#" },
   labels: {
     empty: "Enter text to count its words and characters.",
     ready: "Text statistics are ready.",

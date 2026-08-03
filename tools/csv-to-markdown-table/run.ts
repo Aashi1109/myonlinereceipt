@@ -30,6 +30,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       `| ${rows[0].map(() => "---").join(" | ")} |`,
       ...rows.slice(1).map((row) => `| ${row.map(markdownCell).join(" | ")} |`),
     ].join("\n"),
+    downloadName: "table.md",
   };
 };
 

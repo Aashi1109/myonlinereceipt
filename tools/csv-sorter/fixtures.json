@@ -12,6 +12,7 @@
         "order": "asc"
       },
       "expected": {
+        "downloadName": "sorted-data.txt",
         "output": "name,age\nAda,36\nLin,29",
         "render": "text"
       }

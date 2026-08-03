@@ -51,6 +51,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Convert delimiter" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "SEP" },
   labels: {
     empty: "Paste delimited rows to convert their separator.",
     ready: "Converted delimited data is ready.",

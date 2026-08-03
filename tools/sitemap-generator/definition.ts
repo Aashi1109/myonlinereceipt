@@ -31,6 +31,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "MAP" },
   labels: {
     empty: "Provide one absolute URL per line to generate a sitemap.",
     ready: "XML sitemap is ready.",

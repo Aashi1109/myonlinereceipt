@@ -46,6 +46,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: differences.length ? differences.join("\n") : "No differences.",
+    downloadName: "json-diff.txt",
   };
 };
 

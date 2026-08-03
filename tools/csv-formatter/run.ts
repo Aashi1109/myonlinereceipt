@@ -19,7 +19,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const rows = parseUtilityTable(ctx.input.text, delimiter).map((row) =>
     row.map((cell) => cell.trim()),
   );
-  return { render: "text", text: serializeTable(rows, delimiter) };
+  return {
+    render: "text",
+    text: serializeTable(rows, delimiter),
+    downloadName: "formatted-data.txt",
+  };
 };
 
 export default run;

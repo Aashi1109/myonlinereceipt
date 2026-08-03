@@ -26,6 +26,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
         return true;
       })
       .join("\n"),
+    downloadName: "unique-lines.txt",
   };
 };
 

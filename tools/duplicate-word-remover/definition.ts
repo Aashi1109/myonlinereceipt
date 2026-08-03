@@ -15,6 +15,7 @@ export default {
   ],
   name: "Duplicate Word Remover",
   description: "Remove repeated words while preserving first occurrences.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -30,6 +31,7 @@ export default {
   capabilities: {
     copy: true,
   },
+  workbenchMark: { text: "WD-" },
   labels: {
     empty: "Paste text to remove repeated words.",
     ready: "Text without repeated words is ready.",

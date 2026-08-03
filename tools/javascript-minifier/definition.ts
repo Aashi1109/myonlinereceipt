@@ -30,6 +30,7 @@ export default {
     copy: true,
     download: true,
   },
+  workbenchMark: { text: "JS-", tone: "contrast" },
   labels: {
     empty: "Paste JavaScript to strip comments and whitespace.",
     ready: "Minified JavaScript is ready.",

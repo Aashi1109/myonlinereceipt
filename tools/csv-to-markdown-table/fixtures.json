@@ -10,6 +10,7 @@
         "delimiter": ","
       },
       "expected": {
+        "downloadName": "table.md",
         "output": "| name | age |\n| --- | --- |\n| Ada | 36 |",
         "render": "text"
       }

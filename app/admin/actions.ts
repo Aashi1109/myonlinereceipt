@@ -73,6 +73,7 @@ export async function toggleToolAction(formData: FormData) {
     text(formData, "enabled") === "true",
   );
   revalidatePath("/admin/tools");
+  revalidatePath(`/admin/tools/${encodeURIComponent(text(formData, "toolId"))}`);
 }
 
 export async function archiveToolAction(formData: FormData) {

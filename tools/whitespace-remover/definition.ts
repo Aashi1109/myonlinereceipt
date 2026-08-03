@@ -14,6 +14,7 @@ export default {
   ],
   name: "Whitespace Remover",
   description: "Remove selected kinds of whitespace.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Text input",
@@ -38,6 +39,7 @@ export default {
   },
   trigger: { mode: "manual", actionLabel: "Remove whitespace" },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "SP-" },
   labels: {
     empty: "Enter text to remove unwanted whitespace.",
     ready: "Cleaned text is ready.",

@@ -11,6 +11,7 @@
         "ci": true
       },
       "expected": {
+        "downloadName": "sorted-text.txt",
         "output": "apple\nBanana\nCherry",
         "render": "text"
       }
