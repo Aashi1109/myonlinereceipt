@@ -8,19 +8,26 @@ export default {
   name: "HEX to RGB",
   description: "Convert HEX colors to RGB or RGBA.",
   input: {
-    kind: "text",
-    label: "HEX color",
-    placeholder: "#3366ff",
-    maxLength: 16,
+    kind: "fields",
+    label: "HEX Color",
+    fields: [
+      {
+        channel: "text",
+        label: "HEX color",
+        placeholder: "#3366ff",
+        required: true,
+        multiline: false,
+        maxLength: 16,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "live" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a HEX color such as #3366ff.",
+    empty: "Enter a HEX color to convert it to RGB.",
     ready: "RGB value is ready.",
-    running: "Converting…",
+    running: "Converting HEX to RGB…",
   },
   content: {
     howToUse: [

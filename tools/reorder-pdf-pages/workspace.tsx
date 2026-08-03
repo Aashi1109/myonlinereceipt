@@ -9,13 +9,13 @@
  * order state to fall out of step with it.
  */
 
-import { FileProcessorWorkspace } from "@/components/workspaces/FileProcessorWorkspace";
+import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import {
   PdfPagesSurface,
   usePdfPageImages,
   type PdfPageImage,
-} from "@/components/workspaces/PdfPagesSurface";
-import type { WorkspaceProps } from "@/components/workspaces/SourceResultWorkspace";
+} from "@/components/PdfPagesSurface";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
 
 const PAGES = "pages";

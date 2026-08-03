@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "JavaScript input",
-    placeholder: "Enter or paste javascript input…",
+    placeholder: "function greet(name){return 'Hello ' + name;}",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format JavaScript" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste JavaScript to indent it.",
-    ready: "Formatted source is ready.",
-    running: "Formatting…",
+    ready: "Formatted JavaScript is ready.",
+    running: "Formatting JavaScript…",
   },
   content: {
     howToUse: [

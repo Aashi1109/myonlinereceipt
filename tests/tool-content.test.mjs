@@ -27,7 +27,6 @@ function makeSpec(overrides = {}) {
     input: { kind: "fields", label: "Input" },
     settings: {},
     trigger: { mode: "live" },
-    layout: "source-result",
     labels: { empty: "Empty", ready: "Ready", running: "Running" },
     content: SPEC_CONTENT,
     ...overrides,

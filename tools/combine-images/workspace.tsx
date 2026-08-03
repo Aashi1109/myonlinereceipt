@@ -7,8 +7,8 @@
 
 import {
   FileProcessorWorkspace,
-} from "@/components/workspaces/FileProcessorWorkspace";
-import type { WorkspaceProps } from "@/components/workspaces/SourceResultWorkspace";
+} from "@/components/FileProcessorWorkspace";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
 
 export default function Workspace(props: WorkspaceProps) {
   return <FileProcessorWorkspace {...props} orderFiles />;

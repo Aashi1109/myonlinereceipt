@@ -68,7 +68,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Crop PDF" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add a PDF to set its visible crop area.",

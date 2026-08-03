@@ -10,16 +10,15 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,note\nAda,Hello",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to TSV" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV to convert it to TSV.",
-    ready: "TSV is ready.",
-    running: "Converting…",
+    empty: "Paste comma-separated rows to convert them to TSV.",
+    ready: "Tab-separated text is ready.",
+    running: "Converting CSV to TSV…",
   },
   content: {
     howToUse: [

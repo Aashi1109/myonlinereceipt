@@ -87,11 +87,10 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 160 },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Choose schedule fields to build a cron expression.",
-    ready: "Cron expression ready.",
+    empty: "Enter minute and hour fields to build a cron expression.",
+    ready: "Cron expression is ready.",
     running: "Building cron expression…",
   },
   content: {

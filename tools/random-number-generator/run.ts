@@ -29,8 +29,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     );
   }
   return {
-    render: "text",
-    text: Array.from({ length: count }, () => min + secureRandomInt(max - min + 1)).join("\n"),
+    render: "list",
+    items: Array.from({ length: count }, () => String(min + secureRandomInt(max - min + 1))),
   };
 };
 

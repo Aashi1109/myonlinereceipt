@@ -9,8 +9,8 @@ export default {
   description: "Reverse characters, words, or lines.",
   input: {
     kind: "text",
-    label: "Text input",
-    placeholder: "Enter or paste text input…",
+    label: "Text to reverse",
+    placeholder: "one two three",
   },
   settings: {
     fields: {
@@ -27,12 +27,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Reverse" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste text to reverse it.",
+    empty: "Enter the text you want to reverse.",
     ready: "Reversed text is ready.",
-    running: "Reversing…",
+    running: "Reversing text…",
   },
   content: {
     howToUse: [

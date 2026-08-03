@@ -12,12 +12,10 @@
         "count": 3
       },
       "expected": {
-        "render": "text",
-        "length": {
-          "max": 107,
-          "min": 107
-        },
-        "pattern": "^[a-zA-Z0-9\\n\\-_]{107,107}$"
+        "render": "list",
+        "itemCount": 3,
+        "itemPattern": "^sk_[A-Za-z0-9_-]{32}$",
+        "downloadName": "api-keys.txt"
       }
     }
   ]

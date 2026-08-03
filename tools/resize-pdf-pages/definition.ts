@@ -9,10 +9,13 @@ export default {
   description: "Resize PDF pages and their contents.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to resize",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
     inspect: true,
   },
@@ -86,12 +89,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Resize pages" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to resize its pages.",
-    ready: "Page size settings are ready.",
-    running: "Resizing pages…",
+    empty: "Drop one PDF (up to 200 MiB) to resize its pages.",
+    ready: "The PDF and page size settings are ready.",
+    running: "Resizing PDF pages…",
   },
   content: {
     howToUse: [

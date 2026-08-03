@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "CSS input",
-    placeholder: "Enter or paste css input…",
+    placeholder: "/* Theme */\n.card { color: #2563eb; }",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Minify CSS" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSS to strip comments and whitespace.",
+    empty: "Paste CSS to remove comments and unnecessary whitespace.",
     ready: "Minified CSS is ready.",
-    running: "Minifying…",
+    running: "Minifying CSS…",
   },
   content: {
     howToUse: [

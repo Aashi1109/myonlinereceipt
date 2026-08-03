@@ -10,7 +10,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Hello 👋",
   },
   settings: {
     fields: {
@@ -23,12 +23,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Encode" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste text to encode it as Base64.",
-    ready: "Base64 is ready.",
-    running: "Encoding…",
+    empty: "Enter text to encode it as Base64.",
+    ready: "Base64 text is ready.",
+    running: "Encoding text as Base64…",
   },
   content: {
     howToUse: [

@@ -16,22 +16,31 @@ export default {
   name: "Text Diff Checker",
   description: "Compare two texts line by line.",
   input: {
-    kind: "text",
-    label: "Original text",
-    placeholder: "alpha\nbeta\ngamma",
-    secondary: {
-      label: "Changed text",
-      placeholder: "alpha\nbeta updated\ngamma",
-    },
+    kind: "fields",
+    label: "Text Versions",
+    fields: [
+      {
+        channel: "text",
+        label: "Original text",
+        placeholder: "alpha\nbeta\ngamma",
+        required: true,
+        multiline: true,
+      },
+      {
+        channel: "secondary",
+        label: "Changed text",
+        placeholder: "alpha\nbeta updated\ngamma",
+        multiline: true,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare text" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste both text versions to compare them.",
-    ready: "Aligned comparison is ready.",
-    running: "Aligning changed lines…",
+    empty: "Provide the original and changed text to compare them.",
+    ready: "Line-by-line comparison is ready.",
+    running: "Comparing text line by line…",
   },
   content: {
     howToUse: [

@@ -18,8 +18,10 @@ export default {
   description: "Convert HEIC images to JPG.",
   input: {
     kind: "files",
-    label: "HEIC images",
-    accept: "image/heic,image/heif",
+    label: "Add HEIC images",
+    dropzoneDescription:
+      "HEIC and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -45,12 +47,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add HEIC images to convert them to JPG.",
-    ready: "Conversion settings are ready.",
-    running: "Converting HEIC images…",
+    empty: "Drop up to 50 HEIC or HEIF images, 25 MiB each, to convert them to JPG.",
+    ready: "HEIC-to-JPG settings are ready.",
+    running: "Converting HEIC and HEIF images to JPG…",
   },
   content: {
     howToUse: [

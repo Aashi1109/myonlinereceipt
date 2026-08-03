@@ -10,16 +10,15 @@ export default {
   input: {
     kind: "text",
     label: "HTML input",
-    placeholder: "Enter or paste html input…",
+    placeholder: "<main><h1>Hello</h1><p>Smart tools</p></main>",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format HTML" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste HTML to indent it.",
     ready: "Formatted HTML is ready.",
-    running: "Formatting…",
+    running: "Formatting HTML…",
   },
   content: {
     howToUse: [

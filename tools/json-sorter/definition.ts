@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"z":1,"a":{"d":4,"b":2}}',
   },
   settings: {
     fields: {
@@ -62,15 +62,14 @@ export default {
     mode: "manual",
     actionLabel: "Sort keys",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
     empty: "Paste JSON to sort its keys.",
-    ready: "Keys sorted.",
-    running: "Sorting keys…",
+    ready: "Sorted JSON is ready.",
+    running: "Sorting JSON keys…",
   },
   content: {
     howToUse: [

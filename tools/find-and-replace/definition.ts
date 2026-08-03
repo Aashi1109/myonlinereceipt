@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "red green red",
   },
   settings: {
     fields: {
@@ -34,12 +34,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Replace" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste text and enter what to find.",
+    empty: "Paste the text you want to search and replace.",
     ready: "Replaced text is ready.",
-    running: "Replacing…",
+    running: "Replacing matching text…",
   },
   content: {
     howToUse: [

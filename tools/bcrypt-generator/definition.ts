@@ -18,7 +18,7 @@ export default {
       {
         channel: "text",
         label: "Password or text",
-        placeholder: "The value to hash",
+        placeholder: "correct horse battery staple",
         required: true,
         secret: true,
       },
@@ -37,12 +37,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate bcrypt hash" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a password to hash it.",
+    empty: "Enter a password or plain text to generate a bcrypt hash.",
     ready: "Bcrypt hash is ready.",
-    running: "Hashing…",
+    running: "Generating bcrypt hash…",
   },
   content: {
     howToUse: [

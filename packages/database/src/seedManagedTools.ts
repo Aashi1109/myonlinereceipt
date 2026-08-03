@@ -83,7 +83,6 @@ function parseToolDefinition(
     "input",
     "settings",
     "trigger",
-    "layout",
     "labels",
     "content",
   ]) {

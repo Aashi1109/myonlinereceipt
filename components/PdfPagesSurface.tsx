@@ -154,7 +154,7 @@ const THUMBNAIL_CLASSES =
   "mx-auto max-h-44 w-auto rounded-md border border-border bg-white object-contain";
 const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3";
 
-function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
+export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
   return (
     <img
       alt=""

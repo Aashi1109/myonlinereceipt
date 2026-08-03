@@ -23,19 +23,26 @@ export default {
   name: "Domain Age & WHOIS Checker",
   description: "Query public RDAP data for domain registration details.",
   input: {
-    kind: "text",
+    kind: "fields",
     label: "Domain",
-    placeholder: "example.com",
-    maxLength: 253,
+    fields: [
+      {
+        channel: "text",
+        label: "Domain name",
+        placeholder: "example.com",
+        required: true,
+        multiline: false,
+        maxLength: 253,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Check domain age" },
-  layout: "source-result",
   capabilities: { network: true },
   labels: {
-    empty: "Enter a domain to look up its registration record.",
-    ready: "Registration record ready.",
-    running: "Querying public RDAP…",
+    empty: "Enter a public domain to look up its RDAP registration record.",
+    ready: "RDAP registration record is ready.",
+    running: "Looking up domain registration…",
   },
   content: {
     howToUse: [

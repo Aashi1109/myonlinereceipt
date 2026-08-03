@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Raw string",
-    placeholder: "Enter or paste raw string…",
+    placeholder: 'He said "hello".\nNext line.',
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Escape" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
     empty: "Paste the raw text you want to embed in JSON.",
     ready: "Escaped string is ready.",
-    running: "Escaping…",
+    running: "Escaping text for JSON…",
   },
   content: {
     howToUse: [

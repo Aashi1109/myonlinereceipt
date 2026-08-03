@@ -27,9 +27,15 @@ const RUN_FILES = ["run.ts", "run.worker.ts", "run.server.ts", "execution.ts"];
 /** Flattens a ToolResult to the {render, output, ...} shape fixtures capture. */
 function normalize(result) {
   const normalized = {
-    output: result.text ?? result.src ?? result.html ?? result.output,
     render: result.render ?? result.outputKind,
   };
+  const output = result.text ?? result.src ?? result.html ?? result.output;
+  if (output !== undefined) normalized.output = output;
+  if (result.items) normalized.items = result.items;
+  if (result.entries) {
+    normalized.entries = result.entries.map(({ label, value }) => ({ label, value }));
+  }
+  if (result.labels) normalized.labels = result.labels;
   if (result.downloadName) normalized.downloadName = result.downloadName;
   const artifacts = result.artifacts ?? result.alternateArtifacts;
   if (artifacts?.length) {
@@ -39,6 +45,24 @@ function normalize(result) {
 }
 
 function assertCase(expected, actual) {
+  if (expected.itemCount !== undefined || expected.itemPattern) {
+    assert.equal(actual.render, expected.render, "render kind");
+    assert.ok(Array.isArray(actual.items), "items");
+    if (expected.itemCount !== undefined) {
+      assert.equal(actual.items.length, expected.itemCount, "item count");
+    }
+    if (expected.itemPattern) {
+      const pattern = new RegExp(expected.itemPattern);
+      for (const [index, item] of actual.items.entries()) {
+        assert.match(item, pattern, `item ${index + 1} pattern`);
+      }
+    }
+    if ("labels" in expected) assert.deepEqual(actual.labels, expected.labels, "labels");
+    if ("downloadName" in expected) {
+      assert.equal(actual.downloadName, expected.downloadName, "download name");
+    }
+    return;
+  }
   if (!expected.pattern) return assert.deepEqual(actual, expected);
   assert.equal(actual.render, expected.render, "render kind");
   assert.match(actual.output, new RegExp(expected.pattern), "output charset");

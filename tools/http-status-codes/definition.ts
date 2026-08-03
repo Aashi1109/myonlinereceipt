@@ -17,9 +17,17 @@ export default {
   name: "HTTP Status Code Lookup",
   description: "Look up common HTTP status codes by code or phrase.",
   input: {
-    kind: "text",
-    label: "Status code or phrase",
-    placeholder: "Enter or paste status code or phrase…",
+    kind: "fields",
+    label: "Status Code or Phrase",
+    fields: [
+      {
+        channel: "text",
+        label: "Status code or phrase",
+        placeholder: "404",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: {
     fields: {},
@@ -27,20 +35,19 @@ export default {
   trigger: {
     mode: "live",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
     empty: "Type a status code or phrase to search.",
-    ready: "Matches found.",
-    running: "Searching…",
+    ready: "HTTP status matches are ready.",
+    running: "Searching HTTP status codes…",
   },
   content: {
     howToUse: [
       "Type a number (404), a partial number (40 matches the whole 4xx family listed here), or part of a phrase (gateway).",
       "Results filter as you type and show every match as \"<code> <reason phrase>\".",
-      "Leave the box empty to browse the full list.",
+      "Use a shorter query when you want to broaden the result list.",
     ],
     limitations: [
       "This is a curated list of the codes that appear in everyday work, not the complete IANA registry. WebDAV, extension, and vendor-specific codes are not included.",

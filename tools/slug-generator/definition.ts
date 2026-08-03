@@ -17,16 +17,15 @@ export default {
   description: "Create lowercase URL-safe slugs.",
   input: {
     kind: "text",
-    label: "Text or titles",
-    placeholder: "Enter or paste text or titles…",
+    label: "Titles to slugify",
+    placeholder: "Hello, Smart Tools!\nCafé Menu 2026",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate slugs" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste one or more titles to slugify.",
-    ready: "Slugs are ready.",
+    empty: "Enter one or more titles to create URL-safe slugs.",
+    ready: "URL-safe slugs are ready.",
     running: "Generating slugs…",
   },
   content: {

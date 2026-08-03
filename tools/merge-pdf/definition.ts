@@ -18,7 +18,6 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Merge PDFs" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add PDFs in the order they should be merged.",

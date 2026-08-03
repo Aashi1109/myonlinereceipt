@@ -18,10 +18,13 @@ export default {
   description: "Reduce PDF size with structural or strong compression.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to compress",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
   },
   settings: {
@@ -77,11 +80,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Compress PDF" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to compress.",
-    ready: "Compression settings are ready.",
+    empty: "Drop one PDF (.pdf, up to 200 MiB) to compress it.",
+    ready: "The PDF and compression settings are ready.",
     running: "Compressing PDF…",
   },
   content: {

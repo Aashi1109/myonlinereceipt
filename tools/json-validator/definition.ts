@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"valid":true}',
   },
   settings: {
     fields: {},
@@ -26,13 +26,12 @@ export default {
     mode: "manual",
     actionLabel: "Validate",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste JSON to check whether it parses.",
-    ready: "JSON parsed successfully.",
+    empty: "Provide JSON to validate its syntax.",
+    ready: "JSON is valid.",
     running: "Validating JSON…",
   },
   content: {

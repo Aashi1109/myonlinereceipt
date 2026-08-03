@@ -17,18 +17,25 @@ export default {
   name: "Timestamp Converter",
   description: "Convert Unix timestamps or date text to standard formats.",
   input: {
-    kind: "text",
-    label: "Unix timestamp or date",
-    placeholder: "Enter or paste unix timestamp or date…",
+    kind: "fields",
+    label: "Unix Timestamp or Date",
+    fields: [
+      {
+        channel: "text",
+        label: "Timestamp or date",
+        placeholder: "1704067200",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 200 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
     empty: "Enter a Unix timestamp or a date to convert it.",
-    ready: "Conversions are up to date.",
-    running: "Converting…",
+    ready: "Timestamp conversions are ready.",
+    running: "Converting timestamp…",
   },
   content: {
     howToUse: [

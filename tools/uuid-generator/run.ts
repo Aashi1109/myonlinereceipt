@@ -37,7 +37,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     const withoutHyphens = hyphens ? value : value.replaceAll("-", "");
     return upper ? withoutHyphens.toUpperCase() : withoutHyphens;
   });
-  return { render: "text", text: values.join("\n") };
+  return { render: "list", items: values, downloadName: "uuids.txt" };
 };
 
 export default run;

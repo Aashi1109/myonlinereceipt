@@ -18,8 +18,11 @@ export default {
   description: "Apply image orientation and strip embedded metadata.",
   input: {
     kind: "files",
-    label: "Images with metadata",
-    accept: "image/jpeg,image/png,image/webp,image/heic,image/heif",
+    label: "Add images to remove metadata",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept:
+      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -27,12 +30,12 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Remove metadata" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to remove embedded metadata.",
-    ready: "Images are ready for metadata removal.",
-    running: "Removing image metadata…",
+    empty:
+      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to remove their metadata.",
+    ready: "The images are ready for metadata removal.",
+    running: "Removing metadata from the images…",
   },
   content: {
     howToUse: [

@@ -16,9 +16,17 @@ export default {
   name: "RGB to HEX",
   description: "Convert RGB or RGBA colors to HEX.",
   input: {
-    kind: "text",
-    label: "RGB color",
-    placeholder: "Enter or paste rgb color…",
+    kind: "fields",
+    label: "RGB Color",
+    fields: [
+      {
+        channel: "text",
+        label: "RGB or RGBA value",
+        placeholder: "rgb(51, 102, 255)",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: {
     fields: {},
@@ -26,14 +34,13 @@ export default {
   trigger: {
     mode: "live",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Enter an rgb() or rgba() value to convert it.",
-    ready: "HEX value ready.",
-    running: "Converting…",
+    empty: "Enter the RGB or RGBA color you want to convert.",
+    ready: "HEX color is ready.",
+    running: "Converting RGB to HEX…",
   },
   content: {
     howToUse: [

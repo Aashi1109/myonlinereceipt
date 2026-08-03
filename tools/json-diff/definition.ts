@@ -17,19 +17,19 @@ export default {
   description: "Compare two JSON values by path.",
   input: {
     kind: "fields",
-    label: "Two JSON values",
+    label: "JSON documents to compare",
     fields: [
       {
         channel: "text",
         label: "JSON A",
-        placeholder: "Enter or paste json a…",
+        placeholder: '{"name":"Ada","active":true}',
         required: true,
         multiline: true,
       },
       {
         channel: "secondary",
         label: "JSON B",
-        placeholder: "Enter or paste json b…",
+        placeholder: '{"name":"Ada","active":false,"role":"admin"}',
         required: true,
         multiline: true,
       },
@@ -51,11 +51,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Compare JSON" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste two JSON values to compare them.",
-    ready: "Comparison is ready.",
+    ready: "JSON differences are ready.",
     running: "Comparing JSON…",
   },
   content: {

@@ -16,19 +16,26 @@ export default {
   name: "Domain Rating Checker",
   description: "Look up the Ahrefs Domain Rating (DR) for a domain.",
   input: {
-    kind: "text",
+    kind: "fields",
     label: "Domain",
-    placeholder: "example.com",
-    maxLength: 2048,
+    fields: [
+      {
+        channel: "text",
+        label: "Public domain",
+        placeholder: "example.com",
+        required: true,
+        multiline: false,
+        maxLength: 2048,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Check domain rating" },
-  layout: "source-result",
   capabilities: { network: true },
   labels: {
-    empty: "Enter a domain to check its Domain Rating.",
-    ready: "Domain Rating retrieved.",
-    running: "Checking Domain Rating…",
+    empty: "Enter a public domain to look up its Ahrefs Domain Rating.",
+    ready: "Ahrefs Domain Rating is ready.",
+    running: "Looking up Domain Rating…",
   },
   content: {
     howToUse: [

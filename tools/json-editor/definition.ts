@@ -10,7 +10,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"name":"Ada","active":true}',
   },
   settings: {
     fields: {
@@ -37,7 +37,6 @@ export default {
     },
   },
   trigger: { mode: "live" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste JSON to repair and reformat it.",

@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Sample JSON",
-    placeholder: "Enter or paste sample json…",
+    placeholder: '{"id":1,"name":"Ada","tags":["admin"]}',
   },
   settings: {
     fields: {
@@ -36,12 +36,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate schema" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste a representative JSON sample to infer a schema.",
-    ready: "Schema is ready.",
-    running: "Inferring schema…",
+    ready: "JSON Schema is ready.",
+    running: "Inferring JSON Schema…",
   },
   content: {
     howToUse: [

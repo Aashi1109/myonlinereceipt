@@ -11,6 +11,27 @@
         "output": "{\n  \"token\": \"eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.\",\n  \"header\": {\n    \"alg\": \"none\"\n  },\n  \"payload\": {\n    \"sub\": \"123\"\n  }\n}",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "Bearer opaque-token",
+        "secondary": ""
+      },
+      "name": "opaque token details are individually copyable",
+      "settings": {},
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          {
+            "label": "Token",
+            "value": "opaque-token"
+          },
+          {
+            "label": "Length",
+            "value": "12"
+          }
+        ]
+      }
     }
   ]
 }

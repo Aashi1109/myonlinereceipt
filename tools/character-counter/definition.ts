@@ -19,16 +19,15 @@ export default {
   input: {
     kind: "text",
     label: "Text",
-    placeholder: "Enter or paste text…",
+    placeholder: "Hello, world!\nThis is a sample.",
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Type or paste text to count it.",
-    ready: "Counts are up to date.",
-    running: "Counting…",
+    empty: "Type or paste text to count its characters, words, lines, and bytes.",
+    ready: "Text counts are ready.",
+    running: "Counting text…",
   },
   content: {
     howToUse: [

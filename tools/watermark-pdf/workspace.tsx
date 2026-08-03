@@ -9,18 +9,18 @@
  * read here and edited through the settings panel.
  */
 
-import { FileProcessorWorkspace } from "@/components/workspaces/FileProcessorWorkspace";
+import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import {
   PdfPagesSurface,
   pageExpression,
   selectedPageNumbers,
   usePdfPageImages,
   type PdfPageImage,
-} from "@/components/workspaces/PdfPagesSurface";
-import type { WorkspaceProps } from "@/components/workspaces/SourceResultWorkspace";
-import { workspaceFileId } from "@/components/workspaces/SourceResultWorkspace";
+} from "@/components/PdfPagesSurface";
+import { workspaceFileId } from "@/components/FileInput";
 import { Stack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
 import { useEffect, useState } from "react";
 

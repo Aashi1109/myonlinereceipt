@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
     fields: {
@@ -37,12 +37,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to Markdown" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV rows to build a Markdown table.",
+    empty: "Paste CSV with a header row to build a Markdown table.",
     ready: "Markdown table is ready.",
-    running: "Building table…",
+    running: "Building Markdown table…",
   },
   content: {
     howToUse: [

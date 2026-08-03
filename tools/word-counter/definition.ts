@@ -19,7 +19,7 @@ export default {
   input: {
     kind: "text",
     label: "Text",
-    placeholder: "Enter or paste text…",
+    placeholder: "Smart tools make repeated work faster.",
   },
   settings: {
     fields: {
@@ -44,12 +44,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 200 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste or type text to see its statistics.",
-    ready: "Counts are up to date.",
-    running: "Counting…",
+    empty: "Enter text to count its words and characters.",
+    ready: "Text statistics are ready.",
+    running: "Counting words and characters…",
   },
   content: {
     howToUse: [

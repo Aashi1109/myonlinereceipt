@@ -92,7 +92,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Apply watermark" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add a PDF to configure its watermark.",

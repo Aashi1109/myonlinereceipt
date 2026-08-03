@@ -16,10 +16,11 @@ const ALPHABET =
   "_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
-  render: "text",
-  text: Array.from({ length: ctx.settings.count }, () =>
+  render: "list",
+  items: Array.from({ length: ctx.settings.count }, () =>
     randomString(ctx.settings.size, ALPHABET),
-  ).join("\n"),
+  ),
+  downloadName: "nanoids.txt",
 });
 
 export default run;

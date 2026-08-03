@@ -44,7 +44,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Choose a count and size, then generate.",

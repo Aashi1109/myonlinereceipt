@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nAda,Admin",
   },
   settings: {
     fields: {
@@ -37,12 +37,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Build table" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV to generate table markup.",
-    ready: "Table markup is ready.",
-    running: "Building table…",
+    empty: "Paste CSV rows to generate HTML table markup.",
+    ready: "HTML table markup is ready.",
+    running: "Generating HTML table…",
   },
   content: {
     howToUse: [

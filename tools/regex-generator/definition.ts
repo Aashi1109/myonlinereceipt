@@ -16,7 +16,7 @@ export default {
   ],
   name: "Regex Generator",
   description: "Generate common regular-expression patterns.",
-  input: { kind: "text", label: "Not used", placeholder: "" },
+  input: { kind: "none" },
   settings: {
     fields: {
       preset: {
@@ -46,10 +46,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
-  layout: "generator",
   capabilities: { copy: true },
   labels: {
-    empty: "Pick a preset to generate a pattern.",
+    empty: "Choose a pattern preset and target language.",
     ready: "Pattern is ready.",
     running: "Generating…",
   },

@@ -14,7 +14,7 @@ export default {
   ],
   name: "Lorem Ipsum Generator",
   description: "Generate placeholder paragraphs.",
-  input: { kind: "text", label: "Not used", placeholder: "" },
+  input: { kind: "none" },
   settings: {
     fields: {
       paragraphs: {
@@ -27,10 +27,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Choose how many paragraphs to generate.",
+    empty: "Choose the number of paragraphs to generate.",
     ready: "Placeholder text is ready.",
     running: "Generating…",
   },

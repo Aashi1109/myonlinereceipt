@@ -284,13 +284,6 @@ test("the legacy allowlists only shrink", () => {
 // The folder contract, applied to migrated folders only.
 // ---------------------------------------------------------------------------
 
-const specSource = await readFile(path.join(ROOT, "lib/tool-framework/spec.ts"), "utf8");
-const TOOL_LAYOUTS = new Set(
-  [...(/export type ToolLayout =([\s\S]*?);/.exec(specSource)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map(
-    (match) => match[1],
-  ),
-);
-
 // Prefer the exported pattern; fall back to the catalogue's own literal while
 // `TOOL_SLUG_PATTERN` is still module-private (see report).
 const TOOL_SLUG_PATTERN =
@@ -302,7 +295,6 @@ test("migration progress", () => {
       .map((folder) => folder.name)
       .join(", ")}`,
   );
-  assert.ok(TOOL_LAYOUTS.size > 0, "ToolLayout union must be parseable from spec.ts");
 });
 
 test("folder name, spec and toolId are one bijection", () => {
@@ -358,7 +350,7 @@ test("every migrated folder declares exactly one execution host", () => {
   }
 });
 
-test("every spec declares a known category and layout", () => {
+test("every spec declares a known category", () => {
   for (const { folder, spec } of specs) {
     assert.ok(
       Object.hasOwn(TOOL_CATEGORIES, spec.category),
@@ -369,7 +361,6 @@ test("every spec declares a known category and layout", () => {
       spec.app,
       `${folder.name}: category "${spec.category}" belongs to another app`,
     );
-    assert.ok(TOOL_LAYOUTS.has(spec.layout), `${folder.name}: unknown layout "${spec.layout}"`);
   }
 });
 

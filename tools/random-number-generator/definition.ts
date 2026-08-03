@@ -15,7 +15,7 @@ export default {
   ],
   name: "Random Number Generator",
   description: "Generate cryptographically secure integers in a range.",
-  input: { kind: "text", label: "Not used", placeholder: "" },
+  input: { kind: "none" },
   settings: {
     fields: {
       min: {
@@ -36,10 +36,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate" },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Set a range and generate numbers.",
+    empty: "Choose a minimum, maximum, and quantity to generate.",
     ready: "Numbers are ready.",
     running: "Generating…",
   },

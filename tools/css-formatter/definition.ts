@@ -18,14 +18,13 @@ export default {
   input: {
     kind: "text",
     label: "CSS input",
-    placeholder: "Enter or paste css input…",
+    placeholder: ".card{color:#2563eb;padding:1rem;}",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Format CSS" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSS to indent it.",
+    empty: "Paste CSS to format its indentation.",
     ready: "Formatted CSS is ready.",
     running: "Formatting CSS…",
   },

@@ -82,7 +82,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Build campaign URL" },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Complete the destination and required campaign fields.",

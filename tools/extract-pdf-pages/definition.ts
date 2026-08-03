@@ -9,10 +9,13 @@ export default {
   description: "Create a PDF from selected pages.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to extract pages",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
     inspect: true,
   },
@@ -27,11 +30,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Extract pages" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to extract pages.",
-    ready: "Page selection is ready.",
+    empty: "Drop one PDF (.pdf, up to 200 MiB) to extract selected pages.",
+    ready: "The PDF and page selection are ready.",
     running: "Extracting pages…",
   },
   content: {

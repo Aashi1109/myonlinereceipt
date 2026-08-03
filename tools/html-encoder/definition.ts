@@ -10,16 +10,15 @@ export default {
   input: {
     kind: "text",
     label: "HTML or text",
-    placeholder: "Enter or paste html or text…",
+    placeholder: '<button title="Save & close">Save</button>',
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode entities" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste markup or text to escape it.",
-    ready: "Escaped text is ready.",
-    running: "Encoding…",
+    empty: "Paste HTML or text to escape its reserved characters.",
+    ready: "HTML-escaped text is ready.",
+    running: "Encoding HTML entities…",
   },
   content: {
     howToUse: [

@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "abc",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate SHA-1" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Enter text to hash it with SHA-1.",
+    empty: "Enter the text you want to hash with SHA-1.",
     ready: "SHA-1 digest is ready.",
-    running: "Hashing…",
+    running: "Generating SHA-1 digest…",
   },
   content: {
     howToUse: [

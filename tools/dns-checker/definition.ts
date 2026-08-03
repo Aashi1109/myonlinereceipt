@@ -23,10 +23,18 @@ export default {
   name: "DNS & Email Records Checker",
   description: "Query public DNS-over-HTTPS records.",
   input: {
-    kind: "text",
+    kind: "fields",
     label: "Domain",
-    placeholder: "example.com",
-    maxLength: 253,
+    fields: [
+      {
+        channel: "text",
+        label: "Domain name",
+        placeholder: "example.com",
+        required: true,
+        multiline: false,
+        maxLength: 253,
+      },
+    ],
   },
   settings: {
     fields: {
@@ -67,12 +75,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Check DNS" },
-  layout: "source-result",
   capabilities: { copy: true, download: true, network: true },
   labels: {
-    empty: "Enter a hostname to query public DNS.",
-    ready: "DNS records ready.",
-    running: "Querying public DNS…",
+    empty: "Enter a public domain to look up its DNS records.",
+    ready: "DNS lookup results are ready.",
+    running: "Looking up public DNS records…",
   },
   content: {
     howToUse: [

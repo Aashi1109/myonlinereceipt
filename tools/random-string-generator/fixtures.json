@@ -12,12 +12,10 @@
         "charset": "alnum"
       },
       "expected": {
-        "render": "text",
-        "length": {
-          "max": 124,
-          "min": 124
-        },
-        "pattern": "^[a-zA-Z0-9\\n]{124,124}$"
+        "render": "list",
+        "itemCount": 5,
+        "itemPattern": "^[A-Za-z0-9]{24}$",
+        "downloadName": "random-strings.txt"
       }
     }
   ]

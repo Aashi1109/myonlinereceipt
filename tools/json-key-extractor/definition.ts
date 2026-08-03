@@ -10,7 +10,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"user":{"name":"Ada","roles":["admin"]}}',
   },
   settings: {
     fields: {
@@ -28,12 +28,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Extract keys" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste JSON to list its key paths.",
     ready: "Key paths are ready.",
-    running: "Extracting keys…",
+    running: "Extracting JSON key paths…",
   },
   content: {
     howToUse: [

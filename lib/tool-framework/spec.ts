@@ -13,13 +13,6 @@ import type { SettingsSpec } from "./settings";
 
 export type { ToolApp };
 
-export type ToolLayout =
-  | "source-result"
-  | "generator"
-  | "file-processor"
-  | "collection"
-  | "visual-editor";
-
 /**
  * One field of a multi-field input surface. `channel` names which
  * `ToolRunContext["input"]` slot it fills, so a field can never reference a
@@ -58,6 +51,8 @@ export type ToolInputSpec =
   | {
       kind: "files";
       label: string;
+      /** The dot-separated meta line shown below the dropzone title in the design. */
+      dropzoneDescription?: string;
       accept: string;
       multiple: boolean;
       engine: "image" | "pdf";
@@ -110,7 +105,6 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly input: ToolInputSpec;
   readonly settings: S;
   readonly trigger: ToolTrigger;
-  readonly layout: ToolLayout;
   readonly capabilities?: ToolCapabilities;
   readonly labels: ToolLabels;
   readonly content: ToolContent;

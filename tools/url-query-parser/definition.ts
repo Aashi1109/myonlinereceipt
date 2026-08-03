@@ -16,18 +16,25 @@ export default {
   name: "URL Query Parser",
   description: "Parse URL query parameters into JSON.",
   input: {
-    kind: "text",
-    label: "URL or query string",
-    placeholder: "Enter or paste url or query string…",
+    kind: "fields",
+    label: "URL or Query String",
+    fields: [
+      {
+        channel: "text",
+        label: "URL or query string",
+        placeholder: "https://example.com/search?q=smart+tools&tag=web",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Parse query" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste a URL or a query string to inspect its parameters.",
-    ready: "Parameters parsed.",
-    running: "Parsing query…",
+    empty: "Enter a URL or query string to inspect its parameters.",
+    ready: "Query parameters are ready.",
+    running: "Parsing query parameters…",
   },
   content: {
     howToUse: [

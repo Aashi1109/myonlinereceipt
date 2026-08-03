@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Binary input",
-    placeholder: "Enter or paste binary input…",
+    placeholder: "01001000 01101001",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode binary" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste space-separated binary bytes to decode them.",
-    ready: "Decoded text is ready.",
-    running: "Decoding binary…",
+    empty: "Paste whitespace-separated eight-bit binary bytes to decode.",
+    ready: "Decoded UTF-8 text is ready.",
+    running: "Decoding binary bytes…",
   },
   content: {
     howToUse: [

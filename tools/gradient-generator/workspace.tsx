@@ -11,14 +11,15 @@
  * can only show a value `run.ts` already validated both colours for.
  */
 
+import { Button, ToolOptionsPanel } from "@smarttools/ui";
+import { Loader2 } from "lucide-react";
+
+import { ResultSurface } from "@/components/ResultSurface";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import { SplitStack, Stack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
-import {
-  ResultSurface,
-  SettingsSurface,
-  WorkspaceInputSurface,
-  type WorkspaceProps,
-} from "@/components/workspaces/SourceResultWorkspace";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
+import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
 import type { ToolResult } from "@/lib/tool-framework/result";
 
 /** The CSS value from a `background: <value>;` declaration, or "" when absent. */
@@ -64,13 +65,32 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
             style={{ backgroundImage: gradient }}
           />
         </WorkspaceSurface>
-        <SettingsSurface
-          disabled={props.disabled}
-          onSettingChange={props.onSettingChange}
-          settings={props.settings}
-          spec={props.spec}
+        <ToolOptionsPanel
+          action={props.primaryAction ? (
+            <Button
+              aria-busy={props.primaryAction.running || undefined}
+              className="w-full"
+              disabled={props.primaryAction.disabled}
+              onClick={props.primaryAction.onRun}
+              type="button"
+            >
+              {props.primaryAction.running ? (
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+              ) : null}
+              {props.primaryAction.label}
+            </Button>
+          ) : undefined}
+          className="h-full overflow-y-auto bg-card p-[22px]"
           title={props.spec.input.kind === "fields" ? props.spec.input.label : "Generator settings"}
-        />
+          variant="plain"
+        >
+          <SettingsPanel
+            disabled={props.disabled}
+            onChange={props.onSettingChange}
+            spec={props.spec.settings}
+            values={props.settings}
+          />
+        </ToolOptionsPanel>
       </Stack>
     </SplitStack>
   );

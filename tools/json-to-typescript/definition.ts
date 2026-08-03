@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"name":"Ada","active":true,"tags":["admin"]}',
   },
   settings: {
     fields: {
@@ -36,12 +36,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate types" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste a sample JSON payload to generate interfaces.",
     ready: "TypeScript interfaces are ready.",
-    running: "Generating types…",
+    running: "Generating TypeScript interfaces…",
   },
   content: {
     howToUse: [

@@ -13,11 +13,8 @@ import {
   Brackets,
   ChevronDown,
   ChevronRight,
-  ChevronsDown,
-  ChevronsUp,
   CircleSlash2,
   Copy,
-  Download,
   Hash,
   Search,
   ToggleRight,
@@ -118,18 +115,49 @@ function highlightJson(json: string): ReactNode[] {
 
 function nodeMatches(label: string, value: unknown, query: string): boolean {
   if (!query) return true;
-  if (label.toLocaleLowerCase().includes(query)) return true;
-  if (value === null || typeof value !== "object") {
-    return String(value).toLocaleLowerCase().includes(query);
+  const pending: [string, unknown][] = [[label, value]];
+  while (pending.length > 0) {
+    const [currentLabel, currentValue] = pending.pop()!;
+    if (currentLabel.toLocaleLowerCase().includes(query)) return true;
+    if (currentValue === null || typeof currentValue !== "object") {
+      if (String(currentValue).toLocaleLowerCase().includes(query)) return true;
+      continue;
+    }
+    const entries = Array.isArray(currentValue)
+      ? currentValue.map((child, index) => [String(index), child] as const)
+      : Object.entries(currentValue);
+    for (const [key, child] of entries) pending.push([key, child]);
   }
-  if (Array.isArray(value)) {
-    return value.some((child, index) => nodeMatches(String(index), child, query));
+  return false;
+}
+
+function visibleTreePaths(value: unknown, query: string, limit: number) {
+  const paths = new Set<string>();
+  const pending: { path: JsonTreePath; value: unknown }[] = [
+    { path: ROOT_JSON_TREE_PATH, value },
+  ];
+
+  while (pending.length > 0 && paths.size < limit) {
+    const current = pending.pop()!;
+    paths.add(pathKey(current.path));
+    if (current.value === null || typeof current.value !== "object") continue;
+
+    const entries = Array.isArray(current.value)
+      ? current.value.map((child, index) => [index, child] as const)
+      : Object.entries(current.value);
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const [key, child] = entries[index];
+      if (query && !nodeMatches(String(key), child, query)) continue;
+      pending.push({ path: [...current.path, key], value: child });
+    }
   }
-  return Object.entries(value).some(([key, child]) => nodeMatches(key, child, query));
+
+  return { limit, paths, truncated: pending.length > 0 };
 }
 
 function JsonTreeNode({
   depth = 0,
+  defaultOpenDepth,
   expansion,
   isArrayItem = false,
   label,
@@ -141,8 +169,10 @@ function JsonTreeNode({
   showNodeCopyActions,
   compact,
   value,
+  visiblePaths,
 }: {
   compact: boolean;
+  defaultOpenDepth?: number;
   depth?: number;
   expansion: TreeExpansion;
   isArrayItem?: boolean;
@@ -154,6 +184,7 @@ function JsonTreeNode({
   selectedPath?: JsonTreePath;
   showNodeCopyActions: boolean;
   value: unknown;
+  visiblePaths?: ReadonlySet<string>;
 }) {
   const entries =
     value !== null && typeof value === "object"
@@ -162,15 +193,23 @@ function JsonTreeNode({
         : Object.entries(value)
       : null;
   const [open, setOpen] = useState(
-    expansion.open ?? (depth === 0 || Array.isArray(value)),
+    expansion.open ??
+      (defaultOpenDepth === undefined
+        ? depth === 0 || Array.isArray(value)
+        : depth <= defaultOpenDepth),
   );
   const isRoot = depth === 0;
   const displayedLabel = isRoot ? "" : label;
   const treeItemLabel = isRoot ? "root" : isArrayItem ? `[${label}]` : label;
   const isSelected = Boolean(selectedPath && pathsEqual(path, selectedPath));
   const copyLabel = isRoot ? "Root node" : `${label} node`;
-  const matchingEntries =
-    entries?.filter(([key, child]) => nodeMatches(key, child, query)) ?? null;
+  const matchingEntries = entries?.filter(([key, child]) => {
+    const childPath = [...path, Array.isArray(value) ? Number(key) : key];
+    return (
+      nodeMatches(key, child, query) &&
+      (!visiblePaths || visiblePaths.has(pathKey(childPath)))
+    );
+  }) ?? null;
   const canExpand = Boolean(matchingEntries?.length);
 
   useEffect(() => {
@@ -323,6 +362,7 @@ function JsonTreeNode({
             return (
               <JsonTreeNode
                 depth={depth + 1}
+                defaultOpenDepth={defaultOpenDepth}
                 expansion={expansion}
                 isArrayItem={Array.isArray(value)}
                 key={pathKey(childPath)}
@@ -335,6 +375,7 @@ function JsonTreeNode({
                 showNodeCopyActions={showNodeCopyActions}
                 compact={compact}
                 value={child}
+                visiblePaths={visiblePaths}
               />
             );
           })}
@@ -348,9 +389,11 @@ export function JsonResultRenderer({
   artifactValue,
   className = "",
   compact = false,
+  defaultOpenDepth,
   downloadName = "smarttools-result.json",
   formattedValue,
   label = "JSON result",
+  maxVisibleEntries,
   onCopy,
   onSelect,
   persistentSearch = false,
@@ -362,9 +405,11 @@ export function JsonResultRenderer({
   artifactValue?: string;
   className?: string;
   compact?: boolean;
+  defaultOpenDepth?: number;
   downloadName?: string;
   formattedValue?: string;
   label?: string;
+  maxVisibleEntries?: number;
   onCopy?: (value: string, label: string) => void;
   onSelect?: (selection: JsonTreeSelection) => void;
   persistentSearch?: boolean;
@@ -385,6 +430,17 @@ export function JsonResultRenderer({
   const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
   const artifact = artifactValue ?? formatted;
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const treeView = useMemo(
+    () =>
+      maxVisibleEntries === undefined
+        ? null
+        : visibleTreePaths(
+            value,
+            normalizedQuery,
+            Math.max(1, Math.floor(maxVisibleEntries)),
+          ),
+    [maxVisibleEntries, normalizedQuery, value],
+  );
   const resolvedSelectedPath = onSelect ? selectedPath : internalSelectedPath;
   const handleSelect =
     onSelect ??
@@ -406,6 +462,31 @@ export function JsonResultRenderer({
 
   function setAll(open: boolean) {
     setExpansion(({ version }) => ({ version: version + 1, open }));
+  }
+
+  function activateView(nextView: JsonResultView) {
+    setView(nextView);
+    if (nextView === "formatted") {
+      setQuery("");
+      setSearchOpen(false);
+    }
+  }
+
+  function handleViewKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    let nextView: JsonResultView | null = null;
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      nextView = view === "tree" ? "formatted" : "tree";
+    } else if (event.key === "Home") {
+      nextView = "tree";
+    } else if (event.key === "End") {
+      nextView = "formatted";
+    }
+    if (!nextView) return;
+    event.preventDefault();
+    activateView(nextView);
+    requestAnimationFrame(() =>
+      document.getElementById(`${resultId}-${nextView}-tab`)?.focus(),
+    );
   }
 
   function downloadValue() {
@@ -438,14 +519,10 @@ export function JsonResultRenderer({
               }`}
               id={`${resultId}-${nextView}-tab`}
               key={nextView}
-              onClick={() => {
-                setView(nextView);
-                if (nextView === "formatted") {
-                  setQuery("");
-                  setSearchOpen(false);
-                }
-              }}
+              onClick={() => activateView(nextView)}
+              onKeyDown={handleViewKeyDown}
               role="tab"
+              tabIndex={view === nextView ? 0 : -1}
               type="button"
             >
               {nextView}
@@ -480,8 +557,8 @@ export function JsonResultRenderer({
                 className={`${
                   compact
                     ? persistentSearch
-                      ? "h-8 w-full rounded-md border-border bg-muted pr-[9px] pl-[30px] !text-caption shadow-none max-[64rem]:h-11"
-                      : "h-8 w-[210px] text-[11px] max-[64rem]:h-11"
+                      ? "h-11 w-full rounded-md border-border bg-muted pr-[9px] pl-[30px] !text-caption shadow-none"
+                      : "h-11 w-[210px] text-[11px]"
                     : "h-11 w-44 text-xs"
                 } appearance-none font-sans max-[42rem]:w-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden`}
                 onChange={(event) => setQuery(event.target.value)}
@@ -508,7 +585,7 @@ export function JsonResultRenderer({
           ) : view === "tree" ? (
             <Button
               aria-label="Search JSON result"
-              className="size-11"
+              className="size-11 shrink-0"
               onClick={() => setSearchOpen(true)}
               size="icon"
               title="Search JSON result"
@@ -521,23 +598,21 @@ export function JsonResultRenderer({
           {view === "tree" ? (
             <>
               <Button
-                className={`${compact ? "h-8 gap-[5px] px-3 max-[64rem]:h-11" : "min-h-11 gap-[5px] px-3"} rounded-md border-border bg-background !text-caption !font-medium text-muted-foreground shadow-none`}
+                className="min-h-11 px-1 text-primary"
                 onClick={() => setAll(true)}
                 size="sm"
                 type="button"
-                variant="outline"
+                variant="link"
               >
-                <ChevronsDown aria-hidden="true" className="size-3.5" />
                 Expand all
               </Button>
               <Button
-                className={`${compact ? "h-8 gap-[5px] px-3 max-[64rem]:h-11" : "min-h-11 gap-[5px] px-3"} rounded-md border-border bg-background !text-caption !font-medium text-muted-foreground shadow-none`}
+                className="min-h-11 px-1 text-primary"
                 onClick={() => setAll(false)}
                 size="sm"
                 type="button"
-                variant="outline"
+                variant="link"
               >
-                <ChevronsUp aria-hidden="true" className="size-3.5" />
                 Collapse all
               </Button>
             </>
@@ -545,19 +620,8 @@ export function JsonResultRenderer({
           {showArtifactActions ? (
             <>
               <Button
-                aria-label="Download JSON result"
-                className={`${compact ? "size-8 max-[64rem]:size-11" : "size-11"} text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2`}
-                onClick={downloadValue}
-                size="icon"
-                title="Download JSON result"
-                type="button"
-                variant="ghost"
-              >
-                <Download aria-hidden="true" className="size-4" />
-              </Button>
-              <Button
                 aria-label="Copy JSON result"
-                className={`${compact ? "size-8 max-[64rem]:size-11" : "size-11"} text-muted-foreground max-[42rem]:col-start-3 max-[42rem]:row-start-2`}
+                className="size-11 shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
                 onClick={() => void copyValue(artifact, "JSON result")}
                 size="icon"
                 title="Copy JSON result"
@@ -565,6 +629,15 @@ export function JsonResultRenderer({
                 variant="ghost"
               >
                 <Copy aria-hidden="true" className="size-4" />
+              </Button>
+              <Button
+                className="min-h-11 px-1 text-primary max-[42rem]:col-start-3 max-[42rem]:row-start-2"
+                onClick={downloadValue}
+                size="sm"
+                type="button"
+                variant="link"
+              >
+                Download .json
               </Button>
             </>
           ) : null}
@@ -586,6 +659,7 @@ export function JsonResultRenderer({
             <div aria-label="JSON tree" className="w-max min-w-full" role="tree">
               <JsonTreeNode
                 compact={compact}
+                defaultOpenDepth={defaultOpenDepth}
                 expansion={expansion}
                 label="root"
                 onCopy={copyValue}
@@ -594,7 +668,14 @@ export function JsonResultRenderer({
                 selectedPath={resolvedSelectedPath}
                 showNodeCopyActions={showNodeCopyActions}
                 value={value}
+                visiblePaths={treeView?.paths}
               />
+              {treeView?.truncated ? (
+                <p className="px-2 py-3 text-xs text-muted-foreground" role="status">
+                  Showing the first {treeView.limit.toLocaleString()} nodes.
+                  Search to narrow the tree.
+                </p>
+              ) : null}
             </div>
           )}
         </div>

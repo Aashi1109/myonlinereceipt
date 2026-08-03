@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Encoded entities",
-    placeholder: "Enter or paste encoded entities…",
+    placeholder: "&lt;strong&gt;Tom &amp; Ada&lt;/strong&gt;",
   },
   settings: {
     fields: {},
@@ -27,14 +27,13 @@ export default {
     mode: "manual",
     actionLabel: "Decode entities",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste HTML entities to decode them.",
-    ready: "Entities decoded.",
-    running: "Decoding entities…",
+    empty: "Paste text containing HTML entities to decode it.",
+    ready: "Decoded HTML text is ready.",
+    running: "Decoding HTML entities…",
   },
   content: {
     howToUse: [

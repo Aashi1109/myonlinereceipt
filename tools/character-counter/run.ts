@@ -12,8 +12,17 @@ import { textMetrics } from "../../lib/devtools/shared/text.ts";
 export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
   const metrics = textMetrics(ctx.input.text);
   return {
-    render: "text",
-    text: `Characters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nWords: ${metrics.words}\nLines: ${metrics.lines}\nUTF-8 bytes: ${metrics.bytes}`,
+    render: "key-value",
+    entries: [
+      { label: "Characters", value: String(metrics.characters) },
+      {
+        label: "Characters without spaces",
+        value: String(metrics.charactersWithoutSpaces),
+      },
+      { label: "Words", value: String(metrics.words) },
+      { label: "Lines", value: String(metrics.lines) },
+      { label: "UTF-8 bytes", value: String(metrics.bytes) },
+    ],
   };
 };
 

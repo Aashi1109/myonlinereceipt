@@ -22,13 +22,13 @@ export default {
       {
         channel: "text",
         label: "Regex pattern",
-        placeholder: "Enter or paste regex pattern…",
+        placeholder: "\\b[A-Z][a-z]+\\b",
         required: true,
       },
       {
         channel: "secondary",
         label: "Test string",
-        placeholder: "Enter or paste test string…",
+        placeholder: "Ada and Lin build Smart Tools.",
         multiline: true,
       },
     ],
@@ -46,12 +46,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 250 },
-  layout: "visual-editor",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a pattern and a test string to see the matches.",
-    ready: "Matches are up to date.",
-    running: "Matching…",
+    empty: "Provide a regex pattern and test string to inspect the matches.",
+    ready: "The regex matches are up to date.",
+    running: "Testing the regex pattern…",
   },
   content: {
     howToUse: [

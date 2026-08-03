@@ -2,12 +2,6 @@
 
 import {
   Button,
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CompactAction,
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -16,6 +10,7 @@ import {
   EmptyTitle,
   FileQueueItem,
   FileUploadZone,
+  StatusBadge,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -28,7 +23,6 @@ import {
 import { cn } from "@smarttools/ui/lib/utils";
 import {
   CircleAlert,
-  Copy,
   File as FileIcon,
   Inbox,
   LoaderCircle,
@@ -48,7 +42,6 @@ import {
 } from "react";
 
 import {
-  GridStack,
   OverlayStack,
   ScrollRegion,
   Stack,
@@ -76,6 +69,7 @@ export type WorkspaceSurfaceProps = Omit<
   contentClassName?: string;
   description?: ReactNode;
   header?: "visible" | "sr-only";
+  meta?: ReactNode;
   purpose?: WorkspaceSurfacePurpose;
   scroll?: "none" | "content";
   state?: WorkspaceSurfaceState;
@@ -83,6 +77,7 @@ export type WorkspaceSurfaceProps = Omit<
   stateDescription?: ReactNode;
   stateIcon?: ReactNode;
   stateTitle?: ReactNode;
+  status?: ReactNode;
   title: ReactNode;
 };
 
@@ -111,6 +106,7 @@ function WorkspaceSurface({
   contentClassName,
   description,
   header = "visible",
+  meta,
   purpose = "source",
   scroll = "none",
   state = "ready",
@@ -118,6 +114,7 @@ function WorkspaceSurface({
   stateDescription,
   stateIcon,
   stateTitle,
+  status,
   title,
   ...props
 }: WorkspaceSurfaceProps) {
@@ -149,6 +146,14 @@ function WorkspaceSurface({
         {stateAction ? <EmptyContent>{stateAction}</EmptyContent> : null}
       </Empty>
     );
+  const heading = (
+    <h2
+      className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase"
+      id={headingId}
+    >
+      {title}
+    </h2>
+  );
 
   return (
     <section
@@ -170,19 +175,34 @@ function WorkspaceSurface({
           )}
         >
           <div className="min-w-0">
-            <h2
-              className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase"
-              id={headingId}
-            >
-              {title}
-            </h2>
+            {status !== undefined && status !== null ? (
+              <div className="flex min-w-0 items-center gap-2">
+                {heading}
+                <StatusBadge className="shrink-0" variant="success">
+                  {status}
+                </StatusBadge>
+              </div>
+            ) : (
+              heading
+            )}
             {description ? (
               <p className="mt-0.5 truncate text-xs text-muted-foreground">
                 {description}
               </p>
             ) : null}
           </div>
-          {actions ? (
+          {meta !== undefined && meta !== null ? (
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+              <span className="text-right font-mono text-xs text-muted-foreground">
+                {meta}
+              </span>
+              {actions ? (
+                <div className="flex shrink-0 items-center gap-1">
+                  {actions}
+                </div>
+              ) : null}
+            </div>
+          ) : actions ? (
             <div className="flex shrink-0 items-center gap-1">{actions}</div>
           ) : null}
         </header>
@@ -225,7 +245,7 @@ export type FileIntakeSurfaceProps = Omit<
 > & {
   accept?: string;
   disabled?: boolean;
-  intakeDescription: ReactNode;
+  intakeDescription?: ReactNode;
   intakeIcon?: ReactNode;
   intakeTitle: string;
   maxFiles?: number;
@@ -277,7 +297,12 @@ function FileIntakeSurface({
           type="file"
         />
         <FileUploadZone
-          description={intakeDescription}
+          description={
+            intakeDescription ??
+            (multiple
+              ? "Drop files here or choose them from your device."
+              : "Drop a file here or choose it from your device.")
+          }
           disabled={disabled}
           icon={intakeIcon}
           onClick={() => inputRef.current?.click()}
@@ -740,45 +765,29 @@ export type GeneratedListSurfaceProps<Item> = Omit<
   "actions" | "children" | "purpose" | "state"
 > & {
   actions?: ReactNode;
-  columns?: number;
   emptyDescription?: ReactNode;
   getDescription?: (item: Item) => ReactNode;
   getId: (item: Item) => string;
   getLabel: (item: Item) => ReactNode;
   getValue: (item: Item) => ReactNode;
   items: readonly Item[];
-  onCopy?: (item: Item) => void;
-  onCopyAll?: () => void;
+  renderAction?: (item: Item, index: number) => ReactNode;
 };
 
 function GeneratedListSurface<Item>({
   actions,
-  columns,
   emptyDescription = "Generate one or more values to see them here.",
   getDescription,
   getId,
   getLabel,
   getValue,
   items,
-  onCopy,
-  onCopyAll,
+  renderAction,
   ...surfaceProps
 }: GeneratedListSurfaceProps<Item>) {
-  const surfaceActions =
-    actions || onCopyAll ? (
-      <Stack align="center" direction="row" gap="xs">
-        {actions}
-        {onCopyAll ? (
-          <CompactAction icon={<Copy aria-hidden="true" />} onClick={onCopyAll}>
-            Copy all
-          </CompactAction>
-        ) : null}
-      </Stack>
-    ) : undefined;
-
   return (
     <WorkspaceSurface
-      actions={surfaceActions}
+      actions={actions}
       purpose="result"
       scroll="content"
       state={items.length === 0 ? "empty" : "ready"}
@@ -786,35 +795,31 @@ function GeneratedListSurface<Item>({
       stateTitle="No generated values"
       {...surfaceProps}
     >
-      <GridStack className="p-4" columns={columns}>
-        {items.map((item) => (
-          <Card key={getId(item)}>
-            <CardHeader>
-              <CardTitle>{getLabel(item)}</CardTitle>
-              {onCopy ? (
-                <CardAction>
-                  <CompactAction
-                    icon={<Copy aria-hidden="true" />}
-                    onClick={() => onCopy(item)}
-                  >
-                    Copy
-                  </CompactAction>
-                </CardAction>
-              ) : null}
-            </CardHeader>
-            <CardContent>
-              <code className="break-all font-mono text-sm">
+      <ol className="min-w-0 divide-y divide-border">
+        {items.map((item, index) => (
+          <li
+            className="flex min-w-0 items-center gap-4 px-4 py-3"
+            key={getId(item)}
+          >
+            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+              {getLabel(item)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <code className="break-words font-mono text-sm [overflow-wrap:anywhere]">
                 {getValue(item)}
               </code>
               {getDescription ? (
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {getDescription(item)}
                 </p>
               ) : null}
-            </CardContent>
-          </Card>
+            </div>
+            {renderAction ? (
+              <div className="shrink-0">{renderAction(item, index)}</div>
+            ) : null}
+          </li>
         ))}
-      </GridStack>
+      </ol>
     </WorkspaceSurface>
   );
 }

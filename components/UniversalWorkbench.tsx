@@ -13,7 +13,9 @@ import {
   AlertDialogTitle,
   Badge,
   Button,
+  IconTile,
   ToolPageShell,
+  WorkbenchShell,
 } from "@smarttools/ui";
 import {
   AlertCircle,
@@ -26,6 +28,7 @@ import {
   LockKeyhole,
   ShieldCheck,
   Undo2,
+  Wrench,
 } from "lucide-react";
 import { type ComponentType } from "react";
 
@@ -148,14 +151,22 @@ function WorkbenchFrame<
 }: Omit<UniversalWorkbenchProps<Input, Settings, Result>, "runtimeSpec">) {
   const runtime = useToolRuntime<Input, Settings, Result>();
   const isBusy = runtime.lifecycle === "running";
+  const factSummary = runtime.facts
+    .map((fact) => `${fact.label}: ${fact.value}`)
+    .join(" · ");
   const status =
-    runtime.notice ||
-    runtime.error ||
-    runtime.issues[0]?.message ||
-    lifecycleLabel(definition, runtime.lifecycle);
+    runtime.lifecycle === "running"
+      ? definition.labels.running
+      : runtime.lifecycle === "completed"
+        ? [definition.labels.ready.replace(/[.!?]+$/, ""), factSummary]
+            .filter(Boolean)
+            .join(" · ")
+        : runtime.notice ||
+          runtime.error ||
+          runtime.issues[0]?.message ||
+          lifecycleLabel(definition, runtime.lifecycle);
   const isMedia = definition.app === "media";
   const usesNetwork = Boolean(definition.capabilities.network);
-  const compactToolbar = definition.toolbarSize !== "default";
   const productHref = isMedia ? "/media" : "/devtools";
   const productName = isMedia ? "Media tools" : "Developer tools";
   const privacyBadge = usesNetwork
@@ -196,86 +207,94 @@ function WorkbenchFrame<
       workspaceClassName="pb-4"
       workspaceId="tool-page-content"
     >
-      <section
+      <WorkbenchShell
         aria-busy={isBusy || undefined}
-        className="relative flex h-[calc(100dvh-72px)] w-full flex-col overflow-hidden rounded-lg border border-input bg-card"
+        className="max-[56rem]:[&>[data-slot=workbench-toolbar]]:!h-auto max-[56rem]:[&>[data-slot=workbench-toolbar]]:py-2 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:w-full max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:min-w-0 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:shrink"
         data-definition-key={definition.definitionKey}
         data-testid="tool-workspace"
         id="tool-workspace"
+        status={
+          <footer
+            aria-live="polite"
+            className="flex w-full min-w-0 items-center justify-between gap-4 text-muted-foreground"
+            data-testid="tool-status-line"
+            role="status"
+          >
+            <span
+              className={`inline-flex min-w-0 items-center gap-2 text-xs font-semibold ${
+                runtime.lifecycle === "completed" ? "text-success" : ""
+              }`}
+            >
+              {runtime.lifecycle === "completed" ? (
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="size-4 text-success"
+                />
+              ) : runtime.lifecycle === "invalid" ||
+                runtime.lifecycle === "failed" ? (
+                <AlertCircle
+                  aria-hidden="true"
+                  className="size-4 text-destructive"
+                />
+              ) : null}
+              <span className="truncate">{status}</span>
+              {runtime.canUndo && !runtime.pendingConfirmation ? (
+                <Button
+                  className="relative h-7 px-2 text-[11px] after:absolute after:-inset-x-1 after:-inset-y-2"
+                  onClick={runtime.undo}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Undo2 aria-hidden="true" className="size-3.5" />
+                  Undo
+                </Button>
+              ) : null}
+            </span>
+            {runtime.lifecycle === "completed" && StatusMeta ? (
+              <span className="shrink-0 font-mono text-[11px] text-muted-foreground max-[32rem]:hidden">
+                <StatusMeta />
+              </span>
+            ) : null}
+          </footer>
+        }
         tabIndex={-1}
+        toolbar={
+          <IconTile aria-hidden="true">
+            <Wrench />
+          </IconTile>
+        }
+        toolbarActions={
+          <div
+            aria-label={`${title} actions`}
+            className="flex min-w-0 items-center gap-2 [&_button]:!h-11 [&_button]:!gap-2 [&_button]:min-w-0 [&_button]:!px-4 [&_button]:!text-[15px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 [&_button_svg]:!size-[18px] max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
+            data-testid="tool-action-toolbar"
+            role="toolbar"
+          >
+            <Toolbar />
+          </div>
+        }
+        variant={isMedia ? "media" : "utility"}
       >
-        <header
-          aria-label={`${title} actions`}
-          className={`flex shrink-0 items-center border-b border-border px-4 py-2 ${
-            compactToolbar ? "min-h-14" : "min-h-16"
-          }`}
-          data-testid="tool-action-toolbar"
-          role="toolbar"
-        >
-          <Toolbar />
-        </header>
-
         <section
           aria-label={`${title} workspace`}
-          className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
+          className="relative h-full min-h-0 min-w-0 overflow-hidden"
           data-testid="tool-workspace-content"
         >
           <Workspace />
         </section>
+      </WorkbenchShell>
 
-        <footer
-          aria-live="polite"
-          className="flex min-h-10 shrink-0 items-center justify-between gap-4 border-t border-border px-4 font-mono text-[11px] text-muted-foreground max-[40rem]:flex-col max-[40rem]:items-start max-[40rem]:py-2"
-          data-testid="tool-status-line"
-          role="status"
-        >
-          <span
-            className={`inline-flex min-w-0 items-center gap-2 font-semibold ${
-              runtime.lifecycle === "completed" ? "text-emerald-600" : ""
-            }`}
-          >
-            {runtime.lifecycle === "completed" ? (
-              <CheckCircle2 aria-hidden="true" className="size-4 text-emerald-600" />
-            ) : runtime.lifecycle === "invalid" ||
-              runtime.lifecycle === "failed" ? (
-              <AlertCircle aria-hidden="true" className="size-4 text-destructive" />
-            ) : null}
-            <span className="truncate">{status}</span>
-            {runtime.canUndo && !runtime.pendingConfirmation ? (
-              <Button
-                className="h-7 px-2 text-[11px]"
-                onClick={runtime.undo}
-                size="sm"
-                type="button"
-                variant="ghost"
-              >
-                <Undo2 aria-hidden="true" className="size-3.5" />
-                Undo
-              </Button>
-            ) : null}
-          </span>
-          <span className="shrink-0">
-            {StatusMeta ? (
-              <StatusMeta />
-            ) : (
-              runtime.facts
-                .map((fact) => `${fact.label}: ${fact.value}`)
-                .join(" · ")
-            )}
-          </span>
-        </footer>
-
-        {runtime.pendingConfirmation ? (
-          <ConfirmationDialog
-            changes={runtime.lastChanges}
-            confirmLabel={runtime.pendingConfirmation.confirmLabel}
-            description={runtime.pendingConfirmation.description}
-            onCancel={runtime.cancelPendingCommand}
-            onConfirm={runtime.confirmPendingCommand}
-            title={runtime.pendingConfirmation.title}
-          />
-        ) : null}
-      </section>
+      {runtime.pendingConfirmation ? (
+        <ConfirmationDialog
+          changes={runtime.lastChanges}
+          confirmLabel={runtime.pendingConfirmation.confirmLabel}
+          description={runtime.pendingConfirmation.description}
+          onCancel={runtime.cancelPendingCommand}
+          onConfirm={runtime.confirmPendingCommand}
+          title={runtime.pendingConfirmation.title}
+        />
+      ) : null}
 
       <section
         aria-labelledby="before-you-continue-heading"
@@ -362,11 +381,11 @@ function lifecycleLabel(
 ) {
   switch (lifecycle) {
     case "empty":
-      return definition.labels.empty;
+      return "Ready for input.";
     case "running":
       return definition.labels.running;
     case "ready":
-      return `Ready to ${(definition.labels.primaryAction ?? "run the tool").toLowerCase()}.`;
+      return `Ready to ${(definition.labels.primaryAction ?? "run the tool").replace(/^./, (character) => character.toLowerCase())}.`;
     case "completed":
       return definition.labels.ready;
     case "invalid":

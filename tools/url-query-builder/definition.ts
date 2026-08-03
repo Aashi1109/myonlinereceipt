@@ -22,25 +22,24 @@ export default {
       {
         channel: "text",
         label: "Base URL",
-        placeholder: "Enter or paste base url…",
+        placeholder: "https://example.com/search",
         required: true,
       },
       {
         channel: "secondary",
         label: "Query rows",
-        placeholder: "Enter or paste query rows…",
+        placeholder: "q=smart tools\ntag=dev\ntag=web",
         multiline: true,
       },
     ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Build URL" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Enter a base URL and one key=value pair per line.",
-    ready: "URL is ready.",
-    running: "Building URL…",
+    empty: "Provide a base URL and any key=value query rows to build the URL.",
+    ready: "The URL is ready to copy or download.",
+    running: "Building the URL…",
   },
   content: {
     howToUse: [

@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "smart tools make tools simple",
   },
   settings: {
     fields: {},
@@ -27,14 +27,13 @@ export default {
     mode: "manual",
     actionLabel: "Remove duplicates",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste text to strip repeated words.",
-    ready: "Duplicates removed.",
-    running: "Removing duplicates…",
+    empty: "Paste text to remove repeated words.",
+    ready: "Text without repeated words is ready.",
+    running: "Removing repeated words…",
   },
   content: {
     howToUse: [

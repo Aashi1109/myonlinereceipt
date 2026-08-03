@@ -42,7 +42,6 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 120 },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste JSON or load an example to begin.",

@@ -25,8 +25,8 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     );
   }
   return {
-    render: "text",
-    text: rows.map((row) => csvCell(row[column], delimiter)).join("\n"),
+    render: "list",
+    items: rows.map((row) => csvCell(row[column], delimiter)),
   };
 };
 

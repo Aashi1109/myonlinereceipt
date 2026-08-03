@@ -11,14 +11,11 @@
  */
 
 import {
-  CropFrame,
   FileProcessorWorkspace,
-  type CropBox,
-} from "@/components/workspaces/FileProcessorWorkspace";
-import {
-  workspaceFileId,
-  type WorkspaceProps,
-} from "@/components/workspaces/SourceResultWorkspace";
+} from "@/components/FileProcessorWorkspace";
+import { CropFrame, type CropBox } from "@/components/CropFrame";
+import { workspaceFileId } from "@/components/FileInput";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import { useCallback, useEffect, useState } from "react";
 

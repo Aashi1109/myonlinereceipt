@@ -49,10 +49,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Filter rows" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV or load an example to begin.",
+    empty: "Paste CSV with a header row to filter its rows.",
     ready: "Filtered CSV is ready.",
     running: "Filtering CSV rows…",
   },

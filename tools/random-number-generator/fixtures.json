@@ -9,15 +9,12 @@
       "settings": {
         "min": 1,
         "max": 100,
-        "count": 10
+        "count": 2
       },
       "expected": {
-        "render": "text",
-        "length": {
-          "max": 36,
-          "min": 21
-        },
-        "pattern": "^[0-9\\n]{21,36}$"
+        "render": "list",
+        "itemCount": 2,
+        "itemPattern": "^(?:[1-9]|[1-9][0-9]|100)$"
       }
     }
   ]

@@ -20,8 +20,11 @@ export default {
   description: "Resize images to common social media dimensions.",
   input: {
     kind: "files",
-    label: "Social media images",
-    accept: "image/jpeg,image/png,image/webp,image/heic,image/heif",
+    label: "Add images to resize",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept:
+      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -103,11 +106,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Resize images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to resize them for a social platform.",
-    ready: "Social image settings are ready.",
+    empty:
+      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to resize for social media.",
+    ready: "The images and platform size settings are ready.",
     running: "Resizing social media images…",
   },
   content: {

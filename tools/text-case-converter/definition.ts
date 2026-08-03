@@ -17,8 +17,8 @@ export default {
   description: "Convert text between common naming and prose cases.",
   input: {
     kind: "text",
-    label: "Text input",
-    placeholder: "Enter or paste text input…",
+    label: "Text to convert",
+    placeholder: "hello smart tools",
   },
   settings: {
     fields: {
@@ -70,14 +70,13 @@ export default {
   trigger: {
     mode: "live",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Type or paste text to convert its case.",
-    ready: "Converted.",
-    running: "Converting…",
+    empty: "Enter text and choose the case to convert it.",
+    ready: "Case-converted text is ready.",
+    running: "Converting text case…",
   },
   content: {
     howToUse: [

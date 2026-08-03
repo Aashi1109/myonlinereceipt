@@ -10,16 +10,15 @@ export default {
   input: {
     kind: "text",
     label: "YAML input",
-    placeholder: "Enter or paste yaml input…",
+    placeholder: "name: Ada\nactive: true",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to JSON" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste YAML to convert it to JSON.",
-    ready: "JSON is ready.",
-    running: "Converting YAML…",
+    empty: "Enter YAML to convert it to JSON.",
+    ready: "Converted JSON is ready.",
+    running: "Converting YAML to JSON…",
   },
   content: {
     howToUse: [

@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "cURL command",
-    placeholder: "Enter or paste curl command…",
+    placeholder: "curl https://api.example.com/users",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to Axios" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste a curl command to convert it.",
-    ready: "Axios code is ready.",
-    running: "Converting…",
+    empty: "Paste a cURL command to generate Axios code.",
+    ready: "Axios request code is ready.",
+    running: "Generating Axios code…",
   },
   content: {
     howToUse: [

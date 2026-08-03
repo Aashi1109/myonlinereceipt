@@ -14,7 +14,7 @@ export default {
   ],
   name: "Border Radius Generator",
   description: "Generate four-corner border-radius CSS.",
-  input: { kind: "text", label: "Not used", placeholder: "" },
+  input: { kind: "none" },
   settings: {
     fields: {
       topLeft: { kind: "number", label: "Top-left", default: 16, min: 0, max: 500, suffix: "px" },
@@ -24,10 +24,9 @@ export default {
     },
   },
   trigger: { mode: "live" },
-  layout: "visual-editor",
   capabilities: { copy: true },
   labels: {
-    empty: "Adjust the four corners to build a radius.",
+    empty: "Choose the four corner radii to generate CSS.",
     ready: "CSS is ready.",
     running: "Generating…",
   },

@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\n Ada ,Admin\nLin,Editor",
   },
   settings: {
     fields: {
@@ -37,10 +37,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Format CSV" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV to clean up its quoting and spacing.",
+    empty: "Paste CSV to normalize its quoting, spacing, and rows.",
     ready: "Formatted CSV is ready.",
     running: "Formatting CSV…",
   },

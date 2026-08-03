@@ -17,7 +17,7 @@ export default {
   description: "Generate Open Graph tags and a sandboxable preview card.",
   input: {
     kind: "fields",
-    label: "Open Graph metadata",
+    label: "Title and description",
     fields: [
       {
         channel: "text",
@@ -31,7 +31,6 @@ export default {
         label: "Description",
         placeholder: "Fast private utilities for everyday work.",
         required: true,
-        multiline: true,
         maxLength: 400,
       },
     ],
@@ -90,12 +89,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 160 },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Enter metadata to mock up a social card.",
-    ready: "Card mockup ready.",
-    running: "Rendering card mockup…",
+    empty: "Provide a title and description to preview the social card.",
+    ready: "The social card preview is ready.",
+    running: "Rendering the social card preview…",
   },
   content: {
     howToUse: [

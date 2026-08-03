@@ -10,7 +10,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nLin,Editor\nAda,Admin",
   },
   settings: {
     fields: {
@@ -43,12 +43,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Sort rows" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV to sort its rows.",
-    ready: "Sorted rows are ready.",
-    running: "Sorting…",
+    empty: "Paste CSV with a header row to sort its rows.",
+    ready: "Sorted CSV is ready.",
+    running: "Sorting CSV rows…",
   },
   content: {
     howToUse: [

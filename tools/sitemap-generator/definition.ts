@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "URLs",
-    placeholder: "Enter or paste urls…",
+    placeholder: "https://example.com/\nhttps://example.com/about",
   },
   settings: {
     fields: {},
@@ -27,15 +27,14 @@ export default {
     mode: "manual",
     actionLabel: "Generate sitemap",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
-    empty: "Paste one absolute URL per line to build a sitemap.",
-    ready: "Sitemap is ready.",
-    running: "Generating sitemap…",
+    empty: "Provide one absolute URL per line to generate a sitemap.",
+    ready: "XML sitemap is ready.",
+    running: "Generating XML sitemap…",
   },
   content: {
     howToUse: [

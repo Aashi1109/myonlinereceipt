@@ -44,7 +44,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Delete pages" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add a PDF to remove pages.",

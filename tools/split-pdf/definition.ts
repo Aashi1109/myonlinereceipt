@@ -9,10 +9,13 @@ export default {
   description: "Split a PDF by page, interval, or range.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to split",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
     inspect: true,
   },
@@ -48,11 +51,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Split PDF" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to split.",
-    ready: "Split settings are ready.",
+    empty: "Drop one PDF (up to 200 MiB) to split by page, interval, or range.",
+    ready: "The PDF and split settings are ready.",
     running: "Splitting PDF…",
   },
   content: {

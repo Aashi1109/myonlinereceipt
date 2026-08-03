@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Hex input",
-    placeholder: "Enter or paste hex input…",
+    placeholder: "48 65 6c 6c 6f",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode hex" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste hexadecimal bytes to decode them.",
-    ready: "Decoded text is ready.",
-    running: "Decoding hex…",
+    empty: "Paste hexadecimal bytes to decode them as UTF-8.",
+    ready: "Decoded UTF-8 text is ready.",
+    running: "Decoding hexadecimal bytes…",
   },
   content: {
     howToUse: [

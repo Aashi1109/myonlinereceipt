@@ -22,8 +22,12 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ? `rgba(${color.red}, ${color.green}, ${color.blue}, ${Number(color.alpha.toFixed(3))})`
       : `rgb(${color.red}, ${color.green}, ${color.blue})`;
   return {
-    render: "text",
-    text: `HEX: ${rgbToHex(color)}\nRGB: ${rgb}\nHSL: ${rgbToHsl(color)}`,
+    render: "key-value",
+    entries: [
+      { label: "HEX", value: rgbToHex(color) },
+      { label: "RGB", value: rgb },
+      { label: "HSL", value: rgbToHsl(color) },
+    ],
   };
 };
 

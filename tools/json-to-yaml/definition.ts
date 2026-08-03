@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"name":"Ada","active":true}',
   },
   settings: {
     fields: {
@@ -47,7 +47,6 @@ export default {
     mode: "manual",
     actionLabel: "Convert to YAML",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,

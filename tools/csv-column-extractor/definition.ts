@@ -10,7 +10,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
     fields: {
@@ -34,12 +34,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Extract column" },
-  layout: "source-result",
-  capabilities: { copy: true, download: true },
+  capabilities: { copy: true },
   labels: {
-    empty: "Paste CSV to pull out a single column.",
-    ready: "Column values are ready.",
-    running: "Extracting…",
+    empty: "Paste delimited data with a header row to extract one column.",
+    ready: "Extracted column is ready.",
+    running: "Extracting CSV column…",
   },
   content: {
     howToUse: [

@@ -16,17 +16,24 @@ export default {
   name: "ISO Date Converter",
   description: "Normalize date input and show ISO, UTC, local, and Unix values.",
   input: {
-    kind: "text",
-    label: "Date input",
-    placeholder: "Enter or paste date input…",
+    kind: "fields",
+    label: "Date Input",
+    fields: [
+      {
+        channel: "text",
+        label: "Date or Unix timestamp",
+        placeholder: "2026-07-22T12:30:00+05:30",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 200 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
     empty: "Enter a date or a Unix timestamp to normalize it.",
-    ready: "Date forms are ready.",
+    ready: "Converted date forms are ready.",
     running: "Converting date…",
   },
   content: {

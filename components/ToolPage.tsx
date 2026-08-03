@@ -27,7 +27,7 @@
  */
 
 import { Button } from "@smarttools/ui";
-import { Loader2, Play } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   createContext,
   lazy,
@@ -43,12 +43,13 @@ import {
 } from "react";
 
 import { UniversalWorkbench } from "@/components/UniversalWorkbench";
-import { DEFAULT_WORKSPACES } from "@/components/workspaces";
+import { workspaceFileId } from "@/components/FileInput";
 import {
-  workspaceFileId,
+  ToolWorkspace,
   type WorkspaceInputState,
   type WorkspaceProps,
-} from "@/components/workspaces/SourceResultWorkspace";
+  type WorkspaceToolbarActions,
+} from "@/components/ToolWorkspace";
 import { createExecute } from "@/lib/tool-framework/host";
 import type { ToolResult } from "@/lib/tool-framework/result";
 import { ToolError, type ToolRun, type ToolRunInput } from "@/lib/tool-framework/run";
@@ -122,17 +123,15 @@ async function loadMainThreadRun(key: string): Promise<LoadedRun | null> {
 }
 
 /**
- * The tool's own workspace when it ships one, otherwise the shared workspace
- * for its declared layout.
+ * The tool's own workspace when it ships one, otherwise the shared workspace.
  *
  * A missing file, or one that does not default-export a workspace, falls back
  * rather than throwing — most tools ship no `workspace.tsx` at all.
  */
-function resolveWorkspace(
-  key: string,
-  layout: ToolSpec["layout"],
-): ComponentType<WorkspaceProps> {
-  const fallback = { default: DEFAULT_WORKSPACES[layout] };
+function resolveWorkspace(key: string): ComponentType<WorkspaceProps> {
+  const fallback: { default: ComponentType<WorkspaceProps> } = {
+    default: ToolWorkspace,
+  };
   return lazy(async () => {
     let module: unknown;
     try {
@@ -203,10 +202,7 @@ function toOutcome(result: ToolResult): ToolExecutionOutcome<ToolResult> {
 // ---------------------------------------------------------------------------
 
 /** Turns the worker's job state into the promise the runtime's `execute` needs. */
-function useWorkerHost(): (
-  request: ToolRunRequestInput,
-  signal: AbortSignal,
-) => Promise<ToolResult> {
+function useWorkerHost() {
   const { cancel, state, start } = useToolRun();
   const pending = useRef<{
     reject: (reason: unknown) => void;
@@ -234,8 +230,8 @@ function useWorkerHost(): (
     waiter.reject(new DOMException("Aborted", "AbortError"));
   }, [state]);
 
-  return useCallback(
-    (request, signal) =>
+  const run = useCallback(
+    (request: ToolRunRequestInput, signal: AbortSignal) =>
       new Promise<ToolResult>((resolve, reject) => {
         pending.current = { reject, resolve };
         signal.addEventListener("abort", cancel, { once: true });
@@ -243,6 +239,11 @@ function useWorkerHost(): (
       }),
     [cancel, start],
   );
+
+  return {
+    progress: state.status === "running" ? state.progress : null,
+    run,
+  };
 }
 
 function readServerResult(payload: unknown): ToolResult {
@@ -293,11 +294,15 @@ async function runOnServer(
 interface ToolChrome {
   readonly onSettingChange: (key: string, value: unknown) => void;
   readonly onValidationChange: (reason: string | null) => void;
+  readonly progress: WorkspaceProps["progress"];
+  readonly resetPageState: () => void;
   readonly settings: RuntimeSettings;
   readonly spec: ToolSpec;
-  readonly title: string;
+  readonly setToolbarActions: (actions: WorkspaceToolbarActions | null) => void;
+  readonly toolbarActions: WorkspaceToolbarActions | null;
   readonly validationReason: string | null;
   readonly Workspace: ComponentType<WorkspaceProps>;
+  readonly workspaceKey: number;
 }
 
 const ToolChromeContext = createContext<ToolChrome | null>(null);
@@ -312,49 +317,125 @@ function useRuntime() {
   return useToolRuntime<WorkspaceInputState, ToolSettings, ToolResult>();
 }
 
-function ToolToolbar(): ReactElement {
+function usePrimaryAction(): WorkspaceProps["primaryAction"] {
   const chrome = useToolChrome();
   const runtime = useRuntime();
   const running = runtime.lifecycle === "running";
-  const trigger = chrome.spec.trigger;
-  const blocked =
-    running ||
-    chrome.validationReason !== null ||
-    runtime.lifecycle === "empty" ||
-    runtime.lifecycle === "invalid";
+
+  if (chrome.spec.trigger.mode !== "manual") return null;
+
+  return {
+    disabled:
+      running ||
+      chrome.validationReason !== null ||
+      runtime.lifecycle === "empty" ||
+      runtime.lifecycle === "invalid",
+    label: chrome.spec.trigger.actionLabel,
+    onRun: runtime.run,
+    running,
+  };
+}
+
+function ToolToolbar(): ReactElement {
+  const chrome = useToolChrome();
+  const runtime = useRuntime();
+  const primaryAction = usePrimaryAction();
+  const examples = chrome.spec.content.examples ?? [];
+  const hasSettings = Object.keys(chrome.spec.settings.fields).length > 0;
+  const running = runtime.lifecycle === "running";
+
+  const loadExample = (index: number) => {
+    const example = examples[index];
+    if (!example) return;
+    chrome.toolbarActions?.onExample?.();
+    runtime.setInput({
+      files: [],
+      secondary: example.secondary,
+      text: example.text,
+    });
+  };
+
+  const reset = () => {
+    runtime.setInput({ files: [], text: "" });
+    chrome.resetPageState();
+  };
 
   return (
-    <div className="flex w-full min-w-0 items-center justify-between gap-3">
-      <p className="min-w-0 truncate text-sm font-semibold">{chrome.title}</p>
-      {trigger.mode === "manual" ? (
-        <Button disabled={blocked} onClick={runtime.run} size="sm" type="button">
-          {running ? (
+    <>
+      {chrome.toolbarActions?.before}
+      {examples.length === 1 ? (
+        <Button
+          disabled={running}
+          onClick={() => loadExample(0)}
+          type="button"
+          variant="link"
+        >
+          {chrome.toolbarActions?.exampleLabel ?? "Example"}
+        </Button>
+      ) : examples.length > 1 ? (
+        <select
+          aria-label="Choose an example"
+          className="h-11 cursor-pointer appearance-none rounded-lg bg-transparent px-4 text-[15px] font-semibold text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-65"
+          disabled={running}
+          onChange={(event) => loadExample(Number(event.target.value))}
+          value=""
+        >
+          <option disabled hidden value="">
+            Example
+          </option>
+          {examples.map((example, index) => (
+            <option key={`${example.label}-${index}`} value={index}>
+              {example.label}
+            </option>
+          ))}
+        </select>
+      ) : null}
+      {chrome.toolbarActions?.afterExample}
+      <Button
+        disabled={running}
+        onClick={reset}
+        type="button"
+        variant="outline"
+      >
+        Reset
+      </Button>
+      {!hasSettings && primaryAction ? (
+        <Button
+          aria-busy={primaryAction.running || undefined}
+          disabled={primaryAction.disabled}
+          onClick={primaryAction.onRun}
+          type="button"
+        >
+          {primaryAction.running ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Play aria-hidden="true" className="size-4" />
-          )}
-          {trigger.actionLabel}
+          ) : null}
+          {primaryAction.label}
         </Button>
       ) : null}
-    </div>
+    </>
   );
 }
 
 function ToolWorkspaceSlot(): ReactElement {
   const chrome = useToolChrome();
   const runtime = useRuntime();
+  const primaryAction = usePrimaryAction();
   const Workspace = chrome.Workspace;
   const running = runtime.lifecycle === "running";
 
   return (
     <Suspense fallback={null}>
       <Workspace
+        key={chrome.workspaceKey}
         disabled={running}
         error={runtime.error || undefined}
         input={runtime.input}
         onInputChange={runtime.setInput}
         onSettingChange={chrome.onSettingChange}
+        onToolbarActionsChange={chrome.setToolbarActions}
         onValidationChange={chrome.onValidationChange}
+        primaryAction={primaryAction}
+        progress={chrome.progress}
         result={runtime.result}
         running={running}
         settings={chrome.settings}
@@ -429,11 +510,19 @@ export default function ToolPage({
 }: ToolPageProps): ReactElement {
   const [settings, setSettings] = useState<RuntimeSettings>(() => defaultSettings(spec));
   const [validationReason, setValidationReason] = useState<string | null>(null);
-  const runOnWorker = useWorkerHost();
+  const [toolbarActions, setToolbarActions] = useState<WorkspaceToolbarActions | null>(null);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
+  const { progress, run: runOnWorker } = useWorkerHost();
 
   const onSettingChange = useCallback((key: string, value: unknown) => {
     setSettings((current) => ({ ...current, [key]: value }));
   }, []);
+
+  const resetPageState = useCallback(() => {
+    setSettings(defaultSettings(spec));
+    setValidationReason(null);
+    setWorkspaceKey((current) => current + 1);
+  }, [spec]);
 
   const execute = useCallback(
     async (
@@ -493,21 +582,25 @@ export default function ToolPage({
   );
 
   const Workspace = useMemo(
-    () => resolveWorkspace(definitionKey, spec.layout),
-    [definitionKey, spec.layout],
+    () => resolveWorkspace(definitionKey),
+    [definitionKey],
   );
 
   const chrome = useMemo<ToolChrome>(
     () => ({
       onSettingChange,
       onValidationChange: setValidationReason,
+      progress,
+      resetPageState,
       settings,
       spec,
-      title,
+      setToolbarActions,
+      toolbarActions,
       validationReason,
       Workspace,
+      workspaceKey,
     }),
-    [onSettingChange, settings, spec, title, validationReason, Workspace],
+    [onSettingChange, progress, resetPageState, settings, spec, toolbarActions, validationReason, Workspace, workspaceKey],
   );
 
   return (

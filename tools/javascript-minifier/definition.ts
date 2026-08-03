@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JavaScript input",
-    placeholder: "Enter or paste javascript input…",
+    placeholder: "// greeting\nfunction greet(name) { return 'Hello ' + name; }",
   },
   settings: {
     fields: {},
@@ -26,15 +26,14 @@ export default {
     mode: "manual",
     actionLabel: "Minify JavaScript",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
     empty: "Paste JavaScript to strip comments and whitespace.",
-    ready: "Minified.",
-    running: "Minifying…",
+    ready: "Minified JavaScript is ready.",
+    running: "Minifying JavaScript…",
   },
   content: {
     howToUse: [

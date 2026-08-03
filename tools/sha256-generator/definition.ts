@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "abc",
   },
   settings: {
     fields: {},
@@ -26,14 +26,13 @@ export default {
     mode: "manual",
     actionLabel: "Generate SHA-256",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Enter text to hash with SHA-256.",
-    ready: "Digest is ready.",
-    running: "Hashing…",
+    empty: "Enter the text you want to hash with SHA-256.",
+    ready: "SHA-256 digest is ready.",
+    running: "Generating SHA-256 digest…",
   },
   content: {
     howToUse: [

@@ -42,7 +42,9 @@ interface FieldFrameProps {
 function FieldFrame({ children, help, id, label }: FieldFrameProps) {
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <Label className="font-caption text-[13px] font-medium text-muted-foreground" htmlFor={id}>
+        {label}
+      </Label>
       {children}
       {help ? (
         <p className="text-xs leading-5 text-muted-foreground" id={`${id}-help`}>
@@ -203,20 +205,32 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
     );
   },
   toggle: (field, context) => (
-    <FieldFrame help={field.help} id={context.id} label={field.label}>
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <Label className="font-sans text-sm font-semibold text-foreground" htmlFor={context.id}>
+          {field.label}
+        </Label>
+        {field.help ? (
+          <p className="mt-0.5 text-xs leading-5 text-muted-foreground" id={`${context.id}-help`}>
+            {field.help}
+          </p>
+        ) : null}
+      </div>
       <Switch
         aria-describedby={field.help ? `${context.id}-help` : undefined}
+        className="shrink-0"
         checked={typeof context.value === "boolean" ? context.value : field.default}
         disabled={context.disabled}
         id={context.id}
         onCheckedChange={context.onChange}
       />
-    </FieldFrame>
+    </div>
   ),
   select: (field, context) => (
     <FieldFrame help={field.help} id={context.id} label={field.label}>
       <Select
         aria-describedby={field.help ? `${context.id}-help` : undefined}
+        className="w-full"
         disabled={context.disabled}
         id={context.id}
         onChange={(event) => context.onChange(event.currentTarget.value)}

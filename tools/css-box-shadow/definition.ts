@@ -21,9 +21,17 @@ export default {
   name: "CSS Box Shadow Generator",
   description: "Generate a CSS box-shadow declaration.",
   input: {
-    kind: "text",
-    label: "Shadow color",
-    placeholder: "Enter or paste shadow color…",
+    kind: "fields",
+    label: "Shadow Color",
+    fields: [
+      {
+        channel: "text",
+        label: "HEX color",
+        placeholder: "#00000080",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: {
     fields: {
@@ -72,12 +80,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 120 },
-  layout: "visual-editor",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a shadow color to build a box-shadow.",
-    ready: "box-shadow declaration is ready.",
-    running: "Building shadow…",
+    empty: "Enter a HEX shadow color to build a CSS box-shadow declaration.",
+    ready: "CSS box-shadow declaration is ready.",
+    running: "Building box shadow…",
   },
   content: {
     howToUse: [

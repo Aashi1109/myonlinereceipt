@@ -22,7 +22,6 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 160 },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Write Markdown or load an example to preview it.",

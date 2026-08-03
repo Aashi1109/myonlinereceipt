@@ -16,18 +16,25 @@ export default {
   name: "Color Picker",
   description: "Show HEX, RGB, and HSL forms for a color.",
   input: {
-    kind: "text",
-    label: "HEX color",
-    placeholder: "Enter or paste hex color…",
+    kind: "fields",
+    label: "HEX Color",
+    fields: [
+      {
+        channel: "text",
+        label: "HEX color",
+        placeholder: "#2563eb",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
-  layout: "visual-editor",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a HEX color to see its other forms.",
-    ready: "Color forms are ready.",
-    running: "Converting color…",
+    empty: "Enter a HEX color to view its HEX, RGB, and HSL forms.",
+    ready: "Color values are ready.",
+    running: "Converting HEX color…",
   },
   content: {
     howToUse: [

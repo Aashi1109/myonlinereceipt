@@ -16,8 +16,8 @@ export default {
   description: "Generate a SHA-512 digest.",
   input: {
     kind: "text",
-    label: "Text input",
-    placeholder: "Enter or paste text input…",
+    label: "Text to hash",
+    placeholder: "The quick brown fox jumps over the lazy dog",
   },
   settings: {
     fields: {},
@@ -26,14 +26,13 @@ export default {
     mode: "manual",
     actionLabel: "Generate SHA-512",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Enter text to hash with SHA-512.",
-    ready: "Digest is ready.",
-    running: "Hashing…",
+    empty: "Enter the text you want to hash with SHA-512.",
+    ready: "SHA-512 digest is ready.",
+    running: "Generating SHA-512 digest…",
   },
   content: {
     howToUse: [

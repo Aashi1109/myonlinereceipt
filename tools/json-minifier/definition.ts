@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{\n  "name": "Ada",\n  "active": true\n}',
   },
   settings: {
     fields: {
@@ -35,12 +35,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Minify" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste JSON to strip its whitespace.",
     ready: "Minified JSON is ready.",
-    running: "Minifying…",
+    running: "Minifying JSON…",
   },
   content: {
     howToUse: [

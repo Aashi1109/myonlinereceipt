@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Lines of text",
-    placeholder: "Enter or paste lines of text…",
+    placeholder: "Banana\napple\nCherry",
   },
   settings: {
     fields: {
@@ -40,12 +40,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Sort lines" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste a list to sort it.",
-    ready: "Lines sorted.",
-    running: "Sorting…",
+    empty: "Enter one item per line to sort the list.",
+    ready: "Sorted lines are ready.",
+    running: "Sorting lines…",
   },
   content: {
     howToUse: [

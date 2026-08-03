@@ -65,9 +65,9 @@ export default {
     mode: "manual",
     actionLabel: "Generate",
   },
-  layout: "generator",
   capabilities: {
     copy: true,
+    download: true,
   },
   labels: {
     empty: "Choose a length and character set, then generate.",

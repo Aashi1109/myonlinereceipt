@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "cURL command",
-    placeholder: "Enter or paste curl command…",
+    placeholder: "curl https://api.example.com/health",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to fetch" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste a curl command to convert it.",
-    ready: "Fetch code is ready.",
-    running: "Converting…",
+    empty: "Paste a cURL command to generate Fetch code.",
+    ready: "Fetch request code is ready.",
+    running: "Generating Fetch code…",
   },
   content: {
     howToUse: [

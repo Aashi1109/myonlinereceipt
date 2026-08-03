@@ -8,8 +8,12 @@
       "name": "definition example",
       "settings": {},
       "expected": {
-        "output": "HEX: #3366FF\nRGB: rgb(51, 102, 255)\nHSL: hsl(225, 100%, 60%)",
-        "render": "text"
+        "render": "key-value",
+        "entries": [
+          { "label": "HEX", "value": "#3366FF" },
+          { "label": "RGB", "value": "rgb(51, 102, 255)" },
+          { "label": "HSL", "value": "hsl(225, 100%, 60%)" }
+        ]
       }
     }
   ]

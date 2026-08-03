@@ -22,7 +22,7 @@ export default {
       {
         channel: "text",
         label: "JWT token",
-        placeholder: "Enter or paste jwt token…",
+        placeholder: "eyJhbGciOiJub25lIn0.eyJleHAiOjQxMDI0NDQ4MDB9.",
         required: true,
         secret: true,
       },
@@ -35,14 +35,13 @@ export default {
     mode: "manual",
     actionLabel: "Check expiration",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
     empty: "Paste a JWT to check its validity window.",
-    ready: "Claims inspected.",
-    running: "Checking token…",
+    ready: "JWT validity window is ready.",
+    running: "Checking JWT expiration…",
   },
   content: {
     howToUse: [

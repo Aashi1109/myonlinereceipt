@@ -23,11 +23,10 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 160 },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Enter Mermaid syntax to render a diagram.",
-    ready: "Diagram ready.",
+    empty: "Enter Mermaid source to render a diagram.",
+    ready: "Diagram preview is ready.",
     running: "Rendering diagram…",
   },
   content: {

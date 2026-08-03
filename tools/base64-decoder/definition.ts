@@ -17,16 +17,15 @@ export default {
   input: {
     kind: "text",
     label: "Base64 input",
-    placeholder: "Enter or paste base64 input…",
+    placeholder: "SGVsbG8g8J+Riw==",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste Base64 to decode it.",
-    ready: "Decoded text is ready.",
-    running: "Decoding…",
+    empty: "Paste Base64 text to decode it as UTF-8.",
+    ready: "Decoded UTF-8 text is ready.",
+    running: "Decoding Base64…",
   },
   content: {
     howToUse: [

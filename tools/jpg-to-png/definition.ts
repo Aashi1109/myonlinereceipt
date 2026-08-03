@@ -18,8 +18,10 @@ export default {
   description: "Convert JPG images to PNG.",
   input: {
     kind: "files",
-    label: "JPG images",
-    accept: "image/jpeg",
+    label: "Add JPG images",
+    dropzoneDescription:
+      "JPG and JPEG · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/jpeg,image/jpg,.jpg,.jpeg",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -27,12 +29,11 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Convert to PNG" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add JPG images to convert them to PNG.",
-    ready: "Conversion settings are ready.",
-    running: "Converting JPG images…",
+    empty: "Drop up to 50 JPG or JPEG images, 25 MiB each, to convert them to PNG.",
+    ready: "JPG images are ready to convert to PNG.",
+    running: "Converting JPG and JPEG images to PNG…",
   },
   content: {
     howToUse: [

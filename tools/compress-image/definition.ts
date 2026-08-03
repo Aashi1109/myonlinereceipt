@@ -20,8 +20,10 @@ export default {
   description: "Reduce image size while keeping its format and dimensions.",
   input: {
     kind: "files",
-    label: "Images to compress",
-    accept: "image/jpeg,image/png,image/webp",
+    label: "Add images to compress",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -61,11 +63,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Compress images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to reduce their file size.",
-    ready: "Compression settings are ready.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to compress them.",
+    ready: "The images and compression settings are ready.",
     running: "Compressing images…",
   },
   content: {

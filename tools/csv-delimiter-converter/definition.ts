@@ -19,7 +19,7 @@ export default {
   input: {
     kind: "text",
     label: "Delimited input",
-    placeholder: "Enter or paste delimited input…",
+    placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
     fields: {
@@ -50,12 +50,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert delimiter" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste delimited rows to change their separator.",
-    ready: "Converted rows are ready.",
-    running: "Converting delimiter…",
+    empty: "Paste delimited rows to convert their separator.",
+    ready: "Converted delimited data is ready.",
+    running: "Converting delimiters…",
   },
   content: {
     howToUse: [

@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "XML input",
-    placeholder: "Enter or paste xml input…",
+    placeholder: "<user id=\"1\"><name>Ada</name></user>",
   },
   settings: {
     fields: {},
@@ -27,15 +27,14 @@ export default {
     mode: "manual",
     actionLabel: "Convert to JSON",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
-    empty: "Paste XML to convert it to JSON.",
-    ready: "JSON is ready.",
-    running: "Converting XML…",
+    empty: "Enter XML to convert it to JSON.",
+    ready: "Converted JSON is ready.",
+    running: "Converting XML to JSON…",
   },
   content: {
     howToUse: [

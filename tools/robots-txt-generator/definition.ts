@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Disallow paths",
-    placeholder: "Enter or paste disallow paths…",
+    placeholder: "/admin\n/private",
   },
   settings: {
     fields: {
@@ -47,12 +47,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate robots.txt" },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "List the paths you want blocked, or switch on Allow all.",
+    empty: "Enter the paths you want blocked, or switch on Allow all.",
     ready: "robots.txt is ready.",
-    running: "Generating directives…",
+    running: "Generating robots.txt…",
   },
   content: {
     howToUse: [

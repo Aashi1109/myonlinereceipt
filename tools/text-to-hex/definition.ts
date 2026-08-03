@@ -10,16 +10,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Hello 👋",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode as hex" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste text to see its bytes in hex.",
-    ready: "Hex bytes are ready.",
-    running: "Encoding…",
+    empty: "Enter text to encode as UTF-8 hexadecimal.",
+    ready: "Hexadecimal bytes are ready.",
+    running: "Encoding text as hexadecimal…",
   },
   content: {
     howToUse: [

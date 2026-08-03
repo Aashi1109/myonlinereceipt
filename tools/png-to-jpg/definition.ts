@@ -18,8 +18,10 @@ export default {
   description: "Convert PNG images to JPG with a chosen background.",
   input: {
     kind: "files",
-    label: "PNG images",
-    accept: "image/png",
+    label: "Add PNG images",
+    dropzoneDescription:
+      "PNG · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/png,.png",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -45,12 +47,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add PNG images to convert them to JPG.",
-    ready: "Conversion settings are ready.",
-    running: "Converting PNG images…",
+    empty: "Drop up to 50 PNG files (.png, 25 MiB each) to convert them to JPG.",
+    ready: "The PNG files and JPG settings are ready.",
+    running: "Converting PNG files to JPG…",
   },
   content: {
     howToUse: [

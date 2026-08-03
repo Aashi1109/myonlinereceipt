@@ -11,8 +11,8 @@
         "column": "name"
       },
       "expected": {
-        "output": "name\nAda\nLin",
-        "render": "text"
+        "render": "list",
+        "items": ["name", "Ada", "Lin"]
       }
     }
   ]

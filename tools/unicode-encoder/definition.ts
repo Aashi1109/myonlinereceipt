@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Hello 👋",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode Unicode" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter text to escape its non-ASCII characters.",
-    ready: "Escaped text is ready.",
-    running: "Encoding…",
+    empty: "Enter text to encode non-ASCII characters as Unicode escapes.",
+    ready: "Unicode-escaped text is ready.",
+    running: "Encoding text as Unicode escapes…",
   },
   content: {
     howToUse: [

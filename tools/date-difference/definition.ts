@@ -38,12 +38,11 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "live" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter two dates to measure the gap.",
-    ready: "Difference is ready.",
-    running: "Calculating…",
+    empty: "Enter start and end dates to calculate the elapsed time.",
+    ready: "Date difference is ready.",
+    running: "Calculating date difference…",
   },
   content: {
     howToUse: [

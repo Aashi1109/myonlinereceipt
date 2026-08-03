@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "hello world",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate MD5" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter text to compute its MD5 digest.",
+    empty: "Enter the text you want to hash with MD5.",
     ready: "MD5 digest is ready.",
-    running: "Hashing…",
+    running: "Generating MD5 digest…",
   },
   content: {
     howToUse: [

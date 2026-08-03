@@ -1,7 +1,7 @@
 /**
  * What a tool run returns.
  *
- * The union is discriminated on `render`, and the ten variants are closed on
+ * The union is discriminated on `render`, and the eleven variants are closed on
  * purpose: there is no `details?: unknown` escape hatch, because the whole
  * point is that a renderer can exhaustively switch on `render` and never guess.
  * If a tool cannot express its output here, the union is wrong — extend it
@@ -58,6 +58,15 @@ export type ToolKeyValueRender = {
   readonly entries: readonly ToolFact[];
 };
 
+export type ToolListRender = {
+  readonly render: "list";
+  /** Independent values, each individually copyable. */
+  readonly items: readonly string[];
+  /** Optional caption per item, shown as secondary text. */
+  readonly labels?: readonly string[];
+  readonly downloadName?: string;
+};
+
 export type ToolHtmlRender = {
   readonly render: "html";
   /** Tool-generated markup for preview. Renderers must sandbox it. */
@@ -103,6 +112,7 @@ export type ToolRender =
   | ToolJsonTreeRender
   | ToolTableRender
   | ToolKeyValueRender
+  | ToolListRender
   | ToolHtmlRender
   | ToolImageRender
   | ToolDiffRender

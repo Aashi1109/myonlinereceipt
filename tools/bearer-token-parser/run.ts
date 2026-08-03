@@ -37,7 +37,13 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ),
     };
   }
-  return { render: "text", text: `Token: ${token}\nLength: ${token.length}` };
+  return {
+    render: "key-value",
+    entries: [
+      { label: "Token", value: token },
+      { label: "Length", value: String(token.length) },
+    ],
+  };
 };
 
 export default run;

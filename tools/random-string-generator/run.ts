@@ -16,10 +16,11 @@ const ALPHABETS: Readonly<Record<string, string>> = {
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const alphabet = ALPHABETS[ctx.settings.charset];
   return {
-    render: "text",
-    text: Array.from({ length: ctx.settings.count }, () =>
+    render: "list",
+    items: Array.from({ length: ctx.settings.count }, () =>
       randomString(ctx.settings.length, alphabet),
-    ).join("\n"),
+    ),
+    downloadName: "random-strings.txt",
   };
 };
 

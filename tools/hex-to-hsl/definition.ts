@@ -16,18 +16,25 @@ export default {
   name: "HEX to HSL",
   description: "Convert HEX colors to HSL.",
   input: {
-    kind: "text",
-    label: "HEX color",
-    placeholder: "Enter or paste hex color…",
+    kind: "fields",
+    label: "HEX Color",
+    fields: [
+      {
+        channel: "text",
+        label: "HEX color",
+        placeholder: "#3366ff",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 150 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a HEX color to convert it.",
+    empty: "Enter a HEX color to convert it to HSL.",
     ready: "HSL value is ready.",
-    running: "Converting…",
+    running: "Converting HEX to HSL…",
   },
   content: {
     howToUse: [

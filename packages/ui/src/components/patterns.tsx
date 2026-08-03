@@ -288,16 +288,20 @@ function ToolOptionsPanel({
   children,
   className,
   title = "Tool options",
+  variant = "card",
   ...props
 }: HTMLAttributes<HTMLElement> & {
   action?: ReactNode
   title?: ReactNode
+  variant?: "card" | "plain"
 }) {
   return (
     <section
       data-slot="tool-options-panel"
+      data-variant={variant}
       className={cn(
-        "flex w-full flex-col gap-4 rounded-xl border border-border bg-card p-[22px]",
+        "flex w-full flex-col gap-4",
+        variant === "card" && "rounded-xl border border-border bg-card p-[22px]",
         className
       )}
       {...props}

@@ -21,14 +21,15 @@ export default {
       {
         channel: "text",
         label: "JSON data",
-        placeholder: "Enter or paste json data…",
+        placeholder: '{"name":"Ada","age":36}',
         required: true,
         multiline: true,
       },
       {
         channel: "secondary",
         label: "JSON schema",
-        placeholder: "Enter or paste json schema…",
+        placeholder:
+          '{"type":"object","required":["name"],"properties":{"name":{"type":"string"}}}',
         required: true,
         multiline: true,
       },
@@ -36,12 +37,11 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Validate against schema" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
     empty: "Paste JSON data and a schema to validate it.",
-    ready: "Validation finished.",
-    running: "Validating…",
+    ready: "JSON Schema validation is complete.",
+    running: "Validating against JSON Schema…",
   },
   content: {
     howToUse: [

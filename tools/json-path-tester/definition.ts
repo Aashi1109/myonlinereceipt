@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
-    placeholder: "Enter or paste json input…",
+    placeholder: '{"store":{"book":[{"title":"Codex"}]}}',
   },
   settings: {
     fields: {
@@ -43,12 +43,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Evaluate path" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
     empty: "Paste JSON and enter a path to evaluate.",
-    ready: "Path resolved.",
-    running: "Evaluating path…",
+    ready: "JSONPath result is ready.",
+    running: "Evaluating JSONPath…",
   },
   content: {
     howToUse: [

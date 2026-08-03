@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "TSV input",
-    placeholder: "Enter or paste tsv input…",
+    placeholder: "name\tage\nAda\t36",
   },
   settings: {
     fields: {},
@@ -26,15 +26,14 @@ export default {
     mode: "manual",
     actionLabel: "Convert to CSV",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
-    empty: "Paste tab-separated rows to convert them to CSV.",
-    ready: "CSV is ready.",
-    running: "Converting to CSV…",
+    empty: "Enter tab-separated rows to convert them to CSV.",
+    ready: "CSV output is ready.",
+    running: "Converting TSV to CSV…",
   },
   content: {
     howToUse: [

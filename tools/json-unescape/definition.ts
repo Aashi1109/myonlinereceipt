@@ -17,16 +17,15 @@ export default {
   input: {
     kind: "text",
     label: "Escaped string",
-    placeholder: "Enter or paste escaped string…",
+    placeholder: 'He said \\"hello\\".\\nNext line.',
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Unescape" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste an escaped string to decode it.",
-    ready: "Decoded text is ready.",
-    running: "Unescaping…",
+    empty: "Provide JSON-escaped string content to decode.",
+    ready: "Unescaped text is ready.",
+    running: "Decoding JSON escape sequences…",
   },
   content: {
     howToUse: [

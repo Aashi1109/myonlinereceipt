@@ -22,7 +22,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nAda,Admin\nAda,Admin",
   },
   settings: {
     fields: {
@@ -41,12 +41,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Remove duplicates" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste CSV to drop repeated rows.",
-    ready: "Duplicates removed.",
-    running: "Scanning rows…",
+    empty: "Paste CSV with a header row to remove duplicate rows.",
+    ready: "Deduplicated CSV is ready.",
+    running: "Removing duplicate rows…",
   },
   content: {
     howToUse: [

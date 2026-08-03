@@ -1,15 +1,13 @@
 "use client";
 
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-  Badge,
+  AlertBanner,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  DownloadResult,
+  EmptyState,
+  MetricCard,
+  SectionHeading,
+  StatusBadge,
   Table,
   TableBody,
   TableCell,
@@ -17,9 +15,18 @@ import {
   TableHeader,
   TableRow,
 } from "@smarttools/ui";
-import { AlertTriangle, CheckCircle2, Download, XCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Download,
+} from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { DiffView } from "@/components/DiffView";
+import { JsonResultRenderer } from "@/components/JsonResultRenderer";
+import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
+import { GeneratedListSurface } from "@/components/Surfaces";
 import type {
   ToolRender,
   ToolRenderKind,
@@ -41,6 +48,14 @@ interface DownloadButtonProps {
   label?: string;
   mime: string;
   name: string;
+  variant?: "link" | "outline";
+}
+
+interface CopyButtonProps {
+  content: string;
+  iconOnly?: boolean;
+  label?: string;
+  variant?: "link" | "outline";
 }
 
 function saveBlob(content: BlobPart, mime: string, name: string) {
@@ -59,15 +74,81 @@ function DownloadButton({
   label = "Download",
   mime,
   name,
+  variant = "link",
 }: DownloadButtonProps) {
   return (
     <Button
+      className={variant === "link" ? "px-2 text-xs" : undefined}
       onClick={() => saveBlob(content, mime, name)}
       type="button"
-      variant="outline"
+      variant={variant}
     >
-      <Download aria-hidden="true" />
+      {variant === "outline" ? <Download aria-hidden="true" /> : null}
       {label}
+    </Button>
+  );
+}
+
+function CopyButton({
+  content,
+  iconOnly = false,
+  label = "Copy",
+  variant = iconOnly ? "outline" : "link",
+}: CopyButtonProps) {
+  const [feedback, setFeedback] = useState<{
+    content: string;
+    status: "copied" | "failed";
+  } | null>(null);
+  const contentRef = useRef(content);
+  const copyRequest = useRef(0);
+  const resetTimeout = useRef<number | undefined>(undefined);
+  contentRef.current = content;
+
+  useEffect(() => () => {
+    copyRequest.current += 1;
+    window.clearTimeout(resetTimeout.current);
+  }, []);
+
+  async function copy() {
+    const request = ++copyRequest.current;
+    const copiedContent = content;
+    window.clearTimeout(resetTimeout.current);
+    setFeedback(null);
+    try {
+      await navigator.clipboard.writeText(copiedContent);
+      if (request !== copyRequest.current || copiedContent !== contentRef.current) return;
+      setFeedback({ content: copiedContent, status: "copied" });
+      resetTimeout.current = window.setTimeout(() => setFeedback(null), 2_000);
+    } catch {
+      if (request !== copyRequest.current || copiedContent !== contentRef.current) return;
+      setFeedback({ content: copiedContent, status: "failed" });
+    }
+  }
+
+  const status = feedback?.content === content ? feedback.status : "idle";
+  const statusLabel = status === "copied"
+    ? "Copied"
+    : status === "failed"
+      ? "Copy failed — try again"
+      : label;
+  const StatusIcon = status === "copied"
+    ? Check
+    : status === "failed"
+      ? AlertTriangle
+      : Copy;
+
+  return (
+    <Button
+      aria-label={iconOnly ? statusLabel : undefined}
+      className={variant === "link" ? (iconOnly ? "[&_svg]:size-4" : "px-2 text-xs") : undefined}
+      onClick={() => void copy()}
+      size={iconOnly ? "icon" : undefined}
+      title={iconOnly ? statusLabel : undefined}
+      type="button"
+      variant={variant}
+    >
+      {iconOnly ? <StatusIcon aria-hidden="true" /> : null}
+      <span aria-live="polite" className={iconOnly ? "sr-only" : undefined}>{statusLabel}</span>
     </Button>
   );
 }
@@ -75,53 +156,10 @@ function DownloadButton({
 function RenderFrame({ actions, children }: { actions?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {actions ? <div className="flex shrink-0 justify-end border-b border-border p-2">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 justify-end px-4">{actions}</div> : null}
       {children}
     </div>
   );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function primitiveJson(value: unknown): string {
-  if (value === null) return "null";
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(String(value));
-}
-
-function JsonNode({ depth = 0, name, value }: { depth?: number; name?: string; value: unknown }) {
-  const label = name === undefined ? null : (
-    <span className="font-semibold text-foreground">{JSON.stringify(name)}: </span>
-  );
-  if (Array.isArray(value)) {
-    return (
-      <div className="font-mono text-xs leading-6">
-        <div>{label}<span className="text-muted-foreground">Array({value.length})</span></div>
-        <div className="border-l border-border pl-4">
-          {value.map((entry, index) => (
-            <JsonNode depth={depth + 1} key={`${depth}-${index}`} name={String(index)} value={entry} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  if (isRecord(value)) {
-    const entries = Object.entries(value);
-    return (
-      <div className="font-mono text-xs leading-6">
-        <div>{label}<span className="text-muted-foreground">Object({entries.length})</span></div>
-        <div className="border-l border-border pl-4">
-          {entries.map(([key, entry]) => (
-            <JsonNode depth={depth + 1} key={`${depth}-${key}`} name={key} value={entry} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return <div className="font-mono text-xs leading-6">{label}<span className="text-primary">{primitiveJson(value)}</span></div>;
 }
 
 function csvCell(value: string): string {
@@ -131,30 +169,53 @@ function csvCell(value: string): string {
 const RESULT_RENDERERS: ResultRendererRegistry = {
   text: (result) => (
     <RenderFrame
-      actions={result.downloadName ? <DownloadButton content={result.text} mime="text/plain;charset=utf-8" name={result.downloadName} /> : undefined}
+      actions={(
+        <>
+          <CopyButton content={result.text} />
+          {result.downloadName ? <DownloadButton content={result.text} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
+        </>
+      )}
     >
       <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-sm leading-6">{result.text}</pre>
     </RenderFrame>
   ),
   code: (result) => (
     <RenderFrame
-      actions={result.downloadName ? <DownloadButton content={result.code} mime="text/plain;charset=utf-8" name={result.downloadName} /> : undefined}
+      actions={(
+        <>
+          <CopyButton content={result.code} />
+          {result.downloadName ? <DownloadButton content={result.code} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
+        </>
+      )}
     >
       <pre className="min-h-0 flex-1 overflow-auto bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
     </RenderFrame>
   ),
-  "json-tree": (result) => (
-    <div className="min-h-0 flex-1 overflow-auto p-4">
-      <JsonNode value={result.value} />
-    </div>
-  ),
+  "json-tree": (result) => {
+    const json = result.text ?? JSON.stringify(result.value, null, 2)!;
+    return (
+      <JsonResultRenderer
+        className="h-full"
+        defaultOpenDepth={1}
+        downloadName="result.json"
+        formattedValue={json}
+        maxVisibleEntries={1_000}
+        value={result.value}
+      />
+    );
+  },
   table: (result) => {
     const csv = [result.columns, ...result.rows]
       .map((row) => row.map(csvCell).join(","))
       .join("\n");
     return (
       <RenderFrame
-        actions={result.downloadName ? <DownloadButton content={csv} label={result.truncated ? "Download shown rows" : "Download"} mime="text/csv;charset=utf-8" name={result.downloadName} /> : undefined}
+        actions={(
+          <>
+            <CopyButton content={csv} label={result.truncated ? "Copy shown rows" : "Copy"} />
+            {result.downloadName ? <DownloadButton content={csv} label={result.truncated ? "Download shown rows" : "Download"} mime="text/csv;charset=utf-8" name={result.downloadName} /> : null}
+          </>
+        )}
       >
         <div className="min-h-0 flex-1 overflow-auto">
           <Table>
@@ -174,33 +235,70 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </RenderFrame>
     );
   },
-  "key-value": (result) => (
-    <dl className="grid gap-0 divide-y divide-border">
-      {result.entries.map((entry) => (
-        <div className="grid grid-cols-[minmax(8rem,0.4fr)_minmax(0,1fr)] gap-4 px-4 py-3" key={`${entry.label}-${entry.value}`}>
-          <dt className="text-sm font-medium">{entry.label}</dt>
-          <dd className="break-words font-mono text-sm text-muted-foreground">{entry.value}</dd>
-        </div>
-      ))}
-    </dl>
-  ),
+  "key-value": (result) => {
+    const text = result.entries
+      .map((entry) => `${entry.label}: ${entry.value}`)
+      .join("\n");
+    return (
+      <RenderFrame actions={<CopyButton content={text} label="Copy all" />}>
+        <dl className="min-h-0 flex-1 divide-y divide-border overflow-auto">
+          {result.entries.map((entry) => (
+            <div className="grid grid-cols-[minmax(8rem,0.4fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3" key={`${entry.label}-${entry.value}`}>
+              <dt className="text-sm font-medium">{entry.label}</dt>
+              <dd className="break-words font-mono text-sm text-muted-foreground">{entry.value}</dd>
+              <CopyButton content={entry.value} iconOnly label={`Copy ${entry.label}`} />
+            </div>
+          ))}
+        </dl>
+      </RenderFrame>
+    );
+  },
+  list: (result) => {
+    const text = result.items.join("\n");
+    const items = result.items.map((value, index) => ({
+      description: result.labels?.[index],
+      id: `${index}-${value}`,
+      label: String(index + 1).padStart(2, "0"),
+      value,
+    }));
+    return (
+      <GeneratedListSurface
+        actions={(
+          <>
+            <CopyButton content={text} label="Copy all" />
+            {result.downloadName ? <DownloadButton content={text} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
+          </>
+        )}
+        className="min-h-0 flex-1"
+        getDescription={(item) => item.description}
+        getId={(item) => item.id}
+        getLabel={(item) => item.label}
+        getValue={(item) => item.value}
+        items={items}
+        renderAction={(item, index) => (
+          <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />
+        )}
+        title="Result summary"
+      />
+    );
+  },
   html: (result) => (
     <RenderFrame
-      actions={result.downloadName ? <DownloadButton content={result.html} mime="text/html;charset=utf-8" name={result.downloadName} /> : undefined}
+      actions={(
+        <>
+          <CopyButton content={result.html} />
+          {result.downloadName ? <DownloadButton content={result.html} mime="text/html;charset=utf-8" name={result.downloadName} /> : null}
+        </>
+      )}
     >
-      <iframe
-        className="min-h-80 w-full flex-1 bg-white"
-        sandbox=""
-        srcDoc={result.html}
-        title="Generated HTML preview"
-      />
+      <SandboxedHtmlPreview html={result.html} />
     </RenderFrame>
   ),
   image: (result) => (
     <RenderFrame
       actions={result.downloadName ? (
-                <Button asChild variant="outline">
-          <a download={result.downloadName} href={result.src}><Download aria-hidden="true" /> Download</a>
+        <Button asChild className="px-2 text-xs" variant="link">
+          <a download={result.downloadName} href={result.src}>Download</a>
         </Button>
       ) : undefined}
     >
@@ -215,37 +313,26 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       </div>
     </RenderFrame>
   ),
-  diff: (result) => (
-    <div className="min-h-0 flex-1 overflow-auto font-mono text-xs leading-6">
-      {result.leftLabel || result.rightLabel ? (
-        <div className="grid grid-cols-2 border-b border-border bg-muted/50 px-4 py-2 font-sans font-medium">
-          <span>{result.leftLabel ?? "Before"}</span><span>{result.rightLabel ?? "After"}</span>
-        </div>
-      ) : null}
-      {result.lines.map((line, index) => (
-        <div
-          className={line.kind === "added" ? "bg-success/10 text-foreground" : line.kind === "removed" ? "bg-destructive/10 text-foreground" : undefined}
-          key={`${index}-${line.text}`}
-        >
-          <span className="sr-only">{line.kind === "added" ? "Added: " : line.kind === "removed" ? "Removed: " : "Unchanged: "}</span>
-          <span aria-hidden="true" className="inline-block w-8 select-none text-center text-muted-foreground">{line.kind === "added" ? "+" : line.kind === "removed" ? "−" : " "}</span>
-          <span className="whitespace-pre-wrap break-all">{line.text}</span>
-        </div>
-      ))}
-    </div>
-  ),
+  diff: (result) => {
+    const patch = result.lines
+      .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
+      .join("\n");
+    return (
+      <RenderFrame actions={<CopyButton content={patch} />}>
+        <DiffView result={result} />
+      </RenderFrame>
+    );
+  },
   files: (result) => (
     <div className="grid gap-3 p-4">
       {result.files.map((file) => (
-        <Card key={`${file.filename}-${file.size}`}>
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <div className="min-w-0">
-              <CardTitle className="truncate text-sm">{file.filename}</CardTitle>
-              <p className="mt-1 text-xs text-muted-foreground">{file.mime} · {file.size.toLocaleString()} bytes</p>
-            </div>
-            <DownloadButton content={file.buffer} label="Download file" mime={file.mime} name={file.filename} />
-          </CardHeader>
-        </Card>
+        <DownloadResult
+          action={<DownloadButton content={file.buffer} label="Download file" mime={file.mime} name={file.filename} variant="outline" />}
+          className="[&_p]:truncate"
+          key={`${file.filename}-${file.size}`}
+          metadata={`${file.mime} · ${file.size.toLocaleString()} bytes`}
+          title={file.filename}
+        />
       ))}
       {result.inputBytes !== undefined || result.outputBytes !== undefined ? (
         <p className="text-xs text-muted-foreground">
@@ -257,9 +344,10 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     </div>
   ),
   none: () => (
-    <div className="grid min-h-40 place-items-center p-6 text-center text-sm text-muted-foreground">
-      The action completed without a displayable result.
-    </div>
+    <EmptyState
+      className="min-h-40"
+      title="The action completed without a displayable result."
+    />
   ),
 };
 
@@ -276,59 +364,54 @@ function CommonResultDetails({ result }: ResultViewProps) {
     result.sections?.length,
   );
   if (!hasDetails) return null;
-  const VerdictIcon = result.verdict?.level === "ok"
-    ? CheckCircle2
-    : result.verdict?.level === "error"
-      ? XCircle
-      : AlertTriangle;
   return (
     <div className="grid gap-4 border-t border-border p-4">
       {result.stats?.length ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
           {result.stats.map((stat) => (
-            <Card className="p-4" key={`${stat.label}-${stat.value}`}>
-              <CardContent className="p-0"><p className="text-xs text-muted-foreground">{stat.label}</p><p className="mt-1 font-mono text-lg font-semibold">{stat.value}</p></CardContent>
-            </Card>
+            <MetricCard key={`${stat.label}-${stat.value}`} label={stat.label} value={stat.value} />
           ))}
         </div>
       ) : null}
       {result.verdict ? (
-        <Alert variant={result.verdict.level === "error" ? "destructive" : "default"}>
-          <VerdictIcon aria-hidden="true" />
-          <AlertTitle>{result.verdict.label}</AlertTitle>
-          {result.verdict.detail ? <AlertDescription>{result.verdict.detail}</AlertDescription> : null}
-        </Alert>
+        <AlertBanner
+          action={(
+            <StatusBadge variant={result.verdict.level === "ok" ? "success" : result.verdict.level === "error" ? "danger" : "warning"}>
+              {result.verdict.level === "ok" ? "OK" : result.verdict.level === "error" ? "Error" : "Warning"}
+            </StatusBadge>
+          )}
+          title={result.verdict.label}
+          variant={result.verdict.level === "ok" ? "success" : result.verdict.level === "error" ? "error" : "warning"}
+        >
+          {result.verdict.detail}
+        </AlertBanner>
       ) : null}
       {result.issues?.length ? (
-        <Alert>
-          <AlertTriangle aria-hidden="true" />
-          <AlertTitle>Issues</AlertTitle>
-          <AlertDescription>
-            <ul className="list-disc space-y-1 pl-4">
-              {result.issues.map((issue, index) => (
-                <li key={`${index}-${issue.message}`}>
-                  {issue.target ? `${issue.target[0].toUpperCase()}${issue.target.slice(1)}: ` : null}
-                  {issue.message}
-                  {issue.line !== undefined ? ` (line ${issue.line}${issue.column !== undefined ? `, column ${issue.column}` : ""})` : ""}
-                </li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
+        <AlertBanner title="Issues" variant="warning">
+          <ul className="list-disc space-y-1 pl-4">
+            {result.issues.map((issue, index) => (
+              <li key={`${index}-${issue.message}`}>
+                {issue.target ? `${issue.target[0].toUpperCase()}${issue.target.slice(1)}: ` : null}
+                {issue.message}
+                {issue.line !== undefined ? ` (line ${issue.line}${issue.column !== undefined ? `, column ${issue.column}` : ""})` : ""}
+              </li>
+            ))}
+          </ul>
+        </AlertBanner>
       ) : null}
       {result.artifacts?.length ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Downloads</span>
           {result.artifacts.map((artifact) => (
-            <DownloadButton content={artifact.content} label={artifact.name} key={artifact.name} mime={artifact.mimeType} name={artifact.name} />
+            <DownloadButton content={artifact.content} label={artifact.name} key={artifact.name} mime={artifact.mimeType} name={artifact.name} variant="outline" />
           ))}
         </div>
       ) : null}
       {result.sections?.map((section) => (
-        <Card key={section.title}>
-          <CardHeader><CardTitle className="text-base">{section.title}</CardTitle></CardHeader>
-          <CardContent className="p-0">{renderPrimary(section.body)}</CardContent>
-        </Card>
+        <section key={section.title}>
+          <SectionHeading title={section.title} />
+          {renderPrimary(section.body)}
+        </section>
       ))}
     </div>
   );

@@ -52,6 +52,7 @@ type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   options?: ReactNode
   status?: ReactNode
   toolbar: ReactNode
+  toolbarActions?: ReactNode
   variant?: "json" | "conversion" | "media" | "utility"
 }
 
@@ -61,6 +62,7 @@ function WorkbenchShell({
   options,
   status,
   toolbar,
+  toolbarActions,
   variant = "utility",
   ...props
 }: WorkbenchShellProps) {
@@ -85,6 +87,14 @@ function WorkbenchShell({
         )}
       >
         {toolbar}
+        {toolbarActions ? (
+          <div
+            data-slot="workbench-toolbar-actions"
+            className="ml-auto flex shrink-0 items-center gap-2"
+          >
+            {toolbarActions}
+          </div>
+        ) : null}
       </div>
       {options ? (
         <div

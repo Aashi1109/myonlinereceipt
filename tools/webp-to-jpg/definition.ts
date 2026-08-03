@@ -18,8 +18,10 @@ export default {
   description: "Convert static WebP images to JPG.",
   input: {
     kind: "files",
-    label: "WebP images",
-    accept: "image/webp",
+    label: "Add WebP images",
+    dropzoneDescription:
+      "WebP · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/webp,.webp",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -45,11 +47,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add static WebP images to convert them to JPG.",
-    ready: "Conversion settings are ready.",
+    empty: "Drop up to 50 static WebP images (25 MiB each) to convert to JPG.",
+    ready: "The WebP images and JPG settings are ready.",
     running: "Converting WebP images…",
   },
   content: {

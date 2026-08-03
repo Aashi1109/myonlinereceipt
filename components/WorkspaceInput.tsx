@@ -1,114 +1,31 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle, Button, Input, Label, Textarea } from "@smarttools/ui";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Input,
+  Label,
+} from "@smarttools/ui";
 import { Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 
-import { ResultView } from "@/components/ResultView";
-import { SettingsPanel } from "@/components/SettingsPanel";
-import { SplitStack, Stack } from "@/components/Stacks";
+import {
+  validateFileSelection,
+  workspaceFileId,
+} from "@/components/FileInput";
+import { Stack } from "@/components/Stacks";
 import {
   FileIntakeSurface,
   FileQueueSurface,
   WorkspaceSurface,
 } from "@/components/Surfaces";
-import type { ToolResult } from "@/lib/tool-framework/result";
-import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
-
-export interface WorkspaceInputState {
-  readonly files: readonly File[];
-  readonly secondary?: string;
-  readonly text: string;
-}
-
-export interface WorkspaceProps {
-  disabled?: boolean;
-  error?: string;
-  input: WorkspaceInputState;
-  onInputChange: (input: WorkspaceInputState) => void;
-  onSettingChange: (key: string, value: unknown) => void;
-  /**
-   * Reports the tool's own pre-run readiness (`tools/<key>/hooks.ts`
-   * `validate`): `null` when the job may start, otherwise the reason it may
-   * not. The owner of the primary action disables it while this is non-null;
-   * the workspace also shows the reason next to the settings it refers to.
-   *
-   * Optional so the workspaces that run no hook stay unchanged.
-   */
-  onValidationChange?: (reason: string | null) => void;
-  result: ToolResult | null;
-  running?: boolean;
-  settings: Readonly<Record<string, unknown>>;
-  spec: ToolSpec;
-}
-
-export interface SettingsSurfaceProps {
-  disabled?: boolean;
-  onSettingChange: WorkspaceProps["onSettingChange"];
-  settings: WorkspaceProps["settings"];
-  spec: ToolSpec;
-  title?: string;
-}
-
-export function SettingsSurface({
-  disabled,
-  onSettingChange,
-  settings,
-  spec,
-  title = "Settings",
-}: SettingsSurfaceProps) {
-  const hasSettings = Object.keys(spec.settings.fields).length > 0;
-  return (
-    <WorkspaceSurface
-      className="min-h-0"
-      contentClassName="p-4"
-      purpose="inspector"
-      scroll="content"
-      state={hasSettings ? "ready" : "empty"}
-      stateDescription="This action has no configurable settings."
-      stateTitle="No settings needed"
-      title={title}
-    >
-      <SettingsPanel
-        disabled={disabled}
-        onChange={onSettingChange}
-        spec={spec.settings}
-        values={settings}
-      />
-    </WorkspaceSurface>
-  );
-}
-
-export interface ResultSurfaceProps {
-  error?: string;
-  result: ToolResult | null;
-  running?: boolean;
-  spec: ToolSpec;
-  title?: string;
-}
-
-export function ResultSurface({
-  error,
-  result,
-  running = false,
-  spec,
-  title = "Result",
-}: ResultSurfaceProps) {
-  const state = error ? "error" : running ? "loading" : result ? "ready" : "empty";
-  return (
-    <WorkspaceSurface
-      className="h-full"
-      purpose="result"
-      state={state}
-      stateDescription={error ?? (running ? spec.labels.running : spec.labels.empty)}
-      stateIcon={running ? <Upload aria-hidden="true" className="animate-pulse" /> : undefined}
-      stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
-      title={title}
-    >
-      {result ? <ResultView result={result} /> : null}
-    </WorkspaceSurface>
-  );
-}
+import type {
+  WorkspaceInputState,
+  WorkspaceProps,
+} from "@/components/ToolWorkspace";
+import type { ToolInputSpec } from "@/lib/tool-framework/spec";
 
 interface InputSurfaceProps {
   disabled?: boolean;
@@ -117,58 +34,97 @@ interface InputSurfaceProps {
   onInputChange: WorkspaceProps["onInputChange"];
 }
 
-const FILE_IDS = new WeakMap<File, string>();
-
-export function workspaceFileId(file: File): string {
-  const existing = FILE_IDS.get(file);
-  if (existing) return existing;
-  const id = crypto.randomUUID();
-  FILE_IDS.set(file, id);
-  return id;
+interface SourceTextareaProps {
+  className: string;
+  disabled?: boolean;
+  gutter: boolean;
+  id: string;
+  maxLength?: number;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+  required?: boolean;
+  value: string;
 }
 
-export interface FileSelectionResult {
-  files: readonly File[];
-  issue: string;
-}
+function isCodeShaped(value: string): boolean {
+  const trimmed = value.trim();
+  const lines = trimmed.split(/\r\n?|\n/).filter(Boolean);
+  if (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+    (value.includes("{") && value.includes("}") && /[:;]/.test(value)) ||
+    /=>|<\/?[A-Za-z][^>]*>|;\s*$/m.test(value)
+  ) return true;
+  if (lines.length < 2) return false;
 
-function acceptsFile(file: File, accept: string): boolean {
-  const name = file.name.toLowerCase();
-  const mime = file.type.toLowerCase();
-  return accept.split(",").some((rawPattern) => {
-    const pattern = rawPattern.trim().toLowerCase();
-    if (!pattern) return false;
-    if (pattern === "*/*") return true;
-    if (pattern.startsWith(".")) return name.endsWith(pattern);
-    if (pattern.endsWith("/*")) return mime.startsWith(pattern.slice(0, -1));
-    return mime === pattern;
+  const delimited = [",", "\t", "|"].some((delimiter) => {
+    const counts = lines.map((line) => line.split(delimiter).length - 1);
+    return counts[0] > 0 && counts.every((count) => count === counts[0]);
   });
+  return delimited || lines.filter((line) => /^\s*[\w"'-]+\s*:\s*\S/.test(line)).length > 1;
 }
 
-export function validateFileSelection(
-  current: readonly File[],
-  incoming: readonly File[],
-  inputSpec: Extract<ToolInputSpec, { kind: "files" }>,
-): FileSelectionResult {
-  const accepted: File[] = [];
-  const issues: string[] = [];
-  for (const file of incoming) {
-    if (!acceptsFile(file, inputSpec.accept)) {
-      issues.push(`${file.name} is not an accepted file type.`);
-    } else if (inputSpec.maxBytes !== undefined && file.size > inputSpec.maxBytes) {
-      issues.push(`${file.name} exceeds the ${inputSpec.maxBytes.toLocaleString()} byte limit.`);
-    } else {
-      accepted.push(file);
-    }
-  }
-  const combined = inputSpec.multiple ? [...current, ...accepted] : accepted.slice(0, 1);
-  const limit = inputSpec.maxFiles ?? combined.length;
-  if (combined.length > limit) {
-    issues.push(`Only ${limit} ${limit === 1 ? "file" : "files"} can be added.`);
-  }
-  return { files: combined.slice(0, limit), issue: issues.join(" ") };
+function sourceMeta(value: string, codeShaped: boolean): string {
+  const count = codeShaped ? new TextEncoder().encode(value).byteLength : value.length;
+  return `${count} ${codeShaped ? "bytes" : count === 1 ? "character" : "characters"}`;
 }
 
+export function SourceTextarea({
+  className,
+  disabled,
+  gutter,
+  id,
+  maxLength,
+  onChange,
+  placeholder,
+  readOnly,
+  required,
+  value,
+}: SourceTextareaProps) {
+  const gutterRef = useRef<HTMLPreElement>(null);
+  const lineNumbers = useMemo(() => {
+    const lineCount = (value.match(/\r\n|\r|\n/g)?.length ?? 0) + 1;
+    return Array.from({ length: lineCount }, (_, index) => index + 1).join("\n");
+  }, [value]);
+
+  return (
+    <div
+      className={`${className} flex min-w-0 overflow-hidden bg-background has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-inset ${gutter ? "pl-4" : ""}`}
+    >
+      {gutter ? (
+        <div aria-hidden="true" className="w-[15px] min-w-max shrink-0 overflow-hidden text-right">
+          <pre
+            className="m-0 select-none py-[18px] font-mono text-xs leading-[1.55] text-muted-foreground will-change-transform"
+            ref={gutterRef}
+          >
+            {lineNumbers}
+          </pre>
+        </div>
+      ) : null}
+      <textarea
+        autoCapitalize={gutter ? "off" : undefined}
+        autoCorrect={gutter ? "off" : undefined}
+        className={`${gutter ? "ml-[14px] pr-4" : "px-4"} min-h-0 min-w-0 flex-1 resize-none overflow-auto border-0 bg-transparent py-[18px] font-mono text-xs leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60`}
+        disabled={disabled}
+        id={id}
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.currentTarget.value)}
+        onScroll={(event) => {
+          if (gutterRef.current) {
+            gutterRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`;
+          }
+        }}
+        placeholder={placeholder}
+        readOnly={readOnly}
+        required={required}
+        spellCheck={!gutter}
+        value={value}
+        wrap={gutter ? "off" : "soft"}
+      />
+    </div>
+  );
+}
 export function WorkspaceInputSurface({
   disabled,
   input,
@@ -181,21 +137,25 @@ export function WorkspaceInputSurface({
   switch (inputSpec.kind) {
     case "text": {
       const acceptedFile = inputSpec.acceptFiles;
+      const codeShaped =
+        isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
       return (
         <WorkspaceSurface
           className="h-full"
-          contentClassName="gap-4 p-4"
+          contentClassName={codeShaped ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
+          meta={sourceMeta(input.text, codeShaped)}
           purpose="source"
           title={inputSpec.label}
         >
           <div className="grid min-h-0 flex-1 gap-1.5">
             <Label className="sr-only" htmlFor={`${idPrefix}-primary`}>{inputSpec.label}</Label>
-            <Textarea
-              className="min-h-48 flex-1 resize-none font-mono"
+            <SourceTextarea
+              className="min-h-48 flex-1"
               disabled={disabled}
+              gutter={codeShaped}
               id={`${idPrefix}-primary`}
               maxLength={inputSpec.maxLength}
-              onChange={(event) => onInputChange({ ...input, text: event.currentTarget.value })}
+              onChange={(text) => onInputChange({ ...input, text })}
               placeholder={inputSpec.placeholder}
               value={input.text}
             />
@@ -203,11 +163,15 @@ export function WorkspaceInputSurface({
           {inputSpec.secondary ? (
             <div className="grid gap-1.5">
               <Label htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</Label>
-              <Textarea
-                className="min-h-28 resize-none font-mono"
+              <SourceTextarea
+                className="min-h-28"
                 disabled={disabled}
+                gutter={
+                  isCodeShaped(input.secondary ?? "") ||
+                  isCodeShaped(inputSpec.secondary.placeholder ?? "")
+                }
                 id={`${idPrefix}-secondary`}
-                onChange={(event) => onInputChange({ ...input, secondary: event.currentTarget.value })}
+                onChange={(secondary) => onInputChange({ ...input, secondary })}
                 placeholder={inputSpec.secondary.placeholder}
                 value={input.secondary ?? ""}
               />
@@ -239,11 +203,20 @@ export function WorkspaceInputSurface({
         </WorkspaceSurface>
       );
     }
-    case "fields":
+    case "fields": {
+      const values = inputSpec.fields.map((field) =>
+        field.channel === "text" ? input.text : input.secondary ?? "",
+      );
+      const codeShaped = inputSpec.fields.some(
+        (field, index) =>
+          Boolean(field.multiline) &&
+          (isCodeShaped(values[index]) || isCodeShaped(field.placeholder ?? "")),
+      );
       return (
         <WorkspaceSurface
-          className="h-full"
-          contentClassName="gap-4 p-4"
+          className="h-full [&_[data-stack=scroll-region]]:bg-background"
+          contentClassName={codeShaped ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
+          meta={sourceMeta(values.join(""), codeShaped)}
           purpose="source"
           scroll="content"
           title={inputSpec.label}
@@ -251,19 +224,31 @@ export function WorkspaceInputSurface({
           {inputSpec.fields.map((field) => {
             const fieldId = `${idPrefix}-${field.channel}`;
             const value = field.channel === "text" ? input.text : input.secondary ?? "";
+            const fieldCodeShaped = Boolean(field.multiline) && (
+              isCodeShaped(value) || isCodeShaped(field.placeholder ?? "")
+            );
             const revealed = Boolean(revealedSecrets[field.channel]);
             const updateValue = (nextValue: string) => onInputChange({ ...input, [field.channel]: nextValue });
             return (
-              <div className="grid gap-1.5" key={field.channel}>
-                <Label htmlFor={fieldId}>{field.label}{field.required ? " (required)" : ""}</Label>
+              <div
+                className={`grid gap-1.5 ${codeShaped ? "first:pt-4 last:pb-4" : ""} ${codeShaped && !fieldCodeShaped ? "px-4" : ""}`}
+                key={field.channel}
+              >
+                <Label className={fieldCodeShaped ? "px-4" : undefined} htmlFor={fieldId}>
+                  {field.label}{field.required ? " (required)" : ""}
+                </Label>
                 <div className="flex items-start gap-2">
                   {field.multiline ? (
-                    <Textarea
-                      className="min-h-28 flex-1 font-mono"
+                    <SourceTextarea
+                      className="min-h-28 flex-1"
                       disabled={disabled}
+                      gutter={
+                        isCodeShaped(value) ||
+                        isCodeShaped(field.placeholder ?? "")
+                      }
                       id={fieldId}
                       maxLength={field.maxLength}
-                      onChange={(event) => updateValue(event.currentTarget.value)}
+                      onChange={updateValue}
                       placeholder={field.secret && !revealed ? "Reveal to edit this protected value." : field.placeholder}
                       readOnly={field.secret && !revealed}
                       required={field.required}
@@ -300,6 +285,7 @@ export function WorkspaceInputSurface({
           })}
         </WorkspaceSurface>
       );
+    }
     case "files":
       return (
         <Stack className="h-full">
@@ -367,30 +353,3 @@ function assertNoInputSurface(inputSpec: never): never {
   );
 }
 
-export function SourceResultWorkspace(props: WorkspaceProps) {
-  const settingsSurface = (
-    <SettingsSurface
-      disabled={props.disabled}
-      onSettingChange={props.onSettingChange}
-      settings={props.settings}
-      spec={props.spec}
-    />
-  );
-  const resultSurface = (
-    <ResultSurface error={props.error} result={props.result} running={props.running} spec={props.spec} />
-  );
-  return (
-    <SplitStack className="h-full" defaultSize={72} minSize={52}>
-      <SplitStack className="h-full" defaultSize={50} minSize={30} orientation="vertical">
-        <WorkspaceInputSurface
-          disabled={props.disabled}
-          input={props.input}
-          inputSpec={props.spec.input}
-          onInputChange={props.onInputChange}
-        />
-        {resultSurface}
-      </SplitStack>
-      {settingsSurface}
-    </SplitStack>
-  );
-}

@@ -7,7 +7,7 @@ import path from "node:path";
 import { TOOL_CATEGORIES } from "../lib/tool-framework/categories.ts";
 
 const USAGE =
-  "Usage: node scripts/new-tool.mjs <folder-name> --category <key> [--app devtools|media] [--layout <layout>] [--worker|--server]";
+  "Usage: node scripts/new-tool.mjs <folder-name> --category <key> [--app devtools|media] [--worker|--server]";
 
 const [key, ...rest] = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -17,7 +17,6 @@ const flag = (name, fallback) => {
 
 const app = flag("app", "devtools");
 const category = flag("category");
-const layout = flag("layout", "source-result");
 const runFile = rest.includes("--worker")
   ? "run.worker.ts"
   : rest.includes("--server")
@@ -52,7 +51,6 @@ export default {
   input: { kind: "text", label: "Input" },
   settings: { fields: {} },
   trigger: { mode: "live" },
-  layout: "${layout}",
   labels: {
     empty: "Paste input to begin.",
     ready: "Ready.",

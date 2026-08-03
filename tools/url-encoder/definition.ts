@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Text or URL",
-    placeholder: "Enter or paste text or url…",
+    placeholder: "hello smart tools?active=true",
   },
   settings: {
     fields: {
@@ -31,12 +31,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Encode" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste text or a URL to percent-encode it.",
-    ready: "Encoded value is ready.",
-    running: "Encoding…",
+    empty: "Enter text or a URL to percent-encode it.",
+    ready: "Percent-encoded value is ready.",
+    running: "Percent-encoding input…",
   },
   content: {
     howToUse: [

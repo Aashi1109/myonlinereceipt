@@ -97,7 +97,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Create PDF" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add images to build a PDF.",

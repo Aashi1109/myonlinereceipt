@@ -13,12 +13,10 @@
         "upper": false
       },
       "expected": {
-        "render": "text",
-        "length": {
-          "max": 184,
-          "min": 184
-        },
-        "pattern": "^[a-z0-9\\n\\-]{184,184}$"
+        "render": "list",
+        "itemCount": 5,
+        "itemPattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        "downloadName": "uuids.txt"
       }
     }
   ]

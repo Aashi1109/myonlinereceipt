@@ -23,14 +23,14 @@ export default {
       {
         channel: "text",
         label: "Message",
-        placeholder: "The payload to sign",
+        placeholder: '{"event":"order.created","id":"ord_123"}',
         required: true,
         multiline: true,
       },
       {
         channel: "secondary",
         label: "Secret key",
-        placeholder: "Shared secret",
+        placeholder: "whsec_example_key",
         required: true,
         secret: true,
       },
@@ -52,11 +52,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate HMAC" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Enter a message and secret key to generate an HMAC.",
-    ready: "Keyed digest is ready.",
+    ready: "HMAC digest is ready.",
     running: "Generating HMAC…",
   },
   content: {

@@ -13,10 +13,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     ctx.settings.symbols ? "!@#$%^&*()-_=+[]{}" : "",
   ].join("");
   return {
-    render: "text",
-    text: Array.from({ length: ctx.settings.count }, () =>
+    render: "list",
+    items: Array.from({ length: ctx.settings.count }, () =>
       randomString(ctx.settings.length, alphabet),
-    ).join("\n"),
+    ),
+    downloadName: "passwords.txt",
   };
 };
 

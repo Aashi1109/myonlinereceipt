@@ -17,19 +17,19 @@ export default {
   description: "Compare two hashes without early exit.",
   input: {
     kind: "fields",
-    label: "Two values to compare",
+    label: "Two hashes to compare",
     fields: [
       {
         channel: "text",
-        label: "Value A",
-        placeholder: "First hash or digest",
+        label: "First hash",
+        placeholder: "5d41402abc4b2a76b9719d911017c592",
         required: true,
         secret: true,
       },
       {
         channel: "secondary",
-        label: "Value B",
-        placeholder: "Second hash or digest",
+        label: "Second hash",
+        placeholder: "5d41402abc4b2a76b9719d911017c592",
         required: true,
         secret: true,
       },
@@ -37,12 +37,11 @@ export default {
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare hashes" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste two hashes to compare them.",
-    ready: "Comparison finished.",
-    running: "Comparing…",
+    empty: "Enter two hashes to compare them without early exit.",
+    ready: "Hash comparison is complete.",
+    running: "Comparing hashes…",
   },
   content: {
     howToUse: [

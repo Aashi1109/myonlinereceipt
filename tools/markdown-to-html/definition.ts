@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Markdown input",
-    placeholder: "Enter or paste markdown input…",
+    placeholder: "# Hello\n\n**Smart tools** stay focused.",
   },
   settings: {
     fields: {},
@@ -27,15 +27,14 @@ export default {
     mode: "manual",
     actionLabel: "Convert to HTML",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
-    empty: "Paste Markdown to convert it to HTML.",
-    ready: "HTML is ready.",
-    running: "Converting Markdown…",
+    empty: "Provide Markdown to convert to HTML.",
+    ready: "Converted HTML is ready.",
+    running: "Converting Markdown to HTML…",
   },
   content: {
     howToUse: [

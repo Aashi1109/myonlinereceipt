@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,age\nAda,36",
   },
   settings: {
     fields: {
@@ -50,14 +50,13 @@ export default {
     mode: "manual",
     actionLabel: "Validate CSV",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste CSV to check its headers and row widths.",
-    ready: "CSV is well formed.",
-    running: "Validating CSV…",
+    empty: "Paste CSV rows to validate their headers and field counts.",
+    ready: "CSV structure is valid.",
+    running: "Validating CSV structure…",
   },
   content: {
     howToUse: [

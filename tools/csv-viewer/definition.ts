@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
-    placeholder: "Enter or paste csv input…",
+    placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
     fields: {
@@ -37,12 +37,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 200 },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste delimited data to preview it as a table.",
-    ready: "Table preview is ready.",
-    running: "Parsing rows…",
+    empty: "Paste delimited rows to preview them as a table.",
+    ready: "CSV table preview is ready.",
+    running: "Rendering table preview…",
   },
   content: {
     howToUse: [

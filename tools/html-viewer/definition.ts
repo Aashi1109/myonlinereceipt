@@ -18,14 +18,13 @@ export default {
   input: {
     kind: "text",
     label: "HTML source",
-    placeholder: "Enter or paste html source…",
+    placeholder: "<article><h1>Hello</h1><p>Sandboxed preview.</p></article>",
   },
   settings: { fields: {} },
   trigger: { mode: "live", debounceMs: 250 },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste HTML to preview it.",
+    empty: "Paste HTML to render it in a sandboxed preview.",
     ready: "Preview is up to date.",
     running: "Rendering preview…",
   },

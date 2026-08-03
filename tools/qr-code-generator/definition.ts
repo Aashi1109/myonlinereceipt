@@ -71,11 +71,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Generate QR code" },
-  layout: "generator",
   capabilities: { download: true },
   labels: {
-    empty: "Enter a URL or text to create a QR code.",
-    ready: "QR code PNG is ready.",
+    empty: "Enter the URL or text you want to encode in a QR code.",
+    ready: "QR code is ready.",
     running: "Generating QR code…",
   },
   content: {

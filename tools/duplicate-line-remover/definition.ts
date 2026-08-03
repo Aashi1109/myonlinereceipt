@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Alpha\nBeta\nAlpha",
   },
   settings: {
     fields: {
@@ -36,12 +36,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Remove duplicates" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste a list to remove its repeated lines.",
-    ready: "Unique lines are ready.",
-    running: "Removing duplicates…",
+    empty: "Paste one item per line to remove repeated lines.",
+    ready: "Deduplicated lines are ready.",
+    running: "Removing repeated lines…",
   },
   content: {
     howToUse: [

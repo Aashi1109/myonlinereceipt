@@ -83,7 +83,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Combine images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add images to arrange into one canvas.",

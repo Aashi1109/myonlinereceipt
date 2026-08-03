@@ -18,8 +18,11 @@ export default {
   description: "Resize images by pixels or percentage.",
   input: {
     kind: "files",
-    label: "Images to resize",
-    accept: "image/jpeg,image/png,image/webp,image/heic,image/heif",
+    label: "Add images to resize",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept:
+      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -111,12 +114,12 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Resize images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to resize them by pixels or percentage.",
-    ready: "Resize settings are ready.",
-    running: "Resizing images…",
+    empty:
+      "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to resize them.",
+    ready: "The images and resize settings are ready.",
+    running: "Resizing the images…",
   },
   content: {
     howToUse: [

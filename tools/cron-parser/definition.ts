@@ -16,9 +16,17 @@ export default {
   name: "Cron Expression Parser",
   description: "Validate and explain a five-field cron expression.",
   input: {
-    kind: "text",
-    label: "Cron expression",
-    placeholder: "Enter or paste cron expression…",
+    kind: "fields",
+    label: "Cron Expression",
+    fields: [
+      {
+        channel: "text",
+        label: "Cron expression",
+        placeholder: "*/15 * * * *",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: {
     fields: {},
@@ -27,14 +35,13 @@ export default {
     mode: "manual",
     actionLabel: "Parse cron",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste a five-field cron expression to check it.",
-    ready: "Expression parsed.",
-    running: "Parsing expression…",
+    empty: "Enter a five-field cron expression to parse it.",
+    ready: "Cron schedule is ready.",
+    running: "Parsing cron expression…",
   },
   content: {
     howToUse: [

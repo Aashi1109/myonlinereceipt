@@ -9,14 +9,14 @@
  * selected and reports an empty selection before the run.
  */
 
-import { FileProcessorWorkspace } from "@/components/workspaces/FileProcessorWorkspace";
+import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import {
   PdfPagesSurface,
   pageExpression,
   selectedPageNumbers,
   usePdfPageImages,
-} from "@/components/workspaces/PdfPagesSurface";
-import type { WorkspaceProps } from "@/components/workspaces/SourceResultWorkspace";
+} from "@/components/PdfPagesSurface";
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
 
 const PAGES = "pages";

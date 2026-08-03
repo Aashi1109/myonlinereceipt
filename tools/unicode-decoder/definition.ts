@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "Unicode escapes",
-    placeholder: "Enter or paste unicode escapes…",
+    placeholder: "Hello \\u{1F44B}",
   },
   settings: {
     fields: {},
@@ -27,14 +27,13 @@ export default {
     mode: "manual",
     actionLabel: "Decode Unicode",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste \\u escapes to decode them.",
-    ready: "Escapes decoded.",
-    running: "Decoding escapes…",
+    empty: "Enter text containing Unicode escapes to decode it.",
+    ready: "Decoded text is ready.",
+    running: "Decoding Unicode escapes…",
   },
   content: {
     howToUse: [

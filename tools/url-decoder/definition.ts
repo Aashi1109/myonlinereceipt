@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "Encoded input",
-    placeholder: "Enter or paste encoded input…",
+    placeholder: "hello%20smart%20tools%3Factive%3Dtrue",
   },
   settings: {
     fields: {},
@@ -26,14 +26,13 @@ export default {
     mode: "manual",
     actionLabel: "Decode",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Paste percent-encoded text to decode it.",
-    ready: "Decoded.",
-    running: "Decoding…",
+    empty: "Enter percent-encoded text to decode it.",
+    ready: "Decoded text is ready.",
+    running: "Decoding percent-encoded text…",
   },
   content: {
     howToUse: [

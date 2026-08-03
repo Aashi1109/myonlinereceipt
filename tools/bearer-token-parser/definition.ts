@@ -16,26 +16,24 @@ export default {
   description: "Extract a Bearer token and decode it when it is a JWT.",
   input: {
     kind: "fields",
-    label: "Authorization header or token",
+    label: "Authorization header or raw token",
     fields: [
       {
         channel: "text",
-        label: "Authorization header or token",
-        placeholder: "Bearer eyJhbGciOi…",
+        label: "Authorization header or raw token",
+        placeholder: "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
         required: true,
         secret: true,
-        multiline: true,
       },
     ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Parse token" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste an Authorization header or a raw token.",
-    ready: "Token details are ready.",
-    running: "Parsing…",
+    empty: "Enter an Authorization header or raw bearer token to parse it.",
+    ready: "Parsed bearer token details are ready.",
+    running: "Parsing bearer token…",
   },
   content: {
     howToUse: [

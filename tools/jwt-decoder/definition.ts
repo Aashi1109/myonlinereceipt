@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "JWT token",
-    placeholder: "Enter or paste jwt token…",
+    placeholder: "eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Decode JWT" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Paste a JWT to inspect its claims.",
-    ready: "Token decoded.",
-    running: "Decoding token…",
+    empty: "Provide a JWT to decode its header and claims.",
+    ready: "Decoded JWT details are ready.",
+    running: "Decoding JWT…",
   },
   content: {
     howToUse: [

@@ -17,9 +17,17 @@ export default {
   name: "CSS Unit Converter",
   description: "Convert px, rem, em, pt, and percentage values.",
   input: {
-    kind: "text",
-    label: "Value",
-    placeholder: "Enter or paste value…",
+    kind: "fields",
+    label: "CSS Value",
+    fields: [
+      {
+        channel: "text",
+        label: "Numeric value",
+        placeholder: "16",
+        required: true,
+        multiline: false,
+      },
+    ],
   },
   settings: {
     fields: {
@@ -90,14 +98,13 @@ export default {
   trigger: {
     mode: "live",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
   },
   labels: {
-    empty: "Enter a number to convert between CSS units.",
-    ready: "Converted.",
-    running: "Converting…",
+    empty: "Enter a number to convert between the selected CSS units.",
+    ready: "Converted CSS value is ready.",
+    running: "Converting CSS units…",
   },
   content: {
     howToUse: [

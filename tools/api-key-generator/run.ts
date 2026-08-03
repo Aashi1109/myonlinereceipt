@@ -26,11 +26,12 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     );
   }
   return {
-    render: "text",
-    text: Array.from({ length: ctx.settings.count }, () => {
+    render: "list",
+    items: Array.from({ length: ctx.settings.count }, () => {
       const body = randomString(ctx.settings.length, ALPHABET);
       return prefix ? `${prefix}_${body}` : body;
-    }).join("\n"),
+    }),
+    downloadName: "api-keys.txt",
   };
 };
 

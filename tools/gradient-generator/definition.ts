@@ -60,12 +60,11 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 160 },
-  layout: "generator",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Choose two colors to build a gradient.",
-    ready: "Gradient ready.",
-    running: "Generating gradient…",
+    empty: "Enter two HEX colors to build a CSS gradient.",
+    ready: "CSS gradient is ready.",
+    running: "Generating CSS gradient…",
   },
   content: {
     howToUse: [

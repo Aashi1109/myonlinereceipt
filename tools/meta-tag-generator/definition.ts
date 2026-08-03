@@ -22,15 +22,14 @@ export default {
       {
         channel: "text",
         label: "Page title",
-        placeholder: "Enter or paste page title…",
+        placeholder: "Smart Tools for Developers",
         required: true,
       },
       {
         channel: "secondary",
         label: "Meta description",
-        placeholder: "Enter or paste meta description…",
+        placeholder: "Fast, private utilities for everyday development work.",
         required: true,
-        multiline: true,
       },
     ],
   },
@@ -65,15 +64,14 @@ export default {
     mode: "manual",
     actionLabel: "Generate meta tags",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
-    empty: "Enter a page title and description to generate meta tags.",
-    ready: "Meta tags are ready.",
-    running: "Generating meta tags…",
+    empty: "Provide a page title and meta description to generate the tags.",
+    ready: "Meta tags are ready to copy or download.",
+    running: "Generating the meta tags…",
   },
   content: {
     howToUse: [

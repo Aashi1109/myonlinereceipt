@@ -92,7 +92,6 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Crop image" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
     empty: "Add an image to crop.",

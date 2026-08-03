@@ -18,7 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON array",
-    placeholder: "Enter or paste json array…",
+    placeholder: '[{"name":"Ada","role":"Admin"},{"name":"Lin","role":"Editor"}]',
   },
   settings: {
     fields: {
@@ -48,15 +48,14 @@ export default {
     mode: "manual",
     actionLabel: "Build table",
   },
-  layout: "source-result",
   capabilities: {
     copy: true,
     download: true,
   },
   labels: {
     empty: "Paste an array of JSON objects to build a table.",
-    ready: "Table markup is ready.",
-    running: "Building table…",
+    ready: "HTML table is ready.",
+    running: "Building HTML table…",
   },
   content: {
     howToUse: [

@@ -9,10 +9,13 @@ export default {
   description: "Add configurable page numbers to a PDF.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to number",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
   },
   settings: {
@@ -52,11 +55,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Add page numbers" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to number its pages.",
-    ready: "Page number settings are ready.",
+    empty: "Drop one PDF (.pdf, up to 200 MiB) to add page numbers.",
+    ready: "The PDF and page number settings are ready.",
     running: "Adding page numbers…",
   },
   content: {

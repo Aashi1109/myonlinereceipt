@@ -42,11 +42,10 @@ export default {
     },
   },
   trigger: { mode: "live", debounceMs: 120 },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste JSON or load the example to begin.",
-    ready: "Formatted JSON ready.",
+    empty: "Paste JSON to format it.",
+    ready: "Formatted JSON is ready.",
     running: "Formatting JSON…",
   },
   content: {

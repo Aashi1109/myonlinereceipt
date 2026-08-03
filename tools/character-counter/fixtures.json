@@ -8,8 +8,14 @@
       "name": "definition example",
       "settings": {},
       "expected": {
-        "output": "Characters: 7\nCharacters without spaces: 6\nWords: 2\nLines: 1\nUTF-8 bytes: 10",
-        "render": "text"
+        "render": "key-value",
+        "entries": [
+          { "label": "Characters", "value": "7" },
+          { "label": "Characters without spaces", "value": "6" },
+          { "label": "Words", "value": "2" },
+          { "label": "Lines", "value": "1" },
+          { "label": "UTF-8 bytes", "value": "10" }
+        ]
       }
     }
   ]

@@ -18,16 +18,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Hello 👋",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Encode as binary" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter text to see its binary form.",
-    ready: "Binary output is ready.",
-    running: "Encoding…",
+    empty: "Enter text to encode as UTF-8 binary.",
+    ready: "Binary bytes are ready.",
+    running: "Encoding text as binary…",
   },
   content: {
     howToUse: [

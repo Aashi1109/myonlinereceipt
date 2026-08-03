@@ -18,8 +18,11 @@ export default {
   description: "Rotate images by 90, 180, or 270 degrees.",
   input: {
     kind: "files",
-    label: "Images to rotate",
-    accept: "image/jpeg,image/png,image/webp,image/heic,image/heif",
+    label: "Add images to rotate",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept:
+      "image/jpeg,image/jpg,.jpg,.jpeg,image/png,.png,image/webp,.webp,image/heic,image/heif,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -62,11 +65,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Rotate images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to rotate them.",
-    ready: "Rotation settings are ready.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF images (25 MiB each) to rotate.",
+    ready: "The images and rotation settings are ready.",
     running: "Rotating images…",
   },
   content: {

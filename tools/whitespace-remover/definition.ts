@@ -17,7 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "Hello    world\n\nNext line.",
   },
   settings: {
     fields: {
@@ -37,10 +37,9 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Remove whitespace" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Paste text to clean up its whitespace.",
+    empty: "Enter text to remove unwanted whitespace.",
     ready: "Cleaned text is ready.",
     running: "Removing whitespace…",
   },

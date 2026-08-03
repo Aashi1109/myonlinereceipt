@@ -18,10 +18,13 @@ export default {
   description: "Convert selected PDF pages to JPG images.",
   input: {
     kind: "files",
-    label: "PDF document",
-    accept: "application/pdf",
+    label: "Add a PDF to convert",
+    dropzoneDescription:
+      "PDF · 1 file · 200 MB max · processed on this device",
+    accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
+    maxFiles: 1,
     maxBytes: 209_715_200,
     inspect: true,
   },
@@ -55,12 +58,11 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to JPG" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add a PDF to convert its pages.",
-    ready: "Page export settings are ready.",
-    running: "Converting PDF pages…",
+    empty: "Drop one PDF, up to 200 MiB, to convert its pages to JPG.",
+    ready: "PDF-to-JPG page settings are ready.",
+    running: "Converting PDF pages to JPG…",
   },
   content: {
     howToUse: [

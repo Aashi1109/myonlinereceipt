@@ -19,16 +19,15 @@ export default {
   input: {
     kind: "text",
     label: "Text input",
-    placeholder: "Enter or paste text input…",
+    placeholder: "checksum me",
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate checksums" },
-  layout: "source-result",
   capabilities: { copy: true, download: true },
   labels: {
-    empty: "Enter text to compute its checksums.",
+    empty: "Enter text to generate MD5, SHA-1, SHA-256, and SHA-512 checksums.",
     ready: "Checksums are ready.",
-    running: "Computing checksums…",
+    running: "Generating checksums…",
   },
   content: {
     howToUse: [

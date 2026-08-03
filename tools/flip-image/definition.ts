@@ -17,8 +17,10 @@ export default {
   description: "Flip images horizontally or vertically.",
   input: {
     kind: "files",
-    label: "Images to flip",
-    accept: "image/jpeg,image/png,image/webp,image/heic,image/heif",
+    label: "Add images to flip",
+    dropzoneDescription:
+      "JPG, JPEG, PNG, WebP, HEIC, and HEIF · up to 50 files · 25 MB each · processed on this device",
+    accept: "image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif",
     multiple: true,
     engine: "image",
     maxFiles: 50,
@@ -60,11 +62,10 @@ export default {
     },
   },
   trigger: { mode: "manual", actionLabel: "Flip images" },
-  layout: "file-processor",
   capabilities: { cancel: true, download: true, progress: true },
   labels: {
-    empty: "Add images to flip them horizontally or vertically.",
-    ready: "Flip settings are ready.",
+    empty: "Drop up to 50 JPG, PNG, WebP, HEIC, or HEIF files (25 MiB each) to flip them.",
+    ready: "The images and flip settings are ready.",
     running: "Flipping images…",
   },
   content: {

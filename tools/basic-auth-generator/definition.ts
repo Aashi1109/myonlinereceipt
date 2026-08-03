@@ -21,25 +21,24 @@ export default {
       {
         channel: "text",
         label: "Username",
-        placeholder: "Account or key id",
+        placeholder: "ada@example.com",
         required: true,
       },
       {
         channel: "secondary",
-        label: "Password",
-        placeholder: "Password or API secret",
+        label: "Password or API secret (optional)",
+        placeholder: "correct horse battery staple",
         secret: true,
       },
     ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Generate header" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a username and password to build the header.",
-    ready: "Authorization header is ready.",
-    running: "Encoding…",
+    empty: "Enter a username and optional password to generate a Basic Authorization header.",
+    ready: "Basic Authorization header is ready.",
+    running: "Encoding Basic Auth credentials…",
   },
   content: {
     howToUse: [

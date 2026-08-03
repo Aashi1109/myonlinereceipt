@@ -9,31 +9,31 @@ export default {
   description: "Check plain text against a bcrypt hash.",
   input: {
     kind: "fields",
-    label: "Password and hash",
+    label: "Password and bcrypt hash",
     fields: [
       {
         channel: "text",
-        label: "Plain password",
-        placeholder: "The password to check",
+        label: "Plain-text password",
+        placeholder: "password",
         required: true,
         secret: true,
       },
       {
         channel: "secondary",
         label: "Bcrypt hash",
-        placeholder: "$2b$…",
+        placeholder: "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.",
         required: true,
+        secret: true,
       },
     ],
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Compare" },
-  layout: "source-result",
   capabilities: { copy: true },
   labels: {
-    empty: "Enter a password and the bcrypt hash to check it against.",
-    ready: "Comparison finished.",
-    running: "Comparing…",
+    empty: "Enter a plain-text password and bcrypt hash to compare them.",
+    ready: "Bcrypt comparison result is ready.",
+    running: "Comparing password with bcrypt hash…",
   },
   content: {
     howToUse: [
