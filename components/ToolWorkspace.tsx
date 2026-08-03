@@ -32,8 +32,11 @@ export type WorkspacePrimaryAction = {
 export interface WorkspaceToolbarActions {
   readonly afterExample?: ReactNode;
   readonly before?: ReactNode;
+  readonly exampleIcon?: ReactNode;
   readonly exampleLabel?: string;
+  readonly exampleVariant?: "link" | "outline";
   readonly onExample?: () => void;
+  readonly statusMeta?: ReactNode;
 }
 
 export interface WorkspaceProps {
@@ -119,6 +122,7 @@ function InputResultWorkspace({
           className="shrink-0 items-center border-b border-border p-3 [&_[data-slot=tabs-trigger]]:min-h-11"
           items={INPUT_RESULT_ITEMS}
           onValueChange={(value) => setView(value as typeof view)}
+          size="navigation"
           value={view}
         />
         <div className="min-h-0 flex-1 overflow-hidden">

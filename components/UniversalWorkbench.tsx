@@ -30,12 +30,13 @@ import {
   Undo2,
   Wrench,
 } from "lucide-react";
-import { type ComponentType } from "react";
+import { type ComponentType, type ReactNode } from "react";
 
 import {
   ToolRuntimeProvider,
   useToolRuntime,
 } from "@/lib/tool-runtime/useToolRuntime";
+import type { ToolWorkbenchMark } from "@/lib/tool-framework/spec";
 import type {
   ToolLifecycle,
   ToolDefinition,
@@ -52,7 +53,9 @@ type UniversalWorkbenchProps<
   definition: ToolDefinition;
   runtimeSpec: ToolRuntimeSpec<Input, Settings, Result>;
   StatusMeta?: ComponentType;
+  statusMeta?: ReactNode;
   Toolbar: ComponentType;
+  workbenchMark?: ToolWorkbenchMark;
   Workspace: ComponentType;
 };
 
@@ -145,11 +148,14 @@ function WorkbenchFrame<
   description,
   relatedTools = [],
   StatusMeta,
+  statusMeta,
   title,
   Toolbar,
+  workbenchMark,
   Workspace,
 }: Omit<UniversalWorkbenchProps<Input, Settings, Result>, "runtimeSpec">) {
   const runtime = useToolRuntime<Input, Settings, Result>();
+  const workbenchMarkText = workbenchMark?.text.trim();
   const isBusy = runtime.lifecycle === "running";
   const factSummary = runtime.facts
     .map((fact) => `${fact.label}: ${fact.value}`)
@@ -251,17 +257,25 @@ function WorkbenchFrame<
                 </Button>
               ) : null}
             </span>
-            {runtime.lifecycle === "completed" && StatusMeta ? (
-              <span className="shrink-0 font-mono text-[11px] text-muted-foreground max-[32rem]:hidden">
-                <StatusMeta />
-              </span>
-            ) : null}
           </footer>
+        }
+        statusMeta={
+          statusMeta ??
+          (runtime.lifecycle === "completed" && StatusMeta ? <StatusMeta /> : undefined)
         }
         tabIndex={-1}
         toolbar={
-          <IconTile aria-hidden="true">
-            <Wrench />
+          <IconTile
+            aria-hidden="true"
+            tone={workbenchMarkText ? workbenchMark?.tone : undefined}
+          >
+            {workbenchMarkText ? (
+              <span className="font-mono text-[13px] font-bold leading-none">
+                {workbenchMarkText}
+              </span>
+            ) : (
+              <Wrench />
+            )}
           </IconTile>
         }
         toolbarActions={

@@ -1,10 +1,24 @@
-import type { ComponentProps, HTMLAttributes, ReactNode } from "react"
+import {
+  cloneElement,
+  isValidElement,
+  type ComponentProps,
+  type HTMLAttributes,
+  type ReactNode,
+} from "react"
 
 import { Badge } from "#components/badge"
 import { Card, CardDescription, CardHeader, CardTitle } from "#components/card"
 import { Toaster } from "#components/sonner"
 import { Tabs, TabsList, TabsTrigger } from "#components/tabs"
 import { cn } from "#lib/utils"
+
+const LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES = new Set([
+  "[&_button]:!h-11",
+  "[&_button]:!gap-2",
+  "[&_button]:!px-4",
+  "[&_button]:!text-[15px]",
+  "[&_button_svg]:!size-[18px]",
+])
 
 function Tag({ className, ...props }: Omit<ComponentProps<typeof Badge>, "variant">) {
   return (
@@ -26,15 +40,31 @@ type SegmentedControlItem = {
 function SegmentedControl({
   className,
   items,
+  size = "inline",
   ...props
 }: Omit<ComponentProps<typeof Tabs>, "children"> & {
   items: readonly SegmentedControlItem[]
+  size?: "inline" | "navigation"
 }) {
   return (
-    <Tabs data-slot="segmented-control" className={className} {...props}>
-      <TabsList variant="segmented">
+    <Tabs
+      className={cn(size === "inline" && "-my-1.5 py-1.5", className)}
+      data-size={size}
+      data-slot="segmented-control"
+      {...props}
+    >
+      <TabsList className={size === "inline" ? "h-8 p-0" : undefined} variant="segmented">
         {items.map((item) => (
-          <TabsTrigger disabled={item.disabled} key={item.value} value={item.value}>
+          <TabsTrigger
+            className={
+              size === "inline"
+                ? "h-8 px-2.5 py-0 text-[11px] before:absolute before:inset-x-0 before:-inset-y-1.5"
+                : undefined
+            }
+            disabled={item.disabled}
+            key={item.value}
+            value={item.value}
+          >
             {item.label}
           </TabsTrigger>
         ))}
@@ -51,6 +81,7 @@ type WorkbenchShellProps = HTMLAttributes<HTMLElement> & {
   children: ReactNode
   options?: ReactNode
   status?: ReactNode
+  statusMeta?: ReactNode
   toolbar: ReactNode
   toolbarActions?: ReactNode
   variant?: "json" | "conversion" | "media" | "utility"
@@ -61,17 +92,31 @@ function WorkbenchShell({
   className,
   options,
   status,
+  statusMeta,
   toolbar,
   toolbarActions,
   variant = "utility",
   ...props
 }: WorkbenchShellProps) {
+  const compactToolbarActions = isValidElement<{ className?: string }>(toolbarActions)
+    ? cloneElement(toolbarActions, {
+        className: toolbarActions.props.className
+          ?.split(" ")
+          .filter((token) => !LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES.has(token))
+          .join(" "),
+      })
+    : toolbarActions
+
   return (
     <section
       data-slot="workbench-shell"
       data-variant={variant}
       className={cn(
-        "flex h-[680px] max-h-[calc(100dvh-2rem)] min-h-[32rem] w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
+        "flex h-[680px] max-h-[calc(100dvh-15rem)] min-h-[32rem] w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
+        "[&_[data-slot=button]]:h-8 [&_[data-slot=button]]:min-h-8 [&_[data-slot=button]]:gap-1.5 [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:px-2.5 [&_[data-slot=button]]:text-[11px] [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
+        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]]:px-2.5 [&_[data-slot=input]]:text-[11px]",
+        "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]]:text-[11px] [&_[data-slot=select-trigger]>svg]:size-3.5",
+        "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
         variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
         "max-[54rem]:h-auto max-[54rem]:max-h-none max-[54rem]:min-h-0 max-[54rem]:overflow-visible",
         className
@@ -92,7 +137,7 @@ function WorkbenchShell({
             data-slot="workbench-toolbar-actions"
             className="ml-auto flex shrink-0 items-center gap-2"
           >
-            {toolbarActions}
+            {compactToolbarActions}
           </div>
         ) : null}
       </div>
@@ -107,12 +152,17 @@ function WorkbenchShell({
       <div data-slot="workbench-content" className="min-h-0 flex-1">
         {children}
       </div>
-      {status ? (
+      {status || (statusMeta !== undefined && statusMeta !== null) ? (
         <div
           data-slot="workbench-status"
           className="flex h-[42px] shrink-0 items-center justify-between border-t border-border px-4"
         >
           {status}
+          {statusMeta !== undefined && statusMeta !== null ? (
+            <span className="ml-auto shrink-0 text-right font-mono text-[11px] text-muted-foreground max-[32rem]:hidden">
+              {statusMeta}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </section>

@@ -43,9 +43,10 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 120 },
   capabilities: { copy: true, download: true },
+  workbenchMark: { text: "{ }", tone: "contrast" },
   labels: {
     empty: "Paste JSON or load an example to begin.",
-    ready: "Interactive tree ready.",
+    ready: "Interactive tree ready · split view.",
     running: "Parsing JSON…",
   },
   content: {
@@ -58,7 +59,7 @@ export default {
     limitations: [
       "Input is capped at 2,000,000 characters. Larger documents are rejected rather than allowed to lock up the tab.",
       "Parsing is strict JSON. Comments, trailing commas, and single-quoted strings are errors, though the repair pass can often recover from them.",
-      "Numbers go through JavaScript's number type, so integers beyond 2^53 and high-precision decimals lose exactness on the round trip.",
+      "The tree preview uses JavaScript numbers, so integers beyond 2^53 and high-precision decimals may look rounded. Transform actions are blocked for those values; whole-document copy and download preserve the exact source.",
       "Repair is a best-effort structural fix, not a schema validator. Always compare the repaired output against the original before using it.",
     ],
     faq: [
@@ -71,8 +72,8 @@ export default {
         a: "Remove when a broken property is noise you can drop. Null when downstream code expects the key to exist and can handle a null.",
       },
       {
-        q: "Why does my large integer come back changed?",
-        a: "JSON numbers are parsed as IEEE-754 doubles. Anything past 9,007,199,254,740,991 is rounded — transport such values as strings.",
+        q: "Why does the tree round my large number?",
+        a: "The tree uses IEEE-754 doubles, but whole-document copy and download keep the exact source. Format, minify, and repair stay blocked when they could change the number.",
       },
       {
         q: "Does the tree preserve key order?",
@@ -82,7 +83,16 @@ export default {
     examples: [
       {
         label: "Nested object",
-        text: '{"name":"CodeUtilityKit","version":2,"active":true,"tags":["json","viewer"]}',
+        text: `{
+  "name": "CodeUtilityKit",
+  "version": 2,
+  "active": true,
+  "tags": ["json", "viewer", "free"],
+  "author": {
+    "name": "Dev",
+    "url": "https://codeutilitykit.com"
+  }
+}`,
       },
     ],
   },

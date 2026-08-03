@@ -14,14 +14,49 @@ export default {
     "code generator",
   ],
   name: "cURL to Axios",
-  description: "Convert a common cURL request to Axios code.",
+  description: "Convert common cURL requests to Axios and surface flags that cannot be represented.",
   input: {
     kind: "text",
     label: "cURL command",
     placeholder: "curl https://api.example.com/users",
   },
-  settings: { fields: {} },
-  trigger: { mode: "manual", actionLabel: "Convert to Axios" },
+  settings: {
+    fields: {
+      moduleFormat: {
+        kind: "select",
+        label: "Module format",
+        help: "Add an Axios import when the snippet should stand on its own.",
+        default: "none",
+        choices: [
+          { label: "No import", value: "none" },
+          { label: "ESM import", value: "esm" },
+          { label: "CommonJS require", value: "commonjs" },
+        ],
+      },
+      requestStyle: {
+        kind: "select",
+        label: "Request style",
+        help: "Choose a config call, explicit axios.request, or a method alias such as axios.get.",
+        default: "config",
+        choices: [
+          { label: "axios(config)", value: "config" },
+          { label: "axios.request(config)", value: "request" },
+          { label: "Method alias", value: "alias" },
+        ],
+      },
+      outputLanguage: {
+        kind: "select",
+        label: "Output language",
+        help: "TypeScript adds an Axios response type so generated data must be narrowed before use.",
+        default: "javascript",
+        choices: [
+          { label: "JavaScript", value: "javascript" },
+          { label: "TypeScript", value: "typescript" },
+        ],
+      },
+    },
+  },
+  trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true, download: true },
   labels: {
     empty: "Paste a cURL command to generate Axios code.",
@@ -31,11 +66,11 @@ export default {
   content: {
     howToUse: [
       "Paste the whole command, starting with `curl`. Quoting is parsed the way a shell would, so headers such as `-H 'Authorization: Bearer …'` come across intact.",
-      "Convert to get a single `await axios(config)` call with the method, URL, headers, and body filled in.",
+      "Choose the module format, request-call style, and JavaScript or TypeScript output. The result updates as you edit.",
       "Check the result before running it: strip any credential that came along in a header, and confirm the method matches what you intended.",
     ],
     limitations: [
-      "A subset of flags is understood: `-X/--request`, `-H/--header`, `-d/--data/--data-raw/--data-binary`, and `-u/--user`. Anything else — `-F`, `--form`, `-b`, `--cookie`, `-k`, `--compressed`, `-o`, proxy and TLS flags — is silently ignored, not translated.",
+      "A subset of flags is understood: `-X/--request`, `-H/--header`, `-d/--data/--data-raw/--data-binary`, and `-u/--user`. Anything else — `-F`, `--form`, `-b`, `--cookie`, `-k`, `--compressed`, `-o`, proxy and TLS flags — is ignored and reported below the result, not translated.",
       "As with curl, supplying a body promotes an unspecified method from GET to POST.",
       "A JSON body is parsed and embedded as an object; anything that is not valid JSON is passed through as a string. No `Content-Type` header is inferred either way.",
       "`-u user:pass` becomes a Base64 `Authorization: Basic` header, so the credential ends up in plain sight in the generated code. Replace it with an environment variable before committing.",

@@ -9,7 +9,13 @@ import {
   Label,
 } from "@smarttools/ui";
 import { Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
-import { useId, useMemo, useRef, useState } from "react";
+import {
+  type TextareaHTMLAttributes,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   validateFileSelection,
@@ -34,12 +40,16 @@ interface InputSurfaceProps {
   onInputChange: WorkspaceProps["onInputChange"];
 }
 
-interface SourceTextareaProps {
+interface SourceTextareaProps extends Pick<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "aria-describedby" | "aria-invalid"
+> {
   className: string;
   disabled?: boolean;
   gutter: boolean;
   id: string;
   maxLength?: number;
+  onCaretChange?: (position: { readonly column: number; readonly line: number }) => void;
   onChange: (value: string) => void;
   placeholder?: string;
   readOnly?: boolean;
@@ -71,11 +81,14 @@ function sourceMeta(value: string, codeShaped: boolean): string {
 }
 
 export function SourceTextarea({
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
   className,
   disabled,
   gutter,
   id,
   maxLength,
+  onCaretChange,
   onChange,
   placeholder,
   readOnly,
@@ -83,6 +96,15 @@ export function SourceTextarea({
   value,
 }: SourceTextareaProps) {
   const gutterRef = useRef<HTMLPreElement>(null);
+  const reportCaret = (textarea: HTMLTextAreaElement) => {
+    if (!onCaretChange) return;
+    const valueBeforeCaret = textarea.value.slice(0, textarea.selectionStart);
+    const lines = valueBeforeCaret.split(/\r\n?|\n/);
+    onCaretChange({
+      column: (lines.at(-1)?.length ?? 0) + 1,
+      line: lines.length,
+    });
+  };
   const lineNumbers = useMemo(() => {
     const lineCount = (value.match(/\r\n|\r|\n/g)?.length ?? 0) + 1;
     return Array.from({ length: lineCount }, (_, index) => index + 1).join("\n");
@@ -90,7 +112,7 @@ export function SourceTextarea({
 
   return (
     <div
-      className={`${className} flex min-w-0 overflow-hidden bg-background has-[:focus-visible]:ring-1 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-inset ${gutter ? "pl-4" : ""}`}
+      className={`${className} flex min-w-0 overflow-hidden ${gutter ? "bg-background pl-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/75 has-[:focus-visible]:ring-inset" : "rounded-lg border border-input bg-card has-[:focus-visible]:border-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/20"}`}
     >
       {gutter ? (
         <div aria-hidden="true" className="w-[15px] min-w-max shrink-0 overflow-hidden text-right">
@@ -103,13 +125,20 @@ export function SourceTextarea({
         </div>
       ) : null}
       <textarea
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         autoCapitalize={gutter ? "off" : undefined}
         autoCorrect={gutter ? "off" : undefined}
         className={`${gutter ? "ml-[14px] pr-4" : "px-4"} min-h-0 min-w-0 flex-1 resize-none overflow-auto border-0 bg-transparent py-[18px] font-mono text-xs leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60`}
         disabled={disabled}
         id={id}
         maxLength={maxLength}
-        onChange={(event) => onChange(event.currentTarget.value)}
+        onChange={(event) => {
+          onChange(event.currentTarget.value);
+          reportCaret(event.currentTarget);
+        }}
+        onFocus={(event) => reportCaret(event.currentTarget)}
+        onSelect={(event) => reportCaret(event.currentTarget)}
         onScroll={(event) => {
           if (gutterRef.current) {
             gutterRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`;
@@ -352,4 +381,3 @@ function assertNoInputSurface(inputSpec: never): never {
     `No input surface is registered for input kind ${JSON.stringify(inputSpec)}.`,
   );
 }
-

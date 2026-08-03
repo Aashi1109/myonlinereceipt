@@ -26,7 +26,7 @@
  * main thread even by mistake.
  */
 
-import { Button } from "@smarttools/ui";
+import { Button, Select } from "@smarttools/ui";
 import { Loader2 } from "lucide-react";
 import {
   createContext,
@@ -341,6 +341,9 @@ function ToolToolbar(): ReactElement {
   const runtime = useRuntime();
   const primaryAction = usePrimaryAction();
   const examples = chrome.spec.content.examples ?? [];
+  const exampleIcon = chrome.toolbarActions?.exampleIcon;
+  const exampleLabel = chrome.toolbarActions?.exampleLabel ?? "Example";
+  const exampleVariant = chrome.toolbarActions?.exampleVariant ?? "link";
   const hasSettings = Object.keys(chrome.spec.settings.fields).length > 0;
   const running = runtime.lifecycle === "running";
 
@@ -365,30 +368,38 @@ function ToolToolbar(): ReactElement {
       {chrome.toolbarActions?.before}
       {examples.length === 1 ? (
         <Button
+          className={exampleVariant === "link" ? "no-underline hover:no-underline" : undefined}
           disabled={running}
           onClick={() => loadExample(0)}
           type="button"
-          variant="link"
+          variant={exampleVariant}
         >
-          {chrome.toolbarActions?.exampleLabel ?? "Example"}
+          {exampleIcon}
+          {exampleLabel}
         </Button>
       ) : examples.length > 1 ? (
-        <select
+        <Select
           aria-label="Choose an example"
-          className="h-11 cursor-pointer appearance-none rounded-lg bg-transparent px-4 text-[15px] font-semibold text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-65"
+          className={
+            exampleVariant === "outline"
+              ? "w-auto"
+              : "w-auto border-transparent bg-transparent text-primary [&>svg]:text-primary"
+          }
           disabled={running}
           onChange={(event) => loadExample(Number(event.target.value))}
+          size="xs"
           value=""
         >
           <option disabled hidden value="">
-            Example
+            {exampleIcon}
+            {exampleLabel}
           </option>
           {examples.map((example, index) => (
             <option key={`${example.label}-${index}`} value={index}>
               {example.label}
             </option>
           ))}
-        </select>
+        </Select>
       ) : null}
       {chrome.toolbarActions?.afterExample}
       <Button
@@ -612,8 +623,10 @@ export default function ToolPage({
         description={description}
         relatedTools={relatedTools}
         runtimeSpec={runtimeSpec}
+        statusMeta={toolbarActions?.statusMeta}
         title={title}
         Toolbar={ToolToolbar}
+        workbenchMark={spec.workbenchMark}
         Workspace={ToolWorkspaceSlot}
       />
     </ToolChromeContext.Provider>

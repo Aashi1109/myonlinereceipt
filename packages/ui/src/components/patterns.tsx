@@ -25,10 +25,11 @@ function IconTile({
   ...props
 }: HTMLAttributes<HTMLSpanElement> & {
   size?: "sm" | "default" | "lg"
-  tone?: "accent" | "success" | "muted"
+  tone?: "accent" | "contrast" | "success" | "muted"
 }) {
   const tones = {
     accent: "bg-accent text-primary",
+    contrast: "bg-foreground text-background",
     success: "bg-success-soft text-success",
     muted: "bg-muted text-muted-foreground",
   }

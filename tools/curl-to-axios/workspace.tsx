@@ -1,0 +1,190 @@
+"use client";
+
+import {
+  AlertBanner,
+  Button,
+  Label,
+  SegmentedControl,
+  Select,
+  ToolOptionsPanel,
+} from "@smarttools/ui";
+import { Copy, Download } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+
+import type { WorkspaceProps } from "@/components/ToolWorkspace";
+import { SourceTextarea } from "@/components/WorkspaceInput";
+
+const REQUEST_STYLES = [
+  { label: "axios.request", value: "request" },
+  { label: "Aliases", value: "alias" },
+  { label: "axios(config)", value: "config" },
+] as const;
+
+function resultText(result: WorkspaceProps["result"]): string {
+  return result?.render === "text" ? result.text : "";
+}
+
+export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
+  const inputId = useId();
+  const languageId = useId();
+  const moduleId = useId();
+  const copyTimer = useRef<number | undefined>(undefined);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const output = resultText(props.result);
+  const issues = props.result?.issues ?? [];
+  const verdict = props.result?.verdict;
+  const inputSpec = props.spec.input;
+  const moduleFormat = typeof props.settings.moduleFormat === "string"
+    ? props.settings.moduleFormat
+    : "none";
+  const outputLanguage = typeof props.settings.outputLanguage === "string"
+    ? props.settings.outputLanguage
+    : "javascript";
+  const requestStyle = typeof props.settings.requestStyle === "string"
+    ? props.settings.requestStyle
+    : "config";
+
+  useEffect(() => {
+    props.onToolbarActionsChange?.({ exampleLabel: "Load example" });
+    return () => props.onToolbarActionsChange?.(null);
+  }, [props.onToolbarActionsChange]);
+
+  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
+  useEffect(() => setCopyStatus("idle"), [output]);
+
+  if (inputSpec.kind !== "text") return null;
+
+  async function copyOutput() {
+    window.clearTimeout(copyTimer.current);
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopyStatus("copied");
+      copyTimer.current = window.setTimeout(() => setCopyStatus("idle"), 2_000);
+    } catch {
+      setCopyStatus("failed");
+    }
+  }
+
+  function downloadOutput() {
+    if (!output || props.result?.render !== "text" || !props.result.downloadName) return;
+    const url = URL.createObjectURL(new Blob([output], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.download = props.result.downloadName;
+    link.href = url;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  return (
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(18rem,0.95fr)] max-[54rem]:h-auto max-[54rem]:grid-cols-1">
+      <div className="grid min-h-0 grid-rows-[minmax(12rem,0.55fr)_minmax(14rem,1fr)] gap-4 border-r border-border p-5 max-[54rem]:min-h-[44rem] max-[54rem]:border-r-0 max-[54rem]:border-b">
+        <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${inputId}-label`}>
+          <Label className="font-caption text-xs font-semibold text-muted-foreground" htmlFor={inputId} id={`${inputId}-label`}>
+            {inputSpec.label} <span aria-hidden="true">*</span>
+          </Label>
+          <SourceTextarea
+            className="min-h-0 flex-1"
+            disabled={props.disabled}
+            gutter={false}
+            id={inputId}
+            maxLength={inputSpec.maxLength}
+            onChange={(text) => props.onInputChange({ ...props.input, text })}
+            placeholder={inputSpec.placeholder}
+            required
+            value={props.input.text}
+          />
+        </section>
+
+        <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${languageId}-heading`}>
+          <header className="flex min-h-8 shrink-0 flex-wrap items-center justify-between gap-2">
+            <h2 className="font-caption text-xs font-extrabold tracking-[0.06em] text-muted-foreground uppercase" id={`${languageId}-heading`}>
+              Generated output
+            </h2>
+            <div className="flex items-center gap-2">
+              <Label className="sr-only" htmlFor={languageId}>Output language</Label>
+              <Select
+                className="w-36"
+                disabled={props.disabled}
+                id={languageId}
+                onChange={(event) => props.onSettingChange("outputLanguage", event.currentTarget.value)}
+                size="xs"
+                value={outputLanguage}
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+              </Select>
+              <Button disabled={!output} onClick={() => void copyOutput()} size="xs" type="button" variant="outline">
+                <Copy aria-hidden="true" />
+                {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy"}
+              </Button>
+              <Button disabled={!output} onClick={downloadOutput} size="icon-xs" title="Download generated output" type="button" variant="outline">
+                <Download aria-hidden="true" />
+                <span className="sr-only">Download generated output</span>
+              </Button>
+            </div>
+          </header>
+          <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-input bg-muted/45">
+            {output ? (
+              <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-6">{output}</pre>
+            ) : (
+              <div className="grid flex-1 place-items-center p-6 text-center text-sm text-muted-foreground">
+                Generated Axios code appears here as you edit the cURL command.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <ToolOptionsPanel
+        className="h-full overflow-y-auto bg-card p-[22px] max-[54rem]:min-h-[26rem]"
+        title="OUTPUT & RUNTIME"
+        variant="plain"
+      >
+        <div className="grid gap-1.5">
+          <Label className="font-caption text-[13px] font-medium text-muted-foreground" htmlFor={moduleId}>
+            Module format
+          </Label>
+          <Select
+            disabled={props.disabled}
+            id={moduleId}
+            onChange={(event) => props.onSettingChange("moduleFormat", event.currentTarget.value)}
+            value={moduleFormat}
+          >
+            <option value="none">No import</option>
+            <option value="esm">ES module import</option>
+            <option value="commonjs">CommonJS require</option>
+          </Select>
+        </div>
+
+        <SegmentedControl
+          aria-label="Request style"
+          items={REQUEST_STYLES.map((item) => ({ ...item, disabled: props.disabled }))}
+          onValueChange={(value) => props.onSettingChange("requestStyle", value)}
+          value={requestStyle}
+        />
+
+        <AlertBanner title="Unsupported flags are not converted" variant="warning">
+          <p>Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are ignored.</p>
+          {issues.length ? (
+            <ul className="mt-2 list-disc space-y-1 pl-4">
+              {issues.map((issue, index) => <li key={`${index}-${issue.message}`}>{issue.message}</li>)}
+            </ul>
+          ) : null}
+        </AlertBanner>
+
+        {props.error ? (
+          <AlertBanner title="Unable to convert" variant="error">{props.error}</AlertBanner>
+        ) : verdict ? (
+          <AlertBanner
+            title={verdict.label}
+            variant={verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"}
+          >
+            {verdict.detail}
+          </AlertBanner>
+        ) : null}
+      </ToolOptionsPanel>
+    </div>
+  );
+}

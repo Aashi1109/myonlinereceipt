@@ -6,9 +6,48 @@
         "secondary": ""
       },
       "name": "definition example",
-      "settings": {},
+      "settings": {
+        "moduleFormat": "none",
+        "outputLanguage": "javascript",
+        "requestStyle": "config"
+      },
       "expected": {
+        "downloadName": "axios-request.js",
         "output": "const { data } = await axios({\n  \"method\": \"get\",\n  \"url\": \"https://api.example.com/users\",\n  \"headers\": {\n    \"Authorization\": \"Bearer token\"\n  }\n});",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "curl https://api.example.com/health",
+        "secondary": ""
+      },
+      "name": "ESM axios.request output",
+      "settings": {
+        "moduleFormat": "esm",
+        "outputLanguage": "typescript",
+        "requestStyle": "request"
+      },
+      "expected": {
+        "downloadName": "axios-request.mts",
+        "output": "import axios from \"axios\";\n\nconst { data }: import(\"axios\").AxiosResponse<unknown> = await axios.request({\n  \"method\": \"get\",\n  \"url\": \"https://api.example.com/health\"\n});",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "curl https://api.example.com/users -u 'user:pass' -d '{\"name\":\"Ada\"}'",
+        "secondary": ""
+      },
+      "name": "CommonJS method alias output",
+      "settings": {
+        "moduleFormat": "commonjs",
+        "outputLanguage": "javascript",
+        "requestStyle": "alias"
+      },
+      "expected": {
+        "downloadName": "axios-request.cjs",
+        "output": "const axios = require(\"axios\");\n\n(async () => {\n  const { data } = await axios.post(\"https://api.example.com/users\", {\n    \"name\": \"Ada\"\n  }, {\n    \"headers\": {\n      \"Authorization\": \"Basic dXNlcjpwYXNz\"\n    }\n  });\n})();",
         "render": "text"
       }
     }

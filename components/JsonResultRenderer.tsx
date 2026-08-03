@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Button, Input } from "@smarttools/ui";
+import { Button, Input, Tabs, TabsList, TabsTrigger } from "@smarttools/ui";
 import {
   Brackets,
   ChevronDown,
@@ -133,8 +133,8 @@ function nodeMatches(label: string, value: unknown, query: string): boolean {
 
 function visibleTreePaths(value: unknown, query: string, limit: number) {
   const paths = new Set<string>();
-  const pending: { path: JsonTreePath; value: unknown }[] = [
-    { path: ROOT_JSON_TREE_PATH, value },
+  const pending: { path: JsonTreePath; query: string; value: unknown }[] = [
+    { path: ROOT_JSON_TREE_PATH, query, value },
   ];
 
   while (pending.length > 0 && paths.size < limit) {
@@ -147,8 +147,15 @@ function visibleTreePaths(value: unknown, query: string, limit: number) {
       : Object.entries(current.value);
     for (let index = entries.length - 1; index >= 0; index -= 1) {
       const [key, child] = entries[index];
-      if (query && !nodeMatches(String(key), child, query)) continue;
-      pending.push({ path: [...current.path, key], value: child });
+      if (current.query && !nodeMatches(String(key), child, current.query)) continue;
+      pending.push({
+        path: [...current.path, key],
+        query:
+          current.query && String(key).toLocaleLowerCase().includes(current.query)
+            ? ""
+            : current.query,
+        value: child,
+      });
     }
   }
 
@@ -203,10 +210,12 @@ function JsonTreeNode({
   const treeItemLabel = isRoot ? "root" : isArrayItem ? `[${label}]` : label;
   const isSelected = Boolean(selectedPath && pathsEqual(path, selectedPath));
   const copyLabel = isRoot ? "Root node" : `${label} node`;
+  const descendantQuery =
+    query && displayedLabel.toLocaleLowerCase().includes(query) ? "" : query;
   const matchingEntries = entries?.filter(([key, child]) => {
     const childPath = [...path, Array.isArray(value) ? Number(key) : key];
     return (
-      nodeMatches(key, child, query) &&
+      nodeMatches(key, child, descendantQuery) &&
       (!visiblePaths || visiblePaths.has(pathKey(childPath)))
     );
   }) ?? null;
@@ -256,18 +265,20 @@ function JsonTreeNode({
     ? "bg-accent"
     : "bg-transparent hover:bg-muted/60 focus-visible:bg-muted/60";
   const copyButton = showNodeCopyActions ? (
-    <button
+    <Button
       aria-label={`Copy ${isRoot ? "root" : label} value`}
-      className="relative ml-2 grid size-7 shrink-0 place-items-center rounded text-muted-foreground opacity-0 transition before:absolute before:inset-[-8px] before:content-[''] hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
+      className="relative ml-2 shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
         onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
       }}
+      size="icon-xs"
       title={`Copy ${isRoot ? "root" : label} value`}
       type="button"
+      variant="ghost"
     >
       <Copy aria-hidden="true" className="size-3.5" />
-    </button>
+    </Button>
   ) : null;
 
   if (!entries) {
@@ -330,23 +341,25 @@ function JsonTreeNode({
         role="treeitem"
         tabIndex={isRoot ? 0 : -1}
       >
-        <button
+        <Button
           aria-expanded={open}
           aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
-          className={`relative flex shrink-0 items-center justify-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 ${compact ? "h-7 w-3.5 before:absolute before:inset-x-[-15px] before:inset-y-[-8px] before:content-['']" : "size-11"}`}
+          className="relative shrink-0 before:absolute before:inset-[-6px] before:content-[''] disabled:bg-transparent"
           disabled={!canExpand}
           onClick={(event) => {
             event.stopPropagation();
             setOpen((current) => !current);
           }}
+          size="icon-xs"
           type="button"
+          variant="ghost"
         >
           {open ? (
             <ChevronDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
           ) : (
             <ChevronRight aria-hidden="true" className="size-3.5 text-muted-foreground" />
           )}
-        </button>
+        </Button>
         {displayedLabel ? (
           <span className="font-semibold text-foreground">{displayedLabel}</span>
         ) : (
@@ -370,7 +383,7 @@ function JsonTreeNode({
                 onCopy={onCopy}
                 onSelect={onSelect}
                 path={childPath}
-                query={query}
+                query={descendantQuery}
                 selectedPath={selectedPath}
                 showNodeCopyActions={showNodeCopyActions}
                 compact={compact}
@@ -472,23 +485,6 @@ export function JsonResultRenderer({
     }
   }
 
-  function handleViewKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    let nextView: JsonResultView | null = null;
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      nextView = view === "tree" ? "formatted" : "tree";
-    } else if (event.key === "Home") {
-      nextView = "tree";
-    } else if (event.key === "End") {
-      nextView = "formatted";
-    }
-    if (!nextView) return;
-    event.preventDefault();
-    activateView(nextView);
-    requestAnimationFrame(() =>
-      document.getElementById(`${resultId}-${nextView}-tab`)?.focus(),
-    );
-  }
-
   function downloadValue() {
     const url = URL.createObjectURL(
       new Blob([artifact], { type: "application/json;charset=utf-8" }),
@@ -507,28 +503,28 @@ export function JsonResultRenderer({
       data-testid="json-result-renderer"
     >
       <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
-        <div aria-label="JSON result view" className="flex h-[46px] items-center gap-4" role="tablist">
-          {(["tree", "formatted"] as const).map((nextView) => (
-            <button
-              aria-controls={`${resultId}-${nextView}`}
-              aria-selected={view === nextView}
-              className={`h-[46px] border-b-2 text-[0.8125rem] font-semibold capitalize outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${
-                view === nextView
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-              id={`${resultId}-${nextView}-tab`}
-              key={nextView}
-              onClick={() => activateView(nextView)}
-              onKeyDown={handleViewKeyDown}
-              role="tab"
-              tabIndex={view === nextView ? 0 : -1}
-              type="button"
-            >
-              {nextView}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          className="h-[46px] gap-0"
+          onValueChange={(nextView) => activateView(nextView as JsonResultView)}
+          value={view}
+        >
+          <TabsList
+            aria-label="JSON result view"
+            className="h-[46px] gap-4 border-0"
+          >
+            {(["tree", "formatted"] as const).map((nextView) => (
+              <TabsTrigger
+                aria-controls={`${resultId}-${nextView}`}
+                className="h-[46px] flex-none px-0 py-0 text-[0.8125rem] font-semibold capitalize after:hidden data-[state=active]:font-bold"
+                id={`${resultId}-${nextView}-tab`}
+                key={nextView}
+                value={nextView}
+              >
+                {nextView}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         <div
           className={`flex min-w-0 items-center gap-2 max-[42rem]:w-full ${

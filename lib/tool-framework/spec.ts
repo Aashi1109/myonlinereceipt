@@ -5,7 +5,9 @@
  *  - no key/id for the implementation module — the folder name is the key;
  *  - no execution-host field — the filename (`run.ts` / `run.worker.ts` /
  *    `run.server.ts`) declares where the tool runs.
- * Icons are absent for the same reason: they are uploaded data, not code.
+ * Catalogue icons are absent for the same reason: they are uploaded data, not
+ * code. `workbenchMark` is deliberately narrower: short text rendered only in
+ * the tool's own workbench chrome.
  */
 
 import type { CategoryKey, ToolApp } from "./categories";
@@ -92,6 +94,11 @@ export type ToolContent = {
   relatedToolIds?: readonly string[];
 };
 
+export type ToolWorkbenchMark = {
+  readonly text: string;
+  readonly tone?: "accent" | "contrast";
+};
+
 export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   /** `"<app>.<folderName>"`. Primary key in the database; never changes. */
   readonly toolId: string;
@@ -106,6 +113,7 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly settings: S;
   readonly trigger: ToolTrigger;
   readonly capabilities?: ToolCapabilities;
+  readonly workbenchMark?: ToolWorkbenchMark;
   readonly labels: ToolLabels;
   readonly content: ToolContent;
 };
