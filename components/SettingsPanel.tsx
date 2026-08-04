@@ -13,10 +13,14 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId } from "react";
 import type { FieldKind, FieldSpec, SettingRow, SettingsSpec, WatermarkPosition } from "@/lib/tool-framework/settings";
+import { cn } from "@smarttools/ui/lib/utils";
 
 export interface SettingsPanelProps {
+  className?: string;
   disabled?: boolean;
+  layout?: "grid" | "stack";
   onChange: (key: string, value: unknown) => void;
+  pane?: "main" | "side";
   spec: SettingsSpec;
   values: Readonly<Record<string, unknown>>;
 }
@@ -42,7 +46,7 @@ interface FieldFrameProps {
 function FieldFrame({ children, help, id, label }: FieldFrameProps) {
   return (
     <div className="grid gap-1.5">
-      <Label className="font-caption text-[13px] font-medium text-muted-foreground" htmlFor={id}>
+      <Label className="font-caption text-[11px] font-semibold uppercase tracking-[0.025rem] text-muted-foreground" htmlFor={id}>
         {label}
       </Label>
       {children}
@@ -394,15 +398,29 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
 };
 
 export function SettingsPanel({
+  className,
   disabled = false,
+  layout = "stack",
   onChange,
+  pane,
   spec,
   values,
 }: SettingsPanelProps) {
   const idPrefix = useId();
   return (
-    <div className="grid gap-5">
+    <div
+      className={cn(
+        layout === "grid"
+          ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-4"
+          : "grid gap-5",
+        className,
+      )}
+    >
       {Object.entries(spec.fields).map(([key, field]) => {
+        if (
+          pane &&
+          (pane === "main" ? field.pane !== "main" : field.pane === "main")
+        ) return null;
         if (field.visibleWhen && values[field.visibleWhen.key] !== field.visibleWhen.equals) return null;
         const context: FieldRenderContext = {
           disabled,
@@ -410,7 +428,22 @@ export function SettingsPanel({
           onChange: (value) => onChange(key, value),
           value: values[key] ?? field.default,
         };
-        return <div key={key}>{FIELD_RENDERERS[field.kind](field as never, context)}</div>;
+        return (
+          <div
+            className={
+              layout !== "grid"
+                ? undefined
+                : field.span === "full"
+                  ? "col-span-full"
+                  : field.span === 2
+                    ? "sm:col-span-2"
+                    : undefined
+            }
+            key={key}
+          >
+            {FIELD_RENDERERS[field.kind](field as never, context)}
+          </div>
+        );
       })}
     </div>
   );

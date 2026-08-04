@@ -15,6 +15,7 @@ export default {
   ],
   name: "Cron Expression Parser",
   description: "Validate and explain a five-field cron expression.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Cron Expression",

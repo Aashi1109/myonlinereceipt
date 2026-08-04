@@ -21,45 +21,52 @@ export default {
   ],
   name: "Cron Expression Builder",
   description: "Build a standard five-field cron expression.",
-  input: {
-    kind: "fields",
-    label: "Cron schedule",
-    fields: [
-      {
-        channel: "text",
-        label: "Minute",
-        placeholder: "0",
-        required: true,
-        maxLength: 64,
-      },
-      {
-        channel: "secondary",
-        label: "Hour",
-        placeholder: "9",
-        required: true,
-        maxLength: 64,
-      },
-    ],
-  },
+  input: { kind: "none" },
   settings: {
     fields: {
+      /**
+       * The five cron fields are the tool's primary input, so they sit in the
+       * main pane as one row, matching how a crontab line reads left to right.
+       * They stay free text rather than becoming selects: a select cannot
+       * express the ranges, lists and steps (`1-5`, `1,15`, `*​/15`) that the
+       * field accepts.
+       */
+      minute: {
+        kind: "text",
+        label: "Minute",
+        help: "0-59, or * for every minute.",
+        default: "0",
+        maxLength: 64,
+        pane: "main",
+      },
+      hour: {
+        kind: "text",
+        label: "Hour",
+        help: "0-23, or * for every hour.",
+        default: "9",
+        maxLength: 64,
+        pane: "main",
+      },
       dayOfMonth: {
         kind: "text",
         label: "Day of month",
         help: "1-31, or * for every day.",
         default: "*",
+        pane: "main",
       },
       month: {
         kind: "text",
         label: "Month",
         help: "1-12, or * for every month.",
         default: "*",
+        pane: "main",
       },
       dayOfWeek: {
         kind: "text",
         label: "Day of week",
         help: "0-7 with both 0 and 7 meaning Sunday. 1-5 is Monday to Friday.",
         default: "1-5",
+        pane: "main",
       },
       dialect: {
         kind: "select",
@@ -67,6 +74,7 @@ export default {
         help: "Standard five-field crontab. Six-field dialects with seconds are not supported.",
         default: "standard",
         choices: [{ label: "Standard 5-field", value: "standard" }],
+        pane: "main",
       },
       timezone: {
         kind: "select",
@@ -77,12 +85,14 @@ export default {
           { label: "UTC", value: "utc" },
           { label: "Local time", value: "local" },
         ],
+        pane: "main",
       },
       commandLabel: {
         kind: "text",
         label: "Command label (optional)",
         help: "Appended as a Label line so the expression arrives in a ticket with its purpose attached.",
         default: "",
+        pane: "main",
       },
     },
   },
@@ -90,7 +100,7 @@ export default {
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "CRN+" },
   labels: {
-    empty: "Enter minute and hour fields to build a cron expression.",
+    empty: "Adjust the schedule fields to build a cron expression.",
     ready: "Cron expression is ready.",
     running: "Building cron expression…",
   },
@@ -125,6 +135,5 @@ export default {
         a: "The one the machine running cron is set to, which is often UTC on a server and local time on a laptop. Confirm it on the host rather than assuming.",
       },
     ],
-    examples: [{ label: "Weekdays at 09:00", text: "0", secondary: "9" }],
   },
 } as const satisfies ToolSpec;

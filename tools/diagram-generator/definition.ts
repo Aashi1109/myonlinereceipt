@@ -15,6 +15,7 @@ export default {
   ],
   name: "Diagram Generator",
   description: "Render Mermaid diagram code in the browser.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Mermaid diagram code",

@@ -22,6 +22,7 @@ export default {
   ],
   name: "DNS & Email Records Checker",
   description: "Query public DNS-over-HTTPS records.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Domain",

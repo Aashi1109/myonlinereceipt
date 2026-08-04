@@ -16,6 +16,7 @@ export default {
   ],
   name: "Combine Images",
   description: "Arrange images horizontally, vertically, or in a grid.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "Source images",

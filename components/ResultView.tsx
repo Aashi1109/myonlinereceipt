@@ -26,7 +26,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { DiffView } from "@/components/DiffView";
 import { JsonResultRenderer } from "@/components/JsonResultRenderer";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
-import { GeneratedListSurface } from "@/components/Surfaces";
+import { GeneratedList } from "@/components/Surfaces";
 import type {
   ToolRender,
   ToolRenderKind,
@@ -44,7 +44,9 @@ type ResultRendererRegistry = {
 };
 
 interface DownloadButtonProps {
-  content: BlobPart;
+  content?: BlobPart;
+  disabled?: boolean;
+  href?: string;
   label?: string;
   mime: string;
   name: string;
@@ -53,6 +55,7 @@ interface DownloadButtonProps {
 
 interface CopyButtonProps {
   content: string;
+  disabled?: boolean;
   iconOnly?: boolean;
   label?: string;
   variant?: "link" | "outline";
@@ -69,8 +72,17 @@ function saveBlob(content: BlobPart, mime: string, name: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function saveUrl(href: string, name: string) {
+  const link = document.createElement("a");
+  link.download = name;
+  link.href = href;
+  link.click();
+}
+
 function DownloadButton({
   content,
+  disabled = false,
+  href,
   label = "Download",
   mime,
   name,
@@ -79,7 +91,8 @@ function DownloadButton({
   return (
     <Button
       className={variant === "link" ? "px-2 text-xs" : undefined}
-      onClick={() => saveBlob(content, mime, name)}
+      disabled={disabled}
+      onClick={() => href ? saveUrl(href, name) : content !== undefined ? saveBlob(content, mime, name) : undefined}
       type="button"
       variant={variant}
     >
@@ -91,6 +104,7 @@ function DownloadButton({
 
 function CopyButton({
   content,
+  disabled = false,
   iconOnly = false,
   label = "Copy",
   variant = iconOnly ? "outline" : "link",
@@ -140,23 +154,27 @@ function CopyButton({
   return (
     <Button
       aria-label={iconOnly ? statusLabel : undefined}
-      className={variant === "link" ? (iconOnly ? "[&_svg]:size-4" : "px-2 text-xs") : undefined}
+      className={iconOnly
+        ? "relative after:absolute after:-inset-[6px] [&_svg]:size-4"
+        : variant === "link"
+          ? "px-2 text-xs"
+          : undefined}
+      disabled={disabled}
       onClick={() => void copy()}
       size={iconOnly ? "icon" : undefined}
       title={iconOnly ? statusLabel : undefined}
       type="button"
       variant={variant}
     >
-      {iconOnly ? <StatusIcon aria-hidden="true" /> : null}
+      {iconOnly || variant === "outline" ? <StatusIcon aria-hidden="true" /> : null}
       <span aria-live="polite" className={iconOnly ? "sr-only" : undefined}>{statusLabel}</span>
     </Button>
   );
 }
 
-function RenderFrame({ actions, children }: { actions?: ReactNode; children: ReactNode }) {
+function RenderFrame({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {actions ? <div className="flex shrink-0 justify-end px-4">{actions}</div> : null}
       {children}
     </div>
   );
@@ -166,28 +184,160 @@ function csvCell(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 }
 
+type ResultArtifact = {
+  copy?: string;
+  copyLabel?: string;
+  download?: {
+    content?: BlobPart;
+    href?: string;
+    label?: string;
+    mime: string;
+    name: string;
+  };
+};
+
+function resultArtifact(result: ToolResult | null): ResultArtifact | null {
+  if (!result) return null;
+
+  switch (result.render) {
+    case "text":
+      return {
+        copy: result.text,
+        download: result.downloadName
+          ? { content: result.text, mime: "text/plain;charset=utf-8", name: result.downloadName }
+          : undefined,
+      };
+    case "code":
+      return {
+        copy: result.code,
+        download: result.downloadName
+          ? { content: result.code, mime: "text/plain;charset=utf-8", name: result.downloadName }
+          : undefined,
+      };
+    case "json-tree": {
+      const content = result.text ?? JSON.stringify(result.value, null, 2) ?? String(result.value);
+      return {
+        copy: content,
+        download: { content, mime: "application/json;charset=utf-8", name: "result.json" },
+      };
+    }
+    case "table": {
+      const content = [result.columns, ...result.rows]
+        .map((row) => row.map(csvCell).join(","))
+        .join("\n");
+      return {
+        copy: content,
+        copyLabel: result.truncated ? "Copy shown rows" : undefined,
+        download: result.downloadName
+          ? {
+              content,
+              label: result.truncated ? "Download shown rows" : undefined,
+              mime: "text/csv;charset=utf-8",
+              name: result.downloadName,
+            }
+          : undefined,
+      };
+    }
+    case "key-value":
+      return {
+        copy: result.entries.map((entry) => `${entry.label}: ${entry.value}`).join("\n"),
+      };
+    case "list": {
+      const content = result.items.join("\n");
+      return {
+        copy: content,
+        download: result.downloadName
+          ? { content, mime: "text/plain;charset=utf-8", name: result.downloadName }
+          : undefined,
+      };
+    }
+    case "html":
+      return {
+        copy: result.html,
+        download: result.downloadName
+          ? { content: result.html, mime: "text/html;charset=utf-8", name: result.downloadName }
+          : undefined,
+      };
+    case "image":
+      return {
+        download: result.downloadName
+          ? { href: result.src, mime: result.mime, name: result.downloadName }
+          : undefined,
+      };
+    case "diff":
+      return {
+        copy: result.lines
+          .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
+          .join("\n"),
+      };
+    case "files":
+    case "none":
+      return null;
+  }
+}
+
+export function getResultCount(result: ToolResult | null): number | null {
+  if (!result) return null;
+  switch (result.render) {
+    case "list":
+      return result.items.length;
+    case "table":
+      return result.rows.length;
+    case "key-value":
+      return result.entries.length;
+    case "files":
+      return result.files.length;
+    default:
+      return null;
+  }
+}
+
+export function ResultActions({
+  canCopy,
+  canDownload,
+  result,
+}: {
+  canCopy: boolean;
+  canDownload: boolean;
+  result: ToolResult | null;
+}) {
+  const artifact = resultArtifact(result);
+  const download = artifact?.download;
+  const extension = download?.name.match(/\.[^.]+$/)?.[0];
+
+  return (
+    <>
+      {canCopy ? (
+        <CopyButton
+          content={artifact?.copy ?? ""}
+          disabled={artifact?.copy === undefined}
+          label={artifact?.copyLabel ?? "Copy all"}
+          variant="outline"
+        />
+      ) : null}
+      {canDownload ? (
+        <DownloadButton
+          content={download?.content}
+          disabled={!download}
+          href={download?.href}
+          label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
+          mime={download?.mime ?? "application/octet-stream"}
+          name={download?.name ?? "result"}
+          variant="outline"
+        />
+      ) : null}
+    </>
+  );
+}
+
 const RESULT_RENDERERS: ResultRendererRegistry = {
   text: (result) => (
-    <RenderFrame
-      actions={(
-        <>
-          <CopyButton content={result.text} />
-          {result.downloadName ? <DownloadButton content={result.text} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
-        </>
-      )}
-    >
+    <RenderFrame>
       <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-sm leading-6">{result.text}</pre>
     </RenderFrame>
   ),
   code: (result) => (
-    <RenderFrame
-      actions={(
-        <>
-          <CopyButton content={result.code} />
-          {result.downloadName ? <DownloadButton content={result.code} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
-        </>
-      )}
-    >
+    <RenderFrame>
       <pre className="min-h-0 flex-1 overflow-auto bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
     </RenderFrame>
   ),
@@ -200,23 +350,14 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         downloadName="result.json"
         formattedValue={json}
         maxVisibleEntries={1_000}
+        showArtifactActions={false}
         value={result.value}
       />
     );
   },
   table: (result) => {
-    const csv = [result.columns, ...result.rows]
-      .map((row) => row.map(csvCell).join(","))
-      .join("\n");
     return (
-      <RenderFrame
-        actions={(
-          <>
-            <CopyButton content={csv} label={result.truncated ? "Copy shown rows" : "Copy"} />
-            {result.downloadName ? <DownloadButton content={csv} label={result.truncated ? "Download shown rows" : "Download"} mime="text/csv;charset=utf-8" name={result.downloadName} /> : null}
-          </>
-        )}
-      >
+      <RenderFrame>
         <div className="min-h-0 flex-1 overflow-auto">
           <Table>
             <TableHeader>
@@ -236,11 +377,8 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     );
   },
   "key-value": (result) => {
-    const text = result.entries
-      .map((entry) => `${entry.label}: ${entry.value}`)
-      .join("\n");
     return (
-      <RenderFrame actions={<CopyButton content={text} label="Copy all" />}>
+      <RenderFrame>
         <dl className="min-h-0 flex-1 divide-y divide-border overflow-auto">
           {result.entries.map((entry) => (
             <div className="grid grid-cols-[minmax(8rem,0.4fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3" key={`${entry.label}-${entry.value}`}>
@@ -254,7 +392,6 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     );
   },
   list: (result) => {
-    const text = result.items.join("\n");
     const items = result.items.map((value, index) => ({
       description: result.labels?.[index],
       id: `${index}-${value}`,
@@ -262,46 +399,27 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       value,
     }));
     return (
-      <GeneratedListSurface
-        actions={(
-          <>
-            <CopyButton content={text} label="Copy all" />
-            {result.downloadName ? <DownloadButton content={text} mime="text/plain;charset=utf-8" name={result.downloadName} /> : null}
-          </>
-        )}
-        className="min-h-0 flex-1"
-        getDescription={(item) => item.description}
-        getId={(item) => item.id}
-        getLabel={(item) => item.label}
-        getValue={(item) => item.value}
-        items={items}
-        renderAction={(item, index) => (
-          <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />
-        )}
-        title="Result summary"
-      />
+      <RenderFrame>
+        <GeneratedList
+          getDescription={(item) => item.description}
+          getId={(item) => item.id}
+          getLabel={(item) => item.label}
+          getValue={(item) => item.value}
+          items={items}
+          renderAction={(item, index) => (
+            <CopyButton content={item.value} iconOnly label={`Copy item ${index + 1}`} />
+          )}
+        />
+      </RenderFrame>
     );
   },
   html: (result) => (
-    <RenderFrame
-      actions={(
-        <>
-          <CopyButton content={result.html} />
-          {result.downloadName ? <DownloadButton content={result.html} mime="text/html;charset=utf-8" name={result.downloadName} /> : null}
-        </>
-      )}
-    >
+    <RenderFrame>
       <SandboxedHtmlPreview html={result.html} />
     </RenderFrame>
   ),
   image: (result) => (
-    <RenderFrame
-      actions={result.downloadName ? (
-        <Button asChild className="px-2 text-xs" variant="link">
-          <a download={result.downloadName} href={result.src}>Download</a>
-        </Button>
-      ) : undefined}
-    >
+    <RenderFrame>
       <div className="grid min-h-80 flex-1 place-items-center overflow-auto bg-muted/45 p-6">
         <img
           alt={result.alt}
@@ -314,11 +432,8 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     </RenderFrame>
   ),
   diff: (result) => {
-    const patch = result.lines
-      .map((line) => `${line.kind === "added" ? "+" : line.kind === "removed" ? "-" : " "}${line.text}`)
-      .join("\n");
     return (
-      <RenderFrame actions={<CopyButton content={patch} />}>
+      <RenderFrame>
         <DiffView result={result} />
       </RenderFrame>
     );

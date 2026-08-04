@@ -7,6 +7,7 @@ export default {
   keywords: ["hex", "rgb", "rgba", "color", "convert", "css", "alpha"],
   name: "HEX to RGB",
   description: "Convert HEX colors to RGB or RGBA.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "HEX Color",

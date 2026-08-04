@@ -4,7 +4,7 @@ import {
   slugFromName,
   type ToolApp,
 } from "@smarttools/tool-catalog";
-import { eq } from "drizzle-orm";
+import { eq, max } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema.ts";
 import { managedToolsTable, toolContentTable } from "./schema.ts";
@@ -21,7 +21,6 @@ interface SeedToolSpec {
 
 interface LoadedToolDefinition {
   definitionKey: string;
-  order: number;
   spec: SeedToolSpec;
 }
 
@@ -120,7 +119,7 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
   const definitions: LoadedToolDefinition[] = [];
   let skipped = 0;
 
-  for (const [order, definitionKey] of folders.entries()) {
+  for (const definitionKey of folders) {
     const definitionUrl = new URL(
       `${definitionKey}/definition.ts`,
       toolsDirectory,
@@ -148,7 +147,6 @@ export async function loadManagedToolDefinitions(): Promise<ManagedToolSeedScan>
 
     definitions.push({
       definitionKey,
-      order,
       spec: parseToolDefinition(definitionKey, imported.default),
     });
   }
@@ -170,7 +168,22 @@ export async function seedManagedTools(
 ): Promise<ManagedToolSeedCounts> {
   const scan = await loadManagedToolDefinitions();
 
-  for (const { definitionKey, order, spec } of scan.definitions) {
+  /**
+   * `sort_order` is unique per app and existing rows keep whatever order they
+   * were first seeded with, so a new tool cannot take its index in the folder
+   * listing — that slot already belongs to whichever tool was inserted there.
+   * New tools are appended after the current maximum instead.
+   */
+  const nextOrder = new Map<SeedToolApp, number>();
+  for (const app of new Set(scan.definitions.map(({ spec }) => spec.app))) {
+    const [row] = await database
+      .select({ highest: max(managedToolsTable.order) })
+      .from(managedToolsTable)
+      .where(eq(managedToolsTable.app, app));
+    nextOrder.set(app, (row?.highest ?? -1) + 1);
+  }
+
+  for (const { definitionKey, spec } of scan.definitions) {
     const [stored] = await database
       .select({ slug: managedToolsTable.slug })
       .from(managedToolsTable)
@@ -185,18 +198,22 @@ export async function seedManagedTools(
       );
     }
 
-    await database
-      .insert(managedToolsTable)
-      .values({
-        toolId: spec.toolId,
-        app: spec.app,
-        slug: spec.slug,
-        name: spec.name,
-        description: spec.description,
-        order,
-        enabled: true,
-      })
-      .onConflictDoNothing({ target: managedToolsTable.toolId });
+    if (!stored) {
+      const order = nextOrder.get(spec.app) ?? 0;
+      nextOrder.set(spec.app, order + 1);
+      await database
+        .insert(managedToolsTable)
+        .values({
+          toolId: spec.toolId,
+          app: spec.app,
+          slug: spec.slug,
+          name: spec.name,
+          description: spec.description,
+          order,
+          enabled: true,
+        })
+        .onConflictDoNothing({ target: managedToolsTable.toolId });
+    }
 
     await database
       .insert(toolContentTable)

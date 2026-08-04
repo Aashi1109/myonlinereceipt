@@ -122,6 +122,26 @@ function WorkspaceSurface({
   const content =
     state === "ready" ? (
       children
+    ) : state === "empty" && purpose === "result" ? (
+      <div
+        className="min-h-0 flex-1 px-4 py-3"
+        data-surface-state={state}
+      >
+        <p className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground/70">
+            {stateTitle ?? DEFAULT_STATE_TITLES[state]}
+          </span>
+          {stateDescription ? ` — ${stateDescription}` : null}
+        </p>
+        <div aria-hidden="true" className="mt-3 grid gap-2">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div className="rounded-lg bg-muted/55 px-4 py-3 font-mono text-xs text-muted-foreground/55" key={index}>
+              –
+            </div>
+          ))}
+        </div>
+        {stateAction ? <div className="mt-3">{stateAction}</div> : null}
+      </div>
     ) : (
       <Empty
         className="min-h-72 flex-1 rounded-none border-0 bg-transparent"
@@ -178,7 +198,7 @@ function WorkspaceSurface({
             {status !== undefined && status !== null ? (
               <div className="flex min-w-0 items-center gap-2">
                 {heading}
-                <StatusBadge className="shrink-0" variant="success">
+                <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
                   {status}
                 </StatusBadge>
               </div>
@@ -760,12 +780,7 @@ function NavigatorSurface<Item>({
   );
 }
 
-export type GeneratedListSurfaceProps<Item> = Omit<
-  WorkspaceSurfaceProps,
-  "actions" | "children" | "purpose" | "state"
-> & {
-  actions?: ReactNode;
-  emptyDescription?: ReactNode;
+type GeneratedListProps<Item> = {
   getDescription?: (item: Item) => ReactNode;
   getId: (item: Item) => string;
   getLabel: (item: Item) => ReactNode;
@@ -774,31 +789,20 @@ export type GeneratedListSurfaceProps<Item> = Omit<
   renderAction?: (item: Item, index: number) => ReactNode;
 };
 
-function GeneratedListSurface<Item>({
-  actions,
-  emptyDescription = "Generate one or more values to see them here.",
+function GeneratedList<Item>({
   getDescription,
   getId,
   getLabel,
   getValue,
   items,
   renderAction,
-  ...surfaceProps
-}: GeneratedListSurfaceProps<Item>) {
+}: GeneratedListProps<Item>) {
   return (
-    <WorkspaceSurface
-      actions={actions}
-      purpose="result"
-      scroll="content"
-      state={items.length === 0 ? "empty" : "ready"}
-      stateDescription={emptyDescription}
-      stateTitle="No generated values"
-      {...surfaceProps}
-    >
-      <ol className="min-w-0 divide-y divide-border">
+    <ScrollRegion accessibleName="Generated values" className="flex-1">
+      <ol className="grid min-w-0 gap-2 p-4">
         {items.map((item, index) => (
           <li
-            className="flex min-w-0 items-center gap-4 px-4 py-3"
+            className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3"
             key={getId(item)}
           >
             <span className="shrink-0 font-mono text-xs text-muted-foreground">
@@ -820,7 +824,7 @@ function GeneratedListSurface<Item>({
           </li>
         ))}
       </ol>
-    </WorkspaceSurface>
+    </ScrollRegion>
   );
 }
 
@@ -829,7 +833,7 @@ export {
   CollectionSurface,
   FileIntakeSurface,
   FileQueueSurface,
-  GeneratedListSurface,
+  GeneratedList,
   NavigatorSurface,
   WorkspaceSurface,
 };

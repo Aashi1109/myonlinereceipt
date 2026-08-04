@@ -14,6 +14,7 @@ export default {
   ],
   name: "JavaScript Minifier",
   description: "Remove comments and safe redundant whitespace from JavaScript.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "JavaScript input",

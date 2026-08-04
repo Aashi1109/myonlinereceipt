@@ -8,9 +8,10 @@ import {
   Input,
   Label,
 } from "@smarttools/ui";
-import { Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
+import { ClipboardPaste, Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
 import {
   type TextareaHTMLAttributes,
+  useEffect,
   useId,
   useMemo,
   useRef,
@@ -162,7 +163,54 @@ export function WorkspaceInputSurface({
 }: InputSurfaceProps) {
   const idPrefix = useId();
   const [inputIssue, setInputIssue] = useState("");
+  const [pasteFailed, setPasteFailed] = useState(false);
+  const [pastePending, setPastePending] = useState(false);
+  const [pasteSupported, setPasteSupported] = useState(false);
   const [revealedSecrets, setRevealedSecrets] = useState<Readonly<Record<string, boolean>>>({});
+  const inputRef = useRef(input);
+  inputRef.current = input;
+  useEffect(() => {
+    setPasteSupported(typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function");
+  }, []);
+  useEffect(() => setPasteFailed(false), [input.secondary, input.text]);
+
+  const pastePrimaryInput = async (maxLength?: number) => {
+    if (pastePending) return;
+    setPasteFailed(false);
+    setPastePending(true);
+    try {
+      const clipboard = navigator.clipboard;
+      if (typeof clipboard?.readText !== "function") {
+        setPasteSupported(false);
+        return;
+      }
+      const text = await clipboard.readText();
+      onInputChange({
+        ...inputRef.current,
+        text: maxLength === undefined ? text : text.slice(0, maxLength),
+      });
+    } catch {
+      setPasteFailed(true);
+    } finally {
+      setPastePending(false);
+    }
+  };
+  const pasteAction = (label: string, maxLength?: number) => pasteSupported ? (
+    <Button
+      aria-busy={pastePending || undefined}
+      aria-label={pasteFailed ? `Paste into ${label} failed. Try again` : `Paste into ${label}`}
+      aria-live="polite"
+      disabled={disabled || pastePending}
+      onClick={() => void pastePrimaryInput(maxLength)}
+      size="xs"
+      title={`Paste into ${label}`}
+      type="button"
+      variant="outline"
+    >
+      <ClipboardPaste aria-hidden="true" />
+      {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
+    </Button>
+  ) : null;
   switch (inputSpec.kind) {
     case "text": {
       const acceptedFile = inputSpec.acceptFiles;
@@ -170,6 +218,7 @@ export function WorkspaceInputSurface({
         isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
       return (
         <WorkspaceSurface
+          actions={pasteAction(inputSpec.label, inputSpec.maxLength)}
           className="h-full"
           contentClassName={codeShaped ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
           meta={sourceMeta(input.text, codeShaped)}
@@ -233,6 +282,7 @@ export function WorkspaceInputSurface({
       );
     }
     case "fields": {
+      const primaryField = inputSpec.fields.find((field) => field.channel === "text");
       const values = inputSpec.fields.map((field) =>
         field.channel === "text" ? input.text : input.secondary ?? "",
       );
@@ -243,6 +293,7 @@ export function WorkspaceInputSurface({
       );
       return (
         <WorkspaceSurface
+          actions={pasteAction(primaryField?.label ?? "primary input", primaryField?.maxLength)}
           className="h-full [&_[data-stack=scroll-region]]:bg-background"
           contentClassName={codeShaped ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
           meta={sourceMeta(values.join(""), codeShaped)}

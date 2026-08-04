@@ -15,6 +15,7 @@ export default {
   ],
   name: "CSS Formatter",
   description: "Apply readable indentation to CSS.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSS input",

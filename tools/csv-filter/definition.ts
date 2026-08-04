@@ -15,6 +15,7 @@ export default {
   ],
   name: "CSV Filter",
   description: "Keep rows containing text, optionally in one column.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",

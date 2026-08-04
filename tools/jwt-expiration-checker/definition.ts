@@ -15,6 +15,7 @@ export default {
   ],
   name: "JWT Expiration Checker",
   description: "Inspect issued-at, not-before, and expiration claims.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "JWT token",

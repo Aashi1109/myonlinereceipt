@@ -15,6 +15,7 @@ export default {
   ],
   name: "URL Query Builder",
   description: "Append key/value query rows to a base URL.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Base URL and query rows",

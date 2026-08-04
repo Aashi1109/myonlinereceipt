@@ -15,6 +15,7 @@ export default {
   ],
   name: "Open Graph Preview",
   description: "Generate Open Graph tags and a sandboxable preview card.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Title and description",

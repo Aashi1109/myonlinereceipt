@@ -16,6 +16,7 @@ export default {
   ],
   name: "Timestamp Converter",
   description: "Convert Unix timestamps or date text to standard formats.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Unix Timestamp or Date",

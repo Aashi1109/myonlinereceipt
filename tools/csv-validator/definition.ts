@@ -14,6 +14,7 @@ export default {
   ],
   name: "CSV Validator",
   description: "Validate CSV quoting, headers, and row widths.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",

@@ -15,6 +15,7 @@ export default {
   ],
   name: "Robots.txt Generator",
   description: "Generate robots.txt directives and an optional sitemap line.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Disallow paths",

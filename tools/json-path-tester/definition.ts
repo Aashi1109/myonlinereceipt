@@ -15,6 +15,7 @@ export default {
   ],
   name: "JSON Path Tester",
   description: "Resolve dot, bracket, index, and wildcard JSON paths.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "JSON input",

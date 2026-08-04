@@ -14,6 +14,7 @@ export default {
   ],
   name: "JSON Unescape",
   description: "Decode JSON string escape sequences.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Escaped string",

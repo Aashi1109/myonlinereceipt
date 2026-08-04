@@ -307,17 +307,9 @@ function ToolOptionsPanel({
       )}
       {...props}
     >
-      <h2 className="font-heading text-[17px] font-semibold text-foreground">{title}</h2>
+      <h2 className="font-caption text-[11px] font-semibold uppercase tracking-[0.025rem] text-muted-foreground">{title}</h2>
       {children}
-      {action ? (
-        <>
-          <div className="h-px bg-border" />
-          <span className="font-caption text-[11px] font-semibold tracking-[0.025rem] text-muted-foreground">
-            ACTION AREA
-          </span>
-          {action}
-        </>
-      ) : null}
+      {action}
     </section>
   )
 }

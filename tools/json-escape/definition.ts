@@ -15,6 +15,7 @@ export default {
   ],
   name: "JSON Escape",
   description: "Escape a raw string for use inside JSON.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Raw string",

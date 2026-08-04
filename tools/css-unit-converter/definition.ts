@@ -16,6 +16,7 @@ export default {
   ],
   name: "CSS Unit Converter",
   description: "Convert px, rem, em, pt, and percentage values.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "CSS Value",

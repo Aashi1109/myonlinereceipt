@@ -15,6 +15,7 @@ export default {
   ],
   name: "Domain Rating Checker",
   description: "Look up the Ahrefs Domain Rating (DR) for a domain.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Domain",

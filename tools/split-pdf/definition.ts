@@ -7,6 +7,7 @@ export default {
   keywords: ["pdf", "split", "divide", "separate", "pages", "ranges", "interval"],
   name: "Split PDF",
   description: "Split a PDF by page, interval, or range.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "Add a PDF to split",

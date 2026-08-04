@@ -15,6 +15,7 @@ export default {
   ],
   name: "HEX to HSL",
   description: "Convert HEX colors to HSL.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "HEX Color",

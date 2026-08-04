@@ -14,6 +14,7 @@ export default {
   ],
   name: "Bearer Token Parser",
   description: "Extract a Bearer token and decode it when it is a JWT.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Authorization header or raw token",

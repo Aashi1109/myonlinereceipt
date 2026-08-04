@@ -15,6 +15,7 @@ export default {
   ],
   name: "CSS Minifier",
   description: "Remove CSS comments and redundant whitespace.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSS input",

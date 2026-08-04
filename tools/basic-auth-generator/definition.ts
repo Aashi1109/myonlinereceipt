@@ -14,6 +14,7 @@ export default {
   ],
   name: "Basic Auth Generator",
   description: "Generate an HTTP Basic Authorization header.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Username and password",

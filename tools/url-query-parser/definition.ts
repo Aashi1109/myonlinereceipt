@@ -15,6 +15,7 @@ export default {
   ],
   name: "URL Query Parser",
   description: "Parse URL query parameters into JSON.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "URL or Query String",

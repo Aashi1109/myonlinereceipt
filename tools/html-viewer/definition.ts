@@ -15,6 +15,7 @@ export default {
   ],
   name: "HTML Viewer",
   description: "Return HTML for display inside a sandboxed preview.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "HTML source",

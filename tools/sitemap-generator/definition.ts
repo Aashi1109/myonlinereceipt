@@ -15,6 +15,7 @@ export default {
   ],
   name: "Sitemap Generator",
   description: "Generate an XML sitemap from one URL per line.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "URLs",

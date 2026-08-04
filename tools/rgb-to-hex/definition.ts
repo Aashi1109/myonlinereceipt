@@ -15,6 +15,7 @@ export default {
   ],
   name: "RGB to HEX",
   description: "Convert RGB or RGBA colors to HEX.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "RGB Color",

@@ -7,6 +7,7 @@ export default {
   keywords: ["csv", "sort", "order", "column", "ascending", "descending"],
   name: "CSV Sorter",
   description: "Sort CSV rows by a named or numbered column.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",

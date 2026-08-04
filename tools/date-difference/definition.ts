@@ -18,6 +18,7 @@ export default {
   ],
   name: "Date Difference Calculator",
   description: "Calculate elapsed time between two dates.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Start and end dates",

@@ -15,6 +15,7 @@ export default {
   ],
   name: "Markdown Previewer",
   description: "Render Markdown for a sandboxed preview.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Markdown document",

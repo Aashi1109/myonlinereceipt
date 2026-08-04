@@ -15,6 +15,7 @@ export default {
   ],
   name: "JavaScript Formatter",
   description: "Apply readable indentation to JavaScript source.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "JavaScript input",

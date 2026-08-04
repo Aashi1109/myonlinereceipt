@@ -371,7 +371,7 @@ function ToolToolbar(): ReactElement {
           className={exampleVariant === "link" ? "no-underline hover:no-underline" : undefined}
           disabled={running}
           onClick={() => loadExample(0)}
-          style={{ height: 44 }}
+          size="xs"
           type="button"
           variant={exampleVariant}
         >
@@ -383,8 +383,8 @@ function ToolToolbar(): ReactElement {
           aria-label="Choose an example"
           className={
             exampleVariant === "outline"
-              ? "!h-11 w-auto"
-              : "!h-11 w-auto border-transparent bg-transparent text-primary [&>svg]:text-primary"
+              ? "w-auto"
+              : "w-auto border-transparent bg-transparent text-primary [&>svg]:text-primary"
           }
           disabled={running}
           onChange={(event) => loadExample(Number(event.target.value))}
@@ -406,7 +406,7 @@ function ToolToolbar(): ReactElement {
       <Button
         disabled={running}
         onClick={reset}
-        style={{ height: 44 }}
+        size="xs"
         type="button"
         variant="outline"
       >

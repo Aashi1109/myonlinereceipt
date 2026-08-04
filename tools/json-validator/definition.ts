@@ -14,6 +14,7 @@ export default {
   ],
   name: "JSON Validator",
   description: "Validate JSON syntax and report its root type.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "JSON input",

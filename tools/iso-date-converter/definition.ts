@@ -15,6 +15,7 @@ export default {
   ],
   name: "ISO Date Converter",
   description: "Normalize date input and show ISO, UTC, local, and Unix values.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Date Input",

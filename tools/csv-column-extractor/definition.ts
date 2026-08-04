@@ -7,6 +7,7 @@ export default {
   keywords: ["csv", "column", "extract", "select", "field", "cut"],
   name: "CSV Column Extractor",
   description: "Extract one CSV column by name or one-based number.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "CSV input",

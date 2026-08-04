@@ -16,6 +16,7 @@ export default {
   ],
   name: "Crop PDF",
   description: "Change the visible crop box on selected pages.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "PDF document",

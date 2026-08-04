@@ -235,10 +235,17 @@ function ActionRailContent({ props }: { props: WorkspaceProps }) {
 
 export function ToolWorkspace(props: WorkspaceProps) {
   if (props.spec.input.kind === "files") {
-    return <FileProcessorWorkspace {...props} />;
+    return (
+      <FileProcessorWorkspace
+        {...props}
+        guidance={<ActionRailContent props={props} />}
+      />
+    );
   }
 
-  const hasSettings = Object.keys(props.spec.settings.fields).length > 0;
+  const fields = Object.values(props.spec.settings.fields);
+  const hasMainSettings = fields.some((field) => field.pane === "main");
+  const hasSideSettings = fields.some((field) => field.pane !== "main");
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
   const result = (
     <ResultSurface
@@ -266,20 +273,35 @@ export function ToolWorkspace(props: WorkspaceProps) {
       result={result}
     />
   );
+  const mainContent = hasMainSettings ? (
+    <div className="flex h-full min-h-0 flex-col">
+      <SettingsPanel
+        className="shrink-0 border-b border-border p-4"
+        disabled={props.disabled}
+        layout="grid"
+        onChange={props.onSettingChange}
+        pane="main"
+        spec={props.spec.settings}
+        values={props.settings}
+      />
+      <div className="min-h-0 flex-1">{primaryContent}</div>
+    </div>
+  ) : primaryContent;
 
   return (
     <SplitStack className="h-full" defaultSize={69} minSize={52}>
-      {primaryContent}
+      {mainContent}
       <ToolOptionsPanel
-        action={hasSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
+        action={hasSideSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
         className="h-full overflow-y-auto bg-card p-[18px]"
-        title={hasSettings ? "Options" : props.primaryAction ? "Action" : "Guidance"}
+        title={hasSideSettings ? "SETTINGS" : props.primaryAction ? "Action" : "Guidance"}
         variant="plain"
       >
-        {hasSettings ? (
+        {hasSideSettings ? (
           <SettingsPanel
             disabled={props.disabled}
             onChange={props.onSettingChange}
+            pane="side"
             spec={props.spec.settings}
             values={props.settings}
           />

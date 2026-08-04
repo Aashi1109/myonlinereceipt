@@ -7,6 +7,7 @@ export default {
   keywords: ["html", "format", "beautify", "indent", "pretty print", "markup"],
   name: "HTML Formatter",
   description: "Apply readable indentation to HTML.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "HTML input",

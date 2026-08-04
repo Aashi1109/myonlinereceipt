@@ -24,6 +24,7 @@ export default {
   ],
   name: "Watermark PDF",
   description: "Add a text or image watermark to PDF pages.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "PDF document, plus a JPG or PNG for an image watermark",

@@ -16,6 +16,7 @@ export default {
   ],
   name: "Crop Image",
   description: "Crop an image freely or to a common aspect ratio.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "Source image",

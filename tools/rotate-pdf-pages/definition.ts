@@ -16,6 +16,7 @@ export default {
   ],
   name: "Rotate PDF Pages",
   description: "Rotate all or selected PDF pages.",
+  layout: "stacked",
   input: {
     kind: "files",
     label: "PDF document",

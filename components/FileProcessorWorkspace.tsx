@@ -306,6 +306,7 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
    * this is invoked during render, so any state belongs to the element.
    */
   detail?: (state: FileProcessorDetail) => ReactNode;
+  guidance?: ReactNode;
   /** Shows the reorderable file list, for tools where file order is input. */
   orderFiles?: boolean;
 }
@@ -318,7 +319,10 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   const [inputIssue, setInputIssue] = useState("");
   const [wasCancelled, setWasCancelled] = useState(false);
   useSettingsHooks(props, hooks, previews);
-  const hasSettings = Object.keys(props.spec.settings.fields).length > 0;
+  const fields = Object.values(props.spec.settings.fields);
+  const hasSettings = fields.length > 0;
+  const hasMainSettings = fields.some((field) => field.pane === "main");
+  const hasSideSettings = fields.some((field) => field.pane !== "main");
   const fileInputSpec =
     props.spec.input.kind === "files" ? props.spec.input : null;
   const hasEmptyFileQueue =
@@ -389,15 +393,18 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         </Button>
       ) : undefined}
       className="h-full overflow-y-auto bg-card p-[22px]"
-      title="Options"
+      title={hasSideSettings ? "Options" : props.primaryAction ? "Action" : "Guidance"}
       variant="plain"
     >
-      <SettingsPanel
-        disabled={props.disabled}
-        onChange={props.onSettingChange}
-        spec={props.spec.settings}
-        values={props.settings}
-      />
+      {hasSideSettings ? (
+        <SettingsPanel
+          disabled={props.disabled}
+          onChange={props.onSettingChange}
+          pane="side"
+          spec={props.spec.settings}
+          values={props.settings}
+        />
+      ) : props.guidance}
     </ToolOptionsPanel>
   );
   const inputSurface = fileInputSpec ? (
@@ -642,12 +649,26 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       {resultContent}
     </SplitStack>
   );
+  const mainContent = hasMainSettings ? (
+    <div className="flex h-full min-h-0 flex-col">
+      <SettingsPanel
+        className="shrink-0 border-b border-border p-4"
+        disabled={props.disabled}
+        layout="grid"
+        onChange={props.onSettingChange}
+        pane="main"
+        spec={props.spec.settings}
+        values={props.settings}
+      />
+      <div className="min-h-0 flex-1">{primaryContent}</div>
+    </div>
+  ) : primaryContent;
 
-  if (!hasSettings) return primaryContent;
+  if (!hasSettings) return mainContent;
 
   return (
     <SplitStack className="h-full" defaultSize={70} minSize={52}>
-      {primaryContent}
+      {mainContent}
       {settingsContent}
     </SplitStack>
   );

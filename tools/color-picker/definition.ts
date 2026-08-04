@@ -15,6 +15,7 @@ export default {
   ],
   name: "Color Picker",
   description: "Show HEX, RGB, and HSL forms for a color.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "HEX Color",

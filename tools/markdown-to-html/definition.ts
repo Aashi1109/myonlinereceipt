@@ -15,6 +15,7 @@ export default {
   ],
   name: "Markdown to HTML",
   description: "Convert Markdown source to HTML.",
+  layout: "stacked",
   input: {
     kind: "text",
     label: "Markdown input",

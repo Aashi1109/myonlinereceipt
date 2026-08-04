@@ -2,11 +2,13 @@
   "cases": [
     {
       "input": {
-        "primary": "0",
-        "secondary": "9"
+        "primary": "",
+        "secondary": ""
       },
       "name": "definition example",
       "settings": {
+        "minute": "0",
+        "hour": "9",
         "dayOfMonth": "*",
         "month": "*",
         "dayOfWeek": "1-5",

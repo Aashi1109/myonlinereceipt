@@ -253,18 +253,21 @@ function WorkbenchFrame<
         }
         tabIndex={-1}
         toolbar={
-          <IconTile
-            aria-hidden="true"
-            tone={workbenchMarkText ? workbenchMark?.tone : undefined}
-          >
-            {workbenchMarkText ? (
-              <span className="font-mono text-[13px] font-bold leading-none">
-                {workbenchMarkText}
-              </span>
-            ) : (
-              <Wrench />
-            )}
-          </IconTile>
+          <div className="flex min-w-0 items-center gap-3">
+            <IconTile
+              aria-hidden="true"
+              tone={workbenchMarkText ? workbenchMark?.tone : undefined}
+            >
+              {workbenchMarkText ? (
+                <span className="font-mono text-[13px] font-bold leading-none">
+                  {workbenchMarkText}
+                </span>
+              ) : (
+                <Wrench />
+              )}
+            </IconTile>
+            <span className="truncate text-sm font-semibold">{title}</span>
+          </div>
         }
         toolbarActions={
           <div
