@@ -6,9 +6,29 @@
         "secondary": ""
       },
       "name": "definition example",
-      "settings": {},
+      "settings": {
+        "useLocalTime": false,
+        "decodePayload": false,
+        "warnBeforeExpiry": false
+      },
       "expected": {
         "output": "Status: Active\nExpires: 2100-01-01T00:00:00.000Z\nIssued: not specified",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxMjMiLCJleHAiOjQxMDI0NDQ4MDB9.",
+        "secondary": ""
+      },
+      "name": "decoded payload is included when requested",
+      "settings": {
+        "useLocalTime": false,
+        "decodePayload": true,
+        "warnBeforeExpiry": false
+      },
+      "expected": {
+        "output": "Status: Active\nExpires: 2100-01-01T00:00:00.000Z\nIssued: not specified\nPayload:\n{\n  \"sub\": \"123\",\n  \"exp\": 4102444800\n}",
         "render": "text"
       }
     }

@@ -49,6 +49,12 @@ export default {
         placeholder: "1-3;4-6",
         visibleWhen: { key: "mode", equals: "ranges" },
       },
+      bundleAsZip: {
+        kind: "toggle",
+        label: "Bundle as ZIP",
+        help: "Add a ZIP archive while keeping the individual PDF downloads.",
+        default: false,
+      },
     },
   },
   trigger: { mode: "manual", actionLabel: "Split PDF" },

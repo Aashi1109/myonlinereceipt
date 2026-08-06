@@ -12,6 +12,51 @@
         "output": "function greet(name) {\n  if(name) {\n    return `Hello ${name}`;\n  }\n  return 'Hello';\n}",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "function greet(name){if(name){return name;}}",
+        "secondary": ""
+      },
+      "name": "uses four-space indentation",
+      "settings": {
+        "indentWidth": "4"
+      },
+      "expected": {
+        "downloadName": "formatted.js",
+        "output": "function greet(name) {\n    if(name) {\n        return name;\n    }\n}",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "function greet(name){if(name){return name;}}",
+        "secondary": ""
+      },
+      "name": "uses tab indentation",
+      "settings": {
+        "indentWidth": "tab"
+      },
+      "expected": {
+        "downloadName": "formatted.js",
+        "output": "function greet(name) {\n\tif(name) {\n\t\treturn name;\n\t}\n}",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "function message(){return `first\n  second`;}",
+        "secondary": ""
+      },
+      "name": "preserves multiline template literal whitespace",
+      "settings": {
+        "indentWidth": "4"
+      },
+      "expected": {
+        "downloadName": "formatted.js",
+        "output": "function message() {\n    return `first\n  second`;\n}",
+        "render": "text"
+      }
     }
   ]
 }

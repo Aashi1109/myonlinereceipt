@@ -9,11 +9,76 @@
       "settings": {
         "from": "px",
         "to": "rem",
-        "base": 16
+        "base": 16,
+        "roundResults": false,
+        "includeFormula": false
       },
       "expected": {
         "output": "2rem",
         "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "1",
+        "secondary": ""
+      },
+      "name": "rounds results to four decimal places",
+      "settings": {
+        "from": "px",
+        "to": "rem",
+        "base": 3,
+        "roundResults": true,
+        "includeFormula": false
+      },
+      "expected": {
+        "output": "0.3333rem",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "32",
+        "secondary": ""
+      },
+      "name": "includes the conversion formula",
+      "settings": {
+        "from": "px",
+        "to": "rem",
+        "base": 16,
+        "roundResults": false,
+        "includeFormula": true
+      },
+      "expected": {
+        "output": "2rem\nFormula: 32px × 0.0625 ≈ 2rem",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "16\n\n  nope  \n32",
+        "secondary": ""
+      },
+      "name": "converts each nonblank numeric line and reports invalid lines",
+      "settings": {
+        "from": "px",
+        "to": "rem",
+        "base": 16,
+        "roundResults": false,
+        "includeFormula": false
+      },
+      "expected": {
+        "render": "list",
+        "items": [
+          "1rem",
+          "Error: Value must be a number.",
+          "2rem"
+        ],
+        "labels": [
+          "16",
+          "nope",
+          "32"
+        ]
       }
     }
   ]

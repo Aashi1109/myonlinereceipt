@@ -30,7 +30,34 @@ export default {
     ],
   },
   settings: {
-    fields: {},
+    fields: {
+      category: {
+        kind: "select",
+        label: "Category",
+        help: "Limit results to one HTTP status-code class.",
+        default: "all",
+        choices: [
+          { label: "All categories · 1xx–5xx", value: "all" },
+          { label: "1xx · Informational", value: "1xx" },
+          { label: "2xx · Success", value: "2xx" },
+          { label: "3xx · Redirection", value: "3xx" },
+          { label: "4xx · Client error", value: "4xx" },
+          { label: "5xx · Server error", value: "5xx" },
+        ],
+        pane: "main",
+      },
+      searchMode: {
+        kind: "select",
+        label: "Search mode",
+        help: "Choose whether the query matches codes, reason phrases, or both.",
+        default: "code-and-phrase",
+        choices: [
+          { label: "Code + phrase", value: "code-and-phrase" },
+          { label: "Code only", value: "code-only" },
+          { label: "Phrase only", value: "phrase-only" },
+        ],
+      },
+    },
   },
   trigger: {
     mode: "live",

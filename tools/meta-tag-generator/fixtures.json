@@ -10,10 +10,38 @@
         "keywords": "developer tools, utilities",
         "author": "SmartTools",
         "canonical": "https://example.com/tools",
-        "image": "https://example.com/og.png"
+        "image": "https://example.com/og.png",
+        "locale": "none",
+        "robots": "none",
+        "includeOpenGraph": true,
+        "includeTwitterCard": false,
+        "addViewport": false
       },
       "expected": {
         "output": "<title>Smart Tools</title>\n<meta name=\"description\" content=\"Fast private utilities for everyday work.\">\n<meta name=\"keywords\" content=\"developer tools, utilities\">\n<meta name=\"author\" content=\"SmartTools\">\n<link rel=\"canonical\" href=\"https://example.com/tools\">\n<meta property=\"og:title\" content=\"Smart Tools\">\n<meta property=\"og:description\" content=\"Fast private utilities for everyday work.\">\n<meta property=\"og:url\" content=\"https://example.com/tools\">\n<meta property=\"og:image\" content=\"https://example.com/og.png\">",
+        "render": "text",
+        "downloadName": "meta-tags.html"
+      }
+    },
+    {
+      "input": {
+        "primary": "Private Dashboard",
+        "secondary": "An internal account dashboard."
+      },
+      "name": "Twitter card and directives without Open Graph",
+      "settings": {
+        "keywords": "",
+        "author": "",
+        "canonical": "https://example.com/dashboard",
+        "image": "https://example.com/dashboard.png",
+        "locale": "en_US",
+        "robots": "noindex_nofollow",
+        "includeOpenGraph": false,
+        "includeTwitterCard": true,
+        "addViewport": true
+      },
+      "expected": {
+        "output": "<title>Private Dashboard</title>\n<meta name=\"description\" content=\"An internal account dashboard.\">\n<link rel=\"canonical\" href=\"https://example.com/dashboard\">\n<meta name=\"robots\" content=\"noindex, nofollow\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n<meta name=\"twitter:title\" content=\"Private Dashboard\">\n<meta name=\"twitter:description\" content=\"An internal account dashboard.\">\n<meta name=\"twitter:image\" content=\"https://example.com/dashboard.png\">",
         "render": "text",
         "downloadName": "meta-tags.html"
       }

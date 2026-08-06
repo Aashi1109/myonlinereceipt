@@ -23,11 +23,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     .split(/\r\n|\r|\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (!allowAll && paths.some((path) => !path.startsWith("/"))) {
+  const allowPaths = ctx.settings.allowPaths
+    .split(/\r\n|\r|\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (
+    (!allowAll && paths.some((path) => !path.startsWith("/"))) ||
+    allowPaths.some((path) => !path.startsWith("/"))
+  ) {
     throw new ToolError(
       "path-root-required",
-      "Every disallowed path must start with /.",
-      "Write paths relative to the site root, such as /admin.",
+      "Every path must start with /.",
+      "Write paths relative to the site root, such as /admin or /public.",
     );
   }
   const sitemap = ctx.settings.sitemap.trim();
@@ -36,10 +43,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   return {
     render: "text",
     text: [
-      "User-agent: *",
+      `User-agent: ${ctx.settings.userAgent}`,
       ...(allowAll || !paths.length
         ? ["Disallow:"]
-        : paths.map((path) => `Disallow: ${path}`)),
+        : paths.map(
+            (path) =>
+              `${ctx.settings.newDirective === "allow" ? "Allow" : "Disallow"}: ${path}`,
+          )),
+      ...allowPaths.map((path) => `Allow: ${path}`),
       ...(crawlDelay ? [`Crawl-delay: ${crawlDelay}`] : []),
       ...(sitemap ? [`Sitemap: ${sitemap}`] : []),
     ].join("\n"),

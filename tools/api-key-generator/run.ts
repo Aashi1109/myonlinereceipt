@@ -13,8 +13,10 @@ import { randomString } from "../../lib/devtools/shared/crypto.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-const ALPHABET =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+const ALPHABETS: Readonly<Record<string, string>> = {
+  "url-safe": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
+  alphanumeric: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+};
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const prefix = ctx.settings.prefix.trim();
@@ -25,11 +27,19 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "Use something short such as sk or pk_live, up to 32 characters.",
     );
   }
+  const qualifiedPrefix =
+    ctx.settings.environment === "none"
+      ? prefix
+      : [prefix, ctx.settings.environment].filter(Boolean).join("_");
+  const selectedAlphabet = ALPHABETS[ctx.settings.characterSet];
+  const alphabet = ctx.settings.avoidAmbiguous
+    ? selectedAlphabet.replace(/[01IOl]/g, "")
+    : selectedAlphabet;
   return {
     render: "list",
     items: Array.from({ length: ctx.settings.count }, () => {
-      const body = randomString(ctx.settings.length, ALPHABET);
-      return prefix ? `${prefix}_${body}` : body;
+      const body = randomString(ctx.settings.length, alphabet);
+      return qualifiedPrefix ? `${qualifiedPrefix}_${body}` : body;
     }),
     downloadName: "api-keys.txt",
   };

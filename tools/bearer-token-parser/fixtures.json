@@ -32,6 +32,75 @@
           }
         ]
       }
+    },
+    {
+      "input": {
+        "primary": "Bearer opaque-token",
+        "secondary": ""
+      },
+      "name": "raw input format keeps a Bearer prefix as token data",
+      "settings": {
+        "inputFormat": "raw"
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          {
+            "label": "Token",
+            "value": "Bearer opaque-token"
+          },
+          {
+            "label": "Length",
+            "value": "19"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "primary": "eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
+        "secondary": ""
+      },
+      "name": "JWT decoding can be disabled",
+      "settings": {
+        "decodeJwtParts": false
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          {
+            "label": "Token",
+            "value": "eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ."
+          },
+          {
+            "label": "Length",
+            "value": "39"
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "primary": "Bearer opaque-token",
+        "secondary": ""
+      },
+      "name": "raw token can be masked in the result",
+      "settings": {
+        "maskRawToken": true
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          {
+            "label": "Token",
+            "value": "••••••••"
+          },
+          {
+            "label": "Length",
+            "value": "12"
+          }
+        ]
+      }
     }
   ]
 }

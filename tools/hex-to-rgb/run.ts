@@ -12,13 +12,47 @@ import { parseHexColor } from "../../lib/devtools/shared/color.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
-  const color = parseHexColor(ctx.input.text);
+  const includeAlpha = ctx.settings.includeAlpha ?? true;
+  const commaSyntax = ctx.settings.commaSyntax ?? true;
+  const convert = (input: string) => {
+    const color = parseHexColor(input);
+    const alpha = Number(color.alpha.toFixed(3));
+    const hasAlpha = includeAlpha && color.alpha < 1;
+    const channels = commaSyntax
+      ? `${color.red}, ${color.green}, ${color.blue}${hasAlpha ? `, ${alpha}` : ""}`
+      : `${color.red} ${color.green} ${color.blue}${hasAlpha ? ` / ${alpha}` : ""}`;
+    return (ctx.settings.outputFormat ?? "css") === "channels"
+      ? channels
+      : `${hasAlpha && commaSyntax ? "rgba" : "rgb"}(${channels})`;
+  };
+
+  const lines = ctx.input.text
+    .split(/\r?\n/)
+    .map((input, index) => ({ input: input.trim(), line: index + 1 }))
+    .filter(({ input }) => input);
+  if (lines.length <= 1) return { render: "text", text: convert(lines[0]?.input ?? "") };
+
+  const items: string[] = [];
+  const labels: string[] = [];
+  const issues: NonNullable<ToolResult["issues"]>[number][] = [];
+  for (const line of lines) {
+    try {
+      items.push(convert(line.input));
+      labels.push(line.input);
+    } catch (error) {
+      issues.push({
+        line: line.line,
+        message: `"${line.input}": ${error instanceof Error ? error.message : String(error)}`,
+        target: "input",
+      });
+    }
+  }
+
   return {
-    render: "text",
-    text:
-      color.alpha < 1
-        ? `rgba(${color.red}, ${color.green}, ${color.blue}, ${Number(color.alpha.toFixed(3))})`
-        : `rgb(${color.red}, ${color.green}, ${color.blue})`,
+    render: "list",
+    labels,
+    items,
+    issues: issues.length ? issues : undefined,
   };
 };
 

@@ -28,24 +28,29 @@ export default {
         label: "Destination URL",
         help: "Must be an absolute http or https URL. Any existing query string is kept unless you replace it below.",
         default: "https://example.com",
+        pane: "main",
+        span: "full",
       },
       source: {
         kind: "text",
         label: "Campaign source",
         help: "Where the traffic comes from: newsletter, google, partner-site.",
         default: "newsletter",
+        pane: "main",
       },
       medium: {
         kind: "text",
         label: "Campaign medium",
         help: "How it arrives: email, cpc, social, referral.",
         default: "email",
+        pane: "main",
       },
       campaign: {
         kind: "text",
         label: "Campaign name",
         help: "The promotion this link belongs to.",
         default: "launch",
+        pane: "main",
       },
       term: {
         kind: "text",
@@ -58,6 +63,7 @@ export default {
         label: "Campaign content",
         help: "Distinguishes two links to the same destination in one message. Left out of the URL when blank.",
         default: "",
+        pane: "main",
       },
       normalization: {
         kind: "select",
@@ -118,6 +124,21 @@ export default {
       {
         q: "Does a UTM-tagged link expose anything private?",
         a: "The parameters are visible in the address bar and in any referrer header, so never put a customer name, email address, or token in one.",
+      },
+    ],
+    examples: [
+      {
+        label: "Paid social launch",
+        text: "",
+        settings: {
+          url: "https://acme.example/pricing?ref=homepage",
+          source: "linkedin",
+          medium: "paid_social",
+          campaign: "spring_launch",
+          content: "hero_cta",
+          normalization: "lowercase",
+          existingQuery: "merge",
+        },
       },
     ],
   },

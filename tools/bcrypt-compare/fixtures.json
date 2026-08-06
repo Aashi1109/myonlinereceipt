@@ -11,6 +11,30 @@
         "output": "No match",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "password",
+        "secondary": "$2b$04$H3fQ59kqeSquKm2VpesLx.Ok.wsgaQFFnIuOia3LoDbeK7PSwla1i\n"
+      },
+      "name": "trims a pasted line ending off the hash but never off the password",
+      "settings": {},
+      "expected": {
+        "output": "Match",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": " password ",
+        "secondary": "$2b$04$H3fQ59kqeSquKm2VpesLx.Ok.wsgaQFFnIuOia3LoDbeK7PSwla1i"
+      },
+      "name": "a padded password is a different password, not a match",
+      "settings": {},
+      "expected": {
+        "output": "No match",
+        "render": "text"
+      }
     }
   ]
 }

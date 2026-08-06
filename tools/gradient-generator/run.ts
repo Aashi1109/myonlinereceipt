@@ -17,13 +17,16 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const end = ctx.input.secondary ?? "";
   parseHexColor(start);
   parseHexColor(end);
+  const gradient =
+    ctx.settings.type === "radial"
+      ? `background: radial-gradient(circle, ${start.trim()}, ${end.trim()});`
+      : `background: linear-gradient(${ctx.settings.angle}deg, ${start.trim()}, ${end.trim()});`;
 
   return {
     render: "text",
-    text:
-      ctx.settings.type === "radial"
-        ? `background: radial-gradient(circle, ${start.trim()}, ${end.trim()});`
-        : `background: linear-gradient(${ctx.settings.angle}deg, ${start.trim()}, ${end.trim()});`,
+    text: ctx.settings.includeFallback
+      ? `background: ${start.trim()};\n${gradient}`
+      : gradient,
     downloadName: "gradient.css",
   };
 };

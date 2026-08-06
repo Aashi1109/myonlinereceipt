@@ -29,7 +29,41 @@ export default {
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      normalizeShorthand: {
+        kind: "toggle",
+        label: "Normalize shorthand",
+        help: "Expand #RGB and #RGBA output to their full channel forms.",
+        default: true,
+      },
+      legacyRgbCommas: {
+        kind: "toggle",
+        label: "Legacy RGB commas",
+        help: "Use comma-separated rgb() and rgba() syntax instead of CSS space syntax.",
+        default: true,
+      },
+      includeHsl: {
+        kind: "toggle",
+        label: "Include HSL",
+        help: "Include the equivalent HSL value when showing all formats.",
+        default: true,
+      },
+      outputFormat: {
+        kind: "select",
+        label: "Output format",
+        help: "Show all color forms or limit the result to one format.",
+        default: "all",
+        choices: [
+          { label: "HEX · RGB · HSL", value: "all" },
+          { label: "HEX", value: "hex" },
+          { label: "RGB", value: "rgb" },
+          { label: "HSL", value: "hsl" },
+        ],
+        pane: "main",
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
   workbenchMark: { text: "PICK" },

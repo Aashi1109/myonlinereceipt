@@ -21,7 +21,21 @@ export default {
     label: "JavaScript input",
     placeholder: "function greet(name){return 'Hello ' + name;}",
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      indentWidth: {
+        kind: "select",
+        label: "Indent width",
+        help: "Choose two spaces, four spaces, or tabs for each nesting level.",
+        default: "2",
+        choices: [
+          { label: "2 spaces", value: "2" },
+          { label: "4 spaces", value: "4" },
+          { label: "Tabs", value: "tab" },
+        ],
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Format JavaScript" },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "JS{}", tone: "contrast" },

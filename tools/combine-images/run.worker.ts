@@ -16,6 +16,7 @@ import {
   decodeImage,
   encodeImage,
   extensionFor,
+  fitImage,
   imageFromCanvas,
   mimeFor,
   safeColor,
@@ -91,19 +92,28 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.signal.throwIfAborted();
     ctx.progress({ completed: index, total, stage: "Compositing image" });
     const image = (await decodeImage(ordered[index], ALLOWED)).image;
-    const source = canvasFromImage(image);
+    const placed =
+      ctx.settings.layout === "grid" && ctx.settings.cellSizing !== "centered"
+        ? await fitImage(
+            image,
+            { width: cellWidth, height: cellHeight },
+            ctx.settings.cellSizing === "fill" ? "cover" : "contain",
+            background,
+          )
+        : image;
+    const source = canvasFromImage(placed);
     const x =
       ctx.settings.layout === "horizontal"
         ? offset
         : ctx.settings.layout === "vertical"
-          ? (cellWidth - image.width) / 2
-          : (index % columns) * (cellWidth + gap) + (cellWidth - image.width) / 2;
+          ? (cellWidth - placed.width) / 2
+          : (index % columns) * (cellWidth + gap) + (cellWidth - placed.width) / 2;
     const y =
       ctx.settings.layout === "vertical"
         ? offset
         : ctx.settings.layout === "horizontal"
-          ? (cellHeight - image.height) / 2
-          : Math.floor(index / columns) * (cellHeight + gap) + (cellHeight - image.height) / 2;
+          ? (cellHeight - placed.height) / 2
+          : Math.floor(index / columns) * (cellHeight + gap) + (cellHeight - placed.height) / 2;
     context.drawImage(source, x, y);
     offset += (ctx.settings.layout === "horizontal" ? image.width : image.height) + gap;
     source.width = 1;

@@ -34,7 +34,38 @@ export default {
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      parameters: {
+        kind: "rows",
+        label: "Query parameters",
+        help: "Add key/value pairs alongside any rows entered above.",
+        default: [],
+        keyLabel: "Parameter key",
+        valueLabel: "Value",
+        pane: "main",
+        span: "full",
+      },
+      encodeValues: {
+        kind: "toggle",
+        label: "Encode values",
+        help: "Escape reserved characters in appended values.",
+        default: true,
+      },
+      skipEmptyRows: {
+        kind: "toggle",
+        label: "Skip empty rows",
+        help: "Omit parameters whose value is blank.",
+        default: false,
+      },
+      sortParameters: {
+        kind: "toggle",
+        label: "Sort parameters",
+        help: "Order parameters by key for stable output.",
+        default: false,
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Build URL" },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "?+=" },
@@ -46,7 +77,7 @@ export default {
   content: {
     howToUse: [
       "Put the absolute http or https base URL in the first field. Any query string already on it is kept.",
-      "List the parameters in the second field, one `key=value` pair per line. Keys and values are trimmed and percent-encoded for you, so type them as plain text.",
+      "List parameters as `key=value` lines or add key/value rows below. Values are trimmed and encoded by default; turn encoding off only when the destination expects raw values.",
       "Repeat a key on several lines to send it more than once — `tag=dev` and `tag=web` produce `tag=dev&tag=web`.",
     ],
     limitations: [

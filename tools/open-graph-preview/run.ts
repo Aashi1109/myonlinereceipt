@@ -40,14 +40,22 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   ];
   const maxWidth = layout === "compact" ? 420 : 600;
   const imageHeight = layout === "compact" ? 220 : 315;
+  const imageMarkup = image
+    ? `<img src="${escapedImage}" alt="" style="display:block;width:100%;height:${imageHeight}px;object-fit:${imageFit === "contain" ? "contain" : "cover"}">`
+    : `<div aria-label="Image preview placeholder" style="height:${imageHeight}px;background:linear-gradient(135deg,#1d4ed8,#7c3aed)"></div>`;
+  const previewImage = ctx.settings.safeAreaGuides
+    ? `<div style="position:relative">${imageMarkup}<div aria-hidden="true" style="position:absolute;inset:10%;border:1px dashed rgba(255,255,255,.8);pointer-events:none"></div></div>`
+    : imageMarkup;
+  const destination = ctx.settings.showDestinationHost && url
+    ? escapeHtml(new URL(url).host)
+    : siteName || escapedUrl;
+  const imageMetadata = ctx.settings.showImageMetadata
+    ? `<p>Image URL: ${escapedImage || "not provided"} · Dimensions: not fetched</p>`
+    : "";
 
   return {
     render: "html",
-    html: `<article data-platform="${escapeHtml(platform)}" style="max-width:${maxWidth}px;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;font-family:system-ui,sans-serif">${
-      image
-        ? `<img src="${escapedImage}" alt="" style="display:block;width:100%;height:${imageHeight}px;object-fit:${imageFit === "contain" ? "contain" : "cover"}">`
-        : `<div aria-label="Image preview placeholder" style="height:${imageHeight}px;background:linear-gradient(135deg,#1d4ed8,#7c3aed)"></div>`
-    }<div style="padding:16px"><small>${siteName || escapedUrl}</small><h2>${title}</h2><p>${description}</p></div></article>\n<!-- Generated tags\n${tags.join("\n")}\n-->`,
+    html: `<article data-platform="${escapeHtml(platform)}" style="max-width:${maxWidth}px;border:1px solid #d1d5db;border-radius:12px;overflow:hidden;font-family:system-ui,sans-serif">${previewImage}<div style="padding:16px"><small>${destination}</small><h2>${title}</h2><p>${description}</p>${imageMetadata}</div></article>\n<!-- Generated tags\n${tags.join("\n")}\n-->`,
     downloadName: "open-graph-preview.html",
   };
 };

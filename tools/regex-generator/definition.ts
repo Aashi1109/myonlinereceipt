@@ -31,6 +31,8 @@ export default {
           { label: "Hex color", value: "hex-color" },
           { label: "Strong password", value: "password" },
         ],
+        pane: "main",
+        span: "full",
       },
       language: {
         kind: "select",
@@ -42,6 +44,41 @@ export default {
           { label: "Python", value: "python" },
           { label: "PHP", value: "php" },
         ],
+        pane: "main",
+      },
+      flags: {
+        kind: "select",
+        label: "Flags",
+        help: "Finds one or every match, with optional case-insensitive matching.",
+        default: "none",
+        choices: [
+          { label: "None", value: "none" },
+          { label: "Global", value: "global" },
+          { label: "Ignore case", value: "ignore-case" },
+          {
+            label: "Global · Ignore case",
+            value: "global-ignore-case",
+          },
+        ],
+        pane: "main",
+      },
+      addNamedGroups: {
+        kind: "toggle",
+        label: "Add named groups",
+        help: "Captures the full match in a group named match.",
+        default: false,
+      },
+      multiline: {
+        kind: "toggle",
+        label: "Multiline mode",
+        help: "Makes line anchors apply to every line.",
+        default: false,
+      },
+      explain: {
+        kind: "toggle",
+        label: "Explain pattern",
+        help: "Adds a short code comment describing the preset.",
+        default: false,
       },
     },
   },
@@ -77,6 +114,32 @@ export default {
       {
         q: "What does the strong-password pattern enforce?",
         a: "Lookaheads requiring at least one lowercase letter, one uppercase letter, one digit, and one non-alphanumeric character, with a minimum length of 12.",
+      },
+    ],
+    examples: [
+      {
+        label: "Explained Python UUID pattern",
+        text: "",
+        settings: {
+          preset: "uuid",
+          language: "python",
+          flags: "ignore-case",
+          addNamedGroups: true,
+          multiline: false,
+          explain: true,
+        },
+      },
+      {
+        label: "PHP hex color matcher",
+        text: "",
+        settings: {
+          preset: "hex-color",
+          language: "php",
+          flags: "global-ignore-case",
+          addNamedGroups: false,
+          multiline: false,
+          explain: false,
+        },
       },
     ],
   },

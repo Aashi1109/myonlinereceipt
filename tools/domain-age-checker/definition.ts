@@ -37,7 +37,22 @@ export default {
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      showRegistrationDate: {
+        kind: "toggle",
+        label: "Show registration date",
+        help: "Includes the registry's creation date in the result.",
+        default: true,
+      },
+      showExpiryDate: {
+        kind: "toggle",
+        label: "Show expiry date",
+        help: "Includes the registry's renewal deadline in the result.",
+        default: true,
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Check domain age" },
   capabilities: { network: true },
   workbenchMark: { text: "AGE" },
@@ -50,8 +65,8 @@ export default {
     howToUse: [
       "Enter a domain. A full URL works too — the hostname is extracted, lowercased, and a leading www. is dropped before the query.",
       "Run the check. The domain is looked up against the public RDAP bootstrap service, which forwards it to the registry responsible for that TLD.",
-      "Read the returned JSON: the registration, expiration, and last-changed dates come straight from the registry, alongside its status codes and the delegated nameservers.",
-      "Compare the registration date against the age you expected, and the expiration date against your renewal calendar — a lapsed expiry is the usual cause of a domain going dark.",
+      "Read the returned JSON: enabled date fields come straight from the registry, alongside its status codes and delegated nameservers.",
+      "Compare enabled date fields against the age and renewal timing you expected — a lapsed expiry is the usual cause of a domain going dark.",
     ],
     limitations: [
       "This calls a third-party service — the public RDAP bootstrap at rdap.org, which routes the lookup on to the registry for the domain's TLD. The domain you enter is sent to them, and availability, accuracy, and rate limits are theirs, not ours.",

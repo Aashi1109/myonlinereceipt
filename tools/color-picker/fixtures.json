@@ -15,6 +15,45 @@
           { "label": "HSL", "value": "hsl(225, 100%, 60%)" }
         ]
       }
+    },
+    {
+      "input": {
+        "primary": "#f0c8",
+        "secondary": ""
+      },
+      "name": "keeps shorthand with modern RGB and no HSL",
+      "settings": {
+        "normalizeShorthand": false,
+        "legacyRgbCommas": false,
+        "includeHsl": false,
+        "outputFormat": "all"
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          { "label": "HEX", "value": "#F0C8" },
+          { "label": "RGB", "value": "rgb(255 0 204 / 0.533)" }
+        ]
+      }
+    },
+    {
+      "input": {
+        "primary": "#3366ff",
+        "secondary": ""
+      },
+      "name": "returns only the selected output format",
+      "settings": {
+        "normalizeShorthand": true,
+        "legacyRgbCommas": true,
+        "includeHsl": true,
+        "outputFormat": "hex"
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          { "label": "HEX", "value": "#3366FF" }
+        ]
+      }
     }
   ]
 }

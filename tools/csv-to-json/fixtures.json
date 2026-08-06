@@ -7,7 +7,10 @@
       },
       "name": "converts multiple rows and preserves values as strings",
       "settings": {
-        "delimiter": ","
+        "delimiter": ",",
+        "firstRowAsHeaders": true,
+        "parseNumbers": false,
+        "trimWhitespace": false
       },
       "expected": {
         "downloadName": "data.json",
@@ -22,7 +25,10 @@
       },
       "name": "parses quoted semicolon-delimited fields",
       "settings": {
-        "delimiter": ";"
+        "delimiter": ";",
+        "firstRowAsHeaders": true,
+        "parseNumbers": false,
+        "trimWhitespace": false
       },
       "expected": {
         "downloadName": "data.json",
@@ -37,10 +43,49 @@
       },
       "name": "rejects duplicate headers",
       "settings": {
-        "delimiter": ","
+        "delimiter": ",",
+        "firstRowAsHeaders": true,
+        "parseNumbers": false,
+        "trimWhitespace": false
       },
       "expected": {
         "error": "CSV headers must be unique."
+      }
+    },
+    {
+      "input": {
+        "primary": " name , score \n Ada , 42 \n Bob , -3.5 ",
+        "secondary": ""
+      },
+      "name": "keeps the first row as data and normalises selected values",
+      "settings": {
+        "delimiter": ",",
+        "firstRowAsHeaders": false,
+        "parseNumbers": true,
+        "trimWhitespace": true
+      },
+      "expected": {
+        "downloadName": "data.json",
+        "output": "[\n  [\n    \"name\",\n    \"score\"\n  ],\n  [\n    \"Ada\",\n    42\n  ],\n  [\n    \"Bob\",\n    -3.5\n  ]\n]",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "name,score\n Ada , 42 \n  ,  \n Bob , -3.5 ",
+        "secondary": ""
+      },
+      "name": "trims cells and skips rows made empty by trimming",
+      "settings": {
+        "delimiter": ",",
+        "firstRowAsHeaders": true,
+        "parseNumbers": true,
+        "trimWhitespace": true
+      },
+      "expected": {
+        "downloadName": "data.json",
+        "output": "[\n  {\n    \"name\": \"Ada\",\n    \"score\": 42\n  },\n  {\n    \"name\": \"Bob\",\n    \"score\": -3.5\n  }\n]",
+        "render": "text"
       }
     }
   ]

@@ -12,6 +12,21 @@
         "output": "<article><h1>Hello</h1><p>Sandboxed preview.</p></article>",
         "render": "html"
       }
+    },
+    {
+      "input": {
+        "primary": "\n<!doctype html><main><p>Inspect me</p></main>",
+        "secondary": ""
+      },
+      "name": "shows element outlines without displacing the doctype",
+      "settings": {
+        "showOutlines": true
+      },
+      "expected": {
+        "downloadName": "preview.html",
+        "output": "\n<!doctype html><style>*,*::before,*::after{outline:1px solid #2563eb!important}</style><main><p>Inspect me</p></main>",
+        "render": "html"
+      }
     }
   ]
 }

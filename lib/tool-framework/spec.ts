@@ -83,7 +83,12 @@ export type ToolLabels = {
 
 export type ToolFaqEntry = { q: string; a: string };
 
-export type ToolExample = { label: string; text: string; secondary?: string };
+export type ToolExample = {
+  label: string;
+  text: string;
+  secondary?: string;
+  readonly settings?: Readonly<Record<string, unknown>>;
+};
 
 export type ToolContent = {
   seoTitle?: string;

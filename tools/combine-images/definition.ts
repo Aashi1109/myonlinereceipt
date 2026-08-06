@@ -47,6 +47,18 @@ export default {
         min: 1,
         visibleWhen: { key: "layout", equals: "grid" },
       },
+      cellSizing: {
+        kind: "select",
+        label: "Cell sizing",
+        help: "Centered keeps original pixels, Fit shows the whole image, and Fill crops it to cover the largest grid cell.",
+        default: "centered",
+        choices: [
+          { label: "Centered · largest cell", value: "centered" },
+          { label: "Fit · largest cell", value: "fit" },
+          { label: "Fill · largest cell", value: "fill" },
+        ],
+        visibleWhen: { key: "layout", equals: "grid" },
+      },
       gap: {
         kind: "number",
         label: "Gap",
@@ -95,11 +107,11 @@ export default {
     howToUse: [
       "Add two or more images and drag them into the order you want — the first file becomes the leftmost or topmost tile, and names the output.",
       "Pick a layout: horizontal for a filmstrip, vertical for a tall stack, or grid when you want a fixed number of columns.",
-      "Set the gap and background. Images of different sizes are centred inside a cell sized to the largest image, and the background shows through the leftover space.",
+      "Set the gap, background, and cell sizing. Centered keeps original pixels, Fit shows the whole image, and Fill crops it to cover the largest grid cell.",
       "Choose the output format and quality, run it, and download the single combined image.",
     ],
     limitations: [
-      "Images are placed at their original pixel size — nothing is scaled to match. Mixed sizes produce visible padding, so resize beforehand if you want an even mosaic.",
+      "Centered keeps each image at its original pixel size; Fit and Fill resample images to the largest grid cell.",
       "The combined canvas must stay under 100 megapixels, which a long row of large photos can exceed.",
       "Everything is composited to one flat image, so individual pictures cannot be edited or separated afterwards.",
       "Each source image must be 25 MiB or smaller, up to 50 files per run.",
@@ -112,7 +124,7 @@ export default {
       },
       {
         q: "Why are there wide margins around some images?",
-        a: "Each slot is as large as the biggest image on that axis, and smaller images are centred inside it. Resize the sources to the same dimensions first if you want them flush.",
+        a: "Centered keeps smaller images at their original size inside the largest grid cell; choose Fit to enlarge the whole image or Fill to crop it flush to the cell.",
       },
       {
         q: "Which format should I choose?",

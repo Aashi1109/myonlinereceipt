@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "ZIP bundling requires a PDF",
+      "settings": {
+        "mode": "every-page",
+        "interval": 1,
+        "ranges": "1",
+        "bundleAsZip": true
+      },
+      "expected": {
+        "error": "Choose a PDF to split."
+      }
+    }
+  ]
+}

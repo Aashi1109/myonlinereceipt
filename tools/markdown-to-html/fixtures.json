@@ -6,10 +6,46 @@
         "secondary": ""
       },
       "name": "definition example",
-      "settings": {},
+      "settings": {
+        "markdownFlavor": "gfm",
+        "openLinksSafely": false
+      },
       "expected": {
         "downloadName": "converted.html",
         "output": "<h1>Hello</h1>\n<p><strong>Smart tools</strong> stay focused.</p>\n",
+        "render": "html"
+      }
+    },
+    {
+      "input": {
+        "primary": "~~Old~~ [docs](https://example.com)",
+        "secondary": ""
+      },
+      "name": "CommonMark with safe links",
+      "settings": {
+        "markdownFlavor": "commonmark",
+        "openLinksSafely": true
+      },
+      "expected": {
+        "downloadName": "converted.html",
+        "output": "<p>~~Old~~ <a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">docs</a></p>\n",
+        "render": "html"
+      }
+    },
+    {
+      "input": {
+        "primary": "<script>alert(\"x\")</script>\n\n**Safe** [bad](javascript:alert(1)) [encoded](java&#x73;cript:alert(2)) [numeric](java&#115cript:alert(3)) <img src=x onerror=alert(1)>",
+        "secondary": ""
+      },
+      "name": "sanitized HTML",
+      "settings": {
+        "markdownFlavor": "gfm",
+        "openLinksSafely": false,
+        "sanitizeHtml": true
+      },
+      "expected": {
+        "downloadName": "converted.html",
+        "output": "<p><strong>Safe</strong> bad encoded numeric </p>\n",
         "render": "html"
       }
     }

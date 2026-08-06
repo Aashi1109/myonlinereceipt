@@ -11,6 +11,49 @@
         "output": "404 Not Found",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "timeout",
+        "secondary": ""
+      },
+      "name": "filters matches by category",
+      "settings": {
+        "category": "5xx",
+        "searchMode": "code-and-phrase"
+      },
+      "expected": {
+        "output": "504 Gateway Timeout",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "gateway",
+        "secondary": ""
+      },
+      "name": "code-only search excludes phrase matches",
+      "settings": {
+        "category": "all",
+        "searchMode": "code-only"
+      },
+      "expected": {
+        "error": "No matching HTTP status code was found."
+      }
+    },
+    {
+      "input": {
+        "primary": "404",
+        "secondary": ""
+      },
+      "name": "phrase-only search excludes code matches",
+      "settings": {
+        "category": "all",
+        "searchMode": "phrase-only"
+      },
+      "expected": {
+        "error": "No matching HTTP status code was found."
+      }
     }
   ]
 }

@@ -11,6 +11,39 @@
         "output": "2 days (48 hours)",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "2026-01-02",
+        "secondary": "2026-01-06"
+      },
+      "name": "separate UTC times without an hours detail",
+      "settings": {
+        "startTime": "09:00",
+        "endTime": "17:30",
+        "timezone": "utc",
+        "exactDuration": false
+      },
+      "expected": {
+        "output": "4.354 days",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "2026-01-02",
+        "secondary": "2026-01-06"
+      },
+      "name": "identifies an invalid separate start time",
+      "settings": {
+        "startTime": "25:00",
+        "endTime": "",
+        "timezone": "as-entered",
+        "exactDuration": true
+      },
+      "expected": {
+        "error": "Start time must use 24-hour HH:MM or HH:MM:SS format."
+      }
     }
   ]
 }

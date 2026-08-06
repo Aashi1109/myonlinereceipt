@@ -23,14 +23,33 @@ export default {
       {
         channel: "text",
         label: "RGB or RGBA value",
-        placeholder: "rgb(51, 102, 255)",
+        placeholder: "rgb(51, 102, 255)\nrgba(255, 99, 71, 0.5)",
         required: true,
-        multiline: false,
+        multiline: true,
       },
     ],
   },
   settings: {
-    fields: {},
+    fields: {
+      includeAlpha: {
+        kind: "toggle",
+        label: "Include alpha",
+        help: "Keeps transparent input as an eight-digit hex value.",
+        default: true,
+      },
+      uppercaseOutput: {
+        kind: "toggle",
+        label: "Uppercase output",
+        help: "Uses A–F instead of a–f in the converted hex value.",
+        default: true,
+      },
+      addHashPrefix: {
+        kind: "toggle",
+        label: "Add hash prefix",
+        help: "Prefixes the converted value with # for CSS-ready output.",
+        default: true,
+      },
+    },
   },
   trigger: {
     mode: "live",
@@ -48,7 +67,7 @@ export default {
     howToUse: [
       "Type or paste a CSS colour in rgb(51, 102, 255) or rgba(51, 102, 255, 0.5) form. Output updates as you type.",
       "Channels are 0–255 and alpha is 0–1. Fractional channels are rounded to the nearest integer.",
-      "An opaque colour converts to #RRGGBB; anything with alpha below 1 converts to the eight-digit #RRGGBBAA form.",
+      "By default, an opaque colour converts to #RRGGBB; anything with alpha below 1 converts to the eight-digit #RRGGBBAA form.",
     ],
     limitations: [
       "Only the legacy comma-separated syntax is accepted. The modern space-separated form rgb(51 102 255 / 50%) is not parsed.",
@@ -63,7 +82,7 @@ export default {
       },
       {
         q: "Is the output uppercase?",
-        a: "Yes, hex digits are uppercased. CSS is case-insensitive, so lowercase it freely if your style guide prefers that.",
+        a: "By default, yes. Turn off Uppercase output when your style guide prefers lowercase hex digits.",
       },
     ],
     examples: [

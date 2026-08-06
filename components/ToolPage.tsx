@@ -356,6 +356,9 @@ function ToolToolbar(): ReactElement {
       secondary: example.secondary,
       text: example.text,
     });
+    for (const [key, value] of Object.entries(example.settings ?? {})) {
+      chrome.onSettingChange(key, value);
+    }
   };
 
   const reset = () => {

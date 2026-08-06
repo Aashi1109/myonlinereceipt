@@ -12,6 +12,40 @@
         "output": "body {\n  color:#111;\n  background:#fff\n}\na:hover {\n  text-decoration:underline\n}",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": ".card{z-index:1;color:red;}",
+        "secondary": ""
+      },
+      "name": "uses four-space indentation and alphabetical properties",
+      "settings": {
+        "indentWidth": "4",
+        "printWidth": "unlimited",
+        "propertyOrder": "alphabetical"
+      },
+      "expected": {
+        "downloadName": "formatted.css",
+        "output": ".card {\n    color:red;\n    z-index:1;\n}",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": ".card{font-family:alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron;}",
+        "secondary": ""
+      },
+      "name": "wraps declarations at the selected print width",
+      "settings": {
+        "indentWidth": "2",
+        "printWidth": "80",
+        "propertyOrder": "preserve"
+      },
+      "expected": {
+        "downloadName": "formatted.css",
+        "output": ".card {\n  font-family:alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu\n    nu xi omicron;\n}",
+        "render": "text"
+      }
     }
   ]
 }

@@ -18,17 +18,104 @@
  * unchanged.
  */
 
-import type { ToolRun } from "../../lib/tool-framework/run.ts";
+import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { parseDate } from "../../lib/devtools/shared/datetime.ts";
 
 const DISPLAY_LOCALE = "en-US";
+const NUMERIC_TIMESTAMP = /^-?\d+(?:\.\d+)?$/;
+const RELATIVE_UNITS = [
+  ["year", 31_536_000],
+  ["month", 2_592_000],
+  ["day", 86_400],
+  ["hour", 3_600],
+  ["minute", 60],
+  ["second", 1],
+] as const;
 
-export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
-  const date = parseDate(ctx.input.text, "Timestamp or date");
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+function inputDate(input: string, unit: Settings["inputUnit"]): Date {
+  if (unit === "auto" || !NUMERIC_TIMESTAMP.test(input.trim())) {
+    return parseDate(input, "Timestamp or date");
+  }
+  const value = Number(input);
+  const date = new Date(unit === "seconds" ? value * 1000 : value);
+  if (Number.isNaN(date.getTime())) {
+    throw new ToolError(
+      "invalid-date",
+      "Timestamp or date is not a valid date or timestamp.",
+    );
+  }
+  return date;
+}
+
+function relativeTime(date: Date): string {
+  const seconds = (date.getTime() - Date.now()) / 1000;
+  const [unit, secondsPerUnit] =
+    RELATIVE_UNITS.find(([, size]) => Math.abs(seconds) >= size) ??
+    RELATIVE_UNITS.at(-1)!;
+  return new Intl.RelativeTimeFormat(DISPLAY_LOCALE, { numeric: "always" }).format(
+    Math.round(seconds / secondsPerUnit),
+    unit,
+  );
+}
+
+function convertTimestamp(input: string, settings: Settings): string {
+  const date = inputDate(input, settings.inputUnit ?? "auto");
+  const outputTimezone = settings.outputTimezone ?? "local-and-utc";
+  const useLocalTimezone = settings.useLocalTimezone ?? true;
+  const localOptions = settings.twentyFourHour
+    ? { hour12: false, ...(useLocalTimezone ? {} : { timeZone: "UTC" }) }
+    : useLocalTimezone
+      ? undefined
+      : { timeZone: "UTC" };
+  const lines = [];
+  if (outputTimezone !== "local") {
+    lines.push(`ISO: ${date.toISOString()}`, `UTC: ${date.toUTCString()}`);
+  }
+  if (outputTimezone !== "utc") {
+    lines.push(
+      `${useLocalTimezone ? "Local" : "Locale (UTC)"}: ${date.toLocaleString(DISPLAY_LOCALE, localOptions)}`,
+    );
+  }
+  lines.push(
+    `Unix seconds: ${Math.floor(date.getTime() / 1000)}`,
+    `Unix milliseconds: ${date.getTime()}`,
+  );
+  if (settings.includeRelativeTime) {
+    lines.push(`Relative: ${relativeTime(date)}`);
+  }
+  return lines.join("\n");
+}
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const inputs = ctx.input.text
+    .split(/\r?\n/)
+    .map((input, index) => ({ input: input.trim(), line: index + 1 }))
+    .filter(({ input }) => input);
+  if (inputs.length <= 1) {
+    return { render: "text", text: convertTimestamp(inputs[0]?.input ?? "", ctx.settings) };
+  }
+
+  const items: string[] = [];
+  const issues: NonNullable<ToolResult["issues"]>[number][] = [];
+  for (const input of inputs) {
+    try {
+      items.push(`${input.input} → ${convertTimestamp(input.input, ctx.settings).replaceAll("\n", " · ")}`);
+    } catch (error) {
+      issues.push({
+        line: input.line,
+        message: `"${input.input}": ${error instanceof Error ? error.message : "Conversion failed."}`,
+        target: "input",
+      });
+    }
+  }
   return {
-    render: "text",
-    text: `ISO: ${date.toISOString()}\nUTC: ${date.toUTCString()}\nLocal: ${date.toLocaleString(DISPLAY_LOCALE)}\nUnix seconds: ${Math.floor(date.getTime() / 1000)}\nUnix milliseconds: ${date.getTime()}`,
+    render: "list",
+    items,
+    issues: issues.length ? issues : undefined,
   };
 };
 

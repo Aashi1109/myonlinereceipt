@@ -23,13 +23,39 @@ export default {
       {
         channel: "text",
         label: "HEX color",
-        placeholder: "#3366ff",
+        placeholder: "#3366ff\n#ff3366\n#33ff66",
         required: true,
-        multiline: false,
+        multiline: true,
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      includeAlpha: {
+        kind: "toggle",
+        label: "Include alpha",
+        help: "Preserve transparency from four- and eight-digit HEX values.",
+        default: true,
+      },
+      roundPercentages: {
+        kind: "toggle",
+        label: "Round percentages",
+        help: "Round saturation and lightness to whole percentages.",
+        default: true,
+      },
+      outputFormat: {
+        kind: "select",
+        label: "Output format",
+        help: "Wrap the channels in hsl()/hsla(), or return the channel list alone.",
+        default: "css",
+        choices: [
+          { label: "hsl()", value: "css" },
+          { label: "Channels only", value: "channels" },
+        ],
+        pane: "main",
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
   workbenchMark: { text: "HSL", tone: "accent" },
@@ -48,7 +74,7 @@ export default {
     limitations: [
       "Hue, saturation, and lightness are rounded to whole numbers, so a round trip back to HEX can land one step off the original.",
       "Only HEX input is accepted — no `rgb()`, no colour names, no `hsl()`.",
-      "Output uses the legacy comma-separated `hsl(H, S%, L%)` syntax, not the modern space-separated form.",
+      "The `hsl()` format uses legacy comma-separated `hsl(H, S%, L%)` syntax, not the modern space-separated form.",
       "HSL lightness is not perceived brightness. Do not use it to judge contrast; use a contrast checker against WCAG thresholds.",
     ],
     faq: [
@@ -62,7 +88,7 @@ export default {
       },
       {
         q: "Is transparency supported?",
-        a: "Yes. An 8-digit or 4-digit HEX produces `hsla()` with the alpha preserved.",
+        a: "Yes. By default, an 8-digit or 4-digit HEX produces `hsla()` with the alpha preserved. Turn off Include alpha to omit it.",
       },
     ],
     examples: [

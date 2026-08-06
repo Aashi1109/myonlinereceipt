@@ -10,6 +10,19 @@
       },
       "name": "no DOM available",
       "settings": {}
+    },
+    {
+      "expected": {
+        "error": "Direction overrides are only supported for Mermaid flowcharts."
+      },
+      "input": {
+        "primary": "sequenceDiagram\n  Client->>API: Request",
+        "secondary": ""
+      },
+      "name": "rejects a direction override for non-flowcharts",
+      "settings": {
+        "direction": "LR"
+      }
     }
   ]
 }

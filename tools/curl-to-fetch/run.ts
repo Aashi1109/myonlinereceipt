@@ -15,18 +15,30 @@ import { parseCurl } from "../../lib/devtools/shared/curl.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-function curlAsFetch(command: string): string {
+function curlAsFetch(command: string, settings: Settings): string {
   const request = parseCurl(command);
   const init: Record<string, unknown> = {};
   if (request.method !== "GET") init.method = request.method;
   if (Object.keys(request.headers).length) init.headers = request.headers;
   if (request.body !== undefined) init.body = request.body;
-  return `const response = await fetch(${JSON.stringify(request.url)}, ${JSON.stringify(init, null, 2)});\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nconst data = await response.json();`;
+  const fetchLine = `const response = await fetch(${JSON.stringify(request.url)}, ${JSON.stringify(init, null, 2)});`;
+  const rawResponse = settings.responseHandling === "raw";
+
+  if (settings.executionStyle === "async-function") {
+    const body = rawResponse
+      ? `${fetchLine}\nreturn response;`
+      : `${fetchLine}\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nreturn response.json();`;
+    return `async function request() {\n${body.replaceAll("\n", "\n  ").replace(/^/, "  ")}\n}\n\nconst ${rawResponse ? "response" : "data"} = await request();`;
+  }
+
+  return rawResponse
+    ? fetchLine
+    : `${fetchLine}\nif (!response.ok) throw new Error(\`HTTP \${response.status}\`);\nconst data = await response.json();`;
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => ({
   render: "text",
-  text: curlAsFetch(ctx.input.text),
+  text: curlAsFetch(ctx.input.text, ctx.settings),
 });
 
 export default run;

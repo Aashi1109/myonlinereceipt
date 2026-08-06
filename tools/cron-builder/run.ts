@@ -16,12 +16,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const hour = ctx.settings.hour.trim();
   const expression = `${minute} ${hour} ${ctx.settings.dayOfMonth} ${ctx.settings.month} ${ctx.settings.dayOfWeek}`;
   const commandLabel = ctx.settings.commandLabel.trim();
+  const timezone = ctx.settings.timezone === "local" ? "Timezone: Local time" : "";
 
   return {
     render: "text",
     text: [
       expression,
       describeCron(expression),
+      ...(timezone ? [timezone] : []),
       ...(commandLabel ? [`Label: ${commandLabel}`] : []),
     ].join("\n"),
     downloadName: "cron-schedule.txt",

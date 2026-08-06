@@ -25,6 +25,20 @@ export default {
         default: "sk",
         placeholder: "sk",
         maxLength: 32,
+        pane: "main",
+      },
+      environment: {
+        kind: "select",
+        label: "Environment",
+        help: "Adds an environment segment after the prefix.",
+        default: "none",
+        choices: [
+          { label: "No environment", value: "none" },
+          { label: "Development", value: "dev" },
+          { label: "Test", value: "test" },
+          { label: "Production", value: "live" },
+        ],
+        pane: "main",
       },
       length: {
         kind: "number",
@@ -33,6 +47,7 @@ export default {
         default: 32,
         min: 8,
         max: 256,
+        pane: "main",
       },
       count: {
         kind: "number",
@@ -40,6 +55,24 @@ export default {
         default: 3,
         min: 1,
         max: 100,
+        pane: "main",
+      },
+      characterSet: {
+        kind: "select",
+        label: "Character set",
+        help: "Controls which characters can appear in the random body.",
+        default: "url-safe",
+        choices: [
+          { label: "URL-safe", value: "url-safe" },
+          { label: "Alphanumeric", value: "alphanumeric" },
+        ],
+        pane: "main",
+      },
+      avoidAmbiguous: {
+        kind: "toggle",
+        label: "Avoid ambiguous chars",
+        help: "Removes 0, O, 1, I and l from the selected set.",
+        default: false,
       },
     },
   },
@@ -80,6 +113,20 @@ export default {
       {
         q: "Are these keys unique?",
         a: "Not by construction — they are random, with no registry behind them. At 32 characters a collision is astronomically unlikely, but your server should still enforce uniqueness on insert.",
+      },
+    ],
+    examples: [
+      {
+        label: "Production service keys",
+        text: "",
+        settings: {
+          prefix: "svc",
+          environment: "live",
+          length: 48,
+          count: 5,
+          characterSet: "alphanumeric",
+          avoidAmbiguous: true,
+        },
       },
     ],
   },

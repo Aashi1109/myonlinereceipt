@@ -45,6 +45,12 @@ export default {
           { label: "270°", value: "270" },
         ],
       },
+      rotateSelectedOnly: {
+        kind: "toggle",
+        label: "Rotate selected only",
+        help: "Turn off to rotate every page regardless of the page selection.",
+        default: true,
+      },
     },
   },
   trigger: { mode: "manual", actionLabel: "Rotate pages" },

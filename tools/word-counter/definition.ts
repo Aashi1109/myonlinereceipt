@@ -42,6 +42,12 @@ export default {
         help: "Skips tokens shaped like an address so a contact block does not inflate the count.",
         default: true,
       },
+      estimateReadingTime: {
+        kind: "toggle",
+        label: "Estimate reading time",
+        help: "Shows an estimate based on 200 words per minute.",
+        default: true,
+      },
     },
   },
   trigger: { mode: "live", debounceMs: 200 },
@@ -55,7 +61,7 @@ export default {
   content: {
     howToUse: [
       "Paste or type the text. Every count updates as you type — there is nothing to submit.",
-      "Adjust the three toggles to match the counting convention you are held to. Hyphenation is the one that most often explains a mismatch with another tool.",
+      "Adjust the counting toggles to match the convention you are held to. Hyphenation is the one that most often explains a mismatch with another tool.",
       "Read `Characters` for limits that count code points (most CMS fields) and `Characters without spaces` for editorial limits.",
       "Reading time assumes 200 words per minute and always rounds up to at least one minute once there is any text.",
     ],

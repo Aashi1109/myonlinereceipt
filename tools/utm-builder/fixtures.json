@@ -21,6 +21,28 @@
         "output": "https://example.com/?utm_source=newsletter&utm_medium=email&utm_campaign=launch",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "normalizes values and replaces existing parameters",
+      "settings": {
+        "url": "https://example.com/launch?ref=old",
+        "source": "Newsletter",
+        "medium": "Social",
+        "campaign": "Summer Launch",
+        "term": "Dev Tools",
+        "content": "Hero CTA",
+        "normalization": "lowercase",
+        "existingQuery": "replace"
+      },
+      "expected": {
+        "downloadName": "campaign-url.txt",
+        "output": "https://example.com/launch?utm_source=newsletter&utm_medium=social&utm_campaign=summer+launch&utm_term=dev+tools&utm_content=hero+cta",
+        "render": "text"
+      }
     }
   ]
 }

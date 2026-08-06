@@ -18,6 +18,7 @@ export default {
         placeholder: "password",
         required: true,
         secret: true,
+        multiline: true,
       },
       {
         channel: "secondary",
@@ -25,6 +26,7 @@ export default {
         placeholder: "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.",
         required: true,
         secret: true,
+        multiline: true,
       },
     ],
   },

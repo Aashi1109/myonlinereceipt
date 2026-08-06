@@ -33,6 +33,29 @@
         "includeTtl": true,
         "checkDnssec": false
       }
+    },
+    {
+      "expected": {
+        "render": "text",
+        "pattern": "^MX\\t\\d+\\t",
+        "length": {
+          "min": 5,
+          "max": 1000
+        }
+      },
+      "input": {
+        "primary": "example.com",
+        "secondary": ""
+      },
+      "name": "queries only the selected record filter",
+      "settings": {
+        "types": "ANY",
+        "recordView": "records",
+        "recordFilter": "MX",
+        "recursive": true,
+        "includeTtl": true,
+        "checkDnssec": false
+      }
     }
   ]
 }

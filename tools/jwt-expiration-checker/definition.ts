@@ -26,11 +26,31 @@ export default {
         placeholder: "eyJhbGciOiJub25lIn0.eyJleHAiOjQxMDI0NDQ4MDB9.",
         required: true,
         secret: true,
+        multiline: true,
       },
     ],
   },
   settings: {
-    fields: {},
+    fields: {
+      useLocalTime: {
+        kind: "toggle",
+        label: "Use local time",
+        help: "Show timestamps in your device's local time.",
+        default: false,
+      },
+      decodePayload: {
+        kind: "toggle",
+        label: "Decode payload",
+        help: "Include the decoded, unverified claims payload.",
+        default: false,
+      },
+      warnBeforeExpiry: {
+        kind: "toggle",
+        label: "Warn before expiry",
+        help: "Mark active tokens that expire within five minutes.",
+        default: false,
+      },
+    },
   },
   trigger: {
     mode: "manual",

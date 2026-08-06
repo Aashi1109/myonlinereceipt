@@ -11,10 +11,37 @@ import { formatDelimitedCode } from "../../lib/devtools/shared/code.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => ({
-  render: "text",
-  text: formatDelimitedCode(ctx.input.text, "javascript"),
-  downloadName: "formatted.js",
-});
+function reindent(formatted: string, indent: string): string {
+  let quote = "";
+  let escaped = false;
+  return formatted
+    .split("\n")
+    .map((line) => {
+      const reindented = quote
+        ? line
+        : line.replace(/^(?: {2})+/, (spaces) => indent.repeat(spaces.length / 2));
+      for (const character of line) {
+        if (quote) {
+          if (escaped) escaped = false;
+          else if (character === "\\") escaped = true;
+          else if (character === quote) quote = "";
+        } else if (character === '"' || character === "'" || character === "`") {
+          quote = character;
+        }
+      }
+      return reindented;
+    })
+    .join("\n");
+}
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const formatted = formatDelimitedCode(ctx.input.text, "javascript");
+  const indent = ctx.settings.indentWidth === "4" ? "    " : "\t";
+  const text =
+    ctx.settings.indentWidth === "4" || ctx.settings.indentWidth === "tab"
+      ? reindent(formatted, indent)
+      : formatted;
+  return { render: "text", text, downloadName: "formatted.js" };
+};
 
 export default run;

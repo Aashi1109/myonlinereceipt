@@ -97,7 +97,9 @@ for (const entry of await readdir(TOOLS_DIR, { withFileTypes: true })) {
   }
   if (!/^\s*export\s+default\b/m.test(source)) continue; // not migrated yet
   const spec = (await import(definitionPath)).default;
-  if (spec?.settings) migratedSpecs.push([entry.name, spec.settings]);
+  if (spec?.settings) {
+    migratedSpecs.push([entry.name, spec.settings, spec.content?.examples ?? []]);
+  }
 }
 
 const specsUnderTest = [["<fixture>", FIXTURE], ...migratedSpecs];
@@ -156,6 +158,26 @@ test("declared defaults round-trip through parseSettings unchanged", () => {
     );
     // Absent input must produce the same settings as explicit defaults.
     assert.deepEqual(parseSettings(spec, {}), defaults, `${name}: empty input must yield defaults`);
+  }
+});
+
+test("example settings reference declared fields and survive parsing", () => {
+  for (const [name, spec, examples] of migratedSpecs) {
+    for (const example of examples) {
+      if (!example.settings) continue;
+      const parsed = parseSettings(spec, example.settings);
+      for (const [key, value] of Object.entries(example.settings)) {
+        assert.ok(
+          Object.hasOwn(spec.fields, key),
+          `${name}: example "${example.label}" references unknown setting "${key}"`,
+        );
+        assert.deepEqual(
+          parsed[key],
+          value,
+          `${name}: example "${example.label}" has an invalid value for "${key}"`,
+        );
+      }
+    }
   }
 });
 

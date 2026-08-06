@@ -37,7 +37,46 @@ export default {
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      startTime: {
+        kind: "text",
+        label: "Start time",
+        help: "Optionally set the start time in 24-hour format.",
+        default: "",
+        placeholder: "09:00",
+        maxLength: 8,
+        pane: "main",
+      },
+      endTime: {
+        kind: "text",
+        label: "End time",
+        help: "Optionally set the end time in 24-hour format.",
+        default: "",
+        placeholder: "17:30",
+        maxLength: 8,
+        pane: "main",
+      },
+      timezone: {
+        kind: "select",
+        label: "Timezone",
+        help: "Preserve entered offsets or reinterpret the clock time as local or UTC.",
+        default: "as-entered",
+        choices: [
+          { label: "As entered", value: "as-entered" },
+          { label: "Browser local time", value: "local" },
+          { label: "UTC", value: "utc" },
+        ],
+        pane: "main",
+      },
+      exactDuration: {
+        kind: "toggle",
+        label: "Exact duration",
+        help: "Include the total hours with the elapsed days.",
+        default: true,
+      },
+    },
+  },
   trigger: { mode: "live" },
   capabilities: { copy: true },
   workbenchMark: { text: "DAYS" },
@@ -50,7 +89,7 @@ export default {
     howToUse: [
       "Enter the start date and the end date. ISO 8601 is the safest format — include the Z or an offset so the answer does not depend on your machine's time zone.",
       "A bare number is read as a timestamp: values under 1e11 are treated as Unix seconds, larger ones as milliseconds.",
-      "The result updates as you type, and shows the gap in both days and hours, each rounded to three decimals.",
+      "The result updates as you type and shows days rounded to three decimals, with hours when Exact duration is enabled.",
     ],
     limitations: [
       "An end date before the start date yields a negative result rather than an error, which is usually what you want but is easy to misread.",

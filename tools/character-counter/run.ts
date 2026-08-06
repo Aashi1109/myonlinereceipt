@@ -7,14 +7,38 @@
 
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { textMetrics } from "../../lib/devtools/shared/text.ts";
 
-export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const metrics = textMetrics(ctx.input.text);
+  const {
+    includeSpaces = true,
+    limit280 = false,
+    countLineBreaks = true,
+  } = ctx.settings;
+  const withoutExcludedLineBreaks = countLineBreaks
+    ? ctx.input.text
+    : ctx.input.text.replace(/\r\n|\r|\n/gu, "");
+  const countedCharacters = Array.from(
+    includeSpaces
+      ? withoutExcludedLineBreaks
+      : withoutExcludedLineBreaks.replace(/[^\S\r\n]/gu, ""),
+  ).length;
   return {
     render: "key-value",
     entries: [
-      { label: "Characters", value: String(metrics.characters) },
+      {
+        label: "Characters",
+        value: limit280
+          ? `${countedCharacters} / 280`
+          : String(countedCharacters),
+      },
+      ...(limit280
+        ? [{ label: "Remaining", value: String(280 - countedCharacters) }]
+        : []),
       {
         label: "Characters without spaces",
         value: String(metrics.charactersWithoutSpaces),

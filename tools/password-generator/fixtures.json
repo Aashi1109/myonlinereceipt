@@ -12,12 +12,35 @@
         "upper": true,
         "lower": true,
         "numbers": true,
-        "symbols": true
+        "symbols": true,
+        "excludeAmbiguous": false
       },
       "expected": {
         "render": "list",
         "itemCount": 5,
         "itemPattern": "^[A-Za-z0-9!@#$%^&*()_=+\\[\\]{}-]{16}$",
+        "downloadName": "passwords.txt"
+      }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "excludes ambiguous uppercase characters",
+      "settings": {
+        "length": 64,
+        "count": 4,
+        "upper": true,
+        "lower": false,
+        "numbers": false,
+        "symbols": false,
+        "excludeAmbiguous": true
+      },
+      "expected": {
+        "render": "list",
+        "itemCount": 4,
+        "itemPattern": "^[A-HJ-NP-Z]{64}$",
         "downloadName": "passwords.txt"
       }
     }

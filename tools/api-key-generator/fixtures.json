@@ -9,12 +9,36 @@
       "settings": {
         "prefix": "sk",
         "length": 32,
-        "count": 3
+        "count": 3,
+        "environment": "none",
+        "characterSet": "url-safe",
+        "avoidAmbiguous": false
       },
       "expected": {
         "render": "list",
         "itemCount": 3,
         "itemPattern": "^sk_[A-Za-z0-9_-]{32}$",
+        "downloadName": "api-keys.txt"
+      }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "production alphanumeric keys without ambiguous characters",
+      "settings": {
+        "prefix": "pk",
+        "length": 12,
+        "count": 2,
+        "environment": "live",
+        "characterSet": "alphanumeric",
+        "avoidAmbiguous": true
+      },
+      "expected": {
+        "render": "list",
+        "itemCount": 2,
+        "itemPattern": "^pk_live_[A-HJ-NP-Za-km-z2-9]{12}$",
         "downloadName": "api-keys.txt"
       }
     }

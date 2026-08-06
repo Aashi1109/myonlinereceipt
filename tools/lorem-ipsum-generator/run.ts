@@ -18,15 +18,26 @@ const LOREM_SENTENCES = [
   "Donec vitae lectus sed neque efficitur consequat.",
 ];
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => ({
-  render: "text",
-  text: Array.from({ length: ctx.settings.paragraphs }, (_, index) =>
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const sentenceCount = ctx.settings.paragraphLength === "short"
+    ? 2
+    : ctx.settings.paragraphLength === "long"
+      ? 4
+      : 3;
+  const text = Array.from({ length: ctx.settings.paragraphs }, (_, index) =>
     Array.from(
-      { length: 3 },
-      (__, offset) => LOREM_SENTENCES[(index + offset) % LOREM_SENTENCES.length],
+      { length: sentenceCount },
+      (__, offset) =>
+        LOREM_SENTENCES[
+          (index + offset + (ctx.settings.startWithLorem ? 0 : 1)) % LOREM_SENTENCES.length
+        ],
     ).join(" "),
-  ).join("\n\n"),
-  downloadName: "lorem-ipsum.txt",
-});
+  ).join("\n\n");
+  return {
+    render: "text",
+    text: ctx.settings.includePunctuation ? text : text.replace(/[,.]/g, ""),
+    downloadName: "lorem-ipsum.txt",
+  };
+};
 
 export default run;

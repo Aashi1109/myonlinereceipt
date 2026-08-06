@@ -6,9 +6,25 @@
         "secondary": "secret"
       },
       "name": "definition example",
-      "settings": {},
+      "settings": {
+        "copyAsHeader": true
+      },
       "expected": {
         "output": "Authorization: Basic QWRhOnNlY3JldA==",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "Ada",
+        "secondary": "secret"
+      },
+      "name": "header value without name",
+      "settings": {
+        "copyAsHeader": false
+      },
+      "expected": {
+        "output": "Basic QWRhOnNlY3JldA==",
         "render": "text"
       }
     }

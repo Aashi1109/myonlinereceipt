@@ -32,7 +32,7 @@ function quarter(value: string): 90 | 180 | 270 {
 }
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
-  const input = ctx.input.files[0];
+  const input = ctx.input.files?.[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to rotate.");
   const selection = validatePdfSelection([{ size: input.data.byteLength }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
@@ -41,7 +41,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const { degrees } = await import("pdf-lib");
   const pdf = await loadPdf(input);
   enforcePageLimit(input, pdf.getPageCount(), false);
-  const selected = resolvePageSelection(ctx.settings.pages, pdf.getPageCount());
+  const selected = ctx.settings.rotateSelectedOnly
+    ? resolvePageSelection(ctx.settings.pages, pdf.getPageCount())
+    : pdf.getPageIndices();
   const turn = quarter(ctx.settings.degrees);
   ctx.signal.throwIfAborted();
 

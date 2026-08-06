@@ -27,14 +27,18 @@ const LOOKUP_TIMEOUT_MS = 10_000;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const domain = normalizeDomain(ctx.input.text);
-  const types = [
-    ...new Set(
-      ctx.settings.types
-        .split(",")
-        .map((type) => type.trim().toUpperCase())
-        .filter(Boolean),
-    ),
-  ];
+  const recordFilter = ctx.settings.recordFilter ?? "all";
+  const types =
+    recordFilter === "all"
+      ? [
+          ...new Set(
+            ctx.settings.types
+              .split(",")
+              .map((type) => type.trim().toUpperCase())
+              .filter(Boolean),
+          ),
+        ]
+      : [recordFilter];
   if (!types.length || types.some((type) => !ALLOWED_TYPES.has(type))) {
     throw new ToolError(
       "record-type-unsupported",
@@ -42,7 +46,6 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "Use a comma-separated list drawn from those six types.",
     );
   }
-
   const records = await Promise.all(
     types.map(async (type) => {
       let response: Response;

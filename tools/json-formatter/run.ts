@@ -1,12 +1,9 @@
 /**
- * The folder-contract entry point. The transform is `transformJson` from
- * `lib/devtools/shared/json.ts`, unchanged — the same function the workbench's
- * format, minify, and validate commands already call, so there is one
- * implementation rather than two.
+ * The folder-contract entry point. Formatting and minifying share
+ * `transformJson`; validation reports the type of the value it already parsed.
  *
  * The `"2" | "4" | "tab"` setting is a UI value; `JsonIndentation` is the
- * transform's own `2 | 4 | "tab"`. The mapping between them is the only logic
- * this file owns.
+ * transform's own `2 | 4 | "tab"`, so the mapping stays at this boundary.
  */
 
 import {
@@ -14,6 +11,7 @@ import {
   transformJson,
   type JsonIndentation,
 } from "../../lib/devtools/shared/json.ts";
+import { jsonType } from "../../lib/devtools/shared/json-input.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -26,9 +24,10 @@ function indentationFrom(value: string): JsonIndentation {
 }
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const operation = ctx.settings.operation ?? "format";
   const result = transformJson(ctx.input.text, {
     indentation: indentationFrom(ctx.settings.indentation),
-    mode: "format",
+    mode: operation === "minify" ? "minify" : "format",
   });
   if (!result.ok) {
     throw new ToolError(
@@ -36,6 +35,21 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       result.error.message,
       "Check the reported line for a missing comma, quote, or bracket.",
     );
+  }
+
+  if (operation === "validate") {
+    return {
+      render: "text",
+      text: `Valid JSON\nRoot type: ${jsonType(result.value)}`,
+    };
+  }
+
+  if (operation === "minify") {
+    return {
+      render: "text",
+      text: result.output,
+      downloadName: "smarttools-minified.json",
+    };
   }
 
   const summary = summarizeJson(result.value, result.output);

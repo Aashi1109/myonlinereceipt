@@ -22,7 +22,24 @@ export default {
     placeholder: "flowchart LR\n  A[Input] --> B[Transform] --> C[Output]",
     maxLength: 200_000,
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      direction: {
+        kind: "select",
+        label: "Direction",
+        help: "Override a flowchart's direction or keep the direction in its source.",
+        default: "source",
+        pane: "main",
+        choices: [
+          { label: "Use source", value: "source" },
+          { label: "Left to right", value: "LR" },
+          { label: "Right to left", value: "RL" },
+          { label: "Top to bottom", value: "TB" },
+          { label: "Bottom to top", value: "BT" },
+        ],
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "DIAG" },

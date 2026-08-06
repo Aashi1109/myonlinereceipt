@@ -21,7 +21,16 @@ export default {
     label: "HTML source",
     placeholder: "<article><h1>Hello</h1><p>Sandboxed preview.</p></article>",
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      showOutlines: {
+        kind: "toggle",
+        label: "Show outlines",
+        help: "Add element bounds to the preview and exported HTML.",
+        default: false,
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 250 },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "DOM", tone: "accent" },

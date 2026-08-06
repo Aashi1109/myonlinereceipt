@@ -33,7 +33,16 @@ export default {
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      copyAsHeader: {
+        kind: "toggle",
+        label: "Copy as header",
+        help: "Include the Authorization header name in the generated text.",
+        default: true,
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Generate header" },
   capabilities: { copy: true },
   workbenchMark: { text: "AUTH" },

@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "rotate every page requires a PDF",
+      "settings": {
+        "pages": [1],
+        "degrees": "90",
+        "rotateSelectedOnly": false
+      },
+      "expected": {
+        "error": "Choose a PDF to rotate."
+      }
+    }
+  ]
+}

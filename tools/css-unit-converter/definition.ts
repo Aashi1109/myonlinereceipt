@@ -24,9 +24,9 @@ export default {
       {
         channel: "text",
         label: "Numeric value",
-        placeholder: "16",
+        placeholder: "16\n24\n48",
         required: true,
-        multiline: false,
+        multiline: true,
       },
     ],
   },
@@ -94,6 +94,18 @@ export default {
         min: 0.01,
         max: 10000,
       },
+      roundResults: {
+        kind: "toggle",
+        label: "Round results",
+        help: "Limit converted results to four decimal places.",
+        default: false,
+      },
+      includeFormula: {
+        kind: "toggle",
+        label: "Include formula",
+        help: "Show the calculation used for the conversion.",
+        default: false,
+      },
     },
   },
   trigger: {
@@ -112,7 +124,7 @@ export default {
     howToUse: [
       "Enter the bare number without a unit — the From selector says what unit it is in.",
       "Pick the target unit. Set the base to the font size that rem, em, and % are relative to; 16px is the browser default and the right value most of the time.",
-      "Results update as you type and are rounded to six decimal places.",
+      "Convert the value. Results are rounded to six decimal places unless you enable four-place rounding.",
     ],
     limitations: [
       "rem and em share the same base here. In a real page em is relative to the parent's font size, which changes as elements nest, while rem is always relative to the root.",

@@ -25,10 +25,37 @@ export default {
         placeholder: "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
         required: true,
         secret: true,
+        multiline: true,
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      inputFormat: {
+        kind: "select",
+        label: "Input format",
+        help: "Detect either form, or require a Bearer header or raw token.",
+        default: "auto",
+        choices: [
+          { label: "Auto-detect", value: "auto" },
+          { label: "Authorization header", value: "header" },
+          { label: "Raw token", value: "raw" },
+        ],
+      },
+      decodeJwtParts: {
+        kind: "toggle",
+        label: "Decode JWT parts",
+        help: "Decode three-part JWT headers and payloads as JSON.",
+        default: true,
+      },
+      maskRawToken: {
+        kind: "toggle",
+        label: "Mask raw token",
+        help: "Replace the token itself with bullets in visible output.",
+        default: false,
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Parse token" },
   capabilities: { copy: true },
   workbenchMark: { text: "BEAR" },

@@ -11,6 +11,69 @@
         "output": "rgb(51, 102, 255)",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "#3366ff80",
+        "secondary": ""
+      },
+      "name": "modern syntax keeps alpha",
+      "settings": {
+        "commaSyntax": false
+      },
+      "expected": {
+        "output": "rgb(51 102 255 / 0.502)",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "#3366ff80",
+        "secondary": ""
+      },
+      "name": "alpha can be omitted",
+      "settings": {
+        "includeAlpha": false
+      },
+      "expected": {
+        "output": "rgb(51, 102, 255)",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "#3366ff",
+        "secondary": ""
+      },
+      "name": "bare channel output",
+      "settings": {
+        "outputFormat": "channels"
+      },
+      "expected": {
+        "output": "51, 102, 255",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "#3366ff80\n\n  nope  \n#fff",
+        "secondary": ""
+      },
+      "name": "converts each nonblank HEX line and reports invalid lines",
+      "settings": {
+        "commaSyntax": false
+      },
+      "expected": {
+        "render": "list",
+        "items": [
+          "rgb(51 102 255 / 0.502)",
+          "rgb(255 255 255)"
+        ],
+        "labels": [
+          "#3366ff80",
+          "#fff"
+        ]
+      }
     }
   ]
 }

@@ -8,10 +8,33 @@
       "name": "definition example",
       "settings": {
         "preset": "email",
-        "language": "javascript"
+        "language": "javascript",
+        "flags": "none",
+        "addNamedGroups": false,
+        "multiline": false,
+        "explain": false
       },
       "expected": {
         "output": "/[A-Za-z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+/",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "named explained multiline pattern with flags",
+      "settings": {
+        "preset": "email",
+        "language": "javascript",
+        "flags": "global-ignore-case",
+        "addNamedGroups": true,
+        "multiline": true,
+        "explain": true
+      },
+      "expected": {
+        "output": "// Matches a practical email-address shape.\n/(?<match>[A-Za-z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)+)/gim",
         "render": "text"
       }
     }

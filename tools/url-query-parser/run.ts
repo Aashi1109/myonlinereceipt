@@ -14,12 +14,25 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const input = requireUtilityInput(ctx.input.text, "URL or query string").trim();
-  let parameters: URLSearchParams;
+  let entries: [string, string][];
   try {
-    parameters =
-      input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input)
-        ? new URL(input).searchParams
-        : new URLSearchParams(input.replace(/^\?/, ""));
+    if (ctx.settings.decodeValues !== false) {
+      const parameters =
+        input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input)
+          ? new URL(input).searchParams
+          : new URLSearchParams(input.replace(/^\?/, ""));
+      entries = [...parameters];
+    } else {
+      const query = input.includes("?") || /^[a-z][a-z\d+.-]*:/i.test(input)
+        ? new URL(input).search.slice(1)
+        : input.replace(/^\?/, "");
+      entries = query ? query.split("&").map((part) => {
+        const separator = part.indexOf("=");
+        const rawKey = separator < 0 ? part : part.slice(0, separator);
+        const key = new URLSearchParams(`${rawKey}=`).keys().next().value ?? "";
+        return [key, separator < 0 ? "" : part.slice(separator + 1)];
+      }) : [];
+    }
   } catch {
     throw new ToolError(
       "query-invalid",
@@ -27,8 +40,15 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "Paste a complete URL, or just the part after the ? on its own.",
     );
   }
-  const value: Record<string, string | string[]> = {};
-  for (const [key, item] of parameters) {
+  type ParsedValue = string | number;
+  const value: Record<string, ParsedValue | ParsedValue[]> = {};
+  for (const [key, rawItem] of entries) {
+    if (!ctx.settings.keepEmptyValues && rawItem === "") continue;
+    const numericItem = Number(rawItem);
+    const item = ctx.settings.coerceNumbers && /^-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(rawItem)
+      && Number.isFinite(numericItem)
+      ? numericItem
+      : rawItem;
     const current = value[key];
     value[key] =
       current === undefined

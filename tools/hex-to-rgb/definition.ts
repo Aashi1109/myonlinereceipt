@@ -15,14 +15,39 @@ export default {
       {
         channel: "text",
         label: "HEX color",
-        placeholder: "#3366ff",
+        placeholder: "#3366ff\n#ffcc00\n#3366ff80",
         required: true,
-        multiline: false,
-        maxLength: 16,
+        multiline: true,
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      includeAlpha: {
+        kind: "toggle",
+        label: "Include alpha",
+        help: "Includes the source alpha channel when it is below 1.",
+        default: true,
+      },
+      commaSyntax: {
+        kind: "toggle",
+        label: "Comma syntax",
+        help: "Uses classic comma-separated RGB syntax instead of modern CSS spaces.",
+        default: true,
+      },
+      outputFormat: {
+        kind: "select",
+        label: "Output format",
+        help: "Wraps channels in CSS rgb() syntax or returns bare values.",
+        default: "css",
+        choices: [
+          { label: "rgb()", value: "css" },
+          { label: "Channels", value: "channels" },
+        ],
+        pane: "main",
+      },
+    },
+  },
   trigger: { mode: "live" },
   capabilities: { copy: true },
   workbenchMark: { text: "RGB", tone: "accent" },
@@ -34,13 +59,13 @@ export default {
   content: {
     howToUse: [
       "Type or paste a HEX color. All four CSS forms work: #RGB, #RGBA, #RRGGBB, and #RRGGBBAA — the leading # is optional.",
-      "The result updates as you type. A fully opaque color returns rgb(); anything with alpha below 1 returns rgba().",
+      "The result updates as you type. By default, a fully opaque color returns rgb(); anything with alpha below 1 returns rgba().",
       "Copy the value straight into a stylesheet or a design token file.",
     ],
     limitations: [
       "The alpha channel is reported as a decimal rounded to three places, so #RRGGBBAA values do not always round-trip back to the exact same byte.",
       "Only hexadecimal input is accepted. Named colors, hsl(), and color() notations are not parsed.",
-      "Output is always the legacy comma-separated syntax, not the modern space-separated rgb(51 102 255 / 50%) form.",
+      "Legacy comma-separated syntax is the default; modern space-separated CSS is available in the options.",
     ],
     faq: [
       {

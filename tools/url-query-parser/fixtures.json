@@ -11,6 +11,22 @@
         "output": "{\n  \"q\": \"smart tools\",\n  \"tag\": [\n    \"dev\",\n    \"web\"\n  ]\n}",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "count=42&blank=&name=A%20B&count=3.5",
+        "secondary": ""
+      },
+      "name": "keeps encoded values while coercing numbers and dropping blanks",
+      "settings": {
+        "decodeValues": false,
+        "coerceNumbers": true,
+        "keepEmptyValues": false
+      },
+      "expected": {
+        "output": "{\n  \"count\": [\n    42,\n    3.5\n  ],\n  \"name\": \"A%20B\"\n}",
+        "render": "text"
+      }
     }
   ]
 }

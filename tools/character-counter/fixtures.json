@@ -17,6 +17,29 @@
           { "label": "UTF-8 bytes", "value": "10" }
         ]
       }
+    },
+    {
+      "input": {
+        "primary": "One two\nthree",
+        "secondary": ""
+      },
+      "name": "excludes spaces and line breaks with a 280 character limit",
+      "settings": {
+        "includeSpaces": false,
+        "limit280": true,
+        "countLineBreaks": false
+      },
+      "expected": {
+        "render": "key-value",
+        "entries": [
+          { "label": "Characters", "value": "11 / 280" },
+          { "label": "Remaining", "value": "269" },
+          { "label": "Characters without spaces", "value": "11" },
+          { "label": "Words", "value": "3" },
+          { "label": "Lines", "value": "2" },
+          { "label": "UTF-8 bytes", "value": "13" }
+        ]
+      }
     }
   ]
 }

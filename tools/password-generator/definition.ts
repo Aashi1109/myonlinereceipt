@@ -51,6 +51,12 @@ export default {
         label: "Symbols",
         default: true,
       },
+      excludeAmbiguous: {
+        kind: "toggle",
+        label: "Exclude ambiguous characters",
+        help: "Removes 0, O, I, and l so generated passwords are easier to read.",
+        default: false,
+      },
     },
   },
   trigger: {

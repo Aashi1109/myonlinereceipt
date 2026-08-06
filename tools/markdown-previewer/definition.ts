@@ -21,7 +21,32 @@ export default {
     label: "Markdown document",
     placeholder: "# Preview\n\n- Fast\n- Private",
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      previewMode: {
+        kind: "select",
+        label: "Preview mode",
+        help: "Switches between GitHub extensions and standard CommonMark parsing.",
+        default: "gfm",
+        choices: [
+          { label: "GitHub flavored", value: "gfm" },
+          { label: "CommonMark", value: "commonmark" },
+        ],
+      },
+      syntaxHighlighting: {
+        kind: "toggle",
+        label: "Syntax highlighting",
+        help: "Adds basic token colors to code blocks.",
+        default: false,
+      },
+      safeLinks: {
+        kind: "toggle",
+        label: "Safe links",
+        help: "Opens rendered links in a new tab without opener access.",
+        default: false,
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 160 },
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "MDV", tone: "accent" },
@@ -38,10 +63,10 @@ export default {
       "Remember that the preview shows structure, not your target site's theme — headings and code blocks will be styled differently once published.",
     ],
     limitations: [
-      "The renderer follows GitHub-flavoured Markdown. Site-specific extensions — admonition blocks, front matter, shortcodes, Mermaid fences — are passed through as ordinary text.",
+      "GitHub-flavoured Markdown is the default; CommonMark mode disables extensions such as tables and strikethrough.",
       "The preview is rendered in a sandbox, so scripts, forms, and remote content embedded in raw HTML do not execute.",
       "Relative links and relative image paths cannot resolve here; they will only work once the document is published at its real location.",
-      "No syntax highlighting is applied inside fenced code blocks — the fence and the language tag are preserved, but the colours come from your publishing platform.",
+      "Syntax highlighting is basic and limited to common comments, strings, numbers, tags, and keywords.",
     ],
     faq: [
       {

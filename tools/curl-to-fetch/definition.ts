@@ -22,7 +22,30 @@ export default {
     placeholder:
       "curl https://api.example.com/items -H 'Content-Type: application/json' -d '{\"name\":\"SmartTools\"}'",
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      responseHandling: {
+        kind: "select",
+        label: "Response handling",
+        help: "Parse successful JSON responses or keep the raw response.",
+        default: "throw-json",
+        choices: [
+          { label: "Throw on error + parse JSON", value: "throw-json" },
+          { label: "Keep raw response", value: "raw" },
+        ],
+      },
+      executionStyle: {
+        kind: "select",
+        label: "Execution style",
+        help: "Use top-level await or wrap the request in an async function.",
+        default: "top-level-await",
+        choices: [
+          { label: "Top-level await", value: "top-level-await" },
+          { label: "Async function", value: "async-function" },
+        ],
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Convert to fetch" },
   capabilities: { copy: true },
   workbenchMark: { text: "FET" },
@@ -34,9 +57,9 @@ export default {
   content: {
     howToUse: [
       "Paste a curl command — the 'Copy as cURL' output from your browser's network panel works well.",
-      "Convert. You get an `await fetch(...)` call with the method, headers, and body carried over, plus a status check and a JSON parse.",
+      "Convert. Choose a status check with JSON parsing or keep the raw response, using top-level await or an async wrapper.",
       "Read the generated code before running it. If the original command carried a credential in a header or via `-u`, that credential is now sitting in your source — move it to an environment variable.",
-      "The snippet assumes a JSON response. Swap `response.json()` for `response.text()` or `response.blob()` if that is wrong.",
+      "JSON handling assumes a JSON response. Keep the raw response when you need text, blobs, streaming, or custom error policy.",
     ],
     limitations: [
       "A practical subset of curl is supported: `-X`/`--request`, `-H`/`--header`, `-d`/`--data`/`--data-raw`/`--data-binary`, and `-u`/`--user`. Every other flag is ignored silently — including `-F` (multipart), `--compressed`, `-k`, `-o`, and cookie flags.",

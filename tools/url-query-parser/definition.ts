@@ -25,11 +25,32 @@ export default {
         label: "URL or query string",
         placeholder: "https://example.com/search?q=smart+tools&tag=web",
         required: true,
-        multiline: false,
+        multiline: true,
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      decodeValues: {
+        kind: "toggle",
+        label: "Decode values",
+        help: "Convert percent escapes and plus signs to text.",
+        default: true,
+      },
+      coerceNumbers: {
+        kind: "toggle",
+        label: "Coerce numbers",
+        help: "Return numeric values as JSON numbers.",
+        default: false,
+      },
+      keepEmptyValues: {
+        kind: "toggle",
+        label: "Keep empty values",
+        help: "Preserve parameters whose value is blank.",
+        default: true,
+      },
+    },
+  },
   trigger: { mode: "manual", actionLabel: "Parse query" },
   capabilities: { copy: true },
   workbenchMark: { text: "?{}" },
@@ -41,13 +62,13 @@ export default {
   content: {
     howToUse: [
       "Paste either a full URL or a bare query string. A leading `?` is optional.",
-      "Parse. Each parameter becomes a JSON key, already percent-decoded, with `+` read as a space.",
+      "Parse. Each parameter becomes a JSON key. Values are percent-decoded by default, with `+` read as a space.",
       "A key that appears more than once becomes an array of its values in the order they appeared — that is how repeated filters and multi-select parameters arrive.",
       "Use this to check what a redirect, a tracking link, or an OAuth callback actually carried.",
     ],
     limitations: [
       "Only the query string is read. The path, the fragment (`#...`), and any parameters hidden in the fragment are ignored.",
-      "Everything is a string. `?count=5&ok=true` gives `\"5\"` and `\"true\"`, not a number and a boolean.",
+      "Values stay strings unless number coercion is enabled. Booleans and null-like text are never coerced.",
       "Nested conventions are not expanded: `a[b]=1` produces the literal key `a[b]`, and comma-separated values stay one string.",
       "A key repeated once yields a string and repeated twice yields an array, so a consumer has to handle both shapes.",
       "An empty query produces `{}`, which is a valid answer rather than an error.",

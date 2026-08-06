@@ -46,9 +46,16 @@ const HTTP_STATUSES: Readonly<Record<number, string>> = {
 
 export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const query = ctx.input.text.trim().toLocaleLowerCase();
-  const matches = Object.entries(HTTP_STATUSES).filter(
-    ([code, phrase]) => !query || code.includes(query) || phrase.toLocaleLowerCase().includes(query),
-  );
+  const category = ctx.settings.category ?? "all";
+  const searchMode = ctx.settings.searchMode ?? "code-and-phrase";
+  const matches = Object.entries(HTTP_STATUSES).filter(([code, phrase]) => {
+    if (category !== "all" && !code.startsWith(category.charAt(0))) return false;
+    if (!query) return true;
+    return (
+      (searchMode !== "phrase-only" && code.includes(query)) ||
+      (searchMode !== "code-only" && phrase.toLocaleLowerCase().includes(query))
+    );
+  });
   if (!matches.length) {
     throw new ToolError(
       "no-match",

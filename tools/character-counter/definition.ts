@@ -22,7 +22,28 @@ export default {
     label: "Text",
     placeholder: "Hello, world!\nThis is a sample.",
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      includeSpaces: {
+        kind: "toggle",
+        label: "Include spaces",
+        help: "Include spaces and tabs in the character total.",
+        default: true,
+      },
+      limit280: {
+        kind: "toggle",
+        label: "Limit: 280 characters",
+        help: "Show the count against a 280-character limit and the remaining characters.",
+        default: false,
+      },
+      countLineBreaks: {
+        kind: "toggle",
+        label: "Count line breaks",
+        help: "Treat line breaks as characters in the total.",
+        default: true,
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 150 },
   capabilities: { copy: true },
   workbenchMark: { text: "#CH" },

@@ -43,6 +43,7 @@ export default {
         min: -100,
         max: 100,
         suffix: "px",
+        pane: "main",
       },
       y: {
         kind: "number",
@@ -52,6 +53,7 @@ export default {
         min: -100,
         max: 100,
         suffix: "px",
+        pane: "main",
       },
       blur: {
         kind: "number",
@@ -61,6 +63,7 @@ export default {
         min: 0,
         max: 200,
         suffix: "px",
+        pane: "main",
       },
       spread: {
         kind: "number",
@@ -70,11 +73,33 @@ export default {
         min: -100,
         max: 100,
         suffix: "px",
+        pane: "main",
       },
       inset: {
         kind: "toggle",
         label: "Inset",
         help: "Draws the shadow inside the element instead of behind it.",
+        default: false,
+      },
+      additionalLayers: {
+        kind: "textarea",
+        label: "Additional shadow layers",
+        help: "Add one shadow per line using 0/px lengths and an optional HEX or rgb() color.",
+        default: "",
+        rows: 4,
+        pane: "main",
+        span: "full",
+      },
+      linkOpacity: {
+        kind: "toggle",
+        label: "Link opacity",
+        help: "Apply the input HEX alpha to rgba() colors in additional layers.",
+        default: false,
+      },
+      showBrowserPrefixes: {
+        kind: "toggle",
+        label: "Show browser prefixes",
+        help: "Include a -webkit-box-shadow declaration before the standard one.",
         default: false,
       },
     },
@@ -90,13 +115,13 @@ export default {
   content: {
     howToUse: [
       "Enter the shadow colour as a hex value. `#RRGGBBAA` gives you a translucent shadow, which is almost always what you want — a fully opaque shadow reads as a hard outline.",
-      "Adjust the offsets, blur, and spread; the declaration updates live.",
+      "Adjust the offsets, blur, and spread; add one extra shadow layer per line when a single elevation is not enough.",
       "A believable elevation usually means a small Y offset, a blur two to three times that offset, and a slightly negative spread. Copy the declaration when it looks right.",
     ],
     limitations: [
-      "One shadow per run. Layered shadows are a comma-separated list, so generate each layer and join them by hand.",
+      "Additional layers accept two to four 0/px lengths, optional inset, and an optional HEX or comma-separated rgb()/rgba() colour.",
       "Lengths are pixels only — no rem, em, or percentage units.",
-      "The colour must be hex (`#RGB`, `#RGBA`, `#RRGGBB`, or `#RRGGBBAA`). Named colours, `rgb()`, `hsl()`, and `var(--token)` are rejected.",
+      "The primary colour input must be hex (`#RGB`, `#RGBA`, `#RRGGBB`, or `#RRGGBBAA`). Additional layers also accept comma-separated rgb()/rgba().",
       "The colour is validated and then re-emitted exactly as you typed it, so the output keeps your original casing and shorthand.",
       "This produces `box-shadow`, not `filter: drop-shadow()` — the two differ on transparent PNGs and non-rectangular shapes.",
     ],
@@ -107,7 +132,7 @@ export default {
       },
       {
         q: "How do I stack two shadows?",
-        a: "Generate each one, then join the two values with a comma in a single declaration: `box-shadow: <first>, <second>;`.",
+        a: "Keep the generated first layer, then add the second complete shadow value on a new line under Additional shadow layers.",
       },
       {
         q: "Why does inset look like nothing happened?",

@@ -21,6 +21,25 @@
       },
       "name": "rejects blank input before any request",
       "settings": {}
+    },
+    {
+      "expected": {
+        "render": "text",
+        "pattern": "^(?![\\s\\S]*\\\"registered\\\")(?![\\s\\S]*\\\"expires\\\")[\\s\\S]*$",
+        "length": {
+          "min": 2,
+          "max": 10000
+        }
+      },
+      "input": {
+        "primary": "example.com",
+        "secondary": ""
+      },
+      "name": "hides registration and expiry dates",
+      "settings": {
+        "showRegistrationDate": false,
+        "showExpiryDate": false
+      }
     }
   ]
 }

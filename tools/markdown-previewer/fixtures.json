@@ -12,6 +12,57 @@
         "output": "<h1>Preview</h1>\n<ul>\n<li>Fast</li>\n<li>Private</li>\n</ul>\n",
         "render": "html"
       }
+    },
+    {
+      "input": {
+        "primary": "| A | B |\n| - | - |\n| 1 | 2 |",
+        "secondary": ""
+      },
+      "name": "CommonMark preview mode",
+      "settings": {
+        "previewMode": "commonmark",
+        "syntaxHighlighting": false,
+        "safeLinks": false
+      },
+      "expected": {
+        "downloadName": "preview.html",
+        "output": "<p>| A | B |\n| - | - |\n| 1 | 2 |</p>\n",
+        "render": "html"
+      }
+    },
+    {
+      "input": {
+        "primary": "```js\nconst answer = 42; // result\n```",
+        "secondary": ""
+      },
+      "name": "syntax highlighting enabled",
+      "settings": {
+        "previewMode": "gfm",
+        "syntaxHighlighting": true,
+        "safeLinks": false
+      },
+      "expected": {
+        "downloadName": "preview.html",
+        "output": "<pre><code class=\"language-js\"><span style=\"color:#8250df\">const</span> answer = <span style=\"color:#0550ae\">42</span>; <span style=\"color:#6e7781\">// result</span>\n</code></pre>\n",
+        "render": "html"
+      }
+    },
+    {
+      "input": {
+        "primary": "[Docs](https://example.com)",
+        "secondary": ""
+      },
+      "name": "safe links enabled",
+      "settings": {
+        "previewMode": "gfm",
+        "syntaxHighlighting": false,
+        "safeLinks": true
+      },
+      "expected": {
+        "downloadName": "preview.html",
+        "output": "<p><a href=\"https://example.com\" target=\"_blank\" rel=\"noopener noreferrer\">Docs</a></p>\n",
+        "render": "html"
+      }
     }
   ]
 }

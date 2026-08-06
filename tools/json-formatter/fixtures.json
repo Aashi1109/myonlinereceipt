@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "input": {
+        "primary": "{\"name\":\"Ada\",\"active\":true}",
+        "secondary": ""
+      },
+      "name": "keeps format as the default operation",
+      "settings": {
+        "indentation": "2"
+      },
+      "expected": {
+        "downloadName": "smarttools-formatted.json",
+        "render": "code"
+      }
+    },
+    {
+      "input": {
+        "primary": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
+        "secondary": ""
+      },
+      "name": "minifies JSON",
+      "settings": {
+        "indentation": "2",
+        "operation": "minify"
+      },
+      "expected": {
+        "downloadName": "smarttools-minified.json",
+        "output": "{\"name\":\"Ada\",\"active\":true}",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "{\"valid\":true}",
+        "secondary": ""
+      },
+      "name": "validates JSON without reformatting it",
+      "settings": {
+        "indentation": "2",
+        "operation": "validate"
+      },
+      "expected": {
+        "output": "Valid JSON\nRoot type: object",
+        "render": "text"
+      }
+    }
+  ]
+}

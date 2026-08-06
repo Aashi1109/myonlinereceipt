@@ -15,6 +15,23 @@
         "output": "background: linear-gradient(135deg, #2563eb, #7c3aed);",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "#2563eb",
+        "secondary": "#7c3aed"
+      },
+      "name": "includes a solid-color fallback",
+      "settings": {
+        "type": "linear",
+        "angle": 135,
+        "includeFallback": true
+      },
+      "expected": {
+        "downloadName": "gradient.css",
+        "output": "background: #2563eb;\nbackground: linear-gradient(135deg, #2563eb, #7c3aed);",
+        "render": "text"
+      }
     }
   ]
 }

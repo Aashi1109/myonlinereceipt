@@ -22,7 +22,30 @@ export default {
     placeholder: "# Hello\n\n**Smart tools** stay focused.",
   },
   settings: {
-    fields: {},
+    fields: {
+      markdownFlavor: {
+        kind: "select",
+        label: "Markdown flavor",
+        help: "Use GitHub extensions or parse standard CommonMark.",
+        default: "gfm",
+        choices: [
+          { label: "GFM", value: "gfm" },
+          { label: "CommonMark", value: "commonmark" },
+        ],
+      },
+      sanitizeHtml: {
+        kind: "toggle",
+        label: "Sanitize HTML",
+        help: "Remove raw HTML and unsafe link targets from the generated output.",
+        default: false,
+      },
+      openLinksSafely: {
+        kind: "toggle",
+        label: "Open links safely",
+        help: "Open generated links in a new tab without opener access.",
+        default: false,
+      },
+    },
   },
   trigger: {
     mode: "manual",
@@ -46,14 +69,14 @@ export default {
     ],
     limitations: [
       "The output is a fragment, not a full page — there is no doctype, head, or styling.",
-      "Raw HTML in the source is passed straight through and the result is NOT sanitised. Never render Markdown you did not write without running it through a sanitiser first.",
+      "Sanitizing is off by default, so raw HTML passes through unchanged unless you enable Sanitize HTML.",
       "Front matter is not stripped; a YAML block at the top is rendered as content.",
       "Extensions such as footnotes, definition lists, and math are not enabled.",
     ],
     faq: [
       {
         q: "Is the HTML safe to render?",
-        a: "Only if you trust the Markdown. Raw HTML and javascript: links survive the conversion — sanitise before rendering third-party input.",
+        a: "Only with Sanitize HTML enabled. By default, raw HTML and unsafe link targets survive the conversion.",
       },
       {
         q: "Which flavour of Markdown is this?",

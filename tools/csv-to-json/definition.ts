@@ -35,6 +35,24 @@ export default {
           { label: "Pipe", value: "|" },
         ],
       },
+      firstRowAsHeaders: {
+        kind: "toggle",
+        label: "First row as headers",
+        help: "Use the first row as JSON property names.",
+        default: true,
+      },
+      parseNumbers: {
+        kind: "toggle",
+        label: "Parse numbers",
+        help: "Convert numeric cell values to JSON numbers.",
+        default: false,
+      },
+      trimWhitespace: {
+        kind: "toggle",
+        label: "Trim whitespace",
+        help: "Strip leading and trailing whitespace from cell values.",
+        default: false,
+      },
     },
   },
   trigger: { mode: "manual", actionLabel: "Convert to JSON" },
@@ -42,21 +60,21 @@ export default {
   layout: "stacked",
   workbenchMark: { text: "C>J" },
   labels: {
-    empty: "Paste CSV with a header row to convert it to JSON.",
+    empty: "Paste CSV rows to convert them to JSON.",
     ready: "JSON is ready.",
     running: "Converting CSV to JSON…",
   },
   content: {
     howToUse: [
-      "Paste CSV or other supported delimited text. The first non-blank row supplies the property names.",
-      "Choose the delimiter used by the source, then convert. Quoted fields may contain delimiters, escaped double quotes, and line breaks.",
+      "Paste CSV or other supported delimited text. Keep the header option on for an array of objects, or turn it off for an array of rows.",
+      "Choose the delimiter and any value cleanup, then convert. Quoted fields may contain delimiters, escaped double quotes, and line breaks.",
       "Review the formatted array, check the row and column counts, then copy it or download data.json.",
     ],
     limitations: [
-      "Every column needs a non-empty, unique header, and every data row must contain exactly the same number of fields as the header.",
-      "Cell values remain strings, including numbers, booleans, dates, and empty values. The converter does not infer data types.",
-      "The result is always an array of flat objects. Dotted header names remain literal keys and are not expanded into nested objects.",
-      "Blank rows are ignored, header whitespace is trimmed, and input is limited to 2,000,000 characters.",
+      "In header mode, every column needs a non-empty, unique header. All rows must contain the same number of fields.",
+      "Cell values remain strings unless Parse numbers is enabled. Booleans, dates, and empty values are never inferred.",
+      "Header mode returns flat objects; without headers, the result is an array of rows. Dotted headers remain literal keys.",
+      "Blank rows are ignored, headers are trimmed in header mode, and input is limited to 2,000,000 characters.",
     ],
     faq: [
       {
@@ -65,11 +83,11 @@ export default {
       },
       {
         q: "Why is true written as \"true\" in the JSON?",
-        a: "CSV has no standard type metadata, so every cell is preserved as text instead of guessing whether it is a boolean, number, date, or identifier.",
+        a: "CSV has no standard type metadata, so values stay as text by default. Parse numbers converts numeric cells only; booleans and dates remain text.",
       },
       {
         q: "Does it handle a UTF-8 BOM?",
-        a: "Yes. A BOM at the start of the first header is removed.",
+        a: "Yes in header mode. A BOM at the start of the first header is removed.",
       },
       {
         q: "Is the CSV uploaded?",

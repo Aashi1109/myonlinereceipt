@@ -11,6 +11,45 @@
         "output": "#3366FF",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "rgba(51, 102, 255, 0.5)",
+        "secondary": ""
+      },
+      "name": "omits alpha, uppercase, and hash prefix",
+      "settings": {
+        "includeAlpha": false,
+        "uppercaseOutput": false,
+        "addHashPrefix": false
+      },
+      "expected": {
+        "output": "3366ff",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": " rgba(51, 102, 255, 0.5)\n\nnot-a-color\nrgb(255, 0, 16) ",
+        "secondary": ""
+      },
+      "name": "converts multiple RGB values and reports invalid lines",
+      "settings": {
+        "includeAlpha": false,
+        "uppercaseOutput": false,
+        "addHashPrefix": false
+      },
+      "expected": {
+        "render": "list",
+        "items": [
+          "3366ff",
+          "ff0010"
+        ],
+        "labels": [
+          "rgba(51, 102, 255, 0.5)",
+          "rgb(255, 0, 16)"
+        ]
+      }
     }
   ]
 }

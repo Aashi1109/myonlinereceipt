@@ -23,6 +23,9 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const author = ctx.settings.author.trim();
   const canonical = ctx.settings.canonical.trim();
   const image = ctx.settings.image.trim();
+  const locale = ctx.settings.locale === "none" ? "" : ctx.settings.locale;
+  const robots =
+    ctx.settings.robots === "none" ? "" : ctx.settings.robots.replace("_", ", ");
   if (canonical) safeUrl(canonical, "Canonical URL");
   if (image) safeUrl(image, "Open Graph image URL");
   return {
@@ -33,10 +36,35 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ...(keywords ? [`<meta name="keywords" content="${escapeHtml(keywords)}">`] : []),
       ...(author ? [`<meta name="author" content="${escapeHtml(author)}">`] : []),
       ...(canonical ? [`<link rel="canonical" href="${escapeHtml(canonical)}">`] : []),
-      `<meta property="og:title" content="${title}">`,
-      `<meta property="og:description" content="${description}">`,
-      ...(canonical ? [`<meta property="og:url" content="${escapeHtml(canonical)}">`] : []),
-      ...(image ? [`<meta property="og:image" content="${escapeHtml(image)}">`] : []),
+      ...(robots ? [`<meta name="robots" content="${escapeHtml(robots)}">`] : []),
+      ...(ctx.settings.addViewport
+        ? [`<meta name="viewport" content="width=device-width, initial-scale=1">`]
+        : []),
+      ...(ctx.settings.includeOpenGraph
+        ? [
+            `<meta property="og:title" content="${title}">`,
+            `<meta property="og:description" content="${description}">`,
+            ...(canonical
+              ? [`<meta property="og:url" content="${escapeHtml(canonical)}">`]
+              : []),
+            ...(image
+              ? [`<meta property="og:image" content="${escapeHtml(image)}">`]
+              : []),
+            ...(locale
+              ? [`<meta property="og:locale" content="${escapeHtml(locale)}">`]
+              : []),
+          ]
+        : []),
+      ...(ctx.settings.includeTwitterCard
+        ? [
+            `<meta name="twitter:card" content="summary_large_image">`,
+            `<meta name="twitter:title" content="${title}">`,
+            `<meta name="twitter:description" content="${description}">`,
+            ...(image
+              ? [`<meta name="twitter:image" content="${escapeHtml(image)}">`]
+              : []),
+          ]
+        : []),
     ].join("\n"),
     downloadName: "meta-tags.html",
   };

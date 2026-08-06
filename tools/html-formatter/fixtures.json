@@ -12,6 +12,40 @@
         "output": "<main>\n  <h1>\n    Hello\n  </h1>\n  <p>\n    Smart tools\n  </p>\n</main>",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "<main><section class=\"card\" data-kind=\"example\"><p>Hello</p></section></main>",
+        "secondary": ""
+      },
+      "name": "uses four-space indentation and one attribute per line",
+      "settings": {
+        "attributeWrapping": "one-per-line",
+        "indentWidth": "4",
+        "printWidth": "unlimited"
+      },
+      "expected": {
+        "downloadName": "formatted.html",
+        "output": "<main>\n    <section\n        class=\"card\"\n        data-kind=\"example\"\n    >\n        <p>\n            Hello\n        </p>\n    </section>\n</main>",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "<article class=\"feature-card\" data-description=\"A deliberately long attribute value that crosses the selected print width\">Short copy</article>",
+        "secondary": ""
+      },
+      "name": "wraps long attributes at the selected print width",
+      "settings": {
+        "attributeWrapping": "auto",
+        "indentWidth": "2",
+        "printWidth": "80"
+      },
+      "expected": {
+        "downloadName": "formatted.html",
+        "output": "<article\n  class=\"feature-card\"\n  data-description=\"A deliberately long attribute value that crosses the selected print width\"\n>\n  Short copy\n</article>",
+        "render": "text"
+      }
     }
   ]
 }

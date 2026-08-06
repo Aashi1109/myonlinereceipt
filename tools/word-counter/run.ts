@@ -21,7 +21,7 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
   const minutes = metrics.words ? Math.max(1, Math.ceil(metrics.words / 200)) : 0;
   return {
     render: "text",
-    text: `Words: ${metrics.words}\nCharacters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nSentences: ${metrics.sentences}\nParagraphs: ${metrics.paragraphs}\nLines: ${metrics.lines}\nReading time: ${minutes} minute${minutes === 1 ? "" : "s"}`,
+    text: `Words: ${metrics.words}\nCharacters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nSentences: ${metrics.sentences}\nParagraphs: ${metrics.paragraphs}\nLines: ${metrics.lines}${ctx.settings.estimateReadingTime ? `\nReading time: ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}`,
   };
 };
 

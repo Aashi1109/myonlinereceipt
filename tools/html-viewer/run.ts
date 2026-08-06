@@ -1,7 +1,7 @@
 /**
- * Moved verbatim from the `html-viewer` case in
- * `lib/devtools/format-json.ts` (line 2713): the input is returned unchanged
- * with an html output kind, guarded only by the required-input check.
+ * The default path remains verbatim from the former `html-viewer` case in
+ * `lib/devtools/format-json.ts`: the input is returned unchanged with an HTML
+ * output kind, guarded only by the required-input check.
  *
  * CONTAINMENT — unchanged, and deliberately not widened. The source never
  * sanitised the markup; it relied on the renderer, which puts the value in
@@ -20,12 +20,23 @@
 
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { requireUtilityInput } from "../../lib/devtools/shared/options.ts";
 
-export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
-  render: "html",
-  html: requireUtilityInput(ctx.input.text, "HTML source"),
-  downloadName: "preview.html",
-});
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+const OUTLINE_STYLE =
+  "<style>*,*::before,*::after{outline:1px solid #2563eb!important}</style>";
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const html = requireUtilityInput(ctx.input.text, "HTML source");
+  return {
+    render: "html",
+    html: ctx.settings.showOutlines
+      ? html.replace(/^(\s*<!doctype[^>]*>)?/i, `$&${OUTLINE_STYLE}`)
+      : html,
+    downloadName: "preview.html",
+  };
+};
 
 export default run;

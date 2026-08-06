@@ -28,11 +28,24 @@ export default {
   },
   settings: {
     fields: {
+      operation: {
+        kind: "select",
+        label: "Operation",
+        help: "Format, minify, or only validate the JSON.",
+        default: "format",
+        choices: [
+          { label: "Format", value: "format" },
+          { label: "Minify", value: "minify" },
+          { label: "Validate", value: "validate" },
+        ],
+        pane: "main",
+      },
       indentation: {
         kind: "select",
         label: "Indentation",
         help: "Controls indentation in formatted output.",
         default: "2",
+        visibleWhen: { key: "operation", equals: "format" },
         choices: [
           { label: "2 spaces", value: "2" },
           { label: "4 spaces", value: "4" },

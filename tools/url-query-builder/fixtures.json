@@ -12,6 +12,29 @@
         "output": "https://example.com/search?q=smart+tools&tag=dev&tag=web",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "https://example.com/search?z=last",
+        "secondary": "b=two words\nempty=\na=1"
+      },
+      "name": "builds sorted raw values from both row inputs",
+      "settings": {
+        "parameters": [
+          {
+            "key": "c",
+            "value": "raw/value"
+          }
+        ],
+        "encodeValues": false,
+        "skipEmptyRows": true,
+        "sortParameters": true
+      },
+      "expected": {
+        "downloadName": "built-url.txt",
+        "output": "https://example.com/search?a=1&b=two words&c=raw/value&z=last",
+        "render": "text"
+      }
     }
   ]
 }

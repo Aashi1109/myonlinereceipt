@@ -11,6 +11,49 @@
         "output": "ISO: 2026-07-22T07:00:00.000Z\nUTC: Wed, 22 Jul 2026 07:00:00 GMT\nLocal: 7/22/2026, 7:00:00 AM\nUnix: 1784703600",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "2026-07-22T12:30:00+05:30",
+        "secondary": ""
+      },
+      "name": "UTC British display without UTC line preserves source offset",
+      "settings": {
+        "displayTimezone": "utc",
+        "locale": "en-GB",
+        "showUtc": false,
+        "preserveOffset": true
+      },
+      "expected": {
+        "output": "ISO: 2026-07-22T12:30:00.000+05:30\nDisplay (UTC): 22/07/2026, 07:00:00\nUnix: 1784703600",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "2026-07-22T12:30:00+05:30\n\n  not-a-date  \n0",
+        "secondary": ""
+      },
+      "name": "converts each nonblank date line and reports invalid lines",
+      "settings": {
+        "displayTimezone": "utc",
+        "locale": "en-US",
+        "showUtc": false,
+        "preserveOffset": false
+      },
+      "expected": {
+        "render": "list",
+        "items": [
+          "ISO: 2026-07-22T07:00:00.000Z\nDisplay (UTC): 7/22/2026, 7:00:00 AM\nUnix: 1784703600",
+          "Error: Date input is not a valid date or timestamp.",
+          "ISO: 1970-01-01T00:00:00.000Z\nDisplay (UTC): 1/1/1970, 12:00:00 AM\nUnix: 0"
+        ],
+        "labels": [
+          "2026-07-22T12:30:00+05:30",
+          "not-a-date",
+          "0"
+        ]
+      }
     }
   ]
 }

@@ -11,6 +11,87 @@
         "output": "ISO: 2024-01-01T00:00:00.000Z\nUTC: Mon, 01 Jan 2024 00:00:00 GMT\nLocal: 1/1/2024, 12:00:00 AM\nUnix seconds: 1704067200\nUnix milliseconds: 1704067200000",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "1000",
+        "secondary": ""
+      },
+      "name": "explicit milliseconds bypass magnitude detection",
+      "settings": {
+        "inputUnit": "milliseconds",
+        "outputTimezone": "utc"
+      },
+      "expected": {
+        "output": "ISO: 1970-01-01T00:00:01.000Z\nUTC: Thu, 01 Jan 1970 00:00:01 GMT\nUnix seconds: 1\nUnix milliseconds: 1000",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "1704067200",
+        "secondary": ""
+      },
+      "name": "local output can use a 24-hour clock",
+      "settings": {
+        "outputTimezone": "local",
+        "twentyFourHour": true
+      },
+      "expected": {
+        "output": "Local: 1/1/2024, 00:00:00\nUnix seconds: 1704067200\nUnix milliseconds: 1704067200000",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "1704067200",
+        "secondary": ""
+      },
+      "name": "locale-formatted output can use UTC instead of browser time",
+      "settings": {
+        "outputTimezone": "local",
+        "useLocalTimezone": false
+      },
+      "expected": {
+        "output": "Locale (UTC): 1/1/2024, 12:00:00 AM\nUnix seconds: 1704067200\nUnix milliseconds: 1704067200000",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "1704067200",
+        "secondary": ""
+      },
+      "name": "relative time can be included",
+      "settings": {
+        "includeRelativeTime": true,
+        "outputTimezone": "utc"
+      },
+      "expected": {
+        "pattern": "^ISO: 2024-01-01T00:00:00\\.000Z\\nUTC: Mon, 01 Jan 2024 00:00:00 GMT\\nUnix seconds: 1704067200\\nUnix milliseconds: 1704067200000\\nRelative: (?:in \\d+ (?:seconds?|minutes?|hours?|days?|months?|years?)|\\d+ (?:seconds?|minutes?|hours?|days?|months?|years?) ago)$",
+        "length": {
+          "min": 140,
+          "max": 180
+        },
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "1704067200\n\nnot-a-date\n0",
+        "secondary": ""
+      },
+      "name": "converts multiple timestamps and reports invalid lines",
+      "settings": {
+        "outputTimezone": "utc"
+      },
+      "expected": {
+        "items": [
+          "1704067200 → ISO: 2024-01-01T00:00:00.000Z · UTC: Mon, 01 Jan 2024 00:00:00 GMT · Unix seconds: 1704067200 · Unix milliseconds: 1704067200000",
+          "0 → ISO: 1970-01-01T00:00:00.000Z · UTC: Thu, 01 Jan 1970 00:00:00 GMT · Unix seconds: 0 · Unix milliseconds: 0"
+        ],
+        "render": "list"
+      }
     }
   ]
 }

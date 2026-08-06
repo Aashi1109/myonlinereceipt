@@ -57,6 +57,12 @@ export default {
         suffix: "deg",
         visibleWhen: { key: "type", equals: "linear" },
       },
+      includeFallback: {
+        kind: "toggle",
+        label: "Include fallback",
+        help: "Adds the start color before the gradient for unsupported browsers.",
+        default: false,
+      },
     },
   },
   trigger: { mode: "live", debounceMs: 160 },

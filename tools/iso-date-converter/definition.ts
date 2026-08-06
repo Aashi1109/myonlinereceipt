@@ -23,13 +23,50 @@ export default {
       {
         channel: "text",
         label: "Date or Unix timestamp",
-        placeholder: "2026-07-22T12:30:00+05:30",
+        placeholder: "2026-07-22T12:30:00+05:30\n2026-08-01T09:00:00Z\n1784703600",
         required: true,
-        multiline: false,
+        multiline: true,
       },
     ],
   },
-  settings: { fields: {} },
+  settings: {
+    fields: {
+      displayTimezone: {
+        kind: "select",
+        label: "Display timezone",
+        help: "Format the readable date in browser local time or UTC.",
+        default: "local",
+        choices: [
+          { label: "Browser local time", value: "local" },
+          { label: "UTC", value: "utc" },
+        ],
+        pane: "main",
+      },
+      locale: {
+        kind: "select",
+        label: "Locale",
+        help: "Choose the regional format for the readable date.",
+        default: "en-US",
+        choices: [
+          { label: "English (United States)", value: "en-US" },
+          { label: "English (United Kingdom)", value: "en-GB" },
+        ],
+        pane: "main",
+      },
+      showUtc: {
+        kind: "toggle",
+        label: "Show UTC",
+        help: "Include the RFC 1123 UTC value.",
+        default: true,
+      },
+      preserveOffset: {
+        kind: "toggle",
+        label: "Preserve offset",
+        help: "Keep an explicit source offset in the ISO value instead of normalizing it to Z.",
+        default: false,
+      },
+    },
+  },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
   workbenchMark: { text: "ISO", tone: "contrast" },

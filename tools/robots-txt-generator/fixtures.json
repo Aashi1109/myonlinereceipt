@@ -9,10 +9,33 @@
       "settings": {
         "allowAll": false,
         "sitemap": "https://example.com/sitemap.xml",
-        "crawlDelay": 0
+        "crawlDelay": 0,
+        "userAgent": "*",
+        "newDirective": "disallow",
+        "allowPaths": ""
       },
       "expected": {
         "output": "User-agent: *\nDisallow: /admin\nDisallow: /private\nSitemap: https://example.com/sitemap.xml",
+        "render": "text",
+        "downloadName": "robots.txt"
+      }
+    },
+    {
+      "input": {
+        "primary": "/preview",
+        "secondary": ""
+      },
+      "name": "crawler-specific allow directives",
+      "settings": {
+        "allowAll": false,
+        "sitemap": "",
+        "crawlDelay": 5,
+        "userAgent": "Googlebot",
+        "newDirective": "allow",
+        "allowPaths": "/public\n/assets"
+      },
+      "expected": {
+        "output": "User-agent: Googlebot\nAllow: /preview\nAllow: /public\nAllow: /assets\nCrawl-delay: 5",
         "render": "text",
         "downloadName": "robots.txt"
       }

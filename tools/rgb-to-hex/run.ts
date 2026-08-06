@@ -30,9 +30,45 @@ function parseRgbColor(input: string): RgbColor {
   };
 }
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => ({
-  render: "text",
-  text: rgbToHex(parseRgbColor(ctx.input.text)),
-});
+function convert(input: string, settings: Settings): string {
+  const color = parseRgbColor(input);
+  let text = rgbToHex(settings.includeAlpha !== false ? color : { ...color, alpha: 1 });
+  if (settings.uppercaseOutput === false) text = text.toLowerCase();
+  if (settings.addHashPrefix === false) text = text.slice(1);
+  return text;
+}
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const lines = ctx.input.text
+    .split(/\r\n?|\n/)
+    .map((input, index) => ({ input: input.trim(), line: index + 1 }))
+    .filter(({ input }) => input);
+  if (lines.length <= 1) {
+    return { render: "text", text: convert(lines[0]?.input ?? ctx.input.text, ctx.settings) };
+  }
+
+  const items: string[] = [];
+  const labels: string[] = [];
+  const issues: NonNullable<ToolResult["issues"]>[number][] = [];
+  for (const line of lines) {
+    try {
+      items.push(convert(line.input, ctx.settings));
+      labels.push(line.input);
+    } catch (error) {
+      if (!(error instanceof ToolError)) throw error;
+      issues.push({
+        line: line.line,
+        message: `"${line.input}": ${error.message}`,
+        target: "input",
+      });
+    }
+  }
+  return {
+    render: "list",
+    items,
+    labels,
+    issues: issues.length ? issues : undefined,
+  };
+};
 
 export default run;

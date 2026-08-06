@@ -23,6 +23,38 @@ export default {
   },
   settings: {
     fields: {
+      userAgent: {
+        kind: "select",
+        label: "User-agent",
+        help: "Chooses which crawler receives this rule group.",
+        default: "*",
+        choices: [
+          { label: "* · All crawlers", value: "*" },
+          { label: "Googlebot", value: "Googlebot" },
+          { label: "Bingbot", value: "Bingbot" },
+          { label: "DuckDuckBot", value: "DuckDuckBot" },
+        ],
+        pane: "main",
+      },
+      newDirective: {
+        kind: "select",
+        label: "New directive",
+        help: "Applies Allow or Disallow to the path input.",
+        default: "disallow",
+        choices: [
+          { label: "Disallow", value: "disallow" },
+          { label: "Allow", value: "allow" },
+        ],
+        pane: "main",
+      },
+      allowPaths: {
+        kind: "textarea",
+        label: "Allow paths",
+        help: "Adds one explicit Allow rule per root-relative path.",
+        default: "",
+        rows: 4,
+        pane: "main",
+      },
       allowAll: {
         kind: "toggle",
         label: "Allow all",
@@ -35,6 +67,7 @@ export default {
         help: "Must be an absolute http or https URL. Leave blank to omit the line.",
         default: "https://example.com/sitemap.xml",
         placeholder: "https://example.com/sitemap.xml",
+        pane: "main",
       },
       crawlDelay: {
         kind: "number",
@@ -44,6 +77,7 @@ export default {
         min: 0,
         max: 86400,
         suffix: "s",
+        pane: "main",
       },
     },
   },
@@ -63,7 +97,7 @@ export default {
       "Download the file and place it at the site root — `https://yourdomain.com/robots.txt`. Anywhere else and no crawler will read it.",
     ],
     limitations: [
-      "Only one `User-agent: *` group is produced. Per-crawler rules, `Allow:` overrides, and wildcard patterns (`*`, `$`) must be added by hand.",
+      "Only one user-agent group is produced. Additional crawler groups and wildcard patterns (`*`, `$`) must be added by hand.",
       "`Crawl-delay` is not part of the original specification. Google ignores it entirely; Bing and Yandex honour it.",
       "robots.txt controls crawling, not indexing. A blocked URL can still appear in search results if other pages link to it — use a `noindex` meta tag or an HTTP header to keep a page out of the index.",
       "It is a public file and a request, not an access control. Listing `/admin` tells everyone the path exists and does not stop anyone from visiting it. Never use it to hide something sensitive.",

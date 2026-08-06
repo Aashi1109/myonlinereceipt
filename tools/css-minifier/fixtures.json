@@ -12,6 +12,23 @@
         "output": "body{color:#111;background:#fff}",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": ".a { color: #ffffff; background: #11223344; }\n.b { color: #ffffff; background: #11223344; }",
+        "secondary": ""
+      },
+      "name": "merges rules and normalizes colors for legacy browsers",
+      "settings": {
+        "browserCompatibility": "legacy",
+        "mergeRules": true,
+        "normalizeColors": true
+      },
+      "expected": {
+        "downloadName": "minified.css",
+        "output": ".a,.b{color:#fff;background:rgba(17,34,51,0.267)}",
+        "render": "text"
+      }
     }
   ]
 }

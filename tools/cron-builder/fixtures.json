@@ -12,13 +12,33 @@
         "dayOfMonth": "*",
         "month": "*",
         "dayOfWeek": "1-5",
-        "dialect": "standard",
         "timezone": "utc",
         "commandLabel": ""
       },
       "expected": {
         "downloadName": "cron-schedule.txt",
         "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "",
+        "secondary": ""
+      },
+      "name": "documents local time and the command label",
+      "settings": {
+        "minute": "0",
+        "hour": "9",
+        "dayOfMonth": "*",
+        "month": "*",
+        "dayOfWeek": "1-5",
+        "timezone": "local",
+        "commandLabel": "Weekday report"
+      },
+      "expected": {
+        "downloadName": "cron-schedule.txt",
+        "output": "0 9 * * 1-5\nat minute 0 of hour 9; day *; month *; weekday 1-5\nTimezone: Local time\nLabel: Weekday report",
         "render": "text"
       }
     }

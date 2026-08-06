@@ -9,12 +9,78 @@
 
 import type { ToolRun } from "../../lib/tool-framework/run.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
+import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 import { formatDelimitedCode } from "../../lib/devtools/shared/code.ts";
 
-export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => ({
-  render: "text",
-  text: formatDelimitedCode(ctx.input.text, "css"),
-  downloadName: "formatted.css",
-});
+type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
+
+function sortDeclarations(css: string): string {
+  const lines = css.split("\n");
+  const output: string[] = [];
+  for (let index = 0; index < lines.length; ) {
+    if (!/^\s+[-\w]+\s*:/.test(lines[index])) {
+      output.push(lines[index]);
+      index += 1;
+      continue;
+    }
+    const declarations: string[] = [];
+    while (index < lines.length && /^\s+[-\w]+\s*:/.test(lines[index])) {
+      declarations.push(lines[index]);
+      index += 1;
+    }
+    const keepFinalSemicolon = declarations.at(-1)?.trimEnd().endsWith(";") ?? false;
+    declarations
+      .map((line) => line.replace(/;\s*$/, ""))
+      .sort((left, right) =>
+        left.trimStart().localeCompare(right.trimStart(), "en", { sensitivity: "base" }),
+      )
+      .forEach((line, declarationIndex, sorted) => {
+        const semicolon = declarationIndex < sorted.length - 1 || keepFinalSemicolon ? ";" : "";
+        output.push(`${line}${semicolon}`);
+      });
+  }
+  return output.join("\n");
+}
+
+function applyIndentation(css: string, indent: string): string {
+  return css
+    .split("\n")
+    .map((line) => {
+      const spaces = /^ */.exec(line)?.[0].length ?? 0;
+      return `${indent.repeat(Math.floor(spaces / 2))}${line.slice(spaces)}`;
+    })
+    .join("\n");
+}
+
+function wrapLines(css: string, width: number, indent: string): string {
+  return css
+    .split("\n")
+    .flatMap((line) => {
+      if (/["'`]/.test(line)) return [line];
+      const lines: string[] = [];
+      let remaining = line;
+      const leading = /^\s*/.exec(line)?.[0] ?? "";
+      const continuation = `${leading}${indent}`;
+      while (remaining.length > width) {
+        const breakAt = remaining.lastIndexOf(" ", width);
+        if (breakAt <= leading.length) break;
+        lines.push(remaining.slice(0, breakAt));
+        remaining = `${continuation}${remaining.slice(breakAt + 1).trimStart()}`;
+      }
+      return [...lines, remaining];
+    })
+    .join("\n");
+}
+
+export const run: ToolRun<Settings> = (ctx): ToolResult => {
+  const indent = ctx.settings.indentWidth === "4" ? "    " : ctx.settings.indentWidth === "tab" ? "\t" : "  ";
+  let text = formatDelimitedCode(ctx.input.text, "css");
+  if (ctx.settings.propertyOrder === "alphabetical") text = sortDeclarations(text);
+  text = applyIndentation(text, indent);
+  if (ctx.settings.printWidth !== "unlimited") {
+    text = wrapLines(text, Number(ctx.settings.printWidth), indent);
+  }
+  return { render: "text", text, downloadName: "formatted.css" };
+};
 
 export default run;

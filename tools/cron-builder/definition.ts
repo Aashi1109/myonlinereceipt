@@ -68,14 +68,6 @@ export default {
         default: "1-5",
         pane: "main",
       },
-      dialect: {
-        kind: "select",
-        label: "Cron dialect",
-        help: "Standard five-field crontab. Six-field dialects with seconds are not supported.",
-        default: "standard",
-        choices: [{ label: "Standard 5-field", value: "standard" }],
-        pane: "main",
-      },
       timezone: {
         kind: "select",
         label: "Timezone",
@@ -133,6 +125,21 @@ export default {
       {
         q: "Which timezone does the schedule use?",
         a: "The one the machine running cron is set to, which is often UTC on a server and local time on a laptop. Confirm it on the host rather than assuming.",
+      },
+    ],
+    examples: [
+      {
+        label: "Every 15 minutes",
+        text: "",
+        settings: {
+          minute: "*/15",
+          hour: "*",
+          dayOfMonth: "*",
+          month: "*",
+          dayOfWeek: "*",
+          timezone: "utc",
+          commandLabel: "Health check",
+        },
       },
     ],
   },

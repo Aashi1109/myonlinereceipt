@@ -52,5 +52,17 @@ export default {
         a: "CSS shorthand starts at the top-left and goes clockwise. The fields are labelled so you never have to remember that.",
       },
     ],
+    examples: [
+      {
+        label: "Asymmetric card",
+        text: "",
+        settings: {
+          topLeft: 48,
+          topRight: 12,
+          bottomRight: 48,
+          bottomLeft: 12,
+        },
+      },
+    ],
   },
 } as const satisfies ToolSpec;

@@ -23,6 +23,7 @@ import {
   validatePdfSelection,
   MEDIA_LIMITS,
 } from "../../lib/tool-framework/media/validation.ts";
+import { zipOutputs } from "../../lib/tool-framework/media/zip.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -38,6 +39,8 @@ function rangeGroups(ranges: string): number[][] {
 }
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  const input = ctx.input.files?.[0];
+  if (!input) throw new ToolError("no-files", "Choose a PDF to split.");
   const selection = validatePdfSelection(
     ctx.input.files.map((file) => ({ size: file.data.byteLength })),
   );
@@ -45,7 +48,6 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   for (const file of ctx.input.files) validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
-  const input = ctx.input.files[0];
   const source = await loadPdf(input);
   const count = source.getPageCount();
   enforcePageLimit(input, count, false);
@@ -95,11 +97,18 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     );
   }
 
+  const files = ctx.settings.bundleAsZip
+    ? [
+        ...outputs,
+        await zipOutputs(outputs, createOutputFilename(input.name, "zip", "split")),
+      ]
+    : outputs;
+
   return {
     render: "files",
-    files: outputs,
+    files,
     inputBytes: input.data.byteLength,
-    outputBytes: outputs.reduce((sum, output) => sum + output.size, 0),
+    outputBytes: files.reduce((sum, output) => sum + output.size, 0),
   };
 };
 
