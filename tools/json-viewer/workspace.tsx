@@ -238,20 +238,30 @@ function JsonResultPlaceholder({
 function JsonResultPane({
   error,
   errorLocation,
+  onAddRootProperty,
   onGoToError,
+  onSearchMatchIndexChange,
+  onSearchQueryChange,
   onStatusChange,
   onViewChange,
   precisionWarning,
   running,
+  searchMatchIndex,
+  searchQuery,
   source,
   tree,
   view,
 }: Pick<WorkspaceProps, "error" | "running"> & {
   errorLocation: JsonErrorLocation | null;
+  onAddRootProperty?: () => void;
   onGoToError: () => void;
+  onSearchMatchIndexChange: (index: number) => void;
+  onSearchQueryChange: (query: string) => void;
   onStatusChange: (message: string, tone: JsonNoticeTone) => void;
   onViewChange: (view: "tree" | "formatted") => void;
   precisionWarning: boolean;
+  searchMatchIndex: number;
+  searchQuery: string;
   source: string;
   tree: JsonTreeResult;
   view: "tree" | "formatted";
@@ -264,12 +274,58 @@ function JsonResultPane({
       <div aria-disabled={!ready || undefined} className="h-full" inert={!ready}>
         <JsonResultRenderer
           artifactValue={output}
-          className="h-full [&_[role=tab]]:!border-b-0 [&_header>div:last-child]:pr-[72px] [&_header>div:last-child>button]:!text-muted-foreground [&_input]:!h-8 [&_input]:!pl-[30px] [&_input]:!text-[11px]"
-          compact
+          className="h-full [&_header>div:last-child>button]:!text-muted-foreground"
           defaultOpenDepth={1}
           downloadName="smarttools-json-viewer.json"
           formattedValue={output}
+          headerActions={(
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                aria-label="Download JSON result"
+                disabled={!ready}
+                onClick={() => {
+                  const url = URL.createObjectURL(
+                    new Blob([output], { type: "application/json;charset=utf-8" }),
+                  );
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "smarttools-json-viewer.json";
+                  link.click();
+                  URL.revokeObjectURL(url);
+                  onStatusChange("JSON downloaded.", "success");
+                }}
+                size="icon-xs"
+                title="Download JSON result"
+                type="button"
+                variant="ghost"
+              >
+                <Download aria-hidden="true" />
+              </Button>
+              <Button
+                aria-label="Copy JSON result"
+                disabled={!ready}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(output);
+                    onStatusChange("JSON result copied.", "success");
+                  } catch {
+                    onStatusChange(
+                      "Copy failed. Select the value and copy it manually.",
+                      "warning",
+                    );
+                  }
+                }}
+                size="icon-xs"
+                title="Copy JSON result"
+                type="button"
+                variant="ghost"
+              >
+                <Copy aria-hidden="true" />
+              </Button>
+            </div>
+          )}
           maxVisibleEntries={1_000}
+          onAddRootProperty={onAddRootProperty}
           onCopy={async (value, label) => {
             try {
               await navigator.clipboard.writeText(value);
@@ -281,8 +337,12 @@ function JsonResultPane({
               );
             }
           }}
+          onSearchMatchIndexChange={onSearchMatchIndexChange}
+          onSearchQueryChange={onSearchQueryChange}
           onViewChange={onViewChange}
           persistentSearch
+          searchMatchIndex={searchMatchIndex}
+          searchQuery={searchQuery}
           selectedPath={ROOT_JSON_TREE_PATH}
           showArtifactActions={false}
           showNodeCopyActions={ready && !precisionWarning}
@@ -298,50 +358,6 @@ function JsonResultPane({
           running={running}
         />
       ) : null}
-      <div className="absolute top-[7px] right-4 z-20 flex items-center gap-1">
-        <Button
-          aria-label="Download JSON result"
-          disabled={!ready}
-          onClick={() => {
-            const url = URL.createObjectURL(
-              new Blob([output], { type: "application/json;charset=utf-8" }),
-            );
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = "smarttools-json-viewer.json";
-            link.click();
-            URL.revokeObjectURL(url);
-            onStatusChange("JSON downloaded.", "success");
-          }}
-          size="icon-xs"
-          title="Download JSON result"
-          type="button"
-          variant="ghost"
-        >
-          <Download aria-hidden="true" />
-        </Button>
-        <Button
-          aria-label="Copy JSON result"
-          disabled={!ready}
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(output);
-              onStatusChange("JSON result copied.", "success");
-            } catch {
-              onStatusChange(
-                "Copy failed. Select the value and copy it manually.",
-                "warning",
-              );
-            }
-          }}
-          size="icon-xs"
-          title="Copy JSON result"
-          type="button"
-          variant="ghost"
-        >
-          <Copy aria-hidden="true" />
-        </Button>
-      </div>
     </div>
   );
 }
@@ -349,6 +365,8 @@ function JsonResultPane({
 export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const editorId = useId();
   const [resultView, setResultView] = useState<"tree" | "formatted">("tree");
+  const [resultSearchQuery, setResultSearchQuery] = useState("");
+  const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
   const [transformPreview, setTransformPreview] =
     useState<JsonTransformPreview>(null);
   const tree = useMemo<JsonTreeResult>(
@@ -368,6 +386,13 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   }, [props.error]);
   const displayedTree =
     transformPreview?.input === props.input.text ? transformPreview : tree;
+  const canAddRootProperty = Boolean(
+    displayedTree &&
+      displayedTree.value !== null &&
+      !Array.isArray(displayedTree.value) &&
+      typeof displayedTree.value === "object" &&
+      !precisionWarning,
+  );
 
   const goToError = useCallback(() => {
     if (!errorLocation) return;
@@ -403,6 +428,17 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     },
     [props.input.text, updateSource],
   );
+  const addRootProperty = useCallback(() => {
+    if (!canAddRootProperty || !displayedTree) return;
+    const root = displayedTree.value as Record<string, unknown>;
+    let key = "newProperty";
+    let suffix = 2;
+    while (key in root) key = `newProperty${suffix++}`;
+    applySource(
+      JSON.stringify({ ...root, [key]: null }, null, 2),
+      `Added “${key}”.`,
+    );
+  }, [applySource, canAddRootProperty, displayedTree]);
   const showTransformResult = useCallback(
     (text: string, value: unknown, status: string) => {
       setResultView("formatted");
@@ -641,11 +677,16 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
           <JsonResultPane
             error={props.error}
             errorLocation={errorLocation}
+            onAddRootProperty={canAddRootProperty ? addRootProperty : undefined}
             onGoToError={goToError}
+            onSearchMatchIndexChange={setResultSearchMatchIndex}
+            onSearchQueryChange={setResultSearchQuery}
             onStatusChange={showJsonNotice}
             onViewChange={setResultView}
             precisionWarning={precisionWarning}
             running={props.running}
+            searchMatchIndex={resultSearchMatchIndex}
+            searchQuery={resultSearchQuery}
             source={props.input.text}
             tree={displayedTree}
             view={resultView}

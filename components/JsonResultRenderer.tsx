@@ -13,13 +13,18 @@ import {
   Brackets,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   ChevronsDown,
   ChevronsUp,
   CircleSlash2,
   Copy,
+  GripVertical,
   Hash,
+  Link,
+  Plus,
   Search,
   ToggleRight,
+  Type,
   X,
 } from "lucide-react";
 
@@ -164,32 +169,69 @@ function visibleTreePaths(value: unknown, query: string, limit: number) {
   return { limit, paths, truncated: pending.length > 0 };
 }
 
+function matchingTreePaths(value: unknown, query: string) {
+  if (!query) return [];
+  const matches: JsonTreePath[] = [];
+  const pending: { path: JsonTreePath; value: unknown }[] = [
+    { path: ROOT_JSON_TREE_PATH, value },
+  ];
+
+  while (pending.length > 0) {
+    const current = pending.pop()!;
+    const label = current.path.length
+      ? String(current.path[current.path.length - 1])
+      : "root";
+    const scalar = current.value === null || typeof current.value !== "object";
+    if (
+      label.toLocaleLowerCase().includes(query) ||
+      (scalar && String(current.value).toLocaleLowerCase().includes(query))
+    ) {
+      matches.push(current.path);
+    }
+    if (!scalar) {
+      const entries = Array.isArray(current.value)
+        ? current.value.map((child, index) => [index, child] as const)
+        : Object.entries(current.value as Record<string, unknown>);
+      for (let index = entries.length - 1; index >= 0; index -= 1) {
+        const [key, child] = entries[index];
+        pending.push({ path: [...current.path, key], value: child });
+      }
+    }
+  }
+
+  return matches;
+}
+
 function JsonTreeNode({
+  currentSearchPath,
   depth = 0,
   defaultOpenDepth,
   expansion,
   isArrayItem = false,
   label,
   onCopy,
+  onAddRootProperty,
   onSelect,
   path = ROOT_JSON_TREE_PATH,
   query,
+  searchMatchPaths,
   selectedPath,
   showNodeCopyActions,
-  compact,
   value,
   visiblePaths,
 }: {
-  compact: boolean;
+  currentSearchPath?: JsonTreePath;
   defaultOpenDepth?: number;
   depth?: number;
   expansion: TreeExpansion;
   isArrayItem?: boolean;
   label: string;
+  onAddRootProperty?: () => void;
   onCopy: (value: string, label: string) => void;
   onSelect?: (selection: JsonTreeSelection) => void;
   path?: JsonTreePath;
   query: string;
+  searchMatchPaths?: ReadonlySet<string>;
   selectedPath?: JsonTreePath;
   showNodeCopyActions: boolean;
   value: unknown;
@@ -201,6 +243,21 @@ function JsonTreeNode({
         ? value.map((child, index) => [String(index), child] as const)
         : Object.entries(value)
       : null;
+  const nodeType = Array.isArray(value)
+    ? "array"
+    : value === null
+      ? "null"
+      : typeof value;
+  const typeBadgeClassName =
+    nodeType === "string"
+      ? "bg-success-soft text-syntax-string"
+      : nodeType === "number"
+        ? "bg-warning-soft text-warning"
+        : nodeType === "boolean"
+          ? "bg-accent text-primary"
+          : nodeType === "null"
+            ? "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+            : "bg-muted text-muted-foreground";
   const [open, setOpen] = useState(
     expansion.open ??
       (defaultOpenDepth === undefined
@@ -211,6 +268,10 @@ function JsonTreeNode({
   const displayedLabel = isRoot ? "" : label;
   const treeItemLabel = isRoot ? "root" : isArrayItem ? `[${label}]` : label;
   const isSelected = Boolean(selectedPath && pathsEqual(path, selectedPath));
+  const isSearchMatch = Boolean(searchMatchPaths?.has(pathKey(path)));
+  const isCurrentSearchMatch = Boolean(
+    currentSearchPath && pathsEqual(path, currentSearchPath),
+  );
   const copyLabel = isRoot ? "Root node" : `${label} node`;
   const descendantQuery =
     query && displayedLabel.toLocaleLowerCase().includes(query) ? "" : query;
@@ -222,6 +283,7 @@ function JsonTreeNode({
     );
   }) ?? null;
   const canExpand = Boolean(matchingEntries?.length);
+  const rowIndent = treeRowIndent(depth);
 
   useEffect(() => {
     if (expansion.open !== undefined) setOpen(expansion.open);
@@ -263,13 +325,16 @@ function JsonTreeNode({
     }
   }
 
-  const selectedClassName = isSelected
+  const selectedClassName = isSearchMatch
     ? "bg-accent"
     : "bg-transparent hover:bg-muted/60 focus-visible:bg-muted/60";
+  const currentSearchClassName = isCurrentSearchMatch
+    ? "border-l-[3px] border-primary"
+    : "";
   const copyButton = showNodeCopyActions ? (
     <Button
       aria-label={`Copy ${isRoot ? "root" : label} value`}
-      className="relative ml-2 shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+      className="relative ml-auto shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
         onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
@@ -284,37 +349,61 @@ function JsonTreeNode({
   ) : null;
 
   if (!entries) {
-    const type = value === null ? "null" : typeof value;
-    const displayedValue = type === "string" ? JSON.stringify(value) : String(value);
-    const TypeIcon = isArrayItem
+    const displayedValue = nodeType === "string" ? JSON.stringify(value) : String(value);
+    const ValueIcon = isArrayItem
       ? Brackets
-      : type === "boolean"
-        ? ToggleRight
-        : type === "null"
-          ? CircleSlash2
-          : Hash;
+      : nodeType === "string" && /(url|uri|href|link)/i.test(label)
+        ? Link
+        : nodeType === "string"
+          ? Type
+          : nodeType === "boolean"
+            ? ToggleRight
+            : nodeType === "null"
+              ? CircleSlash2
+              : Hash;
+    const iconClassName =
+      isArrayItem || nodeType === "string"
+        ? "text-syntax-string"
+        : nodeType === "number"
+          ? "text-warning"
+          : nodeType === "boolean"
+            ? "text-primary"
+            : "text-violet-700 dark:text-violet-400";
     return (
       <div
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex w-full min-w-max items-center gap-2 rounded-sm pr-1.5 font-mono text-xs leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "h-7" : "min-h-11"} ${treeRowIndent(depth)} ${selectedClassName}`}
+        className={`group flex h-7 w-full min-w-max items-center gap-[7px] rounded-sm pr-1.5 font-mono text-[11px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${rowIndent} ${selectedClassName} ${currentSearchClassName}`}
+        data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
         onKeyDown={handleKeyDown}
         role="treeitem"
         tabIndex={isRoot ? 0 : -1}
       >
-        <TypeIcon aria-hidden="true" className="size-3.5 shrink-0 text-muted-foreground" />
+        <GripVertical
+          aria-hidden="true"
+          className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
+        />
+        <ValueIcon
+          aria-hidden="true"
+          className={`size-3.5 shrink-0 ${iconClassName}`}
+        />
         {displayedLabel ? (
-          <span className="font-semibold text-foreground">{displayedLabel}</span>
+          <span className="font-[650] text-foreground">{displayedLabel}</span>
         ) : null}
         <span
+          className={`inline-flex shrink-0 items-center rounded-sm px-[5px] py-0.5 text-[8px] leading-none font-[650] ${typeBadgeClassName}`}
+        >
+          {nodeType.toUpperCase()}
+        </span>
+        <span
           className={
-            type === "string"
+            nodeType === "string"
               ? "text-syntax-string"
-              : type === "number"
+              : nodeType === "number"
                 ? "text-warning"
-                : type === "boolean"
+                : nodeType === "boolean"
                   ? "text-primary"
                   : "text-violet-700 dark:text-violet-400"
           }
@@ -326,56 +415,66 @@ function JsonTreeNode({
     );
   }
 
-  const typeLabel = Array.isArray(value)
+  const countLabel = Array.isArray(value)
     ? `[${entries.length} item${entries.length === 1 ? "" : "s"}]`
     : `{${entries.length} key${entries.length === 1 ? "" : "s"}}`;
 
   return (
-    <div className="w-full min-w-max font-mono text-xs leading-4 text-foreground">
+    <div className="w-full min-w-max font-mono text-[11px] leading-4 text-foreground">
       <div
         aria-expanded={canExpand ? open : undefined}
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex w-full min-w-max items-center gap-2 rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${compact ? "h-7" : "min-h-11"} ${treeRowIndent(depth)} ${selectedClassName}`}
+        className={`group flex h-7 w-full min-w-max items-center gap-[7px] rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${rowIndent} ${selectedClassName} ${currentSearchClassName}`}
+        data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
         onKeyDown={handleKeyDown}
         role="treeitem"
         tabIndex={isRoot ? 0 : -1}
       >
-        <Button
+        <GripVertical
+          aria-hidden="true"
+          className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
+        />
+        <button
           aria-expanded={open}
           aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
-          className="relative shrink-0 before:absolute before:inset-[-6px] before:content-[''] disabled:bg-transparent"
+          className="relative flex size-3.5 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground before:absolute before:-inset-[5px] before:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
           disabled={!canExpand}
           onClick={(event) => {
             event.stopPropagation();
             setOpen((current) => !current);
           }}
-          size="icon-xs"
           type="button"
-          variant="ghost"
         >
           {open ? (
-            <ChevronDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
+            <ChevronDown aria-hidden="true" className="size-3.5" />
           ) : (
-            <ChevronRight aria-hidden="true" className="size-3.5 text-muted-foreground" />
+            <ChevronRight aria-hidden="true" className="size-3.5" />
           )}
-        </Button>
-        {displayedLabel ? (
-          <span className="font-semibold text-foreground">{displayedLabel}</span>
-        ) : (
-          <span className="font-semibold">{Array.isArray(value) ? "array" : "object"}</span>
-        )}
-        <span className="text-muted-foreground">{typeLabel}</span>
+        </button>
+        <span className="font-[650] text-foreground">
+          {isRoot ? "root" : displayedLabel}
+        </span>
+        <span
+          className={`inline-flex shrink-0 items-center rounded-sm px-[5px] py-0.5 text-[8px] leading-none font-[650] ${typeBadgeClassName}`}
+        >
+          {nodeType.toUpperCase()}
+        </span>
+        <span className="text-muted-foreground">{countLabel}</span>
         {copyButton}
       </div>
-      {canExpand && open ? (
-        <div className="mt-[5px] flex w-full flex-col gap-[5px]" role="group">
+      {open && (canExpand || (isRoot && onAddRootProperty)) ? (
+        <div
+          className="mt-0.5 flex w-full flex-col gap-0.5"
+          role="group"
+        >
           {matchingEntries?.map(([key, child]) => {
             const childPath = [...path, Array.isArray(value) ? Number(key) : key] as const;
             return (
               <JsonTreeNode
+                currentSearchPath={currentSearchPath}
                 depth={depth + 1}
                 defaultOpenDepth={defaultOpenDepth}
                 expansion={expansion}
@@ -386,14 +485,24 @@ function JsonTreeNode({
                 onSelect={onSelect}
                 path={childPath}
                 query={descendantQuery}
+                searchMatchPaths={searchMatchPaths}
                 selectedPath={selectedPath}
                 showNodeCopyActions={showNodeCopyActions}
-                compact={compact}
                 value={child}
                 visiblePaths={visiblePaths}
               />
             );
           })}
+          {isRoot && onAddRootProperty ? (
+            <button
+              className="flex h-7 w-fit items-center gap-[7px] rounded-sm pr-1.5 pl-[26px] font-sans text-[11px] font-semibold text-primary hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              onClick={onAddRootProperty}
+              type="button"
+            >
+              <Plus aria-hidden="true" className="size-3.5" />
+              Add root property
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -403,16 +512,21 @@ function JsonTreeNode({
 export function JsonResultRenderer({
   artifactValue,
   className = "",
-  compact = false,
   defaultOpenDepth,
   downloadName = "smarttools-result.json",
   formattedValue,
+  headerActions,
   label = "JSON result",
   maxVisibleEntries,
+  onSearchMatchIndexChange,
+  onSearchQueryChange,
   onCopy,
+  onAddRootProperty,
   onSelect,
   onViewChange,
   persistentSearch = false,
+  searchMatchIndex: controlledSearchMatchIndex,
+  searchQuery: controlledSearchQuery,
   selectedPath,
   showArtifactActions = true,
   showNodeCopyActions = true,
@@ -421,16 +535,21 @@ export function JsonResultRenderer({
 }: {
   artifactValue?: string;
   className?: string;
-  compact?: boolean;
   defaultOpenDepth?: number;
   downloadName?: string;
   formattedValue?: string;
+  headerActions?: ReactNode;
   label?: string;
   maxVisibleEntries?: number;
+  onSearchMatchIndexChange?: (index: number) => void;
+  onSearchQueryChange?: (query: string) => void;
   onCopy?: (value: string, label: string) => void;
+  onAddRootProperty?: () => void;
   onSelect?: (selection: JsonTreeSelection) => void;
   onViewChange?: (view: JsonResultView) => void;
   persistentSearch?: boolean;
+  searchMatchIndex?: number;
+  searchQuery?: string;
   selectedPath?: JsonTreePath;
   showArtifactActions?: boolean;
   showNodeCopyActions?: boolean;
@@ -441,15 +560,55 @@ export function JsonResultRenderer({
   const [internalView, setInternalView] = useState<JsonResultView>("tree");
   const view = controlledView ?? internalView;
   const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
+  const [internalQuery, setInternalQuery] = useState("");
+  const [internalSearchMatchIndex, setInternalSearchMatchIndex] = useState(0);
+  const query = controlledSearchQuery ?? internalQuery;
+  const searchMatchIndex =
+    controlledSearchMatchIndex ?? internalSearchMatchIndex;
   const [expansion, setExpansion] = useState<TreeExpansion>({ version: 0 });
   const [internalSelectedPath, setInternalSelectedPath] = useState<JsonTreePath | undefined>(
     selectedPath,
   );
   const formatted = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
   const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
-  const artifact = artifactValue ?? formatted;
+  const formattedLines = useMemo(() => formatted.split(/\r\n|\r|\n/), [formatted]);
   const normalizedQuery = query.trim().toLocaleLowerCase();
+  const formattedMatches = useMemo(() => {
+    if (!normalizedQuery) return [];
+    const matches: number[] = [];
+    formattedLines.forEach((line, lineIndex) => {
+      const normalizedLine = line.toLocaleLowerCase();
+      let searchFrom = 0;
+      while (searchFrom < normalizedLine.length) {
+        const matchIndex = normalizedLine.indexOf(normalizedQuery, searchFrom);
+        if (matchIndex === -1) break;
+        matches.push(lineIndex);
+        searchFrom = matchIndex + normalizedQuery.length;
+      }
+    });
+    return matches;
+  }, [formattedLines, normalizedQuery]);
+  const treeMatches = useMemo(
+    () => matchingTreePaths(value, normalizedQuery),
+    [normalizedQuery, value],
+  );
+  const activeSearchCount =
+    view === "tree" ? treeMatches.length : formattedMatches.length;
+  const resolvedSearchMatchIndex = activeSearchCount
+    ? Math.min(searchMatchIndex, activeSearchCount - 1)
+    : 0;
+  const currentFormattedMatchLine =
+    formattedMatches[resolvedSearchMatchIndex];
+  const currentTreeSearchPath = treeMatches[resolvedSearchMatchIndex];
+  const formattedMatchLines = useMemo(
+    () => new Set(formattedMatches),
+    [formattedMatches],
+  );
+  const treeMatchPaths = useMemo(
+    () => new Set(treeMatches.map(pathKey)),
+    [treeMatches],
+  );
+  const artifact = artifactValue ?? formatted;
   const treeView = useMemo(
     () =>
       maxVisibleEntries === undefined
@@ -472,6 +631,18 @@ export function JsonResultRenderer({
     if (!onSelect && selectedPath !== undefined) setInternalSelectedPath(selectedPath);
   }, [onSelect, selectedPath, value]);
 
+  useEffect(() => {
+    if (!persistentSearch || !normalizedQuery) return;
+    const match = view === "formatted"
+      ? document.getElementById(
+          `${resultId}-formatted-line-${currentFormattedMatchLine}`,
+        )
+      : document.querySelector(
+          `#${resultId}-tree [data-json-search-current=true]`,
+        );
+    match?.scrollIntoView({ block: "nearest" });
+  }, [currentFormattedMatchLine, currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
+
   async function copyValue(copyValue: string, copyLabel: string) {
     if (onCopy) {
       onCopy(copyValue, copyLabel);
@@ -484,11 +655,24 @@ export function JsonResultRenderer({
     setExpansion(({ version }) => ({ version: version + 1, open }));
   }
 
+  function updateSearchQuery(nextQuery: string) {
+    if (controlledSearchQuery === undefined) setInternalQuery(nextQuery);
+    onSearchQueryChange?.(nextQuery);
+  }
+
+  function updateSearchMatchIndex(nextIndex: number) {
+    if (controlledSearchMatchIndex === undefined) {
+      setInternalSearchMatchIndex(nextIndex);
+    }
+    onSearchMatchIndexChange?.(nextIndex);
+  }
+
   function activateView(nextView: JsonResultView) {
     if (controlledView === undefined) setInternalView(nextView);
+    updateSearchMatchIndex(0);
     onViewChange?.(nextView);
-    if (nextView === "formatted") {
-      setQuery("");
+    if (!persistentSearch && nextView === "formatted") {
+      updateSearchQuery("");
       setSearchOpen(false);
     }
   }
@@ -510,20 +694,20 @@ export function JsonResultRenderer({
       className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-card ${className}`}
       data-testid="json-result-renderer"
     >
-      <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 min-[42.01rem]:h-[46px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
+      <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
         <Tabs
-          className="h-[46px] gap-0"
+          className="h-[46px] shrink-0 gap-0"
           onValueChange={(nextView) => activateView(nextView as JsonResultView)}
           value={view}
         >
           <TabsList
             aria-label="JSON result view"
-            className="h-[46px] gap-4 border-0"
+            className="h-[46px] gap-2 border-0"
           >
             {(["tree", "formatted"] as const).map((nextView) => (
               <TabsTrigger
                 aria-controls={`${resultId}-${nextView}`}
-                className="h-[46px] flex-none px-0 py-0 text-[0.8125rem] font-semibold leading-none capitalize after:hidden"
+                className="h-[46px] flex-none px-2 py-0 text-[0.8125rem] leading-none capitalize"
                 id={`${resultId}-${nextView}-tab`}
                 key={nextView}
                 value={nextView}
@@ -535,56 +719,98 @@ export function JsonResultRenderer({
         </Tabs>
 
         <div
-          className={`flex min-w-0 items-center gap-2 max-[42rem]:w-full ${
+          className={`flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 max-[42rem]:w-full ${
             view === "tree"
               ? "max-[42rem]:grid max-[42rem]:grid-cols-[minmax(0,1fr)_auto_auto]"
               : "max-[42rem]:justify-end"
           }`}
         >
-          {view === "tree" && (persistentSearch || searchOpen) ? (
+          {persistentSearch ? (
             <div
-              className={`relative flex min-w-0 items-center gap-1 ${
-                persistentSearch
-                  ? "w-[190px] shrink-0 max-[42rem]:w-auto max-[42rem]:flex-1 max-[42rem]:shrink"
-                  : "max-[42rem]:flex-1"
-              }`}
+              className={`flex min-w-0 shrink items-center gap-[7px] rounded-lg border border-border bg-muted px-[9px] focus-within:border-primary max-[42rem]:w-auto max-[42rem]:flex-1 ${normalizedQuery ? "h-[34px] w-[218px]" : "h-8 w-[190px]"}`}
+              data-testid="json-search-control"
             >
-              {persistentSearch ? (
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-[9px] z-10 size-3.5 text-muted-foreground"
-                />
-              ) : null}
+              <Search
+                aria-hidden="true"
+                className="size-3.5 shrink-0 text-muted-foreground"
+              />
               <Input
                 aria-label="Search JSON result"
                 autoFocus={!persistentSearch}
-                className={`${
-                  compact
-                    ? persistentSearch
-                      ? "h-11 w-full rounded-md border-border bg-muted pr-[9px] pl-[30px] !text-caption shadow-none"
-                      : "h-11 w-[210px] text-[11px]"
-                    : "h-11 w-44 text-xs"
-                } appearance-none font-sans max-[42rem]:w-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden`}
-                onChange={(event) => setQuery(event.target.value)}
+                className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent !p-0 font-sans !text-caption shadow-none focus-visible:ring-0 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                onChange={(event) => {
+                  updateSearchQuery(event.target.value);
+                  updateSearchMatchIndex(0);
+                }}
                 placeholder="Search keys or values"
                 type="search"
                 value={query}
               />
-              {!persistentSearch ? (
-                <Button
-                  aria-label="Close JSON search"
-                  className="size-11"
-                  onClick={() => {
-                    setQuery("");
-                    setSearchOpen(false);
-                  }}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                >
-                  <X aria-hidden="true" className="size-4" />
-                </Button>
+              {normalizedQuery ? (
+                <div className="ml-auto flex shrink-0 items-center gap-[7px]">
+                  <span
+                    aria-live="polite"
+                    className="shrink-0 font-mono text-[10px] text-foreground"
+                  >
+                    {`${activeSearchCount ? resolvedSearchMatchIndex + 1 : 0} / ${activeSearchCount}`}
+                  </span>
+                  <div className="flex shrink-0 items-center">
+                    <button
+                      aria-label="Previous JSON search match"
+                      className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                      disabled={activeSearchCount === 0}
+                      onClick={() =>
+                        updateSearchMatchIndex(
+                          (searchMatchIndex - 1 + activeSearchCount) % activeSearchCount,
+                        )
+                      }
+                      title="Previous match"
+                      type="button"
+                    >
+                      <ChevronUp aria-hidden="true" className="size-3.5" />
+                    </button>
+                    <button
+                      aria-label="Next JSON search match"
+                      className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                      disabled={activeSearchCount === 0}
+                      onClick={() =>
+                        updateSearchMatchIndex(
+                          (searchMatchIndex + 1) % activeSearchCount,
+                        )
+                      }
+                      title="Next match"
+                      type="button"
+                    >
+                      <ChevronDown aria-hidden="true" className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
               ) : null}
+            </div>
+          ) : view === "tree" && searchOpen ? (
+            <div className="relative flex min-w-0 items-center gap-1 max-[42rem]:flex-1">
+              <Input
+                aria-label="Search JSON result"
+                autoFocus
+                className="h-11 w-[210px] appearance-none font-sans text-[11px] max-[42rem]:w-full [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                onChange={(event) => updateSearchQuery(event.target.value)}
+                placeholder="Search keys or values"
+                type="search"
+                value={query}
+              />
+              <Button
+                aria-label="Close JSON search"
+                className="size-11"
+                onClick={() => {
+                  updateSearchQuery("");
+                  setSearchOpen(false);
+                }}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </Button>
             </div>
           ) : view === "tree" ? (
             <Button
@@ -623,6 +849,7 @@ export function JsonResultRenderer({
               </Button>
             </>
           ) : null}
+          {headerActions}
           {showArtifactActions ? (
             <>
               <Button
@@ -653,7 +880,7 @@ export function JsonResultRenderer({
       {view === "tree" ? (
         <div
           aria-labelledby={`${resultId}-tree-tab`}
-          className="min-h-0 flex-1 overflow-auto px-3.5 py-4"
+          className="min-h-0 flex-1 overflow-auto p-1.5"
           id={`${resultId}-tree`}
           role="tabpanel"
         >
@@ -664,13 +891,15 @@ export function JsonResultRenderer({
           ) : (
             <div aria-label="JSON tree" className="w-max min-w-full" role="tree">
               <JsonTreeNode
-                compact={compact}
+                currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
                 defaultOpenDepth={defaultOpenDepth}
                 expansion={expansion}
                 label="root"
+                onAddRootProperty={onAddRootProperty}
                 onCopy={copyValue}
                 onSelect={handleSelect}
                 query={normalizedQuery}
+                searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
                 selectedPath={resolvedSelectedPath}
                 showNodeCopyActions={showNodeCopyActions}
                 value={value}
@@ -694,7 +923,22 @@ export function JsonResultRenderer({
           tabIndex={0}
         >
           <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-4 text-foreground">
-            {highlightedFormatted}
+            {persistentSearch ? formattedLines.map((line, lineIndex) => {
+              const isMatch = formattedMatchLines.has(lineIndex);
+              const isCurrentMatch = currentFormattedMatchLine === lineIndex;
+              return (
+                <span
+                  className={`block min-w-0 rounded-sm ${
+                    isMatch ? "bg-accent" : ""
+                  } ${isCurrentMatch ? "border-l-[3px] border-primary pl-1" : ""}`}
+                  data-formatted-match={isMatch || undefined}
+                  id={`${resultId}-formatted-line-${lineIndex}`}
+                  key={lineIndex}
+                >
+                  {line ? highlightJson(line) : "\u00a0"}
+                </span>
+              );
+            }) : highlightedFormatted}
           </pre>
         </div>
       )}
