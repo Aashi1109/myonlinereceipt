@@ -2,13 +2,32 @@
 
 import {
   type KeyboardEvent,
+  type ReactElement,
   type ReactNode,
   useEffect,
   useId,
   useMemo,
   useState,
 } from "react";
-import { Button, Input, Tabs, TabsList, TabsTrigger } from "@smarttools/ui";
+import {
+  Button,
+  ButtonGroup,
+  Input,
+  Label,
+  OrderableList,
+  Popover as PopoverPrimitive,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Switch,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  type OrderableItemState,
+} from "@smarttools/ui";
 import {
   Brackets,
   ChevronDown,
@@ -16,17 +35,28 @@ import {
   ChevronUp,
   ChevronsDown,
   ChevronsUp,
+  Check,
+  CircleAlert,
+  CircleCheck,
   CircleSlash2,
   Copy,
+  CopyPlus,
   GripVertical,
   Hash,
   Link,
+  PencilLine,
   Plus,
+  Redo2,
+  Replace,
   Search,
   ToggleRight,
+  Trash2,
   Type,
+  Undo2,
   X,
 } from "lucide-react";
+
+import { SourceTextarea } from "@/components/WorkspaceInput";
 
 export type JsonTreePath = readonly (string | number)[];
 export type JsonTreeSelection = {
@@ -36,9 +66,46 @@ export type JsonTreeSelection = {
 };
 
 type TreeExpansion = { version: number; open?: boolean };
-type JsonResultView = "tree" | "formatted";
+type JsonEditMode = "form" | "tree";
+type JsonValueType = "string" | "number" | "boolean" | "null" | "object" | "array";
+
+const JSON_VALUE_TYPES: readonly JsonValueType[] = [
+  "string",
+  "number",
+  "boolean",
+  "null",
+  "object",
+  "array",
+];
+
+export type JsonResultView = "tree" | "formatted" | "code" | "form";
+export type JsonEditorController = {
+  canRedo: boolean;
+  canUndo: boolean;
+  code: string;
+  codeError: string | null;
+  onCodeChange: (code: string) => void;
+  onRedo: () => void;
+  onUndo: () => void;
+  onValueChange: (value: unknown) => void;
+};
 
 export const ROOT_JSON_TREE_PATH: JsonTreePath = [];
+
+function JsonTooltip({
+  children,
+  label,
+}: {
+  children: ReactElement;
+  label: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 const TREE_ROW_INDENT_CLASSES = [
   "pl-1.5",
@@ -70,6 +137,682 @@ function pathsEqual(left: JsonTreePath, right: JsonTreePath) {
 
 function pathKey(path: JsonTreePath) {
   return JSON.stringify(path);
+}
+
+function pathLabel(path: JsonTreePath) {
+  return path.length === 0
+    ? "root"
+    : path.map((segment) => typeof segment === "number" ? `[${segment}]` : segment).join(".").replaceAll(".[", "[");
+}
+
+function updateJsonAtPath(
+  value: unknown,
+  path: JsonTreePath,
+  update: (current: unknown) => unknown,
+): unknown {
+  if (path.length === 0) return update(value);
+  const [segment, ...rest] = path;
+  if (Array.isArray(value) && typeof segment === "number") {
+    const next = [...value];
+    next[segment] = updateJsonAtPath(next[segment], rest, update);
+    return next;
+  }
+  if (value !== null && typeof value === "object" && typeof segment === "string") {
+    return {
+      ...(value as Record<string, unknown>),
+      [segment]: updateJsonAtPath(
+        (value as Record<string, unknown>)[segment],
+        rest,
+        update,
+      ),
+    };
+  }
+  return value;
+}
+
+function uniqueJsonKey(value: Record<string, unknown>, base = "newProperty") {
+  if (!(base in value)) return base;
+  let suffix = 2;
+  while (`${base}${suffix}` in value) suffix += 1;
+  return `${base}${suffix}`;
+}
+
+function readJsonAtPath(value: unknown, path: JsonTreePath) {
+  let current = value;
+  for (const segment of path) {
+    if (Array.isArray(current) && typeof segment === "number") {
+      current = current[segment];
+    } else if (current !== null && typeof current === "object" && typeof segment === "string") {
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+function jsonValueType(value: unknown): JsonValueType {
+  if (Array.isArray(value)) return "array";
+  if (value === null) return "null";
+  if (typeof value === "string") return "string";
+  if (typeof value === "number") return "number";
+  if (typeof value === "boolean") return "boolean";
+  return "object";
+}
+
+function jsonValueFromDraft(type: JsonValueType, draft: string): unknown {
+  if (type === "string") return draft;
+  if (type === "number") {
+    const number = Number(draft);
+    return Number.isFinite(number) ? number : 0;
+  }
+  if (type === "boolean") return draft === "true";
+  if (type === "null") return null;
+  if (type === "array") return [];
+  return {};
+}
+
+function convertJsonValue(value: unknown, type: JsonValueType): unknown {
+  if (jsonValueType(value) === type) return value;
+  if (type === "string") {
+    return value !== null && typeof value === "object"
+      ? JSON.stringify(value)
+      : String(value ?? "");
+  }
+  if (type === "number") {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+  if (type === "boolean") {
+    if (typeof value === "string") return value.trim().toLocaleLowerCase() === "true";
+    return Boolean(value);
+  }
+  if (type === "null") return null;
+  if (type === "array") return [];
+  return {};
+}
+
+function insertJsonNode(
+  value: unknown,
+  parentPath: JsonTreePath,
+  child: unknown,
+  key: string,
+  index: number,
+) {
+  return updateJsonAtPath(value, parentPath, (parent) => {
+    if (Array.isArray(parent)) {
+      const next = [...parent];
+      next.splice(Math.max(0, Math.min(index, next.length)), 0, child);
+      return next;
+    }
+    if (parent !== null && typeof parent === "object") {
+      return { ...(parent as Record<string, unknown>), [key]: child };
+    }
+    return parent;
+  });
+}
+
+function JsonScalarEditor({
+  label,
+  onChange,
+  onErrorChange,
+  type,
+  value,
+}: {
+  label: string;
+  onChange: (value: unknown) => void;
+  onErrorChange: (error: string | null) => void;
+  type: string;
+  value: unknown;
+}) {
+  const [draft, setDraft] = useState(String(value ?? ""));
+
+  useEffect(() => setDraft(String(value ?? "")), [value]);
+
+  if (type === "boolean") {
+    return (
+      <Switch
+        aria-label={`Set ${label}`}
+        checked={Boolean(value)}
+        onCheckedChange={onChange}
+        size="xs"
+      />
+    );
+  }
+  if (type === "null") {
+    return <span className="text-violet-700 dark:text-violet-400">null</span>;
+  }
+
+  function commit() {
+    if (type === "number") {
+      const number = Number(draft);
+      if (!draft.trim() || !Number.isFinite(number)) return;
+      onChange(number);
+      return;
+    }
+    onChange(draft);
+  }
+
+  return (
+    <Input
+      aria-label={`Edit ${label}`}
+      aria-invalid={type === "number" && (!draft.trim() || !Number.isFinite(Number(draft)))}
+      className={`min-w-0 max-w-[300px] flex-1 rounded-sm bg-muted font-mono !text-[10px] shadow-none ${
+        type === "string" ? "text-syntax-string" : "text-warning"
+      }`}
+      inputMode={type === "number" ? "decimal" : undefined}
+      onBlur={commit}
+      onChange={(event) => {
+        const next = event.target.value;
+        setDraft(next);
+        onErrorChange(
+          type === "number" && (!next.trim() || !Number.isFinite(Number(next)))
+            ? "Enter a valid number."
+            : null,
+        );
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          commit();
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          setDraft(String(value ?? ""));
+          onErrorChange(null);
+          event.currentTarget.blur();
+        }
+      }}
+      size="xs"
+      value={draft}
+    />
+  );
+}
+
+function JsonNodeActionPopover({
+  action,
+  editor,
+  label,
+  path,
+  rootValue,
+  triggerText,
+  value,
+}: {
+  action: "add" | "change-type" | "edit-key";
+  editor: JsonEditorController;
+  label: string;
+  path: JsonTreePath;
+  rootValue: unknown;
+  triggerText?: string;
+  value: unknown;
+}) {
+  const id = useId().replaceAll(":", "");
+  const currentIsContainer = value !== null && typeof value === "object";
+  const parentPath = action === "add" && currentIsContainer
+    ? path
+    : path.slice(0, -1);
+  const parentValue = readJsonAtPath(rootValue, parentPath);
+  const parentItems = Array.isArray(parentValue) ? parentValue : null;
+  const arrayParent = parentItems !== null;
+  const objectParent = parentValue !== null && typeof parentValue === "object" && !arrayParent;
+  const siblingIndex = path.at(-1);
+  const defaultInsertIndex = arrayParent
+    ? currentIsContainer || typeof siblingIndex !== "number"
+      ? parentItems.length
+      : siblingIndex + 1
+    : 0;
+  const currentKey = typeof path.at(-1) === "string" ? path.at(-1) as string : label;
+  const defaultKey = action === "edit-key"
+    ? currentKey
+    : objectParent
+      ? uniqueJsonKey(parentValue as Record<string, unknown>)
+      : "";
+  const [open, setOpen] = useState(false);
+  const [nextType, setNextType] = useState<JsonValueType>(
+    action === "change-type" ? jsonValueType(value) : "string",
+  );
+  const [draft, setDraft] = useState("");
+  const [propertyKey, setPropertyKey] = useState(defaultKey);
+  const [insertIndex, setInsertIndex] = useState(defaultInsertIndex);
+  const keyIsBlank = !propertyKey.trim();
+  const keyError = (action === "add" || action === "edit-key") && objectParent
+    ? keyIsBlank
+      ? "Property key is required."
+      : Object.hasOwn(parentValue as Record<string, unknown>, propertyKey) &&
+          (action !== "edit-key" || propertyKey !== currentKey)
+        ? "That property already exists."
+        : null
+    : null;
+  const valueError = action === "add" && nextType === "number" &&
+    (!draft.trim() || !Number.isFinite(Number(draft)))
+    ? "Enter a valid number."
+    : null;
+  const sameType = action === "change-type" && nextType === jsonValueType(value);
+  const sameKey = action === "edit-key" && propertyKey === currentKey;
+  const ActionIcon = action === "add"
+    ? Plus
+    : action === "edit-key"
+      ? PencilLine
+      : Replace;
+  const addActionLabel = arrayParent ? "Add item" : "Add property";
+  const triggerLabel = action === "add"
+    ? addActionLabel
+    : action === "edit-key"
+      ? "Edit key"
+      : "Change type";
+  const heading = action === "add"
+    ? addActionLabel
+    : action === "edit-key"
+      ? "Edit object key"
+      : "Change value type";
+  const objectPath = `root.${pathLabel(path)}`;
+  const keyAvailable = action === "edit-key" && !keyError && !sameKey;
+
+  function resetFields() {
+    setNextType(action === "change-type" ? jsonValueType(value) : "string");
+    setDraft("");
+    setPropertyKey(action === "edit-key" ? currentKey : defaultKey);
+    setInsertIndex(defaultInsertIndex);
+  }
+
+  function confirm() {
+    if (action === "change-type") {
+      editor.onValueChange(
+        updateJsonAtPath(rootValue, path, (current) => convertJsonValue(current, nextType)),
+      );
+    } else if (action === "edit-key" && objectParent && !keyError && !sameKey) {
+      editor.onValueChange(renameJsonObjectKey(rootValue, path, propertyKey));
+    } else if (action === "add" && (arrayParent || objectParent) && !keyError && !valueError) {
+      editor.onValueChange(
+        insertJsonNode(
+          rootValue,
+          parentPath,
+          jsonValueFromDraft(nextType, draft),
+          propertyKey,
+          insertIndex,
+        ),
+      );
+    }
+    setOpen(false);
+  }
+
+  return (
+    <PopoverPrimitive.Root
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) resetFields();
+        setOpen(nextOpen);
+      }}
+      open={open}
+    >
+      <JsonTooltip label={triggerLabel}>
+        <PopoverPrimitive.Trigger asChild>
+          <button
+            aria-label={action === "add"
+              ? `Add near ${label}`
+              : action === "edit-key"
+                ? `Edit ${label} key`
+                : `Change ${label} type`}
+            className={triggerText
+              ? "flex h-7 w-fit items-center gap-[7px] rounded-sm pr-1.5 pl-[26px] font-sans text-[11px] font-semibold text-primary hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              : "flex size-6 items-center justify-center text-muted-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"}
+            onClick={(event) => event.stopPropagation()}
+            type="button"
+          >
+            <ActionIcon aria-hidden="true" className="size-3.5" />
+            {triggerText}
+          </button>
+        </PopoverPrimitive.Trigger>
+      </JsonTooltip>
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          align={triggerText ? "start" : "end"}
+          className="z-50 w-80 rounded-xl border border-border bg-card p-4 text-foreground shadow-lg outline-none"
+          onClick={(event) => event.stopPropagation()}
+          sideOffset={6}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <ActionIcon aria-hidden="true" className="size-3.5 shrink-0 text-primary" />
+              <p className="truncate text-[13px] font-semibold">
+                {heading}
+              </p>
+            </div>
+            <PopoverPrimitive.Close asChild>
+              <button
+                aria-label="Close"
+                className="flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                type="button"
+              >
+                <X aria-hidden="true" className="size-3.5" />
+              </button>
+            </PopoverPrimitive.Close>
+          </div>
+          <p className="mt-2 text-[10px] leading-[1.35] text-muted-foreground">
+            {action === "add"
+              ? `Add ${arrayParent ? "an item" : "a property"} to ${pathLabel(parentPath)} without changing the source input.`
+              : action === "edit-key"
+                ? `Rename ${objectPath} without changing its value, type, or position.`
+                : `Update ${pathLabel(path)} without changing its key or position.`}
+          </p>
+
+          <div className="mt-3 flex flex-col gap-2">
+            {action === "add" ? (
+              <>
+                <div className="grid gap-1">
+                  <Label className="text-[10px]" htmlFor={`${id}-parent`}>Parent path</Label>
+                  <Input
+                    className="font-mono"
+                    id={`${id}-parent`}
+                    readOnly
+                    size="xs"
+                    value={pathLabel(parentPath)}
+                  />
+                </div>
+                {arrayParent ? (
+                  <div className="grid gap-1">
+                    <Label className="text-[10px]" htmlFor={`${id}-position`}>Insert position</Label>
+                    <Select
+                      onValueChange={(next) => setInsertIndex(Number(next))}
+                      value={String(insertIndex)}
+                    >
+                      <SelectTrigger id={`${id}-position`} size="xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">At beginning</SelectItem>
+                        {parentItems.map((_, index) => (
+                          <SelectItem key={index} value={String(index + 1)}>
+                            After item {index}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="grid gap-1">
+                    <Label className={`text-[10px] ${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-key`}>Property key</Label>
+                    <Input
+                      aria-invalid={Boolean(keyError)}
+                      id={`${id}-key`}
+                      onChange={(event) => setPropertyKey(event.target.value)}
+                      size="xs"
+                      value={propertyKey}
+                    />
+                    {keyError ? <p className="text-[9px] text-destructive">{keyError}</p> : null}
+                  </div>
+                )}
+              </>
+            ) : action === "edit-key" ? (
+              <>
+                <div className="grid gap-1">
+                  <Label className="text-[10px]" htmlFor={`${id}-current-key`}>Current key</Label>
+                  <Input
+                    className="font-mono"
+                    id={`${id}-current-key`}
+                    readOnly
+                    size="xs"
+                    value={currentKey}
+                  />
+                  <p className="text-[9px] text-muted-foreground">Object path: {objectPath}</p>
+                </div>
+                <div className="grid gap-1">
+                  <Label className={`text-[10px] ${keyError ? "text-destructive" : ""}`} htmlFor={`${id}-new-key`}>New key</Label>
+                  <Input
+                    aria-invalid={Boolean(keyError)}
+                    autoFocus
+                    id={`${id}-new-key`}
+                    onChange={(event) => setPropertyKey(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && keyAvailable) {
+                        event.preventDefault();
+                        confirm();
+                      }
+                    }}
+                    size="xs"
+                    value={propertyKey}
+                  />
+                  <p className={`text-[9px] ${keyError ? "text-destructive" : "text-muted-foreground"}`}>
+                    {keyError ?? "Keys must be unique within this object."}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="grid gap-1">
+                <Label className="text-[10px]" htmlFor={`${id}-existing`}>Existing value</Label>
+                <Input
+                  className="font-mono"
+                  id={`${id}-existing`}
+                  readOnly
+                  size="xs"
+                  value={JSON.stringify(value) ?? String(value)}
+                />
+              </div>
+            )}
+
+            {action !== "edit-key" ? (
+              <div className="grid gap-1">
+                <Label className="text-[10px]" htmlFor={`${id}-type`}>
+                  {action === "add" ? "JSON type" : "New JSON type"}
+                </Label>
+                <Select
+                  onValueChange={(next) => setNextType(next as JsonValueType)}
+                  value={nextType}
+                >
+                  <SelectTrigger className="capitalize" id={`${id}-type`} size="xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {JSON_VALUE_TYPES.map((type) => (
+                      <SelectItem className="capitalize" key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {action === "add" && (nextType === "string" || nextType === "number") ? (
+              <div className="grid gap-1">
+                <Label className="text-[10px]" htmlFor={`${id}-value`}>Initial value</Label>
+                <Input
+                  aria-invalid={Boolean(valueError)}
+                  id={`${id}-value`}
+                  inputMode={nextType === "number" ? "decimal" : undefined}
+                  onChange={(event) => setDraft(event.target.value)}
+                  size="xs"
+                  value={draft}
+                />
+                {valueError ? <p className="text-[9px] text-destructive">{valueError}</p> : null}
+              </div>
+            ) : action === "add" && nextType === "boolean" ? (
+              <div className="grid gap-1">
+                <Label className="text-[10px]" htmlFor={`${id}-value`}>Initial value</Label>
+                <Select onValueChange={setDraft} value={draft || "false"}>
+                  <SelectTrigger id={`${id}-value`} size="xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="false">false</SelectItem>
+                    <SelectItem value="true">true</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {action === "change-type" ? (
+              <div className="flex gap-2 rounded-lg border border-border bg-muted/60 p-2.5 text-[10px] leading-[1.3] text-muted-foreground">
+                <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />
+                Compatible values convert automatically. Object and Array create an empty container.
+              </div>
+            ) : action === "edit-key" && keyAvailable ? (
+              <div className="flex gap-2 rounded-lg bg-success-soft p-2.5 text-[10px] leading-[1.3] text-foreground">
+                <CircleCheck aria-hidden="true" className="mt-px size-3.5 shrink-0 text-success" />
+                <div>
+                  <p className="font-semibold">Key is available</p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    The value and <span className="capitalize">{jsonValueType(value)}</span> type stay unchanged.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <PopoverPrimitive.Close asChild>
+              <Button size="xs" type="button" variant="outline">Cancel</Button>
+            </PopoverPrimitive.Close>
+            <Button
+              disabled={Boolean(keyError) || Boolean(valueError) || sameType || sameKey || (!arrayParent && !objectParent && action === "add")}
+              onClick={confirm}
+              size="xs"
+              type="button"
+            >
+              {action === "edit-key" ? <Check aria-hidden="true" /> : <ActionIcon aria-hidden="true" />}
+              {action === "add"
+                ? addActionLabel
+                : action === "edit-key"
+                  ? "Rename key"
+                  : "Change type"}
+            </Button>
+          </div>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
+  );
+}
+
+function JsonTreeActions({
+  editor,
+  label,
+  onDelete,
+  onDuplicate,
+  path,
+  rootValue,
+  value,
+}: {
+  editor: JsonEditorController;
+  label: string;
+  onDelete: () => void;
+  onDuplicate: () => void;
+  path: JsonTreePath;
+  rootValue: unknown;
+  value: unknown;
+}) {
+  return (
+    <div className="ml-auto flex shrink-0 items-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+      {typeof path.at(-1) === "string" ? (
+        <JsonNodeActionPopover
+          action="edit-key"
+          editor={editor}
+          label={label}
+          path={path}
+          rootValue={rootValue}
+          value={value}
+        />
+      ) : null}
+      <JsonNodeActionPopover
+        action="change-type"
+        editor={editor}
+        label={label}
+        path={path}
+        rootValue={rootValue}
+        value={value}
+      />
+      <JsonTooltip label="Duplicate">
+        <button
+          aria-label={`Duplicate ${label}`}
+          className="flex size-6 items-center justify-center text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDuplicate();
+          }}
+          type="button"
+        >
+          <CopyPlus aria-hidden="true" className="size-3.5" />
+        </button>
+      </JsonTooltip>
+      <JsonNodeActionPopover
+        action="add"
+        editor={editor}
+        label={label}
+        path={path}
+        rootValue={rootValue}
+        value={value}
+      />
+      <JsonTooltip label="Delete">
+        <button
+          aria-label={`Delete ${label}`}
+          className="flex size-6 items-center justify-center text-muted-foreground hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          type="button"
+        >
+          <Trash2 aria-hidden="true" className="size-3.5" />
+        </button>
+      </JsonTooltip>
+    </div>
+  );
+}
+
+function deleteJsonNode(value: unknown, path: JsonTreePath): unknown {
+  if (path.length === 0) return value;
+  const parentPath = path.slice(0, -1);
+  const segment = path[path.length - 1];
+  return updateJsonAtPath(value, parentPath, (parent) => {
+    if (Array.isArray(parent) && typeof segment === "number") {
+      return parent.filter((_, index) => index !== segment);
+    }
+    if (parent !== null && typeof parent === "object" && typeof segment === "string") {
+      return Object.fromEntries(
+        Object.entries(parent as Record<string, unknown>).filter(([key]) => key !== segment),
+      );
+    }
+    return parent;
+  });
+}
+
+function duplicateJsonNode(value: unknown, path: JsonTreePath): unknown {
+  if (path.length === 0) return value;
+  const parentPath = path.slice(0, -1);
+  const segment = path[path.length - 1];
+  return updateJsonAtPath(value, parentPath, (parent) => {
+    if (Array.isArray(parent) && typeof segment === "number") {
+      const next = [...parent];
+      next.splice(segment + 1, 0, structuredClone(parent[segment]));
+      return next;
+    }
+    if (parent !== null && typeof parent === "object" && typeof segment === "string") {
+      const object = parent as Record<string, unknown>;
+      const duplicateKey = uniqueJsonKey(object, `${segment}Copy`);
+      return Object.fromEntries(
+        Object.entries(object).flatMap(([key, child]) =>
+          key === segment
+            ? [[key, child], [duplicateKey, structuredClone(child)]]
+            : [[key, child]],
+        ),
+      );
+    }
+    return parent;
+  });
+}
+
+function renameJsonObjectKey(
+  value: unknown,
+  path: JsonTreePath,
+  nextKey: string,
+): unknown {
+  const currentKey = path.at(-1);
+  if (typeof currentKey !== "string") return value;
+  return updateJsonAtPath(value, path.slice(0, -1), (parent) => {
+    if (parent === null || typeof parent !== "object" || Array.isArray(parent)) {
+      return parent;
+    }
+    return Object.fromEntries(
+      Object.entries(parent).map(([key, child]) =>
+        key === currentKey ? [nextKey, child] : [key, child],
+      ),
+    );
+  });
 }
 
 const JSON_TOKEN_PATTERN =
@@ -202,10 +945,27 @@ function matchingTreePaths(value: unknown, query: string) {
   return matches;
 }
 
+function matchingTextOffsets(value: string, query: string) {
+  if (!query) return [];
+  const normalizedValue = value.toLocaleLowerCase();
+  const matches: number[] = [];
+  let searchFrom = 0;
+  while (searchFrom < normalizedValue.length) {
+    const match = normalizedValue.indexOf(query, searchFrom);
+    if (match === -1) break;
+    matches.push(match);
+    searchFrom = match + query.length;
+  }
+  return matches;
+}
+
 function JsonTreeNode({
   currentSearchPath,
   depth = 0,
   defaultOpenDepth,
+  dragState,
+  editMode,
+  editor,
   expansion,
   isArrayItem = false,
   label,
@@ -214,6 +974,8 @@ function JsonTreeNode({
   onSelect,
   path = ROOT_JSON_TREE_PATH,
   query,
+  reorderDisabled = false,
+  rootValue,
   searchMatchPaths,
   selectedPath,
   showNodeCopyActions,
@@ -223,6 +985,9 @@ function JsonTreeNode({
   currentSearchPath?: JsonTreePath;
   defaultOpenDepth?: number;
   depth?: number;
+  dragState?: OrderableItemState;
+  editMode?: JsonEditMode;
+  editor?: JsonEditorController;
   expansion: TreeExpansion;
   isArrayItem?: boolean;
   label: string;
@@ -231,6 +996,8 @@ function JsonTreeNode({
   onSelect?: (selection: JsonTreeSelection) => void;
   path?: JsonTreePath;
   query: string;
+  reorderDisabled?: boolean;
+  rootValue: unknown;
   searchMatchPaths?: ReadonlySet<string>;
   selectedPath?: JsonTreePath;
   showNodeCopyActions: boolean;
@@ -264,7 +1031,9 @@ function JsonTreeNode({
         ? depth === 0 || Array.isArray(value)
         : depth <= defaultOpenDepth),
   );
+  const [valueError, setValueError] = useState<string | null>(null);
   const isRoot = depth === 0;
+  const isEditing = Boolean(editMode && editor);
   const displayedLabel = isRoot ? "" : label;
   const treeItemLabel = isRoot ? "root" : isArrayItem ? `[${label}]` : label;
   const isSelected = Boolean(selectedPath && pathsEqual(path, selectedPath));
@@ -293,8 +1062,28 @@ function JsonTreeNode({
     if (query && canExpand) setOpen(true);
   }, [canExpand, query]);
 
+  useEffect(() => setValueError(null), [value]);
+
   function selectNode() {
     onSelect?.({ key: isRoot ? "root" : label, path, value });
+  }
+
+  function updateValue(nextValue: unknown) {
+    editor?.onValueChange(
+      updateJsonAtPath(rootValue, path, () => nextValue),
+    );
+  }
+
+  function duplicateNode() {
+    editor?.onValueChange(
+      duplicateJsonNode(rootValue, path),
+    );
+  }
+
+  function deleteNode() {
+    editor?.onValueChange(
+      deleteJsonNode(rootValue, path),
+    );
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -331,21 +1120,53 @@ function JsonTreeNode({
   const currentSearchClassName = isCurrentSearchMatch
     ? "border-l-[3px] border-primary"
     : "";
-  const copyButton = showNodeCopyActions ? (
-    <Button
-      aria-label={`Copy ${isRoot ? "root" : label} value`}
-      className="relative ml-auto shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
-      onClick={(event) => {
-        event.stopPropagation();
-        onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
-      }}
-      size="icon-xs"
-      title={`Copy ${isRoot ? "root" : label} value`}
-      type="button"
-      variant="ghost"
+  const keyText = isRoot ? (entries ? "root" : "") : displayedLabel;
+  const keyLabel = keyText ? (
+    <span
+      className={`${isEditing ? "min-w-0 max-w-[92px] shrink truncate" : ""} font-[650] ${valueError ? "text-destructive" : "text-foreground"}`}
     >
-      <Copy aria-hidden="true" className="size-3.5" />
-    </Button>
+      {keyText}
+    </span>
+  ) : null;
+  const keyControl = keyLabel && valueError ? (
+    <JsonTooltip label={valueError}>{keyLabel}</JsonTooltip>
+  ) : keyLabel;
+  const dragHandle = editMode === "tree" && dragState && !isRoot ? (
+    <button
+      {...dragState.attributes}
+      {...dragState.listeners}
+      aria-label={`Reorder ${treeItemLabel}`}
+      className="flex size-6 shrink-0 cursor-grab items-center justify-center text-input hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:cursor-grabbing"
+      disabled={dragState.disabled}
+      onClick={(event) => event.stopPropagation()}
+      ref={dragState.setActivatorNodeRef}
+      type="button"
+    >
+      <GripVertical aria-hidden="true" className="size-[13px]" />
+    </button>
+  ) : (
+    <GripVertical
+      aria-hidden="true"
+      className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
+    />
+  );
+  const copyButtonLabel = `Copy ${isRoot ? "root" : label} value`;
+  const copyButton = showNodeCopyActions ? (
+    <JsonTooltip label={copyButtonLabel}>
+      <Button
+        aria-label={copyButtonLabel}
+        className="relative ml-auto shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        onClick={(event) => {
+          event.stopPropagation();
+          onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
+        }}
+        size="icon-xs"
+        type="button"
+        variant="ghost"
+      >
+        <Copy aria-hidden="true" className="size-3.5" />
+      </Button>
+    </JsonTooltip>
   ) : null;
 
   if (!entries) {
@@ -373,7 +1194,7 @@ function JsonTreeNode({
       <div
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex h-7 w-full min-w-max items-center gap-[7px] rounded-sm pr-1.5 font-mono text-[11px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${rowIndent} ${selectedClassName} ${currentSearchClassName}`}
+        className={`group flex w-full items-center gap-[7px] rounded-sm pr-1.5 font-mono text-[11px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "h-9 min-w-0" : "h-7 min-w-max"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
         data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
@@ -381,36 +1202,51 @@ function JsonTreeNode({
         role="treeitem"
         tabIndex={isRoot ? 0 : -1}
       >
-        <GripVertical
-          aria-hidden="true"
-          className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
-        />
+        {dragHandle}
         <ValueIcon
           aria-hidden="true"
           className={`size-3.5 shrink-0 ${iconClassName}`}
         />
-        {displayedLabel ? (
-          <span className="font-[650] text-foreground">{displayedLabel}</span>
-        ) : null}
+        {keyControl}
         <span
           className={`inline-flex shrink-0 items-center rounded-sm px-[5px] py-0.5 text-[8px] leading-none font-[650] ${typeBadgeClassName}`}
         >
           {nodeType.toUpperCase()}
         </span>
-        <span
-          className={
-            nodeType === "string"
-              ? "text-syntax-string"
-              : nodeType === "number"
-                ? "text-warning"
-                : nodeType === "boolean"
-                  ? "text-primary"
-                  : "text-violet-700 dark:text-violet-400"
-          }
-        >
-          {displayedValue}
-        </span>
-        {copyButton}
+        {isEditing ? (
+          <JsonScalarEditor
+            label={treeItemLabel}
+            onChange={updateValue}
+            onErrorChange={setValueError}
+            type={nodeType}
+            value={value}
+          />
+        ) : (
+          <span
+            className={
+              nodeType === "string"
+                ? "text-syntax-string"
+                : nodeType === "number"
+                  ? "text-warning"
+                  : nodeType === "boolean"
+                    ? "text-primary"
+                    : "text-violet-700 dark:text-violet-400"
+            }
+          >
+            {displayedValue}
+          </span>
+        )}
+        {editMode === "tree" && editor && !isRoot ? (
+          <JsonTreeActions
+            editor={editor}
+            label={treeItemLabel}
+            onDelete={deleteNode}
+            onDuplicate={duplicateNode}
+            path={path}
+            rootValue={rootValue}
+            value={value}
+          />
+        ) : editMode === "form" ? null : copyButton}
       </div>
     );
   }
@@ -420,12 +1256,12 @@ function JsonTreeNode({
     : `{${entries.length} key${entries.length === 1 ? "" : "s"}}`;
 
   return (
-    <div className="w-full min-w-max font-mono text-[11px] leading-4 text-foreground">
+    <div className={`w-full font-mono text-[11px] leading-4 text-foreground ${isEditing ? "min-w-0" : "min-w-max"}`}>
       <div
         aria-expanded={canExpand ? open : undefined}
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex h-7 w-full min-w-max items-center gap-[7px] rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${rowIndent} ${selectedClassName} ${currentSearchClassName}`}
+        className={`group flex h-7 w-full items-center gap-[7px] rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "min-w-0" : "min-w-max"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
         data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
@@ -433,10 +1269,7 @@ function JsonTreeNode({
         role="treeitem"
         tabIndex={isRoot ? 0 : -1}
       >
-        <GripVertical
-          aria-hidden="true"
-          className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
-        />
+        {dragHandle}
         <button
           aria-expanded={open}
           aria-label={`${open ? "Collapse" : "Expand"} ${isRoot ? "root" : label}`}
@@ -454,46 +1287,118 @@ function JsonTreeNode({
             <ChevronRight aria-hidden="true" className="size-3.5" />
           )}
         </button>
-        <span className="font-[650] text-foreground">
-          {isRoot ? "root" : displayedLabel}
-        </span>
+        {keyControl}
         <span
           className={`inline-flex shrink-0 items-center rounded-sm px-[5px] py-0.5 text-[8px] leading-none font-[650] ${typeBadgeClassName}`}
         >
           {nodeType.toUpperCase()}
         </span>
         <span className="text-muted-foreground">{countLabel}</span>
-        {copyButton}
+        {editMode === "tree" && editor && !isRoot ? (
+          <JsonTreeActions
+            editor={editor}
+            label={treeItemLabel}
+            onDelete={deleteNode}
+            onDuplicate={duplicateNode}
+            path={path}
+            rootValue={rootValue}
+            value={value}
+          />
+        ) : editMode === "form" ? null : copyButton}
       </div>
-      {open && (canExpand || (isRoot && onAddRootProperty)) ? (
+      {open && (canExpand || (isRoot && (onAddRootProperty || editMode === "tree"))) ? (
         <div
           className="mt-0.5 flex w-full flex-col gap-0.5"
           role="group"
         >
-          {matchingEntries?.map(([key, child]) => {
-            const childPath = [...path, Array.isArray(value) ? Number(key) : key] as const;
-            return (
-              <JsonTreeNode
-                currentSearchPath={currentSearchPath}
-                depth={depth + 1}
-                defaultOpenDepth={defaultOpenDepth}
-                expansion={expansion}
-                isArrayItem={Array.isArray(value)}
-                key={pathKey(childPath)}
-                label={key}
-                onCopy={onCopy}
-                onSelect={onSelect}
-                path={childPath}
-                query={descendantQuery}
-                searchMatchPaths={searchMatchPaths}
-                selectedPath={selectedPath}
-                showNodeCopyActions={showNodeCopyActions}
-                value={child}
-                visiblePaths={visiblePaths}
-              />
-            );
-          })}
-          {isRoot && onAddRootProperty ? (
+          {editMode === "tree" && editor && matchingEntries ? (
+            <OrderableList
+              ariaLabel={`Items in ${treeItemLabel}`}
+              className="flex w-full min-w-0 flex-col gap-0.5"
+              disabled={reorderDisabled}
+              getId={([key]) => pathKey([
+                ...path,
+                Array.isArray(value) ? Number(key) : key,
+              ])}
+              getLabel={([key]) => Array.isArray(value) ? `item ${key}` : key}
+              items={matchingEntries}
+              onReorder={(orderedEntries) => {
+                const reorderedValue = Array.isArray(value)
+                  ? orderedEntries.map(([, child]) => child)
+                  : Object.fromEntries(orderedEntries);
+                editor.onValueChange(
+                  updateJsonAtPath(rootValue, path, () => reorderedValue),
+                );
+              }}
+              renderItem={([key, child], state) => {
+                const childPath = [
+                  ...path,
+                  Array.isArray(value) ? Number(key) : key,
+                ] as const;
+                return (
+                  <JsonTreeNode
+                    currentSearchPath={currentSearchPath}
+                    depth={depth + 1}
+                    defaultOpenDepth={defaultOpenDepth}
+                    dragState={state}
+                    editMode={editMode}
+                    editor={editor}
+                    expansion={expansion}
+                    isArrayItem={Array.isArray(value)}
+                    label={key}
+                    onCopy={onCopy}
+                    onSelect={onSelect}
+                    path={childPath}
+                    query={descendantQuery}
+                    reorderDisabled={reorderDisabled}
+                    rootValue={rootValue}
+                    searchMatchPaths={searchMatchPaths}
+                    selectedPath={selectedPath}
+                    showNodeCopyActions={showNodeCopyActions}
+                    value={child}
+                    visiblePaths={visiblePaths}
+                  />
+                );
+              }}
+            />
+          ) : matchingEntries?.map(([key, child]) => {
+              const childPath = [...path, Array.isArray(value) ? Number(key) : key] as const;
+              return (
+                <JsonTreeNode
+                  currentSearchPath={currentSearchPath}
+                  depth={depth + 1}
+                  defaultOpenDepth={defaultOpenDepth}
+                  editMode={editMode}
+                  editor={editor}
+                  expansion={expansion}
+                  isArrayItem={Array.isArray(value)}
+                  key={pathKey(childPath)}
+                  label={key}
+                  onCopy={onCopy}
+                  onSelect={onSelect}
+                  path={childPath}
+                  query={descendantQuery}
+                  reorderDisabled={reorderDisabled}
+                  rootValue={rootValue}
+                  searchMatchPaths={searchMatchPaths}
+                  selectedPath={selectedPath}
+                  showNodeCopyActions={showNodeCopyActions}
+                  value={child}
+                  visiblePaths={visiblePaths}
+                />
+              );
+            })}
+          {isRoot && editMode === "tree" && editor ? (
+            <JsonNodeActionPopover
+              action="add"
+              editor={editor}
+              label="root"
+              path={path}
+              rootValue={rootValue}
+              triggerText={Array.isArray(value) ? "Add root item" : "Add root property"}
+              value={value}
+            />
+          ) : isRoot && onAddRootProperty ? (
             <button
               className="flex h-7 w-fit items-center gap-[7px] rounded-sm pr-1.5 pl-[26px] font-sans text-[11px] font-semibold text-primary hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               onClick={onAddRootProperty}
@@ -514,6 +1419,7 @@ export function JsonResultRenderer({
   className = "",
   defaultOpenDepth,
   downloadName = "smarttools-result.json",
+  editor,
   formattedValue,
   headerActions,
   label = "JSON result",
@@ -537,6 +1443,7 @@ export function JsonResultRenderer({
   className?: string;
   defaultOpenDepth?: number;
   downloadName?: string;
+  editor?: JsonEditorController;
   formattedValue?: string;
   headerActions?: ReactNode;
   label?: string;
@@ -569,6 +1476,10 @@ export function JsonResultRenderer({
   const [internalSelectedPath, setInternalSelectedPath] = useState<JsonTreePath | undefined>(
     selectedPath,
   );
+  const views: readonly JsonResultView[] = editor
+    ? ["tree", "formatted", "code", "form"]
+    : ["tree", "formatted"];
+  const isStructuredView = view === "tree" || view === "form";
   const formatted = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
   const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
   const formattedLines = useMemo(() => formatted.split(/\r\n|\r|\n/), [formatted]);
@@ -592,14 +1503,22 @@ export function JsonResultRenderer({
     () => matchingTreePaths(value, normalizedQuery),
     [normalizedQuery, value],
   );
-  const activeSearchCount =
-    view === "tree" ? treeMatches.length : formattedMatches.length;
+  const codeMatches = useMemo(
+    () => matchingTextOffsets(editor?.code ?? "", normalizedQuery),
+    [editor?.code, normalizedQuery],
+  );
+  const activeSearchCount = view === "formatted"
+    ? formattedMatches.length
+    : view === "code"
+      ? codeMatches.length
+      : treeMatches.length;
   const resolvedSearchMatchIndex = activeSearchCount
     ? Math.min(searchMatchIndex, activeSearchCount - 1)
     : 0;
   const currentFormattedMatchLine =
     formattedMatches[resolvedSearchMatchIndex];
   const currentTreeSearchPath = treeMatches[resolvedSearchMatchIndex];
+  const currentCodeSearchOffset = codeMatches[resolvedSearchMatchIndex];
   const formattedMatchLines = useMemo(
     () => new Set(formattedMatches),
     [formattedMatches],
@@ -633,15 +1552,23 @@ export function JsonResultRenderer({
 
   useEffect(() => {
     if (!persistentSearch || !normalizedQuery) return;
+    if (view === "code") {
+      const input = document.getElementById(`${resultId}-code-editor`);
+      if (input instanceof HTMLTextAreaElement && currentCodeSearchOffset !== undefined) {
+        input.setSelectionRange(
+          currentCodeSearchOffset,
+          currentCodeSearchOffset + normalizedQuery.length,
+        );
+      }
+      return;
+    }
     const match = view === "formatted"
-      ? document.getElementById(
-          `${resultId}-formatted-line-${currentFormattedMatchLine}`,
-        )
+      ? document.getElementById(`${resultId}-formatted-line-${currentFormattedMatchLine}`)
       : document.querySelector(
-          `#${resultId}-tree [data-json-search-current=true]`,
+          `#${resultId}-${view} [data-json-search-current=true]`,
         );
     match?.scrollIntoView({ block: "nearest" });
-  }, [currentFormattedMatchLine, currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
+  }, [currentCodeSearchOffset, currentFormattedMatchLine, currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
 
   async function copyValue(copyValue: string, copyLabel: string) {
     if (onCopy) {
@@ -671,7 +1598,7 @@ export function JsonResultRenderer({
     if (controlledView === undefined) setInternalView(nextView);
     updateSearchMatchIndex(0);
     onViewChange?.(nextView);
-    if (!persistentSearch && nextView === "formatted") {
+    if (!persistentSearch && nextView !== "tree") {
       updateSearchQuery("");
       setSearchOpen(false);
     }
@@ -689,38 +1616,37 @@ export function JsonResultRenderer({
   }
 
   return (
-    <section
-      aria-label={label}
-      className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-card ${className}`}
-      data-testid="json-result-renderer"
-    >
+    <TooltipProvider>
+      <section
+        aria-label={label}
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-card ${className}`}
+        data-testid="json-result-renderer"
+      >
       <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
-        <Tabs
-          className="h-[46px] shrink-0 gap-0"
+        <Select
           onValueChange={(nextView) => activateView(nextView as JsonResultView)}
           value={view}
         >
-          <TabsList
+          <SelectTrigger
             aria-label="JSON result view"
-            className="h-[46px] gap-2 border-0"
+            className="w-[132px] shrink-0 capitalize"
+            id={`${resultId}-view-select`}
+            size="xs"
           >
-            {(["tree", "formatted"] as const).map((nextView) => (
-              <TabsTrigger
-                aria-controls={`${resultId}-${nextView}`}
-                className="h-[46px] flex-none px-2 py-0 text-[0.8125rem] leading-none capitalize"
-                id={`${resultId}-${nextView}-tab`}
-                key={nextView}
-                value={nextView}
-              >
-                {nextView}
-              </TabsTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {views.map((nextView) => (
+              <SelectItem className="capitalize" key={nextView} value={nextView}>
+                {nextView === "formatted" ? "Text" : nextView}
+              </SelectItem>
             ))}
-          </TabsList>
-        </Tabs>
+          </SelectContent>
+        </Select>
 
         <div
           className={`flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 max-[42rem]:w-full ${
-            view === "tree"
+            isStructuredView
               ? "max-[42rem]:grid max-[42rem]:grid-cols-[minmax(0,1fr)_auto_auto]"
               : "max-[42rem]:justify-end"
           }`}
@@ -755,39 +1681,41 @@ export function JsonResultRenderer({
                     {`${activeSearchCount ? resolvedSearchMatchIndex + 1 : 0} / ${activeSearchCount}`}
                   </span>
                   <div className="flex shrink-0 items-center">
-                    <button
-                      aria-label="Previous JSON search match"
-                      className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
-                      disabled={activeSearchCount === 0}
-                      onClick={() =>
-                        updateSearchMatchIndex(
-                          (searchMatchIndex - 1 + activeSearchCount) % activeSearchCount,
-                        )
-                      }
-                      title="Previous match"
-                      type="button"
-                    >
-                      <ChevronUp aria-hidden="true" className="size-3.5" />
-                    </button>
-                    <button
-                      aria-label="Next JSON search match"
-                      className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
-                      disabled={activeSearchCount === 0}
-                      onClick={() =>
-                        updateSearchMatchIndex(
-                          (searchMatchIndex + 1) % activeSearchCount,
-                        )
-                      }
-                      title="Next match"
-                      type="button"
-                    >
-                      <ChevronDown aria-hidden="true" className="size-3.5" />
-                    </button>
+                    <JsonTooltip label="Previous match">
+                      <button
+                        aria-label="Previous JSON search match"
+                        className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                        disabled={activeSearchCount === 0}
+                        onClick={() =>
+                          updateSearchMatchIndex(
+                            (searchMatchIndex - 1 + activeSearchCount) % activeSearchCount,
+                          )
+                        }
+                        type="button"
+                      >
+                        <ChevronUp aria-hidden="true" className="size-3.5" />
+                      </button>
+                    </JsonTooltip>
+                    <JsonTooltip label="Next match">
+                      <button
+                        aria-label="Next JSON search match"
+                        className="flex size-6 shrink-0 items-center justify-center p-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-40"
+                        disabled={activeSearchCount === 0}
+                        onClick={() =>
+                          updateSearchMatchIndex(
+                            (searchMatchIndex + 1) % activeSearchCount,
+                          )
+                        }
+                        type="button"
+                      >
+                        <ChevronDown aria-hidden="true" className="size-3.5" />
+                      </button>
+                    </JsonTooltip>
                   </div>
                 </div>
               ) : null}
             </div>
-          ) : view === "tree" && searchOpen ? (
+          ) : isStructuredView && searchOpen ? (
             <div className="relative flex min-w-0 items-center gap-1 max-[42rem]:flex-1">
               <Input
                 aria-label="Search JSON result"
@@ -812,57 +1740,89 @@ export function JsonResultRenderer({
                 <X aria-hidden="true" className="size-4" />
               </Button>
             </div>
-          ) : view === "tree" ? (
-            <Button
-              aria-label="Search JSON result"
-              className="size-11 shrink-0"
-              onClick={() => setSearchOpen(true)}
-              size="icon"
-              title="Search JSON result"
-              type="button"
-              variant="ghost"
-            >
-              <Search aria-hidden="true" className="size-4" />
-            </Button>
+          ) : isStructuredView ? (
+            <JsonTooltip label="Search JSON result">
+              <Button
+                aria-label="Search JSON result"
+                className="size-11 shrink-0"
+                onClick={() => setSearchOpen(true)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <Search aria-hidden="true" className="size-4" />
+              </Button>
+            </JsonTooltip>
           ) : null}
-          {view === "tree" ? (
-            <>
-              <Button
-                className="h-8 gap-[5px] px-0 text-[11px] font-medium text-muted-foreground"
-                onClick={() => setAll(true)}
-                size="xs"
-                type="button"
-                variant="ghost"
-              >
-                <ChevronsDown aria-hidden="true" />
-                Expand all
-              </Button>
-              <Button
-                className="h-8 gap-[5px] px-0 text-[11px] font-medium text-muted-foreground"
-                onClick={() => setAll(false)}
-                size="xs"
-                type="button"
-                variant="ghost"
-              >
-                <ChevronsUp aria-hidden="true" />
-                Collapse all
-              </Button>
-            </>
+          {isStructuredView ? (
+            <ButtonGroup aria-label="Tree expansion controls" className="shrink-0">
+              <JsonTooltip label="Expand all">
+                <Button
+                  aria-label="Expand all JSON nodes"
+                  onClick={() => setAll(true)}
+                  size="icon-xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <ChevronsDown aria-hidden="true" />
+                </Button>
+              </JsonTooltip>
+              <JsonTooltip label="Collapse all">
+                <Button
+                  aria-label="Collapse all JSON nodes"
+                  onClick={() => setAll(false)}
+                  size="icon-xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <ChevronsUp aria-hidden="true" />
+                </Button>
+              </JsonTooltip>
+            </ButtonGroup>
+          ) : null}
+          {editor ? (
+            <ButtonGroup aria-label="JSON edit history" className="shrink-0">
+              <JsonTooltip label="Undo">
+                <Button
+                  aria-label="Undo JSON edit"
+                  disabled={!editor.canUndo}
+                  onClick={editor.onUndo}
+                  size="icon-xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <Undo2 aria-hidden="true" />
+                </Button>
+              </JsonTooltip>
+              <JsonTooltip label="Redo">
+                <Button
+                  aria-label="Redo JSON edit"
+                  disabled={!editor.canRedo}
+                  onClick={editor.onRedo}
+                  size="icon-xs"
+                  type="button"
+                  variant="outline"
+                >
+                  <Redo2 aria-hidden="true" />
+                </Button>
+              </JsonTooltip>
+            </ButtonGroup>
           ) : null}
           {headerActions}
           {showArtifactActions ? (
             <>
-              <Button
-                aria-label="Copy JSON result"
-                className="size-11 shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
-                onClick={() => void copyValue(artifact, "JSON result")}
-                size="icon"
-                title="Copy JSON result"
-                type="button"
-                variant="ghost"
-              >
-                <Copy aria-hidden="true" className="size-4" />
-              </Button>
+              <JsonTooltip label="Copy JSON result">
+                <Button
+                  aria-label="Copy JSON result"
+                  className="size-11 shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
+                  onClick={() => void copyValue(artifact, "JSON result")}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Copy aria-hidden="true" className="size-4" />
+                </Button>
+              </JsonTooltip>
               <Button
                 className="min-h-11 px-1 text-primary max-[42rem]:col-start-3 max-[42rem]:row-start-2"
                 onClick={downloadValue}
@@ -877,9 +1837,55 @@ export function JsonResultRenderer({
         </div>
       </header>
 
-      {view === "tree" ? (
+      {isStructuredView && editor ? (
         <div
-          aria-labelledby={`${resultId}-tree-tab`}
+          aria-labelledby={`${resultId}-view-select`}
+          className="flex min-h-0 flex-1 flex-col"
+          id={`${resultId}-${view}`}
+          role="tabpanel"
+        >
+          <div className="min-h-0 flex-1 overflow-auto p-1.5">
+            {normalizedQuery && !nodeMatches("root", value, normalizedQuery) ? (
+              <p className="p-4 text-center text-sm text-muted-foreground" role="status">
+                No keys or values match “{query}”.
+              </p>
+            ) : (
+              <div
+                aria-label={view === "form" ? "JSON value editor" : "JSON tree editor"}
+                className="w-full min-w-0"
+                role="tree"
+              >
+                <JsonTreeNode
+                  currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
+                  defaultOpenDepth={defaultOpenDepth}
+                  editMode={view}
+                  editor={editor}
+                  expansion={expansion}
+                  label="root"
+                  onCopy={copyValue}
+                  onSelect={handleSelect}
+                  query={normalizedQuery}
+                  reorderDisabled={Boolean(normalizedQuery || treeView?.truncated)}
+                  rootValue={value}
+                  searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
+                  selectedPath={resolvedSelectedPath}
+                  showNodeCopyActions={false}
+                  value={value}
+                  visiblePaths={treeView?.paths}
+                />
+                {treeView?.truncated ? (
+                  <p className="px-2 py-3 text-xs text-muted-foreground" role="status">
+                    Showing the first {treeView.limit.toLocaleString()} nodes.
+                    Search to narrow the tree.
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : view === "tree" ? (
+        <div
+          aria-labelledby={`${resultId}-view-select`}
           className="min-h-0 flex-1 overflow-auto p-1.5"
           id={`${resultId}-tree`}
           role="tabpanel"
@@ -899,6 +1905,7 @@ export function JsonResultRenderer({
                 onCopy={copyValue}
                 onSelect={handleSelect}
                 query={normalizedQuery}
+                rootValue={value}
                 searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
                 selectedPath={resolvedSelectedPath}
                 showNodeCopyActions={showNodeCopyActions}
@@ -914,9 +1921,9 @@ export function JsonResultRenderer({
             </div>
           )}
         </div>
-      ) : (
+      ) : view === "formatted" ? (
         <div
-          aria-labelledby={`${resultId}-formatted-tab`}
+          aria-labelledby={`${resultId}-view-select`}
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4"
           id={`${resultId}-formatted`}
           role="tabpanel"
@@ -941,7 +1948,38 @@ export function JsonResultRenderer({
             }) : highlightedFormatted}
           </pre>
         </div>
-      )}
-    </section>
+      ) : view === "code" && editor ? (
+        <div
+          aria-labelledby={`${resultId}-view-select`}
+          className="flex min-h-0 flex-1 flex-col"
+          id={`${resultId}-code`}
+          role="tabpanel"
+        >
+          <div className={`relative min-h-0 flex-1 overflow-hidden ${editor.codeError ? "ring-1 ring-inset ring-destructive" : ""}`}>
+            <SourceTextarea
+              aria-describedby={editor.codeError ? `${resultId}-code-error` : undefined}
+              aria-invalid={Boolean(editor.codeError)}
+              className="h-full min-h-0"
+              gutter
+              highlightedValue={highlightJson(editor.code)}
+              id={`${resultId}-code-editor`}
+              onChange={editor.onCodeChange}
+              value={editor.code}
+              wrap="soft"
+            />
+            {editor.codeError ? (
+              <p
+                className="pointer-events-none absolute right-3 bottom-2 max-w-[min(80%,28rem)] truncate rounded-sm bg-card px-2 py-1 text-[10px] text-destructive shadow-sm"
+                id={`${resultId}-code-error`}
+                role="alert"
+              >
+                {editor.codeError}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      </section>
+    </TooltipProvider>
   );
 }

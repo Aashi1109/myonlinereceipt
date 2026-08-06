@@ -49,6 +49,12 @@ export {
 export { Badge, badgeVariants } from "./components/badge.tsx";
 export { Button, buttonVariants } from "./components/button.tsx";
 export {
+  ButtonGroup,
+  ButtonGroupSeparator,
+  ButtonGroupText,
+  buttonGroupVariants,
+} from "./components/button-group.tsx";
+export {
   Card,
   CardAction,
   CardContent,
@@ -93,6 +99,7 @@ export {
 export { Input, inputVariants } from "./components/input.tsx";
 export type { InputProps } from "./components/input.tsx";
 export { Label } from "./components/label.tsx";
+export { Popover } from "radix-ui";
 export {
   Select,
   SelectContent,

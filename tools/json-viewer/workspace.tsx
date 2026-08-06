@@ -9,6 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
   Toaster,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
   toast,
 } from "@smarttools/ui";
 import {
@@ -31,7 +34,9 @@ import {
 
 import {
   highlightJson,
+  type JsonEditorController,
   JsonResultRenderer,
+  type JsonResultView,
   ROOT_JSON_TREE_PATH,
 } from "@/components/JsonResultRenderer";
 import { SplitStack } from "@/components/Stacks";
@@ -50,8 +55,18 @@ type JsonTransformPreview = {
   text: string;
   value: unknown;
 } | null;
+type JsonViewerSnapshot = { code: string; value: unknown };
+type JsonViewerDraft = JsonViewerSnapshot & {
+  codeError: string | null;
+  future: JsonViewerSnapshot[];
+  past: JsonViewerSnapshot[];
+};
 type JsonNoticeTone = "info" | "success" | "warning";
 type JsonErrorLocation = { column: number; line: number };
+
+function prettyJson(value: unknown) {
+  return JSON.stringify(value, null, 2) ?? "null";
+}
 
 function showJsonNotice(
   message: string,
@@ -236,9 +251,10 @@ function JsonResultPlaceholder({
 }
 
 function JsonResultPane({
+  editor,
   error,
   errorLocation,
-  onAddRootProperty,
+  formattedValue,
   onGoToError,
   onSearchMatchIndexChange,
   onSearchQueryChange,
@@ -252,19 +268,20 @@ function JsonResultPane({
   tree,
   view,
 }: Pick<WorkspaceProps, "error" | "running"> & {
+  editor: JsonEditorController;
   errorLocation: JsonErrorLocation | null;
-  onAddRootProperty?: () => void;
+  formattedValue: string;
   onGoToError: () => void;
   onSearchMatchIndexChange: (index: number) => void;
   onSearchQueryChange: (query: string) => void;
   onStatusChange: (message: string, tone: JsonNoticeTone) => void;
-  onViewChange: (view: "tree" | "formatted") => void;
+  onViewChange: (view: JsonResultView) => void;
   precisionWarning: boolean;
   searchMatchIndex: number;
   searchQuery: string;
   source: string;
   tree: JsonTreeResult;
-  view: "tree" | "formatted";
+  view: JsonResultView;
 }) {
   const ready = !running && tree !== null;
   const output = tree?.text ?? source;
@@ -277,55 +294,63 @@ function JsonResultPane({
           className="h-full [&_header>div:last-child>button]:!text-muted-foreground"
           defaultOpenDepth={1}
           downloadName="smarttools-json-viewer.json"
-          formattedValue={output}
+          editor={editor}
+          formattedValue={formattedValue}
           headerActions={(
             <div className="flex shrink-0 items-center gap-1">
-              <Button
-                aria-label="Download JSON result"
-                disabled={!ready}
-                onClick={() => {
-                  const url = URL.createObjectURL(
-                    new Blob([output], { type: "application/json;charset=utf-8" }),
-                  );
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = "smarttools-json-viewer.json";
-                  link.click();
-                  URL.revokeObjectURL(url);
-                  onStatusChange("JSON downloaded.", "success");
-                }}
-                size="icon-xs"
-                title="Download JSON result"
-                type="button"
-                variant="ghost"
-              >
-                <Download aria-hidden="true" />
-              </Button>
-              <Button
-                aria-label="Copy JSON result"
-                disabled={!ready}
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(output);
-                    onStatusChange("JSON result copied.", "success");
-                  } catch {
-                    onStatusChange(
-                      "Copy failed. Select the value and copy it manually.",
-                      "warning",
-                    );
-                  }
-                }}
-                size="icon-xs"
-                title="Copy JSON result"
-                type="button"
-                variant="ghost"
-              >
-                <Copy aria-hidden="true" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="Download JSON result"
+                    disabled={!ready}
+                    onClick={() => {
+                      const url = URL.createObjectURL(
+                        new Blob([output], { type: "application/json;charset=utf-8" }),
+                      );
+                      const link = document.createElement("a");
+                      link.href = url;
+                      link.download = "smarttools-json-viewer.json";
+                      link.click();
+                      URL.revokeObjectURL(url);
+                      onStatusChange("JSON downloaded.", "success");
+                    }}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Download aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download JSON result</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    aria-label="Copy JSON result"
+                    disabled={!ready}
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(output);
+                        onStatusChange("JSON result copied.", "success");
+                      } catch {
+                        onStatusChange(
+                          "Copy failed. Select the value and copy it manually.",
+                          "warning",
+                        );
+                      }
+                    }}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Copy aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Copy JSON result</TooltipContent>
+              </Tooltip>
             </div>
           )}
           maxVisibleEntries={1_000}
-          onAddRootProperty={onAddRootProperty}
           onCopy={async (value, label) => {
             try {
               await navigator.clipboard.writeText(value);
@@ -364,11 +389,12 @@ function JsonResultPane({
 
 export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const editorId = useId();
-  const [resultView, setResultView] = useState<"tree" | "formatted">("tree");
+  const [resultView, setResultView] = useState<JsonResultView>("tree");
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
   const [transformPreview, setTransformPreview] =
     useState<JsonTransformPreview>(null);
+  const [viewerDraft, setViewerDraft] = useState<JsonViewerDraft | null>(null);
   const tree = useMemo<JsonTreeResult>(
     () =>
       props.result?.render === "json-tree" && typeof props.result.text === "string"
@@ -386,13 +412,19 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   }, [props.error]);
   const displayedTree =
     transformPreview?.input === props.input.text ? transformPreview : tree;
-  const canAddRootProperty = Boolean(
-    displayedTree &&
-      displayedTree.value !== null &&
-      !Array.isArray(displayedTree.value) &&
-      typeof displayedTree.value === "object" &&
-      !precisionWarning,
-  );
+  const workingOutput = viewerDraft
+    ? viewerDraft.codeError
+      ? prettyJson(viewerDraft.value)
+      : viewerDraft.code
+    : displayedTree?.text ?? props.input.text;
+  const workingTree = viewerDraft
+    ? { text: workingOutput, value: viewerDraft.value }
+    : null;
+  const formattedViewerValue = viewerDraft
+    ? prettyJson(viewerDraft.value)
+    : displayedTree
+      ? prettyJson(displayedTree.value)
+      : props.input.text;
 
   const goToError = useCallback(() => {
     if (!errorLocation) return;
@@ -428,21 +460,104 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     },
     [props.input.text, updateSource],
   );
-  const addRootProperty = useCallback(() => {
-    if (!canAddRootProperty || !displayedTree) return;
-    const root = displayedTree.value as Record<string, unknown>;
-    let key = "newProperty";
-    let suffix = 2;
-    while (key in root) key = `newProperty${suffix++}`;
-    applySource(
-      JSON.stringify({ ...root, [key]: null }, null, 2),
-      `Added “${key}”.`,
-    );
-  }, [applySource, canAddRootProperty, displayedTree]);
+  const editorController = useMemo<JsonEditorController>(() => ({
+    canRedo: Boolean(viewerDraft?.future.length),
+    canUndo: Boolean(viewerDraft?.past.length),
+    code: viewerDraft?.code ?? "",
+    codeError: viewerDraft?.codeError ?? null,
+    onCodeChange: (code) => {
+      setViewerDraft((current) => {
+        if (!current) return current;
+        const previous = { code: current.code, value: current.value };
+        try {
+          return {
+            ...current,
+            code,
+            codeError: null,
+            future: [],
+            past: current.codeError ? current.past : [...current.past, previous],
+            value: JSON.parse(code) as unknown,
+          };
+        } catch (error) {
+          return {
+            ...current,
+            code,
+            codeError: error instanceof Error ? error.message : "Invalid JSON.",
+            future: [],
+            past: current.codeError ? current.past : [...current.past, previous],
+          };
+        }
+      });
+    },
+    onRedo: () => {
+      setViewerDraft((current) => {
+        if (!current || current.future.length === 0) return current;
+        const next = current.future[current.future.length - 1];
+        return {
+          ...current,
+          ...next,
+          codeError: null,
+          future: current.future.slice(0, -1),
+          past: [...current.past, { code: current.code, value: current.value }],
+        };
+      });
+    },
+    onUndo: () => {
+      setViewerDraft((current) => {
+        if (!current || current.past.length === 0) return current;
+        const previous = current.past[current.past.length - 1];
+        return {
+          ...current,
+          ...previous,
+          codeError: null,
+          future: [...current.future, { code: current.code, value: current.value }],
+          past: current.past.slice(0, -1),
+        };
+      });
+    },
+    onValueChange: (value) => {
+      setViewerDraft((current) => {
+        if (!current) return current;
+        const code = prettyJson(value);
+        if (code === prettyJson(current.value)) return current;
+        return {
+          ...current,
+          code,
+          codeError: null,
+          future: [],
+          past: [...current.past, { code: current.code, value: current.value }],
+          value,
+        };
+      });
+    },
+  }), [viewerDraft]);
+
+  useEffect(() => {
+    setTransformPreview(null);
+    setViewerDraft(null);
+  }, [props.input.text]);
+
+  useEffect(() => {
+    if (!tree) return;
+    setViewerDraft({
+      code: tree.text,
+      codeError: null,
+      future: [],
+      past: [],
+      value: tree.value,
+    });
+  }, [tree]);
   const showTransformResult = useCallback(
     (text: string, value: unknown, status: string) => {
       setResultView("formatted");
       setTransformPreview({ input: props.input.text, text, value });
+      setViewerDraft({
+        code: text,
+        codeError: null,
+        future: [],
+        past: [],
+        value,
+      });
       showJsonNotice(status, "success");
     },
     [props.input.text],
@@ -488,36 +603,30 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     showTransformResult,
     tree,
   ]);
-  const minifySource = useCallback(() => {
-    if (!displayedTree) return;
+  const transformViewerCode = useCallback((mode: "beautify" | "minify") => {
     if (precisionWarning) {
       showJsonNotice(
-        "Minify blocked because it could change a high-precision number.",
+        `${mode === "minify" ? "Minify" : "Beautify"} blocked because it could change a high-precision number.`,
         "warning",
       );
       return;
     }
-    const minified = JSON.stringify(displayedTree.value);
-    if (typeof minified === "string") {
-      showTransformResult(minified, displayedTree.value, "JSON minified.");
-    }
-  }, [displayedTree, precisionWarning, showTransformResult]);
-  const formatSource = useCallback(() => {
-    if (displayedTree) {
-      if (precisionWarning) {
-        showJsonNotice(
-          "Beautify blocked because it could change a high-precision number.",
-          "warning",
-        );
-        return;
-      }
-      showTransformResult(
-        JSON.stringify(displayedTree.value, null, 2),
-        displayedTree.value,
-        "JSON beautified.",
-      );
-    }
-  }, [displayedTree, precisionWarning, showTransformResult]);
+    setViewerDraft((current) => {
+      if (!current || current.codeError) return current;
+      const code = mode === "minify"
+        ? JSON.stringify(current.value) ?? "null"
+        : prettyJson(current.value);
+      if (code === current.code) return current;
+      return {
+        ...current,
+        code,
+        codeError: null,
+        future: [],
+        past: [...current.past, { code: current.code, value: current.value }],
+      };
+    });
+  }, [precisionWarning]);
+  const canTransformCode = Boolean(viewerDraft && !viewerDraft.codeError);
   const loadBrokenExample = useCallback(() => {
     applySource(
       BROKEN_EXAMPLE,
@@ -544,27 +653,32 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             <WandSparkles aria-hidden="true" />
             Repair &amp; clean
           </Button>
-          <Button
-            aria-label="Beautify JSON"
-            disabled={props.disabled || !displayedTree}
-            onClick={formatSource}
-            size="xs"
-            type="button"
-            variant="outline"
-          >
-            <AlignLeft aria-hidden="true" />
-            Beautify
-          </Button>
-          <Button
-            disabled={props.disabled || !displayedTree}
-            onClick={minifySource}
-            size="xs"
-            type="button"
-            variant="outline"
-          >
-            <Minimize2 aria-hidden="true" />
-            Minify
-          </Button>
+          {resultView === "code" ? (
+            <>
+              <Button
+                aria-label="Beautify JSON code"
+                disabled={props.disabled || !canTransformCode}
+                onClick={() => transformViewerCode("beautify")}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                <AlignLeft aria-hidden="true" />
+                Beautify
+              </Button>
+              <Button
+                aria-label="Minify JSON code"
+                disabled={props.disabled || !canTransformCode}
+                onClick={() => transformViewerCode("minify")}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                <Minimize2 aria-hidden="true" />
+                Minify
+              </Button>
+            </>
+          ) : null}
         </div>
       ),
       afterExample: (
@@ -574,7 +688,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             disabled={props.disabled}
             onClick={loadBrokenExample}
             size="xs"
-            title="Load broken JSON example"
             type="button"
             variant="outline"
           >
@@ -590,7 +703,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               aria-label="Repair strategy"
               className="relative w-[168px] gap-1.5 after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
               size="xs"
-              title="Repair strategy"
             >
               <span className="text-[8px] font-extrabold tracking-[0.06em] text-muted-foreground">
                 REPAIR
@@ -625,14 +737,15 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     }),
     [
       clearSource,
-      formatSource,
+      canTransformCode,
       loadBrokenExample,
-      minifySource,
       props.disabled,
       props.input.text,
       props.onSettingChange,
       props.settings.repairMode,
       repairSource,
+      resultView,
+      transformViewerCode,
       displayedTree,
       errorLocation,
       goToError,
@@ -675,9 +788,10 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         </div>
         <div className="h-full min-h-0 max-[64.01rem]:h-[28rem]">
           <JsonResultPane
+            editor={editorController}
             error={props.error}
             errorLocation={errorLocation}
-            onAddRootProperty={canAddRootProperty ? addRootProperty : undefined}
+            formattedValue={formattedViewerValue}
             onGoToError={goToError}
             onSearchMatchIndexChange={setResultSearchMatchIndex}
             onSearchQueryChange={setResultSearchQuery}
@@ -687,8 +801,8 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             running={props.running}
             searchMatchIndex={resultSearchMatchIndex}
             searchQuery={resultSearchQuery}
-            source={props.input.text}
-            tree={displayedTree}
+            source={workingOutput}
+            tree={workingTree}
             view={resultView}
           />
         </div>
