@@ -83,8 +83,8 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
     "Repair & clean",
     "Beautify",
     "Minify",
-    "Load example",
-    "Load broken example",
+    "Example",
+    "Broken example",
     "Clear",
   ]) {
     await expect(toolbar.getByRole("button", { name: action })).toBeVisible();
@@ -127,10 +127,16 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   });
 
   await input.fill('{"name":}');
-  await expect(workbench.getByRole("status")).toContainText(
+  await expect(workbench.getByTestId("tool-status-line")).toContainText(
     "isn't valid",
   );
-  await workbench.getByRole("button", { name: "Go to error" }).click();
+  await expect(
+    workbench.locator('[data-purpose="editor"] [role="alert"]'),
+  ).toHaveCount(0);
+  await workbench
+    .getByTestId("json-result-placeholder")
+    .getByRole("button", { name: /Go to JSON error at line/i })
+    .click();
   expect(
     await input.evaluate(
       (element: HTMLTextAreaElement) => element.selectionEnd,
@@ -141,7 +147,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
     ),
   );
 
-  await toolbar.getByRole("button", { name: "Load broken example" }).click();
+  await toolbar.getByRole("button", { name: "Broken example" }).click();
   const brokenInput =
     '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
   await repair.click();
@@ -163,9 +169,9 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   await page.keyboard.press("Escape");
   await expect(confirmation).toHaveCount(0);
   await expect(repair).toBeFocused();
-  await expect(workbench.getByRole("status")).toContainText(
-    "Action cancelled. Your input was not changed.",
-  );
+  await expect(
+    page.getByText("Repair cancelled. Input was not changed.", { exact: true }),
+  ).toBeVisible();
 
   const repairStrategy = toolbar.getByRole("combobox", {
     name: "Repair strategy",
@@ -176,16 +182,37 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   await page.getByRole("option", { name: "Remove broken" }).click();
   await repair.click();
   await confirmation.getByRole("button", { name: "Apply repair" }).click();
-  await tree.getByRole("button", { name: "Expand all" }).click();
-  await expect(tree).toContainText("Alice");
-  await expect(workbench.getByRole("status")).toContainText(
-    "JSON repaired. Removed 1 path.",
-  );
+  await expect(input).toHaveValue(brokenInput);
+  const treeTab = tree.getByRole("tab", { name: "Tree" });
+  const formattedTab = tree.getByRole("tab", { name: "Formatted" });
+  await expect(formattedTab).toHaveAttribute("aria-selected", "true");
+  await expect(tree.getByRole("tabpanel")).toContainText("Alice");
+  expect(
+    await Promise.all(
+      [treeTab, formattedTab].map((tab) =>
+        tab.evaluate((element) => ({
+          fontWeight: getComputedStyle(element).fontWeight,
+          height: element.getBoundingClientRect().height,
+        })),
+      ),
+    ),
+  ).toEqual([
+    { fontWeight: "600", height: 46 },
+    { fontWeight: "600", height: 46 },
+  ]);
+  await expect(page.getByText(/JSON repaired with the/)).toBeVisible();
 
   await toolbar.getByRole("button", { name: "Minify" }).click();
   const minifiedInput =
     '[{"id":1,"name":"Alice"},{"id":2,"name":"Bob","age":30}]';
-  await expect(input).toHaveValue(minifiedInput);
+  await expect(input).toHaveValue(brokenInput);
+  const formattedPanel = tree.getByRole("tabpanel");
+  await expect(formattedPanel).toHaveText(minifiedInput);
+  expect(
+    await formattedPanel.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
   await tree.getByRole("button", { name: "Copy JSON result" }).click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
@@ -199,8 +226,8 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
 
   await toolbar.getByRole("button", { name: "Clear" }).click();
   await expect(input).toHaveValue("");
-  await workbench.getByRole("button", { name: "Undo" }).click();
-  await expect(input).toHaveValue(minifiedInput);
+  await page.getByRole("button", { name: "Undo" }).last().click();
+  await expect(input).toHaveValue(brokenInput);
 
   await expect(
     toolbar.getByRole("group", { name: "Viewer layout" }),

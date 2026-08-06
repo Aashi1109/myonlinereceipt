@@ -125,11 +125,7 @@ function WorkbenchShell({
     >
       <div
         data-slot="workbench-toolbar"
-        className={cn(
-          "flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-2",
-          variant === "conversion" && "h-[76px] min-h-[76px] py-0",
-          variant === "utility" && "h-[68px] min-h-[68px] py-0"
-        )}
+        className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-2"
       >
         {toolbar}
         {toolbarActions ? (

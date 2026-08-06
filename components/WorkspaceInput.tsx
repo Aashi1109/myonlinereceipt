@@ -10,6 +10,7 @@ import {
 } from "@smarttools/ui";
 import { ClipboardPaste, Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
 import {
+  type ReactNode,
   type TextareaHTMLAttributes,
   useEffect,
   useId,
@@ -43,11 +44,12 @@ interface InputSurfaceProps {
 
 interface SourceTextareaProps extends Pick<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
-  "aria-describedby" | "aria-invalid"
+  "aria-describedby" | "aria-invalid" | "wrap"
 > {
   className: string;
   disabled?: boolean;
   gutter: boolean;
+  highlightedValue?: ReactNode;
   id: string;
   maxLength?: number;
   onCaretChange?: (position: { readonly column: number; readonly line: number }) => void;
@@ -87,6 +89,7 @@ export function SourceTextarea({
   className,
   disabled,
   gutter,
+  highlightedValue,
   id,
   maxLength,
   onCaretChange,
@@ -95,8 +98,11 @@ export function SourceTextarea({
   readOnly,
   required,
   value,
+  wrap,
 }: SourceTextareaProps) {
   const gutterRef = useRef<HTMLPreElement>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
+  const resolvedWrap = wrap ?? (gutter ? "off" : "soft");
   const reportCaret = (textarea: HTMLTextAreaElement) => {
     if (!onCaretChange) return;
     const valueBeforeCaret = textarea.value.slice(0, textarea.selectionStart);
@@ -113,7 +119,7 @@ export function SourceTextarea({
 
   return (
     <div
-      className={`${className} flex min-w-0 overflow-hidden ${gutter ? "bg-background pl-4 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/75 has-[:focus-visible]:ring-inset" : "rounded-lg border border-input bg-card has-[:focus-visible]:border-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/20"}`}
+      className={`${className} flex min-w-0 overflow-hidden ${gutter ? "bg-background pl-4 has-[:focus-visible]:bg-muted/40" : "rounded-lg border border-input bg-card has-[:focus-visible]:border-primary has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/20"}`}
     >
       {gutter ? (
         <div aria-hidden="true" className="w-[15px] min-w-max shrink-0 overflow-hidden text-right">
@@ -125,33 +131,48 @@ export function SourceTextarea({
           </pre>
         </div>
       ) : null}
-      <textarea
-        aria-describedby={ariaDescribedBy}
-        aria-invalid={ariaInvalid}
-        autoCapitalize={gutter ? "off" : undefined}
-        autoCorrect={gutter ? "off" : undefined}
-        className={`${gutter ? "ml-[14px] pr-4" : "px-4"} min-h-0 min-w-0 flex-1 resize-none overflow-auto border-0 bg-transparent py-[18px] font-mono text-xs leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60`}
-        disabled={disabled}
-        id={id}
-        maxLength={maxLength}
-        onChange={(event) => {
-          onChange(event.currentTarget.value);
-          reportCaret(event.currentTarget);
-        }}
-        onFocus={(event) => reportCaret(event.currentTarget)}
-        onSelect={(event) => reportCaret(event.currentTarget)}
-        onScroll={(event) => {
-          if (gutterRef.current) {
-            gutterRef.current.style.transform = `translateY(-${event.currentTarget.scrollTop}px)`;
-          }
-        }}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        required={required}
-        spellCheck={!gutter}
-        value={value}
-        wrap={gutter ? "off" : "soft"}
-      />
+      <div className={`${gutter ? "ml-[14px]" : ""} relative min-h-0 min-w-0 flex-1 overflow-hidden`}>
+        {highlightedValue ? (
+          <pre
+            aria-hidden="true"
+            className={`${gutter ? "pr-4" : "px-4"} pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] font-mono text-xs leading-[1.55] text-foreground will-change-transform`}
+            ref={highlightRef}
+          >
+            {highlightedValue}
+          </pre>
+        ) : null}
+        <textarea
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          autoCapitalize={gutter ? "off" : undefined}
+          autoCorrect={gutter ? "off" : undefined}
+          className={`${gutter ? "pr-4" : "px-4"} relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] font-mono text-xs leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${highlightedValue ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "overflow-x-auto" : "overflow-x-hidden"}`}
+          disabled={disabled}
+          id={id}
+          maxLength={maxLength}
+          onChange={(event) => {
+            onChange(event.currentTarget.value);
+            reportCaret(event.currentTarget);
+          }}
+          onFocus={(event) => reportCaret(event.currentTarget)}
+          onSelect={(event) => reportCaret(event.currentTarget)}
+          onScroll={(event) => {
+            const { scrollLeft, scrollTop } = event.currentTarget;
+            if (gutterRef.current) {
+              gutterRef.current.style.transform = `translateY(-${scrollTop}px)`;
+            }
+            if (highlightRef.current) {
+              highlightRef.current.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px)`;
+            }
+          }}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          required={required}
+          spellCheck={!gutter}
+          value={value}
+          wrap={resolvedWrap}
+        />
+      </div>
     </div>
   );
 }

@@ -189,10 +189,7 @@ function WorkspaceSurface({
     >
       {header === "visible" ? (
         <header
-          className={cn(
-            "flex min-h-[46px] shrink-0 items-center justify-between gap-3 px-4 py-2",
-            purpose === "inspector" ? undefined : "border-b border-border",
-          )}
+          className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4"
         >
           <div className="min-w-0">
             {status !== undefined && status !== null ? (

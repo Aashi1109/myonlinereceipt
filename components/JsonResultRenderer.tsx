@@ -13,6 +13,8 @@ import {
   Brackets,
   ChevronDown,
   ChevronRight,
+  ChevronsDown,
+  ChevronsUp,
   CircleSlash2,
   Copy,
   Hash,
@@ -68,7 +70,7 @@ function pathKey(path: JsonTreePath) {
 const JSON_TOKEN_PATTERN =
   /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 
-function highlightJson(json: string): ReactNode[] {
+export function highlightJson(json: string): ReactNode[] {
   const tokens: ReactNode[] = [];
   let cursor = 0;
 
@@ -409,11 +411,13 @@ export function JsonResultRenderer({
   maxVisibleEntries,
   onCopy,
   onSelect,
+  onViewChange,
   persistentSearch = false,
   selectedPath,
   showArtifactActions = true,
   showNodeCopyActions = true,
   value,
+  view: controlledView,
 }: {
   artifactValue?: string;
   className?: string;
@@ -425,14 +429,17 @@ export function JsonResultRenderer({
   maxVisibleEntries?: number;
   onCopy?: (value: string, label: string) => void;
   onSelect?: (selection: JsonTreeSelection) => void;
+  onViewChange?: (view: JsonResultView) => void;
   persistentSearch?: boolean;
   selectedPath?: JsonTreePath;
   showArtifactActions?: boolean;
   showNodeCopyActions?: boolean;
   value: unknown;
+  view?: JsonResultView;
 }) {
   const resultId = useId().replaceAll(":", "");
-  const [view, setView] = useState<JsonResultView>("tree");
+  const [internalView, setInternalView] = useState<JsonResultView>("tree");
+  const view = controlledView ?? internalView;
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [expansion, setExpansion] = useState<TreeExpansion>({ version: 0 });
@@ -478,7 +485,8 @@ export function JsonResultRenderer({
   }
 
   function activateView(nextView: JsonResultView) {
-    setView(nextView);
+    if (controlledView === undefined) setInternalView(nextView);
+    onViewChange?.(nextView);
     if (nextView === "formatted") {
       setQuery("");
       setSearchOpen(false);
@@ -502,7 +510,7 @@ export function JsonResultRenderer({
       className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-card ${className}`}
       data-testid="json-result-renderer"
     >
-      <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
+      <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 min-[42.01rem]:h-[46px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
         <Tabs
           className="h-[46px] gap-0"
           onValueChange={(nextView) => activateView(nextView as JsonResultView)}
@@ -515,7 +523,7 @@ export function JsonResultRenderer({
             {(["tree", "formatted"] as const).map((nextView) => (
               <TabsTrigger
                 aria-controls={`${resultId}-${nextView}`}
-                className="h-[46px] flex-none px-0 py-0 text-[0.8125rem] font-semibold capitalize after:hidden data-[state=active]:font-bold"
+                className="h-[46px] flex-none px-0 py-0 text-[0.8125rem] font-semibold leading-none capitalize after:hidden"
                 id={`${resultId}-${nextView}-tab`}
                 key={nextView}
                 value={nextView}
@@ -594,21 +602,23 @@ export function JsonResultRenderer({
           {view === "tree" ? (
             <>
               <Button
-                className="min-h-11 px-1 text-primary"
+                className="h-8 gap-[5px] px-0 text-[11px] font-medium text-muted-foreground"
                 onClick={() => setAll(true)}
-                size="sm"
+                size="xs"
                 type="button"
-                variant="link"
+                variant="ghost"
               >
+                <ChevronsDown aria-hidden="true" />
                 Expand all
               </Button>
               <Button
-                className="min-h-11 px-1 text-primary"
+                className="h-8 gap-[5px] px-0 text-[11px] font-medium text-muted-foreground"
                 onClick={() => setAll(false)}
-                size="sm"
+                size="xs"
                 type="button"
-                variant="link"
+                variant="ghost"
               >
+                <ChevronsUp aria-hidden="true" />
                 Collapse all
               </Button>
             </>
@@ -678,12 +688,12 @@ export function JsonResultRenderer({
       ) : (
         <div
           aria-labelledby={`${resultId}-formatted-tab`}
-          className="min-h-0 flex-1 overflow-auto bg-muted/20 p-4"
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4"
           id={`${resultId}-formatted`}
           role="tabpanel"
           tabIndex={0}
         >
-          <pre className="min-w-max font-mono text-[0.8125rem] leading-6 text-muted-foreground">
+          <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-4 text-foreground">
             {highlightedFormatted}
           </pre>
         </div>

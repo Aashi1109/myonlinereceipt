@@ -203,7 +203,7 @@ function WorkbenchFrame<
     >
       <WorkbenchShell
         aria-busy={isBusy || undefined}
-        className="max-[56rem]:[&>[data-slot=workbench-toolbar]]:!h-auto max-[56rem]:[&>[data-slot=workbench-toolbar]]:py-2 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:w-full max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:min-w-0 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:shrink"
+        className="max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:w-full max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:min-w-0 max-[56rem]:[&_[data-slot=workbench-toolbar-actions]]:shrink"
         data-definition-key={definition.definitionKey}
         data-testid="tool-workspace"
         id="tool-workspace"
@@ -253,21 +253,19 @@ function WorkbenchFrame<
         }
         tabIndex={-1}
         toolbar={
-          <div className="flex min-w-0 items-center gap-3">
-            <IconTile
-              aria-hidden="true"
-              tone={workbenchMarkText ? workbenchMark?.tone : undefined}
-            >
-              {workbenchMarkText ? (
-                <span className="font-mono text-[13px] font-bold leading-none">
-                  {workbenchMarkText}
-                </span>
-              ) : (
-                <Wrench />
-              )}
-            </IconTile>
-            <span className="truncate text-sm font-semibold">{title}</span>
-          </div>
+          <IconTile
+            aria-hidden="true"
+            className="size-[34px]"
+            tone={workbenchMarkText ? workbenchMark?.tone : undefined}
+          >
+            {workbenchMarkText ? (
+              <span className="font-mono text-[13px] font-bold leading-none">
+                {workbenchMarkText}
+              </span>
+            ) : (
+              <Wrench />
+            )}
+          </IconTile>
         }
         toolbarActions={
           <div

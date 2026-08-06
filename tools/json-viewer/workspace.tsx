@@ -3,24 +3,22 @@
 import {
   Button,
   Label,
-  SegmentedControl,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Toaster,
+  toast,
 } from "@smarttools/ui";
 import {
-  AlertTriangle,
   AlignLeft,
   Copy,
   Download,
   FileText,
   FileWarning,
-  LocateFixed,
   Minimize2,
   Trash2,
-  Undo2,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -32,6 +30,7 @@ import {
 } from "react";
 
 import {
+  highlightJson,
   JsonResultRenderer,
   ROOT_JSON_TREE_PATH,
 } from "@/components/JsonResultRenderer";
@@ -46,12 +45,58 @@ import type {
 import { describeJsonViewerRepair } from "./execution";
 
 type JsonTreeResult = { text: string; value: unknown } | null;
-type LayoutMode = "modern" | "classic";
+type JsonTransformPreview = {
+  input: string;
+  text: string;
+  value: unknown;
+} | null;
+type JsonNoticeTone = "info" | "success" | "warning";
+type JsonErrorLocation = { column: number; line: number };
 
-const LAYOUT_ITEMS = [
-  { label: "Modern", value: "modern" },
-  { label: "Classic", value: "classic" },
-] as const;
+function showJsonNotice(
+  message: string,
+  tone: JsonNoticeTone = "info",
+  action?: { label: string; onClick: () => void },
+) {
+  const options = {
+    action: action ?? {
+      label: "Dismiss",
+      onClick: () => toast.dismiss("json-viewer-notice"),
+    },
+    duration: 6_000,
+    id: "json-viewer-notice",
+  };
+  if (tone === "success") {
+    toast.success(message, options);
+    return;
+  }
+  if (tone === "warning") {
+    toast.warning(message, options);
+    return;
+  }
+  toast.info(message, options);
+}
+
+function GoToJsonError({
+  className = "",
+  location,
+  onClick,
+}: {
+  className?: string;
+  location: JsonErrorLocation;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-label={`Go to JSON error at line ${location.line}, column ${location.column}`}
+      className={`font-sans text-[11px] font-semibold text-destructive underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none ${className}`}
+      onClick={onClick}
+      type="button"
+    >
+      Go to line {location.line}, column {location.column}
+    </button>
+  );
+}
 
 const BROKEN_EXAMPLE =
   '[{"id":1,"name":"Alice","age":},{"id":2,"name":"Bob","age":30}]';
@@ -85,30 +130,24 @@ function risksNumericPrecisionLoss(input: string) {
 }
 
 function JsonSourceEditor({
-  onRepairStatusChange,
+  editorId,
+  onNotice,
   onSourceChange,
-  onUndo,
-  precisionWarning,
-  repairStatus,
   ...props
 }: WorkspaceProps & {
-  onRepairStatusChange: (status: string | null) => void;
+  editorId: string;
+  onNotice: (message: string, tone?: JsonNoticeTone) => void;
   onSourceChange: (text: string) => void;
-  onUndo: (() => void) | null;
-  precisionWarning: boolean;
-  repairStatus: string | null;
 }) {
-  const errorId = useId();
-  const editorId = useId();
   const inputSpec = props.spec.input;
   const inputBytes = useMemo(
     () => new TextEncoder().encode(props.input.text).length,
     [props.input.text],
   );
-  const errorLocation = useMemo(() => {
-    const match = /line (\d+), column (\d+)/i.exec(props.error ?? "");
-    return match ? { column: Number(match[2]), line: Number(match[1]) } : null;
-  }, [props.error]);
+  const highlightedInput = useMemo(
+    () => highlightJson(props.input.text),
+    [props.input.text],
+  );
 
   if (inputSpec.kind !== "text") return null;
 
@@ -121,9 +160,9 @@ function JsonSourceEditor({
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(props.input.text);
-              onRepairStatusChange("JSON input copied.");
+              onNotice("JSON input copied.", "success");
             } catch {
-              onRepairStatusChange("Copy failed. Select the input and copy it manually.");
+              onNotice("Copy failed. Select the input and copy it manually.", "warning");
             }
           }}
           size="xs"
@@ -145,77 +184,28 @@ function JsonSourceEditor({
         className="min-h-0 flex-1"
         disabled={props.disabled}
         gutter
+        highlightedValue={highlightedInput}
         id={editorId}
         onChange={(text) => {
-          onRepairStatusChange(null);
           onSourceChange(text);
         }}
         placeholder={inputSpec.placeholder}
         value={props.input.text}
+        wrap="soft"
       />
-      {precisionWarning ? (
-        <div
-          className="flex shrink-0 items-center gap-2 border-t border-warning/25 bg-warning/5 px-4 py-2 text-xs text-warning"
-          role="status"
-        >
-          <AlertTriangle aria-hidden="true" className="size-3.5 shrink-0" />
-          <span className="truncate">
-            High-precision number: previews may round it; copy and download preserve the exact source. Transform actions are blocked.
-          </span>
-        </div>
-      ) : null}
-      {repairStatus ? (
-        <div
-          aria-live="polite"
-          className="flex shrink-0 items-center justify-between gap-3 border-t border-border bg-card px-4 py-2 text-xs text-muted-foreground"
-        >
-          <span className="min-w-0 truncate">{repairStatus}</span>
-          {onUndo ? (
-            <Button onClick={onUndo} size="xs" type="button" variant="ghost">
-              <Undo2 aria-hidden="true" />
-              Undo
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {props.error ? (
-        <div
-          className="flex shrink-0 items-center justify-between gap-3 border-t border-destructive/20 bg-destructive/5 px-4 py-2 text-xs text-destructive"
-          id={errorId}
-          role="alert"
-        >
-          <span className="min-w-0 truncate">{props.error}</span>
-          {errorLocation ? (
-            <Button
-              onClick={() => {
-                const input = document.getElementById(editorId);
-                if (!(input instanceof HTMLTextAreaElement)) return;
-                const lines = props.input.text.split(/\r\n|\r|\n/);
-                const offset = lines
-                  .slice(0, Math.max(0, errorLocation.line - 1))
-                  .reduce((total, line) => total + line.length + 1, 0) +
-                  Math.max(0, errorLocation.column - 1);
-                input.focus();
-                input.setSelectionRange(
-                  Math.min(offset, props.input.text.length),
-                  Math.min(offset + 1, props.input.text.length),
-                );
-              }}
-              size="xs"
-              type="button"
-              variant="outline"
-            >
-              <LocateFixed aria-hidden="true" />
-              Go to error
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
     </WorkspaceSurface>
   );
 }
 
-function JsonResultPlaceholder({ error, running }: Pick<WorkspaceProps, "error" | "running">) {
+function JsonResultPlaceholder({
+  error,
+  errorLocation,
+  onGoToError,
+  running,
+}: Pick<WorkspaceProps, "error" | "running"> & {
+  errorLocation: JsonErrorLocation | null;
+  onGoToError: () => void;
+}) {
   const title = error
     ? "JSON tree unavailable"
     : running
@@ -233,6 +223,13 @@ function JsonResultPlaceholder({ error, running }: Pick<WorkspaceProps, "error" 
       <div className="max-w-sm">
         <p className="text-sm font-semibold text-foreground">{title}</p>
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        {error && errorLocation ? (
+          <GoToJsonError
+            className="mt-3 text-xs"
+            location={errorLocation}
+            onClick={onGoToError}
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -240,60 +237,81 @@ function JsonResultPlaceholder({ error, running }: Pick<WorkspaceProps, "error" 
 
 function JsonResultPane({
   error,
+  errorLocation,
+  onGoToError,
   onStatusChange,
+  onViewChange,
   precisionWarning,
   running,
   source,
   tree,
+  view,
 }: Pick<WorkspaceProps, "error" | "running"> & {
-  onStatusChange: (status: string | null) => void;
+  errorLocation: JsonErrorLocation | null;
+  onGoToError: () => void;
+  onStatusChange: (message: string, tone: JsonNoticeTone) => void;
+  onViewChange: (view: "tree" | "formatted") => void;
   precisionWarning: boolean;
   source: string;
   tree: JsonTreeResult;
+  view: "tree" | "formatted";
 }) {
-  const ready = !error && !running && tree !== null;
+  const ready = !running && tree !== null;
+  const output = tree?.text ?? source;
 
   return (
     <div className="relative h-full min-h-0">
       <div aria-disabled={!ready || undefined} className="h-full" inert={!ready}>
         <JsonResultRenderer
-          artifactValue={source}
-          className="h-full [&_[role=tab]]:!border-b-0 [&_[role=tab][aria-selected=false]]:!font-normal [&_header>div:last-child]:pr-[72px] [&_header>div:last-child>button]:!text-muted-foreground [&_input]:!h-8 [&_input]:!pl-[30px] [&_input]:!text-[11px]"
+          artifactValue={output}
+          className="h-full [&_[role=tab]]:!border-b-0 [&_header>div:last-child]:pr-[72px] [&_header>div:last-child>button]:!text-muted-foreground [&_input]:!h-8 [&_input]:!pl-[30px] [&_input]:!text-[11px]"
           compact
           defaultOpenDepth={1}
           downloadName="smarttools-json-viewer.json"
-          formattedValue={source}
+          formattedValue={output}
           maxVisibleEntries={1_000}
           onCopy={async (value, label) => {
             try {
               await navigator.clipboard.writeText(value);
-              onStatusChange(`${label} copied.`);
+              onStatusChange(`${label} copied.`, "success");
             } catch {
-              onStatusChange("Copy failed. Select the value and copy it manually.");
+              onStatusChange(
+                "Copy failed. Select the value and copy it manually.",
+                "warning",
+              );
             }
           }}
+          onViewChange={onViewChange}
           persistentSearch
           selectedPath={ROOT_JSON_TREE_PATH}
           showArtifactActions={false}
           showNodeCopyActions={ready && !precisionWarning}
           value={tree?.value ?? null}
+          view={view}
         />
       </div>
-      {!ready ? <JsonResultPlaceholder error={error} running={running} /> : null}
+      {!ready ? (
+        <JsonResultPlaceholder
+          error={error}
+          errorLocation={errorLocation}
+          onGoToError={onGoToError}
+          running={running}
+        />
+      ) : null}
       <div className="absolute top-[7px] right-4 z-20 flex items-center gap-1">
         <Button
           aria-label="Download JSON result"
           disabled={!ready}
           onClick={() => {
             const url = URL.createObjectURL(
-              new Blob([source], { type: "application/json;charset=utf-8" }),
+              new Blob([output], { type: "application/json;charset=utf-8" }),
             );
             const link = document.createElement("a");
             link.href = url;
             link.download = "smarttools-json-viewer.json";
             link.click();
             URL.revokeObjectURL(url);
-            onStatusChange("JSON downloaded.");
+            onStatusChange("JSON downloaded.", "success");
           }}
           size="icon-xs"
           title="Download JSON result"
@@ -307,10 +325,13 @@ function JsonResultPane({
           disabled={!ready}
           onClick={async () => {
             try {
-              await navigator.clipboard.writeText(source);
-              onStatusChange("JSON result copied.");
+              await navigator.clipboard.writeText(output);
+              onStatusChange("JSON result copied.", "success");
             } catch {
-              onStatusChange("Copy failed. Select the value and copy it manually.");
+              onStatusChange(
+                "Copy failed. Select the value and copy it manually.",
+                "warning",
+              );
             }
           }}
           size="icon-xs"
@@ -326,9 +347,10 @@ function JsonResultPane({
 }
 
 export default function JsonViewerWorkspace(props: WorkspaceProps) {
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("modern");
-  const [repairStatus, setRepairStatus] = useState<string | null>(null);
-  const [previousSource, setPreviousSource] = useState<string | null>(null);
+  const editorId = useId();
+  const [resultView, setResultView] = useState<"tree" | "formatted">("tree");
+  const [transformPreview, setTransformPreview] =
+    useState<JsonTransformPreview>(null);
   const tree = useMemo<JsonTreeResult>(
     () =>
       props.result?.render === "json-tree" && typeof props.result.text === "string"
@@ -340,6 +362,28 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     () => risksNumericPrecisionLoss(props.input.text),
     [props.input.text],
   );
+  const errorLocation = useMemo(() => {
+    const match = /line (\d+), column (\d+)/i.exec(props.error ?? "");
+    return match ? { column: Number(match[2]), line: Number(match[1]) } : null;
+  }, [props.error]);
+  const displayedTree =
+    transformPreview?.input === props.input.text ? transformPreview : tree;
+
+  const goToError = useCallback(() => {
+    if (!errorLocation) return;
+    const input = document.getElementById(editorId);
+    if (!(input instanceof HTMLTextAreaElement)) return;
+    const lines = props.input.text.split(/\r\n|\r|\n/);
+    const offset = lines
+      .slice(0, Math.max(0, errorLocation.line - 1))
+      .reduce((total, line) => total + line.length + 1, 0) +
+      Math.max(0, errorLocation.column - 1);
+    input.focus();
+    input.setSelectionRange(
+      Math.min(offset, props.input.text.length),
+      Math.min(offset + 1, props.input.text.length),
+    );
+  }, [editorId, errorLocation, props.input.text]);
 
   const updateSource = useCallback(
     (text: string) => props.onInputChange({ ...props.input, text }),
@@ -347,24 +391,41 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   );
   const applySource = useCallback(
     (text: string, status: string) => {
-      setPreviousSource(props.input.text);
-      setRepairStatus(status);
+      const previousSource = props.input.text;
       updateSource(text);
+      showJsonNotice(status, "success", {
+        label: "Undo",
+        onClick: () => {
+          updateSource(previousSource);
+          showJsonNotice("Last change undone.", "success");
+        },
+      });
     },
     [props.input.text, updateSource],
+  );
+  const showTransformResult = useCallback(
+    (text: string, value: unknown, status: string) => {
+      setResultView("formatted");
+      setTransformPreview({ input: props.input.text, text, value });
+      showJsonNotice(status, "success");
+    },
+    [props.input.text],
   );
   const clearSource = useCallback(() => {
     applySource("", "Input cleared.");
   }, [applySource]);
   const repairSource = useCallback(() => {
     if (precisionWarning) {
-      setRepairStatus("Repair blocked because it could change a high-precision number.");
+      showJsonNotice(
+        "Repair blocked because it could change a high-precision number.",
+        "warning",
+      );
       return;
     }
     const repairMode = props.settings.repairMode === "null" ? "null" : "remove";
     const repaired = describeJsonViewerRepair(props.input.text, repairMode);
     if (!repaired.ok) {
-      setRepairStatus(repaired.error.message);
+      showJsonNotice(repaired.error.message, "warning");
       return;
     }
     if (
@@ -374,36 +435,53 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         `Repair will remove ${repaired.changedPaths.length} broken ${repaired.changedPaths.length === 1 ? "path" : "paths"}${repaired.changedPaths.length ? ` (${repaired.changedPaths.join(", ")})` : ""}. Continue?`,
       )
     ) {
-      setRepairStatus("Repair cancelled. Input was not changed.");
+      showJsonNotice("Repair cancelled. Input was not changed.", "warning");
       return;
     }
-    applySource(
+    showTransformResult(
       repaired.output,
+      JSON.parse(repaired.output) as unknown,
       tree === null
         ? `JSON repaired with the “${repairMode === "null" ? "Set broken values to null" : "Remove broken properties"}” strategy.`
         : "JSON was already valid; formatting was applied.",
     );
-  }, [applySource, precisionWarning, props.input.text, props.settings.repairMode, tree]);
+  }, [
+    precisionWarning,
+    props.input.text,
+    props.settings.repairMode,
+    showTransformResult,
+    tree,
+  ]);
   const minifySource = useCallback(() => {
-    if (!tree) return;
+    if (!displayedTree) return;
     if (precisionWarning) {
-      setRepairStatus("Minify blocked because it could change a high-precision number.");
+      showJsonNotice(
+        "Minify blocked because it could change a high-precision number.",
+        "warning",
+      );
       return;
     }
-    const minified = JSON.stringify(tree.value);
+    const minified = JSON.stringify(displayedTree.value);
     if (typeof minified === "string") {
-      applySource(minified, "JSON minified.");
+      showTransformResult(minified, displayedTree.value, "JSON minified.");
     }
-  }, [applySource, precisionWarning, tree]);
+  }, [displayedTree, precisionWarning, showTransformResult]);
   const formatSource = useCallback(() => {
-    if (tree) {
+    if (displayedTree) {
       if (precisionWarning) {
-        setRepairStatus("Beautify blocked because it could change a high-precision number.");
+        showJsonNotice(
+          "Beautify blocked because it could change a high-precision number.",
+          "warning",
+        );
         return;
       }
-      applySource(tree.text, "JSON beautified.");
+      showTransformResult(
+        JSON.stringify(displayedTree.value, null, 2),
+        displayedTree.value,
+        "JSON beautified.",
+      );
     }
-  }, [applySource, precisionWarning, tree]);
+  }, [displayedTree, precisionWarning, showTransformResult]);
   const loadBrokenExample = useCallback(() => {
     applySource(
       BROKEN_EXAMPLE,
@@ -414,7 +492,10 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const toolbarActions = useMemo<WorkspaceToolbarActions>(
     () => ({
       exampleIcon: <FileText aria-hidden="true" />,
-      statusMeta: `${layoutMode === "modern" ? "Modern" : "Classic"} layout · UTF-8`,
+      exampleVariant: "outline",
+      statusMeta: errorLocation ? (
+        <GoToJsonError location={errorLocation} onClick={goToError} />
+      ) : "UTF-8",
       before: (
         <div className="flex min-w-0 items-center gap-2 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end">
           <Button
@@ -429,7 +510,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
           </Button>
           <Button
             aria-label="Beautify JSON"
-            disabled={props.disabled || !tree}
+            disabled={props.disabled || !displayedTree}
             onClick={formatSource}
             size="xs"
             type="button"
@@ -439,7 +520,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             Beautify
           </Button>
           <Button
-            disabled={props.disabled || !tree}
+            disabled={props.disabled || !displayedTree}
             onClick={minifySource}
             size="xs"
             type="button"
@@ -462,7 +543,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             variant="outline"
           >
             <FileWarning aria-hidden="true" />
-            <span className="max-[90rem]:sr-only">Broken example</span>
+            Broken example
           </Button>
           <Select
             disabled={props.disabled}
@@ -485,13 +566,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               <SelectItem value="null">Set to null</SelectItem>
             </SelectContent>
           </Select>
-          <SegmentedControl
-            aria-label="Workspace layout"
-            className="shrink-0 [&_[data-slot=tabs-list]]:h-8 [&_[data-slot=tabs-trigger]]:h-6 [&_[data-slot=tabs-trigger]]:px-3 [&_[data-slot=tabs-trigger]]:py-0 [&_[data-slot=tabs-trigger]]:text-[11px] [&_[data-slot=tabs-trigger]]:after:!inset-x-0 [&_[data-slot=tabs-trigger]]:after:!-inset-y-2.5 [&_[data-slot=tabs-trigger]]:after:!h-auto [&_[data-slot=tabs-trigger]]:after:!bg-transparent [&_[data-slot=tabs-trigger]]:after:!opacity-100"
-            items={LAYOUT_ITEMS}
-            onValueChange={(value) => setLayoutMode(value as LayoutMode)}
-            value={layoutMode}
-          />
           <Button
             disabled={props.disabled || props.input.text.length === 0}
             onClick={clearSource}
@@ -506,22 +580,27 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       ),
       exampleLabel: "Example",
       onExample: () => {
-        setPreviousSource(props.input.text);
-        setRepairStatus("Sample loaded.");
+        const previousSource = props.input.text;
+        showJsonNotice("Sample loaded.", "success", {
+          label: "Undo",
+          onClick: () => updateSource(previousSource),
+        });
       },
     }),
     [
       clearSource,
       formatSource,
       loadBrokenExample,
-      layoutMode,
       minifySource,
       props.disabled,
       props.input.text,
       props.onSettingChange,
       props.settings.repairMode,
       repairSource,
-      tree,
+      displayedTree,
+      errorLocation,
+      goToError,
+      updateSource,
     ],
   );
 
@@ -530,45 +609,49 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     return () => props.onToolbarActionsChange?.(null);
   }, [props.onToolbarActionsChange, toolbarActions]);
 
+  useEffect(() => {
+    if (!precisionWarning) return;
+    showJsonNotice(
+      "High-precision number: previews may round it; copy and download preserve the exact source. Transform actions are blocked.",
+      "warning",
+    );
+  }, [precisionWarning]);
+
   return (
-    <SplitStack
-      className="h-full max-[54rem]:h-[56rem]"
-      defaultSize={40}
-      maxSize={layoutMode === "modern" ? 65 : 70}
-      minSize={layoutMode === "modern" ? 35 : 30}
-      orientation={layoutMode === "modern" ? "horizontal" : "vertical"}
-    >
-      <div className={layoutMode === "modern" ? "h-full min-h-0 max-[64.01rem]:h-[286px] max-[42.01rem]:h-[28rem]" : "h-full min-h-0"}>
-        <JsonSourceEditor
-          {...props}
-          onRepairStatusChange={setRepairStatus}
-          onSourceChange={(text) => {
-            setPreviousSource(null);
-            updateSource(text);
-          }}
-          onUndo={
-            previousSource === null
-              ? null
-              : () => {
-                  updateSource(previousSource);
-                  setPreviousSource(null);
-                  setRepairStatus("Last change undone.");
-                }
-          }
-          precisionWarning={precisionWarning}
-          repairStatus={repairStatus}
-        />
-      </div>
-      <div className={layoutMode === "modern" ? "h-full min-h-0 max-[64.01rem]:h-[28rem]" : "h-full min-h-0"}>
-        <JsonResultPane
-          error={props.error}
-          onStatusChange={setRepairStatus}
-          precisionWarning={precisionWarning}
-          running={props.running}
-          source={props.input.text}
-          tree={tree}
-        />
-      </div>
-    </SplitStack>
+    <>
+      <Toaster position="bottom-right" />
+      <SplitStack
+        className="h-full max-[54rem]:h-[56rem]"
+        defaultSize={40}
+        maxSize={65}
+        minSize={35}
+        orientation="horizontal"
+      >
+        <div className="h-full min-h-0 max-[64.01rem]:h-[286px] max-[42.01rem]:h-[28rem]">
+          <JsonSourceEditor
+            {...props}
+            editorId={editorId}
+            onNotice={showJsonNotice}
+            onSourceChange={(text) => {
+              updateSource(text);
+            }}
+          />
+        </div>
+        <div className="h-full min-h-0 max-[64.01rem]:h-[28rem]">
+          <JsonResultPane
+            error={props.error}
+            errorLocation={errorLocation}
+            onGoToError={goToError}
+            onStatusChange={showJsonNotice}
+            onViewChange={setResultView}
+            precisionWarning={precisionWarning}
+            running={props.running}
+            source={props.input.text}
+            tree={displayedTree}
+            view={resultView}
+          />
+        </div>
+      </SplitStack>
+    </>
   );
 }
