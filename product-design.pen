@@ -255285,10 +255285,117 @@
                                     }
                                   ]
                                 },
-                                "taDPf": {
+                                "hYgwq": {
                                   "fill": "$accent-soft",
                                   "stroke": "$accent",
                                   "strokeWidth": 1
+                                },
+                                "gIZ9b": {
+                                  "type": "frame",
+                                  "id": "DMudi",
+                                  "name": "Name Inline Row Actions",
+                                  "width": "fill_container",
+                                  "height": 24,
+                                  "gap": 3,
+                                  "justifyContent": "end",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "id": "pX3WV",
+                                      "type": "ref",
+                                      "ref": "E2CZl",
+                                      "name": "Edit Name Key",
+                                      "width": 24,
+                                      "height": 24,
+                                      "fill": "#00000000",
+                                      "stroke": "#00000000",
+                                      "descendants": {
+                                        "IBt8m": {
+                                          "icon": "pencil-line",
+                                          "width": 13,
+                                          "height": 13,
+                                          "fill": "$accent"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "x7Xfw4",
+                                      "type": "ref",
+                                      "ref": "E2CZl",
+                                      "name": "Change Name Type",
+                                      "width": 24,
+                                      "height": 24,
+                                      "fill": "#00000000",
+                                      "stroke": "#00000000",
+                                      "descendants": {
+                                        "IBt8m": {
+                                          "icon": "replace",
+                                          "width": 13,
+                                          "height": 13,
+                                          "fill": "$fg-secondary"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "KAgRF",
+                                      "type": "ref",
+                                      "ref": "E2CZl",
+                                      "name": "Duplicate Name Property",
+                                      "width": 24,
+                                      "height": 24,
+                                      "fill": "#00000000",
+                                      "stroke": "#00000000",
+                                      "descendants": {
+                                        "IBt8m": {
+                                          "icon": "copy-plus",
+                                          "width": 13,
+                                          "height": 13,
+                                          "fill": "$fg-secondary"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "vl8Jw",
+                                      "type": "ref",
+                                      "ref": "E2CZl",
+                                      "name": "Add Sibling After Name",
+                                      "width": 24,
+                                      "height": 24,
+                                      "fill": "#00000000",
+                                      "stroke": "#00000000",
+                                      "descendants": {
+                                        "IBt8m": {
+                                          "icon": "plus",
+                                          "width": 13,
+                                          "height": 13,
+                                          "fill": "$accent"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "id": "n0y8B",
+                                      "type": "ref",
+                                      "ref": "E2CZl",
+                                      "name": "Delete Name Property",
+                                      "width": 24,
+                                      "height": 24,
+                                      "fill": "#00000000",
+                                      "stroke": "#00000000",
+                                      "descendants": {
+                                        "IBt8m": {
+                                          "icon": "trash-2",
+                                          "width": 13,
+                                          "height": 13,
+                                          "fill": "$danger"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                "taDPf": {
+                                  "fill": "#00000000",
+                                  "stroke": "#00000000",
+                                  "strokeWidth": 0
                                 },
                                 "Vcva3": {
                                   "type": "frame",
@@ -255318,87 +255425,10 @@
                                 },
                                 "eZo0j": {
                                   "type": "frame",
-                                  "id": "T7i3Fb",
-                                  "name": "Tag 1 Inline Row Actions",
+                                  "id": "sCbIL",
+                                  "name": "Tag 1 Spacer",
                                   "width": "fill_container",
-                                  "height": 24,
-                                  "gap": 3,
-                                  "justifyContent": "end",
-                                  "alignItems": "center",
-                                  "children": [
-                                    {
-                                      "id": "M3ykXG",
-                                      "type": "ref",
-                                      "ref": "E2CZl",
-                                      "name": "Change Tag 1 Type",
-                                      "width": 24,
-                                      "height": 24,
-                                      "fill": "#00000000",
-                                      "stroke": "#00000000",
-                                      "descendants": {
-                                        "IBt8m": {
-                                          "icon": "replace",
-                                          "width": 13,
-                                          "height": 13,
-                                          "fill": "$accent"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "id": "sPTzG",
-                                      "type": "ref",
-                                      "ref": "E2CZl",
-                                      "name": "Duplicate Tag 1 Inline",
-                                      "width": 24,
-                                      "height": 24,
-                                      "fill": "#00000000",
-                                      "stroke": "#00000000",
-                                      "descendants": {
-                                        "IBt8m": {
-                                          "icon": "copy-plus",
-                                          "width": 13,
-                                          "height": 13,
-                                          "fill": "$fg-secondary"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "id": "udvvN",
-                                      "type": "ref",
-                                      "ref": "E2CZl",
-                                      "name": "Add Sibling After Tag 1 Inline",
-                                      "width": 24,
-                                      "height": 24,
-                                      "fill": "#00000000",
-                                      "stroke": "#00000000",
-                                      "descendants": {
-                                        "IBt8m": {
-                                          "icon": "plus",
-                                          "width": 13,
-                                          "height": 13,
-                                          "fill": "$accent"
-                                        }
-                                      }
-                                    },
-                                    {
-                                      "id": "CzwBZ",
-                                      "type": "ref",
-                                      "ref": "E2CZl",
-                                      "name": "Delete Tag 1 Inline",
-                                      "width": 24,
-                                      "height": 24,
-                                      "fill": "#00000000",
-                                      "stroke": "#00000000",
-                                      "descendants": {
-                                        "IBt8m": {
-                                          "icon": "trash-2",
-                                          "width": 13,
-                                          "height": 13,
-                                          "fill": "$danger"
-                                        }
-                                      }
-                                    }
-                                  ]
+                                  "height": 1
                                 },
                                 "a0Re3": {
                                   "type": "frame",
@@ -255516,7 +255546,7 @@
                                   "enabled": true
                                 },
                                 "ZfCXD": {
-                                  "content": "Changing tags[1] type · compatible values are converted automatically"
+                                  "content": "Editing root.name · object keys must be unique"
                                 },
                                 "LEFcz/a4wIXJ": {
                                   "content": "Undo move"
@@ -255530,85 +255560,91 @@
                               }
                             },
                             {
-                              "id": "KUpoM",
+                              "id": "Xsxwz",
                               "type": "ref",
                               "ref": "JgN65",
-                              "name": "Change JSON Type Popover",
+                              "name": "Edit JSON Object Key Popover",
                               "layoutPosition": "absolute",
                               "x": 1024,
                               "y": 80,
                               "width": 320,
                               "descendants": {
                                 "YDFQe": {
-                                  "icon": "replace"
+                                  "icon": "pencil-line"
                                 },
                                 "dYY5j": {
-                                  "content": "Change value type"
+                                  "content": "Edit object key"
                                 },
                                 "UB9Q3": {
-                                  "content": "Update tags[1] without changing its key or array position."
+                                  "content": "Rename root.name without changing its value, type, or position."
                                 },
                                 "TndyA": {
                                   "type": "frame",
-                                  "id": "IrMUG",
-                                  "name": "Change Type Fields",
+                                  "id": "k9mkk",
+                                  "name": "Edit Key Fields",
                                   "width": "fill_container",
                                   "height": 224,
                                   "layout": "vertical",
                                   "gap": 8,
                                   "children": [
                                     {
-                                      "id": "uO4jo",
+                                      "id": "XyCHr",
                                       "type": "ref",
                                       "ref": "RqQtP",
-                                      "name": "Existing Value Field",
+                                      "name": "Current Key Field",
                                       "width": "fill_container",
                                       "descendants": {
                                         "WORG5": {
-                                          "content": "Existing value"
+                                          "content": "Current key"
                                         },
                                         "fkCe1": {
-                                          "content": "viewer"
+                                          "content": "name"
                                         },
                                         "s27h8Q": {
-                                          "content": "Path: tags[1]"
+                                          "content": "Object path: root.name"
                                         }
                                       }
                                     },
                                     {
-                                      "id": "a1ErTO",
+                                      "id": "hoxUT",
                                       "type": "ref",
-                                      "ref": "vRUj9",
-                                      "name": "New JSON Type Select",
+                                      "ref": "RqQtP",
+                                      "name": "New Key Field",
                                       "width": "fill_container",
                                       "descendants": {
-                                        "eVj5f": {
-                                          "content": "New JSON type"
+                                        "WORG5": {
+                                          "content": "New key"
                                         },
-                                        "KJXI2": {
-                                          "content": "String"
+                                        "fkCe1": {
+                                          "content": "displayName"
+                                        },
+                                        "s27h8Q": {
+                                          "content": "Keys must be unique within this object."
                                         }
                                       }
                                     },
                                     {
-                                      "id": "KNqJw",
+                                      "id": "naItv",
                                       "type": "ref",
                                       "ref": "dV2U8",
-                                      "name": "Type Conversion Guidance",
+                                      "name": "Key Availability Guidance",
                                       "width": "fill_container",
                                       "padding": 10,
                                       "gap": 8,
+                                      "fill": "$success-soft",
                                       "descendants": {
                                         "fF9w0": {
+                                          "icon": "circle-check",
                                           "width": 14,
-                                          "height": 14
+                                          "height": 14,
+                                          "fill": "$success"
                                         },
                                         "TK55X": {
-                                          "content": "Conversion preview",
+                                          "content": "Key is available",
                                           "fontSize": 11
                                         },
                                         "dTfwI": {
-                                          "content": "Compatible values convert automatically. Object and Array create an empty container.",
+                                          "content": "The value and String type stay unchanged.",
                                           "fontSize": 10,
                                           "lineHeight": 1.3
                                         }
@@ -255617,10 +255653,10 @@
                                   ]
                                 },
                                 "E06eiQ/G5Utr": {
-                                  "icon": "replace"
+                                  "icon": "check"
                                 },
                                 "E06eiQ/yZHkW": {
-                                  "content": "Change type"
+                                  "content": "Rename key"
                                 }
                               }
                             }
@@ -261486,7 +261522,8 @@
       "id": "LtEev",
       "x": 87184,
       "y": 0,
-      "name": "Pages/DevTools — CSV & Data Tools (12 Screens)",
+      "name": "Pages/DevTools — CSV & Data Tools (12 Routes · 14 Screens)",
+      "width": 4576,
       "height": 22182,
       "fill": "#e9ebef",
       "layout": "vertical",
@@ -261550,594 +261587,2700 @@
         },
         {
           "type": "frame",
-          "id": "Kl2sF",
-          "name": "Screen/DevTools CSV Viewer",
-          "clip": true,
-          "width": 1440,
-          "fill": "$surface",
+          "id": "GIG0d",
+          "name": "Flow/CSV Viewer — Empty → Populated + Picker → Drag Over",
+          "context": "Three handoff states ordered left to right: empty persistent workbench, populated persistent workbench with integrated file picker, and transient drag-over overlay.",
+          "width": 4480,
           "layout": "vertical",
+          "gap": 12,
           "children": [
             {
-              "id": "Ax4sw",
-              "type": "ref",
-              "ref": "y1y4Xy",
-              "name": "Navbar/SmartTools — Top — Signed Out",
+              "type": "frame",
+              "id": "JmZEn",
+              "name": "CSV Viewer Flow Stage Labels",
               "width": "fill_container",
-              "height": 72
+              "height": 36,
+              "gap": 80,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "zqgl8",
+                  "name": "Empty State Stage Label",
+                  "width": 1440,
+                  "height": "fill_container",
+                  "fill": "$surface-ink",
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lLSEa",
+                      "name": "Empty State Stage Label Text",
+                      "fill": "$fg-onink",
+                      "content": "01 · CSV VIEWER — EMPTY",
+                      "fontFamily": "$font-caption",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.55
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "PeSXP",
+                  "name": "Drag Over Stage Label",
+                  "width": 1440,
+                  "height": "fill_container",
+                  "fill": "$surface-ink",
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "a6jNh",
+                      "name": "Drag Over Stage Label Text",
+                      "fill": "$fg-onink",
+                      "content": "02 · CSV VIEWER — POPULATED + PICKER",
+                      "fontFamily": "$font-caption",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.55
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H5YY8D",
+                  "name": "Table Preview Stage Label",
+                  "width": 1440,
+                  "height": "fill_container",
+                  "fill": "$surface-ink",
+                  "padding": [
+                    0,
+                    14
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "cGcCB",
+                      "name": "Table Preview Stage Label Text",
+                      "fill": "$fg-onink",
+                      "content": "03 · DRAG OVER — TRANSIENT",
+                      "fontFamily": "$font-caption",
+                      "fontSize": 11,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.55
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "frame",
-              "id": "mMvya",
-              "name": "CSV Viewer Page Body",
+              "id": "m2R6di",
+              "name": "CSV Viewer Flow Screens",
               "width": "fill_container",
-              "fill": "$surface",
-              "layout": "vertical",
-              "gap": 16,
-              "padding": [
-                20,
-                40,
-                0,
-                40
-              ],
+              "gap": 80,
               "children": [
                 {
-                  "id": "nHwjJ",
-                  "type": "ref",
-                  "ref": "L5A5Gt",
-                  "name": "Breadcrumb — CSV Viewer",
-                  "width": "fill_container",
-                  "descendants": {
-                    "eIiMn": {
-                      "content": "Developer tools"
-                    },
-                    "OUQk1": {
-                      "content": "CSV Viewer · /devtools/csv-viewer"
-                    }
-                  }
-                },
-                {
-                  "id": "m4pko",
-                  "type": "ref",
-                  "ref": "xWzlR",
-                  "name": "CSV Viewer Runtime",
-                  "width": "fill_container",
-                  "descendants": {
-                    "jNZLn/ESWP8": {
-                      "content": "CSV & DATA TOOL"
-                    },
-                    "jNZLn/vV8dH": {
-                      "content": "CSV Viewer"
-                    },
-                    "jNZLn/S7al9Q": {
-                      "content": "Parse CSV into a live, accessible table for quick inspection without changing the source rows."
-                    },
-                    "jNZLn/hsrgB": {
-                      "content": "MAX 2M CHARACTERS",
-                      "fill": "$accent-text"
-                    },
-                    "jNZLn/WPpKn": {
-                      "content": "COPY OR DOWNLOAD"
-                    },
-                    "jNZLn/StMiA": {
-                      "content": "PRIVATE IN BROWSER",
-                      "fill": "$accent-text"
-                    },
-                    "u8sP8": {
-                      "name": "CSV INPUT Pane"
-                    },
-                    "umNGt": {
-                      "name": "CSV INPUT Header"
-                    },
-                    "W5Xzw": {
-                      "content": "CSV INPUT"
-                    },
-                    "M3KBpy": {
-                      "content": "3 data rows",
-                      "fill": "$success-text"
-                    },
-                    "rqhJt": {
-                      "name": "CSV INPUT Editor"
-                    },
-                    "CwNDm": {
-                      "content": "1\n2\n3\n4"
-                    },
-                    "AfbeD": {
-                      "name": "CSV INPUT Content",
-                      "content": "name,role,active\nMaya,Engineer,true\nNoah,Designer,true\nAri,Analyst,false"
-                    },
-                    "hzFGp": {
-                      "name": "TABLE PREVIEW Pane"
-                    },
-                    "Q3T25G": {
-                      "name": "TABLE PREVIEW Header"
-                    },
-                    "yZnem": {
-                      "content": "TABLE PREVIEW"
-                    },
-                    "p61wgP": {
-                      "content": "Copy visible table"
-                    },
-                    "wthTT": {
-                      "content": "Save snapshot .html"
-                    },
-                    "DZCOx": {
-                      "type": "frame",
-                      "id": "WBBMb",
-                      "name": "Live CSV Table Preview",
+                  "type": "frame",
+                  "id": "aJauS",
+                  "name": "Screen/DevTools CSV Viewer — Empty",
+                  "clip": true,
+                  "width": 1440,
+                  "fill": "$surface",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "aygOS",
+                      "type": "ref",
+                      "ref": "y1y4Xy",
+                      "name": "Navbar/SmartTools — Top — Signed Out",
                       "width": "fill_container",
-                      "height": "fill_container",
+                      "height": 72
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h3fvi",
+                      "name": "CSV Viewer Page Body",
+                      "width": "fill_container",
                       "fill": "$surface",
                       "layout": "vertical",
+                      "gap": 16,
+                      "padding": [
+                        20,
+                        40,
+                        0,
+                        40
+                      ],
                       "children": [
                         {
-                          "type": "frame",
-                          "id": "argRG",
-                          "name": "Table Header Row",
-                          "width": "fill_container",
-                          "height": 44,
-                          "fill": "$surface-muted",
-                          "stroke": "$border-subtle",
-                          "strokeWidth": {
-                            "bottom": 1
-                          },
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "B22DqF",
-                              "name": "Header 1",
-                              "width": "fill_container",
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "GqXW6",
-                                  "name": "Header Label 1",
-                                  "fill": "$fg-secondary",
-                                  "content": "NAME",
-                                  "fontFamily": "$font-caption",
-                                  "fontSize": 10,
-                                  "fontWeight": "600"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "G9lrI",
-                              "name": "Header 2",
-                              "width": 145,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "Cp0ov",
-                                  "name": "Header Label 2",
-                                  "fill": "$fg-secondary",
-                                  "content": "ROLE",
-                                  "fontFamily": "$font-caption",
-                                  "fontSize": 10,
-                                  "fontWeight": "600"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "w5R4uh",
-                              "name": "Header 3",
-                              "width": 90,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "B3Sxt0",
-                                  "name": "Header Label 3",
-                                  "fill": "$fg-secondary",
-                                  "content": "ACTIVE",
-                                  "fontFamily": "$font-caption",
-                                  "fontSize": 10,
-                                  "fontWeight": "600"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "PVjih",
-                          "name": "Table Data Row 1",
-                          "width": "fill_container",
-                          "height": 44,
-                          "fill": "$surface",
-                          "stroke": "$border-subtle",
-                          "strokeWidth": {
-                            "bottom": 1
-                          },
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "DRKAj",
-                              "name": "Cell 1",
-                              "width": "fill_container",
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "mBGG3",
-                                  "name": "Cell Value 1",
-                                  "fill": "$fg-primary",
-                                  "content": "Maya",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "HpG2r",
-                              "name": "Cell 2",
-                              "width": 145,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "P4mhGZ",
-                                  "name": "Cell Value 2",
-                                  "fill": "$fg-primary",
-                                  "content": "Engineer",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "LOwfU",
-                              "name": "Cell 3",
-                              "width": 90,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "dW3Tf",
-                                  "name": "Cell Value 3",
-                                  "fill": "$fg-primary",
-                                  "content": "true",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "mfhQy",
-                          "name": "Table Data Row 2",
-                          "width": "fill_container",
-                          "height": 44,
-                          "fill": "$surface",
-                          "stroke": "$border-subtle",
-                          "strokeWidth": {
-                            "bottom": 1
-                          },
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "L2fUbR",
-                              "name": "Cell 1",
-                              "width": "fill_container",
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "pSbRe",
-                                  "name": "Cell Value 1",
-                                  "fill": "$fg-primary",
-                                  "content": "Noah",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "R2ae0",
-                              "name": "Cell 2",
-                              "width": 145,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "KkOL7",
-                                  "name": "Cell Value 2",
-                                  "fill": "$fg-primary",
-                                  "content": "Designer",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "yZRii",
-                              "name": "Cell 3",
-                              "width": 90,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "N4TAE",
-                                  "name": "Cell Value 3",
-                                  "fill": "$fg-primary",
-                                  "content": "true",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "bTVUQ",
-                          "name": "Table Data Row 3",
-                          "width": "fill_container",
-                          "height": 44,
-                          "fill": "$surface",
-                          "stroke": "$border-subtle",
-                          "strokeWidth": {
-                            "bottom": 1
-                          },
-                          "children": [
-                            {
-                              "type": "frame",
-                              "id": "LEQ4K",
-                              "name": "Cell 1",
-                              "width": "fill_container",
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "O3DoDe",
-                                  "name": "Cell Value 1",
-                                  "fill": "$fg-primary",
-                                  "content": "Ari",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "R8sGf",
-                              "name": "Cell 2",
-                              "width": 145,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "G2BHRz",
-                                  "name": "Cell Value 2",
-                                  "fill": "$fg-primary",
-                                  "content": "Analyst",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "frame",
-                              "id": "jFM9T",
-                              "name": "Cell 3",
-                              "width": 90,
-                              "height": "fill_container",
-                              "padding": [
-                                0,
-                                12
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "Q56dwS",
-                                  "name": "Cell Value 3",
-                                  "fill": "$fg-primary",
-                                  "content": "false",
-                                  "fontFamily": "$font-body",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    "ME4CZ": {
-                      "content": "SETTINGS & RUN"
-                    },
-                    "mGUGc": {
-                      "type": "frame",
-                      "id": "m9jPWK",
-                      "name": "Route-Specific Settings",
-                      "width": "fill_container",
-                      "layout": "vertical",
-                      "gap": 10,
-                      "children": [
-                        {
-                          "id": "tUWA1",
+                          "id": "f9HRB",
                           "type": "ref",
-                          "ref": "NcoS9",
-                          "name": "Setting/DELIMITER",
+                          "ref": "L5A5Gt",
+                          "name": "Breadcrumb — CSV Viewer",
                           "width": "fill_container",
                           "descendants": {
-                            "zthem": {
-                              "content": "DELIMITER"
+                            "eIiMn": {
+                              "content": "Developer tools"
                             },
-                            "JtSjO": {
-                              "content": "Comma"
+                            "OUQk1": {
+                              "content": "CSV Viewer · /devtools/csv-viewer"
+                            }
+                          }
+                        },
+                        {
+                          "id": "f7Zul",
+                          "type": "ref",
+                          "ref": "xWzlR",
+                          "name": "CSV Viewer Runtime",
+                          "width": "fill_container",
+                          "descendants": {
+                            "jNZLn/ESWP8": {
+                              "content": "CSV & DATA TOOL"
+                            },
+                            "jNZLn/vV8dH": {
+                              "content": "CSV Viewer"
+                            },
+                            "jNZLn/S7al9Q": {
+                              "content": "Paste rows, browse for a local CSV, or drag a file over this same workbench to inspect it as a live accessible table."
+                            },
+                            "jNZLn/hsrgB": {
+                              "content": "MAX 2M CHARACTERS",
+                              "fill": "$accent-text"
+                            },
+                            "jNZLn/WPpKn": {
+                              "content": "COPY OR DOWNLOAD"
+                            },
+                            "jNZLn/StMiA": {
+                              "content": "PRIVATE IN BROWSER",
+                              "fill": "$accent-text"
+                            },
+                            "Tg7ar": {
+                              "type": "frame",
+                              "id": "XQdSS",
+                              "name": "CSV Viewer Workbench — Empty State",
+                              "context": "Initial persistent workbench with no source. Paste and Browse file are available in the CSV input header; drag-over uses the adjacent transient overlay state.",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 680,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-xl",
+                              "stroke": "$border-strong",
+                              "strokeWidth": 1,
+                              "layout": "vertical",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "S2mDuy",
+                                  "name": "Empty Workbench Toolbar",
+                                  "width": "fill_container",
+                                  "height": 52,
+                                  "fill": "$surface",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "bottom": 1
+                                  },
+                                  "padding": [
+                                    0,
+                                    16
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "n4MpT",
+                                      "name": "Empty Workbench Identity",
+                                      "gap": 10,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "i8i8td",
+                                          "name": "Empty Workbench Tool Mark",
+                                          "width": 34,
+                                          "height": 34,
+                                          "fill": "$surface-ink",
+                                          "cornerRadius": "$r-md",
+                                          "justifyContent": "center",
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "eyX5I",
+                                              "name": "Empty Workbench Tool Mark Label",
+                                              "fill": "$fg-onink",
+                                              "content": "{ }",
+                                              "fontFamily": "Geist Mono",
+                                              "fontSize": 13,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "AZhZy",
+                                          "name": "Empty Workbench Mode",
+                                          "fill": "$fg-secondary",
+                                          "content": "CSV VIEWER",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.45
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "z7lT6",
+                                      "name": "Empty Workbench Toolbar Actions",
+                                      "gap": 8,
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "WvW9K",
+                                          "name": "Empty Example Action",
+                                          "height": 34,
+                                          "cornerRadius": "$r-md",
+                                          "stroke": "$border-strong",
+                                          "strokeWidth": 1,
+                                          "padding": [
+                                            0,
+                                            11
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "HcONj",
+                                              "name": "Empty Example Label",
+                                              "fill": "$fg-primary",
+                                              "content": "Example",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "MGPbT",
+                                          "name": "Empty Reset Action",
+                                          "height": 34,
+                                          "cornerRadius": "$r-md",
+                                          "stroke": "$border-strong",
+                                          "strokeWidth": 1,
+                                          "padding": [
+                                            0,
+                                            11
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "R279J",
+                                              "name": "Empty Reset Label",
+                                              "opacity": 0.45,
+                                              "fill": "$fg-primary",
+                                              "content": "Reset",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "vpZQ7",
+                                  "name": "Empty CSV Workspace Panes",
+                                  "width": "fill_container",
+                                  "height": "fill_container",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "b4tfbW",
+                                      "name": "Empty CSV Input Pane",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "fill": "$surface-muted",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "layout": "vertical",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "HCEpB",
+                                          "name": "Empty CSV Input Header",
+                                          "width": "fill_container",
+                                          "height": 46,
+                                          "fill": "$surface",
+                                          "stroke": "$border-subtle",
+                                          "strokeWidth": {
+                                            "bottom": 1
+                                          },
+                                          "padding": [
+                                            0,
+                                            14
+                                          ],
+                                          "justifyContent": "space_between",
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "I1Ze8x",
+                                              "name": "Empty CSV Input Identity",
+                                              "gap": 8,
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "Rusod",
+                                                  "name": "Empty CSV Input Label",
+                                                  "fill": "$fg-secondary",
+                                                  "content": "CSV INPUT",
+                                                  "fontFamily": "$font-caption",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "600",
+                                                  "letterSpacing": 0.5
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "mbwCF",
+                                                  "name": "Empty CSV Row Count",
+                                                  "fill": "$fg-secondary",
+                                                  "content": "0 rows",
+                                                  "fontFamily": "$font-caption",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "600"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "Feg8t",
+                                              "name": "Empty CSV Input Actions",
+                                              "gap": 8,
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "frame",
+                                                  "id": "uhdcf",
+                                                  "name": "Empty Paste Action",
+                                                  "height": 32,
+                                                  "fill": "$surface",
+                                                  "cornerRadius": "$r-md",
+                                                  "stroke": "$border-strong",
+                                                  "strokeWidth": 1,
+                                                  "gap": 6,
+                                                  "padding": [
+                                                    0,
+                                                    10
+                                                  ],
+                                                  "alignItems": "center",
+                                                  "children": [
+                                                    {
+                                                      "type": "icon",
+                                                      "id": "ouQwR",
+                                                      "name": "Empty Paste Icon",
+                                                      "width": 14,
+                                                      "height": 14,
+                                                      "icon": "clipboard-paste",
+                                                      "library": "lucide",
+                                                      "fill": "$fg-secondary"
+                                                    },
+                                                    {
+                                                      "type": "text",
+                                                      "id": "zyUze",
+                                                      "name": "Empty Paste Label",
+                                                      "fill": "$fg-primary",
+                                                      "content": "Paste",
+                                                      "fontFamily": "$font-body",
+                                                      "fontSize": 12,
+                                                      "fontWeight": "600"
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "frame",
+                                                  "id": "l4x361",
+                                                  "name": "Empty Browse File Action",
+                                                  "context": "Opens the local system file picker in this same workbench.",
+                                                  "height": 32,
+                                                  "fill": "$accent-soft",
+                                                  "cornerRadius": "$r-md",
+                                                  "stroke": "$accent",
+                                                  "strokeWidth": 1,
+                                                  "gap": 6,
+                                                  "padding": [
+                                                    0,
+                                                    10
+                                                  ],
+                                                  "alignItems": "center",
+                                                  "children": [
+                                                    {
+                                                      "type": "icon",
+                                                      "id": "ab8ZK",
+                                                      "name": "Empty Browse File Icon",
+                                                      "width": 14,
+                                                      "height": 14,
+                                                      "icon": "folder-open",
+                                                      "library": "lucide",
+                                                      "fill": "$accent-text"
+                                                    },
+                                                    {
+                                                      "type": "text",
+                                                      "id": "Zu9Gi",
+                                                      "name": "Empty Browse File Label",
+                                                      "fill": "$accent-text",
+                                                      "content": "Browse file",
+                                                      "fontFamily": "$font-body",
+                                                      "fontSize": 12,
+                                                      "fontWeight": "600"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "LtBae",
+                                          "name": "Empty CSV Editor",
+                                          "width": "fill_container",
+                                          "height": "fill_container",
+                                          "fill": "$surface-muted",
+                                          "layout": "vertical",
+                                          "gap": 14,
+                                          "padding": [
+                                            22,
+                                            20
+                                          ],
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "EhYGD",
+                                              "name": "Empty Editor Prompt",
+                                              "width": "fill_container",
+                                              "layout": "vertical",
+                                              "gap": 8,
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "a1S2AG",
+                                                  "name": "Empty Editor Placeholder",
+                                                  "opacity": 0.65,
+                                                  "fill": "$fg-secondary",
+                                                  "content": "Paste CSV text here…",
+                                                  "fontFamily": "Geist Mono",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "normal"
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "nDI8J",
+                                                  "name": "Empty Editor Hint",
+                                                  "fill": "$fg-secondary",
+                                                  "textGrowth": "fixed-width",
+                                                  "width": 480,
+                                                  "content": "The first row becomes the table header. You can also browse for a local CSV or drag one over this workbench.",
+                                                  "lineHeight": 1.45,
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 11,
+                                                  "fontWeight": "normal"
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "mla9y",
+                                      "name": "Empty Table Preview Pane",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "fill": "$surface",
+                                      "layout": "vertical",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "g6MIA",
+                                          "name": "Empty Table Preview Header",
+                                          "width": "fill_container",
+                                          "height": 46,
+                                          "fill": "$surface",
+                                          "stroke": "$border-subtle",
+                                          "strokeWidth": {
+                                            "bottom": 1
+                                          },
+                                          "padding": [
+                                            0,
+                                            16
+                                          ],
+                                          "justifyContent": "space_between",
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "donaq",
+                                              "name": "Empty Table Preview Label",
+                                              "fill": "$fg-secondary",
+                                              "content": "TABLE PREVIEW",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 11,
+                                              "fontWeight": "600",
+                                              "letterSpacing": 0.5
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "Cdn8M",
+                                              "name": "Empty Table Preview Count",
+                                              "fill": "$fg-secondary",
+                                              "content": "0 ROWS",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 9,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "SJziO",
+                                          "name": "Empty Table Result",
+                                          "width": "fill_container",
+                                          "height": "fill_container",
+                                          "layout": "vertical",
+                                          "gap": 10,
+                                          "justifyContent": "center",
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "okR1V",
+                                              "name": "Empty Table Icon Tile",
+                                              "width": 52,
+                                              "height": 52,
+                                              "fill": "$surface-muted",
+                                              "cornerRadius": "$r-xl",
+                                              "justifyContent": "center",
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "icon",
+                                                  "id": "KEJxf",
+                                                  "name": "Empty Table Icon",
+                                                  "opacity": 0.7,
+                                                  "width": 24,
+                                                  "height": 24,
+                                                  "icon": "table-2",
+                                                  "library": "lucide",
+                                                  "fill": "$fg-secondary"
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "pic4H",
+                                              "name": "Empty Table Title",
+                                              "fill": "$fg-primary",
+                                              "content": "Table preview will appear here",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 14,
+                                              "fontWeight": "650"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "LxEaR",
+                                              "name": "Empty Table Description",
+                                              "fill": "$fg-secondary",
+                                              "textGrowth": "fixed-width",
+                                              "width": 330,
+                                              "content": "Paste rows, browse for a file, or drag a CSV over the workbench to begin.",
+                                              "lineHeight": 1.45,
+                                              "textAlign": "center",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "m17CC",
+                                      "layoutPosition": "absolute",
+                                      "x": 1308,
+                                      "y": 64,
+                                      "name": "Empty Options Edge Badge",
+                                      "context": "Opens delimiter options without reducing the closed workbench width.",
+                                      "width": 32,
+                                      "height": 32,
+                                      "fill": "$accent",
+                                      "cornerRadius": [
+                                        8,
+                                        0,
+                                        0,
+                                        8
+                                      ],
+                                      "effect": {
+                                        "type": "shadow",
+                                        "shadowType": "outer",
+                                        "color": "#001A4D33",
+                                        "offset": {
+                                          "x": -2,
+                                          "y": 2
+                                        },
+                                        "blur": 8
+                                      },
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "caEXg",
+                                          "name": "Empty Options Badge Icon",
+                                          "width": 14,
+                                          "height": 14,
+                                          "icon": "sliders-horizontal",
+                                          "library": "lucide",
+                                          "fill": "$fg-onink"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "NXRoH",
+                                  "name": "Empty Workbench Runtime Status",
+                                  "width": "fill_container",
+                                  "height": 42,
+                                  "fill": "$surface",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "top": 1
+                                  },
+                                  "padding": [
+                                    0,
+                                    16
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "EXsjd",
+                                      "name": "Empty Runtime Status",
+                                      "fill": "$fg-secondary",
+                                      "content": "Ready for CSV input",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 11,
+                                      "fontWeight": "600"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "ieCps",
+                                      "name": "Empty Runtime Privacy",
+                                      "gap": 6,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "yZJYU",
+                                          "name": "Empty Runtime Privacy Icon",
+                                          "width": 13,
+                                          "height": 13,
+                                          "icon": "lock-keyhole",
+                                          "library": "lucide",
+                                          "fill": "$success-text"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "Q2J83",
+                                          "name": "Empty Runtime Privacy Label",
+                                          "fill": "$fg-secondary",
+                                          "content": "Local browser intake",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "CzSZb/ApM7t": {
+                              "content": "Inspection only"
+                            },
+                            "CzSZb/i6ohus": {
+                              "content": "The first row becomes the header and every row must have the same width. Quoted fields are supported, but the table is not editable."
+                            },
+                            "CzSZb/Nz3jq": {
+                              "content": "Source and result stay local"
+                            },
+                            "CzSZb/H4Jads": {
+                              "content": "CSV INPUT and TABLE PREVIEW remain in this browser unless you copy or download them."
+                            },
+                            "CzSZb/WotxF": {
+                              "content": "Parse and inspect rows"
+                            },
+                            "CzSZb/H4KSb": {
+                              "content": "Paste CSV, confirm the delimiter, view the live table, and scan headers and row alignment. Save a snapshot only when needed."
+                            },
+                            "CzSZb/xNABe": {
+                              "content": "Clean or export the CSV"
+                            },
+                            "CzSZb/r7KR4": {
+                              "content": "Normalize formatting, validate row structure, or generate an exportable table artifact."
+                            },
+                            "CzSZb/N1diS": {
+                              "content": "CSV Formatter"
+                            },
+                            "CzSZb/FKF6D": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/wuRvR": {
+                              "content": "CSV Validator"
+                            },
+                            "CzSZb/teU3E": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/m8I2Tp": {
+                              "content": "CSV to Table"
+                            },
+                            "CzSZb/l48wPZ": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
                             }
                           }
                         }
                       ]
                     },
-                    "CHJP8": {
-                      "enabled": false
-                    },
-                    "Q7QT0": {
-                      "content": "Delimiter · Comma"
-                    },
-                    "GECiW": {
-                      "enabled": false
-                    },
-                    "W9Jmc": {
-                      "content": "First row is the header"
-                    },
-                    "CJG10": {
-                      "enabled": false
-                    },
-                    "v9vj8": {
-                      "content": "Require equal-width rows"
-                    },
-                    "yckSF": {
-                      "content": "View only · 2M character max",
-                      "enabled": false
-                    },
-                    "ADLe2/Y4AAX": {
-                      "content": "Start over"
-                    },
-                    "VOE77/i2HLbt": {
-                      "content": "View table"
-                    },
-                    "r6sNRe": {
-                      "content": "Live preview · 3 rows · 3 columns",
-                      "fill": "$success-text"
-                    },
-                    "BCPXm": {
-                      "content": "Local runtime · result verified",
-                      "fill": "$fg-secondary",
-                      "fontFamily": "$font-caption"
-                    },
-                    "CzSZb/ApM7t": {
-                      "content": "Inspection only"
-                    },
-                    "CzSZb/i6ohus": {
-                      "content": "The first row becomes the header and every row must have the same width. Quoted fields are supported, but the table is not editable."
-                    },
-                    "CzSZb/Nz3jq": {
-                      "content": "Source and result stay local"
-                    },
-                    "CzSZb/H4Jads": {
-                      "content": "CSV INPUT and TABLE PREVIEW remain in this browser unless you copy or download them."
-                    },
-                    "CzSZb/WotxF": {
-                      "content": "Parse and inspect rows"
-                    },
-                    "CzSZb/H4KSb": {
-                      "content": "Paste CSV, confirm the delimiter, view the live table, and scan headers and row alignment. Save a snapshot only when needed."
-                    },
-                    "CzSZb/xNABe": {
-                      "content": "Clean or export the CSV"
-                    },
-                    "CzSZb/r7KR4": {
-                      "content": "Normalize formatting, validate row structure, or generate an exportable table artifact."
-                    },
-                    "CzSZb/N1diS": {
-                      "content": "CSV Formatter"
-                    },
-                    "CzSZb/FKF6D": {
-                      "enabled": false,
-                      "width": 0,
-                      "height": 0
-                    },
-                    "CzSZb/wuRvR": {
-                      "content": "CSV Validator"
-                    },
-                    "CzSZb/teU3E": {
-                      "enabled": false,
-                      "width": 0,
-                      "height": 0
-                    },
-                    "CzSZb/m8I2Tp": {
-                      "content": "CSV to Table"
-                    },
-                    "CzSZb/l48wPZ": {
-                      "enabled": false,
-                      "width": 0,
-                      "height": 0
+                    {
+                      "id": "lVKEJ",
+                      "type": "ref",
+                      "ref": "KhiTv",
+                      "name": "Footer/SmartTools",
+                      "width": "fill_container"
                     }
-                  }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Kl2sF",
+                  "name": "Screen/DevTools CSV Viewer",
+                  "clip": true,
+                  "width": 1440,
+                  "fill": "$surface",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "Ax4sw",
+                      "type": "ref",
+                      "ref": "y1y4Xy",
+                      "name": "Navbar/SmartTools — Top — Signed Out",
+                      "width": "fill_container",
+                      "height": 72
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mMvya",
+                      "name": "CSV Viewer Page Body",
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": [
+                        20,
+                        40,
+                        0,
+                        40
+                      ],
+                      "children": [
+                        {
+                          "id": "nHwjJ",
+                          "type": "ref",
+                          "ref": "L5A5Gt",
+                          "name": "Breadcrumb — CSV Viewer",
+                          "width": "fill_container",
+                          "descendants": {
+                            "eIiMn": {
+                              "content": "Developer tools"
+                            },
+                            "OUQk1": {
+                              "content": "CSV Viewer · /devtools/csv-viewer"
+                            }
+                          }
+                        },
+                        {
+                          "id": "m4pko",
+                          "type": "ref",
+                          "ref": "xWzlR",
+                          "name": "CSV Viewer Runtime",
+                          "width": "fill_container",
+                          "descendants": {
+                            "jNZLn/ESWP8": {
+                              "content": "CSV & DATA TOOL"
+                            },
+                            "jNZLn/vV8dH": {
+                              "content": "CSV Viewer"
+                            },
+                            "jNZLn/S7al9Q": {
+                              "content": "Paste rows, browse for a local CSV, or drag a file over this same workbench to inspect it as a live accessible table."
+                            },
+                            "jNZLn/hsrgB": {
+                              "content": "MAX 2M CHARACTERS",
+                              "fill": "$accent-text"
+                            },
+                            "jNZLn/WPpKn": {
+                              "content": "COPY OR DOWNLOAD"
+                            },
+                            "jNZLn/StMiA": {
+                              "content": "PRIVATE IN BROWSER",
+                              "fill": "$accent-text"
+                            },
+                            "Tg7ar": {
+                              "context": "Single persistent CSV Viewer workbench. Users paste text, browse for a local file, or drag a file over this same surface; the workbench does not switch to a separate picker view."
+                            },
+                            "dAIeC": {
+                              "type": "frame",
+                              "id": "uQ9Cc",
+                              "name": "Conversion Toolbar — Options Collapsed",
+                              "width": "fill_container",
+                              "height": 52,
+                              "stroke": "$border-subtle",
+                              "strokeWidth": {
+                                "bottom": 1
+                              },
+                              "padding": [
+                                0,
+                                16
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "YR2Qa",
+                                  "name": "CSV Viewer Tool Identity",
+                                  "gap": 10,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "l2vO2D",
+                                      "name": "Structured Data Tool Icon",
+                                      "width": 34,
+                                      "height": 34,
+                                      "fill": "$surface-ink",
+                                      "cornerRadius": "$r-md",
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "NNBvD",
+                                          "name": "Conversion Braces",
+                                          "fill": "$fg-onink",
+                                          "content": "{ }",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 13,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "u4fUou",
+                                      "name": "Workspace Mode Label",
+                                      "fill": "$fg-secondary",
+                                      "content": "LIVE TABLE PREVIEW",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 10,
+                                      "fontWeight": "600",
+                                      "letterSpacing": 0.45
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "mn3Cl",
+                                  "name": "CSV Viewer Toolbar Actions",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "B9Nsb",
+                                      "name": "Load Example Action",
+                                      "height": 34,
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-strong",
+                                      "strokeWidth": 1,
+                                      "padding": [
+                                        0,
+                                        11
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "BAGTX",
+                                          "name": "Load Example Label",
+                                          "fill": "$fg-primary",
+                                          "content": "Example",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "AchWn",
+                                      "name": "Reset CSV Action",
+                                      "height": 34,
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-strong",
+                                      "strokeWidth": 1,
+                                      "padding": [
+                                        0,
+                                        11
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "hSQsw",
+                                          "name": "Reset CSV Label",
+                                          "fill": "$fg-primary",
+                                          "content": "Reset",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "u8sP8": {
+                              "name": "CSV INPUT Pane"
+                            },
+                            "umNGt": {
+                              "type": "frame",
+                              "id": "W4SuqJ",
+                              "name": "CSV INPUT Header — Paste + File Picker",
+                              "width": "fill_container",
+                              "height": 46,
+                              "fill": "$surface",
+                              "stroke": "$border-subtle",
+                              "strokeWidth": {
+                                "bottom": 1
+                              },
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "kk1XT",
+                                  "name": "CSV Input Identity",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "U4iiq0",
+                                      "name": "CSV Input Label",
+                                      "fill": "$fg-secondary",
+                                      "content": "CSV INPUT",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 11,
+                                      "fontWeight": "600",
+                                      "letterSpacing": 0.5
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "uFBEY",
+                                      "name": "CSV Input Row Count",
+                                      "fill": "$success-text",
+                                      "content": "3 data rows",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 11,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "LIfsB",
+                                  "name": "CSV Input Actions",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "tYZPE",
+                                      "name": "CSV Input Bytes",
+                                      "fill": "$fg-secondary",
+                                      "content": "97 bytes",
+                                      "fontFamily": "Geist Mono",
+                                      "fontSize": 10,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "On1os",
+                                      "name": "Paste CSV Source Action",
+                                      "height": 32,
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$border-strong",
+                                      "strokeWidth": 1,
+                                      "gap": 6,
+                                      "padding": [
+                                        0,
+                                        10
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "dSy21",
+                                          "name": "Paste CSV Source Icon",
+                                          "width": 14,
+                                          "height": 14,
+                                          "icon": "clipboard-paste",
+                                          "library": "lucide",
+                                          "fill": "$fg-secondary"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "qAKK3",
+                                          "name": "Paste CSV Source Label",
+                                          "fill": "$fg-primary",
+                                          "content": "Paste",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "r6JTZ5",
+                                      "name": "Browse CSV File Action",
+                                      "context": "Opens the local system file picker without leaving this workbench.",
+                                      "height": 32,
+                                      "fill": "$accent-soft",
+                                      "cornerRadius": "$r-md",
+                                      "stroke": "$accent",
+                                      "strokeWidth": 1,
+                                      "gap": 6,
+                                      "padding": [
+                                        0,
+                                        10
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "FDvAw",
+                                          "name": "Browse CSV File Icon",
+                                          "width": 14,
+                                          "height": 14,
+                                          "icon": "folder-open",
+                                          "library": "lucide",
+                                          "fill": "$accent-text"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "paRqz",
+                                          "name": "Browse CSV File Label",
+                                          "fill": "$accent-text",
+                                          "content": "Browse file",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "rqhJt": {
+                              "name": "CSV INPUT Editor"
+                            },
+                            "CwNDm": {
+                              "content": "1\n2\n3\n4"
+                            },
+                            "AfbeD": {
+                              "name": "CSV INPUT Content",
+                              "content": "name,role,active\nMaya,Engineer,true\nNoah,Designer,true\nAri,Analyst,false"
+                            },
+                            "hzFGp": {
+                              "name": "TABLE PREVIEW Pane"
+                            },
+                            "Q3T25G": {
+                              "type": "frame",
+                              "id": "KfuOv",
+                              "name": "TABLE PREVIEW Header — Options Entry",
+                              "width": "fill_container",
+                              "height": 46,
+                              "fill": "$surface",
+                              "stroke": "$border-subtle",
+                              "strokeWidth": {
+                                "bottom": 1
+                              },
+                              "padding": [
+                                0,
+                                16
+                              ],
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "ILAwO",
+                                  "name": "Output Identity",
+                                  "gap": 8,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "KEzkV",
+                                      "name": "Output Label",
+                                      "fill": "$fg-secondary",
+                                      "content": "TABLE PREVIEW",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 11,
+                                      "fontWeight": "600",
+                                      "letterSpacing": 0.5
+                                    },
+                                    {
+                                      "type": "icon",
+                                      "id": "fO1uq",
+                                      "name": "Success Icon",
+                                      "width": 14,
+                                      "height": 14,
+                                      "icon": "circle-check",
+                                      "library": "lucide",
+                                      "fill": "$success"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "z6n4to",
+                                  "name": "Output Actions",
+                                  "gap": 14,
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "t8VS0l",
+                                      "name": "Copy Output",
+                                      "fill": "$accent",
+                                      "content": "Copy visible table",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "h2tA9",
+                                      "name": "Download Output",
+                                      "fill": "$accent",
+                                      "content": "Save snapshot .html",
+                                      "fontFamily": "$font-body",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "DZCOx": {
+                              "type": "frame",
+                              "id": "Y8fT4i",
+                              "name": "Live CSV Table Preview — Structured",
+                              "width": "fill_container",
+                              "height": "fill_container",
+                              "fill": "$surface",
+                              "stroke": "$border-strong",
+                              "strokeWidth": 1,
+                              "layout": "vertical",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "pDJBp",
+                                  "name": "Table Dataset Summary",
+                                  "width": "fill_container",
+                                  "height": 38,
+                                  "fill": "$surface",
+                                  "padding": [
+                                    0,
+                                    12
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "sJ50N",
+                                      "name": "Dataset Summary Left",
+                                      "gap": 8,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "OmBIy",
+                                          "name": "Table Grid Icon",
+                                          "width": 14,
+                                          "height": 14,
+                                          "icon": "table-2",
+                                          "library": "lucide",
+                                          "fill": "$accent-text"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "rJ3vz",
+                                          "name": "Dataset Dimensions",
+                                          "fill": "$fg-primary",
+                                          "content": "3 ROWS  ×  3 COLUMNS",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "F9cYx",
+                                      "x": 575,
+                                      "y": 12.5,
+                                      "name": "Header Detection Status",
+                                      "enabled": false,
+                                      "gap": 6,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "ellipse",
+                                          "id": "MZxfM",
+                                          "name": "Header Detected Dot",
+                                          "fill": "$accent",
+                                          "width": 6,
+                                          "height": 6
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "YZ6pi",
+                                          "name": "Header Detected Label",
+                                          "fill": "$accent-text",
+                                          "content": "STICKY HEADER",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "jzWCR",
+                                  "name": "CSV Table Header Row — Sticky",
+                                  "context": "Sticky at the top of the table preview while data rows scroll beneath it.",
+                                  "width": "fill_container",
+                                  "height": 40,
+                                  "fill": "$surface-muted",
+                                  "stroke": "$border-strong",
+                                  "strokeWidth": {
+                                    "top": 1,
+                                    "bottom": 1
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "p6UlND",
+                                      "name": "Header 1",
+                                      "width": 42,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "OVXAf",
+                                          "name": "Header 1 Label",
+                                          "fill": "$fg-secondary",
+                                          "content": "#",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "dY6BV",
+                                      "name": "Header 2",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "bVREa",
+                                          "name": "Header 2 Label",
+                                          "fill": "$fg-primary",
+                                          "content": "NAME",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "xmjJ4",
+                                      "name": "Header 3",
+                                      "width": 150,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "SF8nk",
+                                          "name": "Header 3 Label",
+                                          "fill": "$fg-primary",
+                                          "content": "ROLE",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "rQxF3",
+                                      "name": "Header 4",
+                                      "width": 100,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "fAkVd",
+                                          "name": "Header 4 Label",
+                                          "fill": "$fg-primary",
+                                          "content": "ACTIVE",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600",
+                                          "letterSpacing": 0.4
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "zHoG5",
+                                  "name": "CSV Table Data Row 1",
+                                  "width": "fill_container",
+                                  "height": 48,
+                                  "fill": "$surface",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "bottom": 1
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "CNnD0",
+                                      "name": "Row 1 Cell 1",
+                                      "width": 42,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "yTctK",
+                                          "name": "Row 1 Cell 1 Value",
+                                          "fill": "$fg-secondary",
+                                          "content": "1",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "Pn1I0",
+                                      "name": "Row 1 Cell 2",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "S0SUR",
+                                          "name": "Row 1 Cell 2 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Maya",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "500"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "sE17o",
+                                      "name": "Row 1 Cell 3",
+                                      "width": 150,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "tWalA",
+                                          "name": "Row 1 Cell 3 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Engineer",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "I0jNo",
+                                      "name": "Row 1 Cell 4",
+                                      "width": 100,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "KLOJD",
+                                          "name": "Row 1 Cell 4 Status",
+                                          "fill": "$success-soft",
+                                          "cornerRadius": "$r-full",
+                                          "padding": [
+                                            4,
+                                            8
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "lNhEa",
+                                              "name": "Row 1 Cell 4 Status Label",
+                                              "fill": "$success-text",
+                                              "content": "Active",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 10,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "H9kGM",
+                                  "name": "CSV Table Data Row 2",
+                                  "width": "fill_container",
+                                  "height": 48,
+                                  "fill": "$surface-muted",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "bottom": 1
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "z4zoo",
+                                      "name": "Row 2 Cell 1",
+                                      "width": 42,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "KVbIU",
+                                          "name": "Row 2 Cell 1 Value",
+                                          "fill": "$fg-secondary",
+                                          "content": "2",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "fRP0k",
+                                      "name": "Row 2 Cell 2",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "lMgsD",
+                                          "name": "Row 2 Cell 2 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Noah",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "500"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "jDG0c",
+                                      "name": "Row 2 Cell 3",
+                                      "width": 150,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "G0yJp",
+                                          "name": "Row 2 Cell 3 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Designer",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "g2ihY",
+                                      "name": "Row 2 Cell 4",
+                                      "width": 100,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "D7nyb",
+                                          "name": "Row 2 Cell 4 Status",
+                                          "fill": "$success-soft",
+                                          "cornerRadius": "$r-full",
+                                          "padding": [
+                                            4,
+                                            8
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "Gslba",
+                                              "name": "Row 2 Cell 4 Status Label",
+                                              "fill": "$success-text",
+                                              "content": "Active",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 10,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "ylDPF",
+                                  "name": "CSV Table Data Row 3",
+                                  "width": "fill_container",
+                                  "height": 48,
+                                  "fill": "$surface",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "bottom": 1
+                                  },
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "xaAw3",
+                                      "name": "Row 3 Cell 1",
+                                      "width": 42,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        8
+                                      ],
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "OJq0l",
+                                          "name": "Row 3 Cell 1 Value",
+                                          "fill": "$fg-secondary",
+                                          "content": "3",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "Z5pfWV",
+                                      "name": "Row 3 Cell 2",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "w4Wm2",
+                                          "name": "Row 3 Cell 2 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Ari",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "500"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "XETk2",
+                                      "name": "Row 3 Cell 3",
+                                      "width": 150,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "right": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "vBUUk",
+                                          "name": "Row 3 Cell 3 Value",
+                                          "fill": "$fg-primary",
+                                          "content": "Analyst",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "iGMIQ",
+                                      "name": "Row 3 Cell 4",
+                                      "width": 100,
+                                      "height": "fill_container",
+                                      "stroke": "$border-subtle",
+                                      "padding": [
+                                        0,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "qxRhi",
+                                          "name": "Row 3 Cell 4 Status",
+                                          "fill": "$surface-muted",
+                                          "cornerRadius": "$r-full",
+                                          "padding": [
+                                            4,
+                                            8
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "dusLt",
+                                              "name": "Row 3 Cell 4 Status Label",
+                                              "fill": "$fg-secondary",
+                                              "content": "Inactive",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 10,
+                                              "fontWeight": "600"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Xzl1G",
+                                  "name": "Table Flexible Empty Area",
+                                  "width": "fill_container",
+                                  "height": "fill_container",
+                                  "fill": "$surface"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "J00cuN",
+                                  "name": "Table Footer",
+                                  "width": "fill_container",
+                                  "height": 34,
+                                  "fill": "$surface-muted",
+                                  "stroke": "$border-subtle",
+                                  "strokeWidth": {
+                                    "top": 1
+                                  },
+                                  "padding": [
+                                    0,
+                                    12
+                                  ],
+                                  "justifyContent": "space_between",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "I7DLn",
+                                      "name": "Visible Rows Summary",
+                                      "fill": "$fg-secondary",
+                                      "content": "Showing all 3 rows",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 10,
+                                      "fontWeight": "normal"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "dQC8t",
+                                      "name": "Column Fit Summary",
+                                      "fill": "$fg-secondary",
+                                      "content": "Columns fit to preview",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 10,
+                                      "fontWeight": "normal"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "tgqUO",
+                                  "layoutPosition": "absolute",
+                                  "x": 648,
+                                  "y": 4,
+                                  "name": "Compact Options Edge Badge",
+                                  "context": "Compact high-visibility badge anchored to the upper-right workspace edge. Click to slide in the options sidebar without reserving closed-state width.",
+                                  "width": 32,
+                                  "height": 32,
+                                  "fill": "$accent",
+                                  "cornerRadius": [
+                                    8,
+                                    0,
+                                    0,
+                                    8
+                                  ],
+                                  "stroke": "$accent",
+                                  "strokeWidth": 1,
+                                  "effect": {
+                                    "type": "shadow",
+                                    "shadowType": "outer",
+                                    "color": "#001A4D33",
+                                    "offset": {
+                                      "x": -2,
+                                      "y": 2
+                                    },
+                                    "blur": 8
+                                  },
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "icon",
+                                      "id": "uJvFS",
+                                      "name": "Options Badge Icon",
+                                      "width": 14,
+                                      "height": 14,
+                                      "icon": "sliders-horizontal",
+                                      "library": "lucide",
+                                      "fill": "$fg-onink"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "JRtwr": {
+                              "enabled": false,
+                              "width": 0
+                            },
+                            "ME4CZ": {
+                              "content": "SETTINGS & RUN"
+                            },
+                            "mGUGc": {
+                              "type": "frame",
+                              "id": "m9jPWK",
+                              "name": "Route-Specific Settings",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 10,
+                              "children": [
+                                {
+                                  "id": "tUWA1",
+                                  "type": "ref",
+                                  "ref": "NcoS9",
+                                  "name": "Setting/DELIMITER",
+                                  "width": "fill_container",
+                                  "descendants": {
+                                    "zthem": {
+                                      "content": "DELIMITER"
+                                    },
+                                    "JtSjO": {
+                                      "content": "Comma"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "CHJP8": {
+                              "enabled": false
+                            },
+                            "Q7QT0": {
+                              "content": "Delimiter · Comma"
+                            },
+                            "GECiW": {
+                              "enabled": false
+                            },
+                            "W9Jmc": {
+                              "content": "First row is the header"
+                            },
+                            "CJG10": {
+                              "enabled": false
+                            },
+                            "v9vj8": {
+                              "content": "Require equal-width rows"
+                            },
+                            "yckSF": {
+                              "content": "View only · 2M character max",
+                              "enabled": false
+                            },
+                            "ADLe2/Y4AAX": {
+                              "content": "Start over"
+                            },
+                            "VOE77/i2HLbt": {
+                              "content": "View table"
+                            },
+                            "r6sNRe": {
+                              "content": "Live preview · 3 rows · 3 columns",
+                              "fill": "$success-text"
+                            },
+                            "BCPXm": {
+                              "content": "Local runtime · result verified",
+                              "fill": "$fg-secondary",
+                              "fontFamily": "$font-caption"
+                            },
+                            "CzSZb/ApM7t": {
+                              "content": "Inspection only"
+                            },
+                            "CzSZb/i6ohus": {
+                              "content": "The first row becomes the header and every row must have the same width. Quoted fields are supported, but the table is not editable."
+                            },
+                            "CzSZb/Nz3jq": {
+                              "content": "Source and result stay local"
+                            },
+                            "CzSZb/H4Jads": {
+                              "content": "CSV INPUT and TABLE PREVIEW remain in this browser unless you copy or download them."
+                            },
+                            "CzSZb/WotxF": {
+                              "content": "Parse and inspect rows"
+                            },
+                            "CzSZb/H4KSb": {
+                              "content": "Paste CSV, confirm the delimiter, view the live table, and scan headers and row alignment. Save a snapshot only when needed."
+                            },
+                            "CzSZb/xNABe": {
+                              "content": "Clean or export the CSV"
+                            },
+                            "CzSZb/r7KR4": {
+                              "content": "Normalize formatting, validate row structure, or generate an exportable table artifact."
+                            },
+                            "CzSZb/N1diS": {
+                              "content": "CSV Formatter"
+                            },
+                            "CzSZb/FKF6D": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/wuRvR": {
+                              "content": "CSV Validator"
+                            },
+                            "CzSZb/teU3E": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/m8I2Tp": {
+                              "content": "CSV to Table"
+                            },
+                            "CzSZb/l48wPZ": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "z0WvR0",
+                      "type": "ref",
+                      "ref": "KhiTv",
+                      "name": "Footer/SmartTools",
+                      "width": "fill_container"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Swgt2",
+                  "name": "Screen/DevTools CSV Viewer — Drag Over",
+                  "clip": true,
+                  "width": 1440,
+                  "fill": "$surface",
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "id": "t8n5dc",
+                      "type": "ref",
+                      "ref": "y1y4Xy",
+                      "name": "Navbar/SmartTools — Top — Signed Out",
+                      "width": "fill_container",
+                      "height": 72
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R7XuK",
+                      "name": "CSV Viewer Page Body",
+                      "width": "fill_container",
+                      "fill": "$surface",
+                      "layout": "vertical",
+                      "gap": 16,
+                      "padding": [
+                        20,
+                        40,
+                        0,
+                        40
+                      ],
+                      "children": [
+                        {
+                          "id": "m5NKa",
+                          "type": "ref",
+                          "ref": "L5A5Gt",
+                          "name": "Breadcrumb — CSV Viewer",
+                          "width": "fill_container",
+                          "descendants": {
+                            "eIiMn": {
+                              "content": "Developer tools"
+                            },
+                            "OUQk1": {
+                              "content": "CSV Viewer · /devtools/csv-viewer"
+                            }
+                          }
+                        },
+                        {
+                          "id": "O177Z",
+                          "type": "ref",
+                          "ref": "xWzlR",
+                          "name": "CSV Viewer Runtime",
+                          "width": "fill_container",
+                          "descendants": {
+                            "jNZLn/ESWP8": {
+                              "content": "CSV & DATA TOOL"
+                            },
+                            "jNZLn/vV8dH": {
+                              "content": "CSV Viewer"
+                            },
+                            "jNZLn/S7al9Q": {
+                              "content": "Drop a CSV file into the workbench or paste rows directly, then inspect the parsed data as a live accessible table."
+                            },
+                            "jNZLn/hsrgB": {
+                              "content": "MAX 2M CHARACTERS",
+                              "fill": "$accent-text"
+                            },
+                            "jNZLn/WPpKn": {
+                              "content": "COPY OR DOWNLOAD"
+                            },
+                            "jNZLn/StMiA": {
+                              "content": "PRIVATE IN BROWSER",
+                              "fill": "$accent-text"
+                            },
+                            "Tg7ar": {
+                              "type": "frame",
+                              "id": "Me5iJ",
+                              "name": "CSV Workbench Drag-Over Overlay — Refined",
+                              "context": "Transient overlay on the same persistent CSV Viewer workbench. It appears only while a valid file is dragged over the surface and disappears on drag leave.",
+                              "clip": true,
+                              "width": "fill_container",
+                              "height": 680,
+                              "fill": "$surface",
+                              "cornerRadius": "$r-xl",
+                              "stroke": "$border-strong",
+                              "strokeWidth": 1,
+                              "layout": "none",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "yjC3T",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Underlying CSV Workbench Preview",
+                                  "opacity": 0.32,
+                                  "width": 1360,
+                                  "height": 680,
+                                  "fill": "$surface",
+                                  "layout": "vertical",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "JTGe7",
+                                      "name": "Underlying Toolbar",
+                                      "width": "fill_container",
+                                      "height": 52,
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "bottom": 1
+                                      },
+                                      "padding": [
+                                        0,
+                                        16
+                                      ],
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "lNt5m",
+                                          "name": "Underlying Tool Mark",
+                                          "width": 34,
+                                          "height": 34,
+                                          "fill": "$surface-ink",
+                                          "cornerRadius": "$r-md"
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "p211Vq",
+                                          "name": "Underlying Toolbar Actions",
+                                          "gap": 8,
+                                          "children": [
+                                            {
+                                              "type": "rectangle",
+                                              "cornerRadius": "$r-md",
+                                              "id": "j5Ul6",
+                                              "name": "Underlying Toolbar Action 1",
+                                              "fill": "$surface-muted",
+                                              "width": 70,
+                                              "height": 30
+                                            },
+                                            {
+                                              "type": "rectangle",
+                                              "cornerRadius": "$r-md",
+                                              "id": "Q7eZc",
+                                              "name": "Underlying Toolbar Action 2",
+                                              "fill": "$surface-muted",
+                                              "width": 70,
+                                              "height": 30
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "Np5Av",
+                                      "name": "Underlying Workspace Panes",
+                                      "width": "fill_container",
+                                      "height": "fill_container",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "p6MhNX",
+                                          "name": "Underlying CSV Input Pane",
+                                          "width": "fill_container",
+                                          "height": "fill_container",
+                                          "fill": "$surface-muted",
+                                          "stroke": "$border-subtle",
+                                          "strokeWidth": {
+                                            "right": 1
+                                          },
+                                          "layout": "vertical",
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "y2EQD",
+                                              "name": "Underlying Input Header",
+                                              "width": "fill_container",
+                                              "height": 46,
+                                              "fill": "$surface",
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "AwoMi",
+                                              "name": "Underlying CSV Lines",
+                                              "width": "fill_container",
+                                              "height": "fill_container",
+                                              "layout": "vertical",
+                                              "gap": 12,
+                                              "padding": 22,
+                                              "children": [
+                                                {
+                                                  "type": "rectangle",
+                                                  "cornerRadius": 2,
+                                                  "id": "t7QWT",
+                                                  "name": "Underlying CSV Line 1",
+                                                  "fill": "$border-strong",
+                                                  "width": 280,
+                                                  "height": 10
+                                                },
+                                                {
+                                                  "type": "rectangle",
+                                                  "cornerRadius": 2,
+                                                  "id": "ZygHL",
+                                                  "name": "Underlying CSV Line 2",
+                                                  "fill": "$border-strong",
+                                                  "width": 360,
+                                                  "height": 10
+                                                },
+                                                {
+                                                  "type": "rectangle",
+                                                  "cornerRadius": 2,
+                                                  "id": "p7fxnV",
+                                                  "name": "Underlying CSV Line 3",
+                                                  "fill": "$border-strong",
+                                                  "width": 320,
+                                                  "height": 10
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "frame",
+                                          "id": "P6h0o",
+                                          "name": "Underlying Table Pane",
+                                          "width": "fill_container",
+                                          "height": "fill_container",
+                                          "fill": "$surface",
+                                          "layout": "vertical",
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "agCts",
+                                              "name": "Underlying Table Header",
+                                              "width": "fill_container",
+                                              "height": 46,
+                                              "fill": "$surface",
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "e9nq7",
+                                              "name": "Underlying Table Columns",
+                                              "width": "fill_container",
+                                              "height": 40,
+                                              "fill": "$surface-muted",
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "k6c2Oc",
+                                              "name": "Underlying Table Row 1",
+                                              "width": "fill_container",
+                                              "height": 46,
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "w175CN",
+                                              "name": "Underlying Table Row 2",
+                                              "width": "fill_container",
+                                              "height": 46,
+                                              "fill": "$surface-muted",
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            },
+                                            {
+                                              "type": "frame",
+                                              "id": "O0NFP",
+                                              "name": "Underlying Table Row 3",
+                                              "width": "fill_container",
+                                              "height": 46,
+                                              "stroke": "$border-subtle",
+                                              "strokeWidth": {
+                                                "bottom": 1
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "V103Ky",
+                                      "name": "Underlying Runtime Status",
+                                      "width": "fill_container",
+                                      "height": 42,
+                                      "stroke": "$border-subtle",
+                                      "strokeWidth": {
+                                        "top": 1
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "Rjf4E",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "Active CSV Drop Overlay",
+                                  "width": 1360,
+                                  "height": 680,
+                                  "fill": "#E8F0FFE8",
+                                  "cornerRadius": "$r-xl",
+                                  "stroke": "$accent",
+                                  "strokeWidth": 2,
+                                  "layout": "vertical",
+                                  "gap": 18,
+                                  "justifyContent": "center",
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "U5eFrx",
+                                      "layoutPosition": "absolute",
+                                      "x": 24,
+                                      "y": 20,
+                                      "name": "Drag Overlay Header",
+                                      "width": 1312,
+                                      "height": 32,
+                                      "justifyContent": "space_between",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "frame",
+                                          "id": "gtDwv",
+                                          "name": "Active Drop Mode Badge",
+                                          "fill": "$accent",
+                                          "cornerRadius": "$r-full",
+                                          "gap": 6,
+                                          "padding": [
+                                            6,
+                                            10
+                                          ],
+                                          "alignItems": "center",
+                                          "children": [
+                                            {
+                                              "type": "ellipse",
+                                              "id": "aZMO1",
+                                              "name": "Active Drop Mode Dot",
+                                              "fill": "$fg-onink",
+                                              "width": 6,
+                                              "height": 6
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "v034Nb",
+                                              "name": "Active Drop Mode Label",
+                                              "fill": "$fg-onink",
+                                              "content": "DROP MODE ACTIVE",
+                                              "fontFamily": "$font-caption",
+                                              "fontSize": 10,
+                                              "fontWeight": "700",
+                                              "letterSpacing": 0.5
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "p27EX",
+                                          "name": "Drag Cancel Hint",
+                                          "fill": "$fg-secondary",
+                                          "content": "Move outside to cancel",
+                                          "fontFamily": "$font-caption",
+                                          "fontSize": 10,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "eStFl",
+                                      "name": "Active Drop Icon",
+                                      "width": 68,
+                                      "height": 68,
+                                      "fill": "$accent",
+                                      "cornerRadius": "$r-full",
+                                      "effect": {
+                                        "type": "shadow",
+                                        "shadowType": "outer",
+                                        "color": "#0066FF33",
+                                        "offset": {
+                                          "x": 0,
+                                          "y": 8
+                                        },
+                                        "blur": 20
+                                      },
+                                      "justifyContent": "center",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "SiBS0",
+                                          "name": "Active Drop Upload Icon",
+                                          "width": 30,
+                                          "height": 30,
+                                          "icon": "arrow-down-to-line",
+                                          "library": "lucide",
+                                          "fill": "$fg-onink"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "OMumB",
+                                      "name": "Active Drop Message",
+                                      "width": 650,
+                                      "layout": "vertical",
+                                      "gap": 8,
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "Qb61Z",
+                                          "name": "Active Drop Title",
+                                          "fill": "$fg-primary",
+                                          "content": "Release to replace the current CSV",
+                                          "fontFamily": "$font-heading",
+                                          "fontSize": 30,
+                                          "fontWeight": "650",
+                                          "letterSpacing": -0.4
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "jfRgj",
+                                          "name": "Active Drop Description",
+                                          "fill": "$fg-secondary",
+                                          "textGrowth": "fixed-width",
+                                          "width": "fill_container",
+                                          "content": "Drop anywhere in this workbench. The new file will be parsed locally and the table preview will update in place.",
+                                          "lineHeight": 1.45,
+                                          "textAlign": "center",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "mMkaH",
+                                      "name": "Incoming File Badge",
+                                      "fill": "$surface",
+                                      "cornerRadius": "$r-full",
+                                      "stroke": "$accent",
+                                      "strokeWidth": 1,
+                                      "gap": 9,
+                                      "padding": [
+                                        9,
+                                        14
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "icon",
+                                          "id": "v3pBo",
+                                          "name": "Incoming File Badge Icon",
+                                          "width": 16,
+                                          "height": 16,
+                                          "icon": "file-spreadsheet",
+                                          "library": "lucide",
+                                          "fill": "$accent-text"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "RlW2v",
+                                          "name": "Incoming File Badge Name",
+                                          "fill": "$fg-primary",
+                                          "content": "customers.csv",
+                                          "fontFamily": "$font-body",
+                                          "fontSize": 12,
+                                          "fontWeight": "650"
+                                        },
+                                        {
+                                          "type": "rectangle",
+                                          "id": "SE890",
+                                          "name": "Incoming File Badge Divider",
+                                          "fill": "$border-strong",
+                                          "width": 1,
+                                          "height": 14
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "Okf0b",
+                                          "name": "Incoming File Badge Size",
+                                          "fill": "$fg-secondary",
+                                          "content": "42 KB",
+                                          "fontFamily": "Geist Mono",
+                                          "fontSize": 10,
+                                          "fontWeight": "normal"
+                                        },
+                                        {
+                                          "type": "icon",
+                                          "id": "Ml7Kc",
+                                          "name": "Incoming File Valid Icon",
+                                          "width": 15,
+                                          "height": 15,
+                                          "icon": "circle-check",
+                                          "library": "lucide",
+                                          "fill": "$success-text"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "KR0gA",
+                                      "name": "Active Drop Release Hint",
+                                      "fill": "$success-text",
+                                      "content": "Release now to import  ·  no upload to a server",
+                                      "fontFamily": "$font-caption",
+                                      "fontSize": 10,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "CzSZb/ApM7t": {
+                              "content": "Inspection only"
+                            },
+                            "CzSZb/i6ohus": {
+                              "content": "The first row becomes the header and every row must have the same width. Quoted fields are supported, but the table is not editable."
+                            },
+                            "CzSZb/Nz3jq": {
+                              "content": "Source and result stay local"
+                            },
+                            "CzSZb/H4Jads": {
+                              "content": "CSV INPUT and TABLE PREVIEW remain in this browser unless you copy or download them."
+                            },
+                            "CzSZb/WotxF": {
+                              "content": "Parse and inspect rows"
+                            },
+                            "CzSZb/H4KSb": {
+                              "content": "Paste CSV, confirm the delimiter, view the live table, and scan headers and row alignment. Save a snapshot only when needed."
+                            },
+                            "CzSZb/xNABe": {
+                              "content": "Clean or export the CSV"
+                            },
+                            "CzSZb/r7KR4": {
+                              "content": "Normalize formatting, validate row structure, or generate an exportable table artifact."
+                            },
+                            "CzSZb/N1diS": {
+                              "content": "CSV Formatter"
+                            },
+                            "CzSZb/FKF6D": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/wuRvR": {
+                              "content": "CSV Validator"
+                            },
+                            "CzSZb/teU3E": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            },
+                            "CzSZb/m8I2Tp": {
+                              "content": "CSV to Table"
+                            },
+                            "CzSZb/l48wPZ": {
+                              "enabled": false,
+                              "width": 0,
+                              "height": 0
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "id": "VShrq",
+                      "type": "ref",
+                      "ref": "KhiTv",
+                      "name": "Footer/SmartTools",
+                      "width": "fill_container"
+                    }
+                  ]
                 }
               ]
-            },
-            {
-              "id": "z0WvR0",
-              "type": "ref",
-              "ref": "KhiTv",
-              "name": "Footer/SmartTools",
-              "width": "fill_container"
             }
           ]
         },

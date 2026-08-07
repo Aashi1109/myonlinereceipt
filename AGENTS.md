@@ -97,7 +97,7 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 
 ## Change and Artifact Hygiene
 
-- Scratch scripts, screenshots, logs, profiling output, and diagnostics go in `/tmp`, not the repository.
+- [IMP] Scratch scripts, screenshots, logs, profiling output, and diagnostics go in `/tmp`, not in the repository.
 - Never commit `.next`, `dist`, `build`, coverage output, `*.tsbuildinfo`, logs, populated environment files, or editor/agent state. Add repeatable generated output to `.gitignore`.
 - Do not edit generated files such as `next-env.d.ts` or lockfiles by hand.
 - Do not mix broad renames, formatting, dependency upgrades, or directory migrations into an unrelated task.

@@ -49,6 +49,7 @@ export type ToolTableRender = {
   readonly render: "table";
   readonly columns: readonly string[];
   readonly rows: readonly (readonly string[])[];
+  readonly showColumnDividers?: boolean;
   readonly truncated?: boolean;
   readonly downloadName?: string;
 };

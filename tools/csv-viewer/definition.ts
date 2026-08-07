@@ -19,6 +19,7 @@ export default {
     kind: "text",
     label: "CSV input",
     placeholder: "name,role\nAda,Admin\nLin,Editor",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 2_000_000 },
   },
   settings: {
     fields: {
@@ -38,6 +39,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
+  optionsPanel: { collapsible: true, defaultCollapsed: true },
   workbenchMark: { text: "VIEW" },
   labels: {
     empty: "Paste delimited rows to preview them as a table.",

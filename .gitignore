@@ -15,3 +15,8 @@ next-env.d.ts
 .pnpm-store/
 .codegraph
 .cursor
+.claude
+.codex
+openspec
+tmp/
+.tmp/

@@ -8,14 +8,18 @@ import {
   SegmentedControl,
   ToolOptionsPanel,
 } from "@smarttools/ui";
-import { Loader2 } from "lucide-react";
+import { ArrowDownToLine, FileSpreadsheet, Loader2 } from "lucide-react";
 import {
+  type DragEvent,
   type ReactNode,
+  useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
+import { textInputFileIssue } from "@/components/FileInput";
 import { ResultSurface } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { SplitStack } from "@/components/Stacks";
@@ -182,6 +186,117 @@ function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction>
   );
 }
 
+function TextFileDropTarget({
+  children,
+  props,
+}: {
+  children: ReactNode;
+  props: WorkspaceProps;
+}) {
+  const [dragActive, setDragActive] = useState(false);
+  const [dropIssue, setDropIssue] = useState("");
+  const dragDepth = useRef(0);
+  const acceptedFile = props.spec.input.kind === "text"
+    ? props.spec.input.acceptFiles
+    : undefined;
+
+  useEffect(() => setDropIssue(""), [props.input.files, props.input.text]);
+
+  if (!acceptedFile) return children;
+
+  const hasFiles = (event: DragEvent<HTMLDivElement>) =>
+    Array.from(event.dataTransfer.types).includes("Files");
+  const resetDrag = () => {
+    dragDepth.current = 0;
+    setDragActive(false);
+  };
+  const onDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(event) || props.disabled) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setDragActive(true);
+    setDropIssue("");
+  };
+  const onDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(event)) return;
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setDragActive(false);
+  };
+  const onDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(event) || props.disabled) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+  const onDrop = async (event: DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(event) || props.disabled) return;
+    event.preventDefault();
+    resetDrag();
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    const issue = textInputFileIssue(file, acceptedFile);
+    if (issue) {
+      setDropIssue(issue);
+      return;
+    }
+    try {
+      const text = await file.text();
+      setDropIssue("");
+      props.onInputChange({
+        ...props.input,
+        files: [file],
+        text: props.spec.input.kind === "text" && props.spec.input.maxLength !== undefined
+          ? text.slice(0, props.spec.input.maxLength)
+          : text,
+      });
+    } catch {
+      setDropIssue(`${file.name} could not be read.`);
+    }
+  };
+
+  return (
+    <div
+      className="relative h-full min-h-0"
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={(event) => void onDrop(event)}
+    >
+      {children}
+      {dropIssue ? (
+        <div
+          className="absolute top-3 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-2 text-xs font-medium text-destructive shadow-sm"
+          role="alert"
+        >
+          {dropIssue}
+        </div>
+      ) : null}
+      {dragActive ? (
+        <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center overflow-hidden rounded-xl border-2 border-primary bg-accent/95">
+          <div className="absolute top-4 left-4 rounded-full bg-primary px-3 py-1.5 font-caption text-[10px] font-bold tracking-[0.05em] text-primary-foreground">
+            DROP MODE ACTIVE
+          </div>
+          <div className="grid max-w-xl justify-items-center gap-4 px-8 text-center">
+            <span className="grid size-16 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <ArrowDownToLine aria-hidden="true" className="size-7" />
+            </span>
+            <div>
+              <h3 className="text-2xl font-semibold tracking-tight">Release to replace the current CSV</h3>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Drop anywhere in this workbench. The file is read locally and the table updates in place.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 text-xs font-semibold shadow-sm">
+              <FileSpreadsheet aria-hidden="true" className="size-4 text-primary" />
+              CSV or TSV file
+            </span>
+            <p className="font-caption text-[10px] font-semibold text-success">Release now · nothing is uploaded</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ActionRailContent({ props }: { props: WorkspaceProps }) {
   const state = props.error
     ? {
@@ -288,8 +403,16 @@ export function ToolWorkspace(props: WorkspaceProps) {
     </div>
   ) : primaryContent;
 
-  return (
-    <SplitStack className="h-full" defaultSize={69} minSize={52}>
+  const workspace = (
+    <SplitStack
+      className="h-full"
+      collapseControlPosition="bottom"
+      collapseSide="secondary"
+      collapsible={props.spec.optionsPanel?.collapsible}
+      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
+      defaultSize={69}
+      minSize={52}
+    >
       {mainContent}
       <ToolOptionsPanel
         action={hasSideSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
@@ -314,6 +437,8 @@ export function ToolWorkspace(props: WorkspaceProps) {
       </ToolOptionsPanel>
     </SplitStack>
   );
+
+  return <TextFileDropTarget props={props}>{workspace}</TextFileDropTarget>;
 }
 
 export default ToolWorkspace;

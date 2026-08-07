@@ -359,7 +359,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     return (
       <RenderFrame>
         <div className="min-h-0 flex-1 overflow-auto">
-          <Table>
+          <Table showColumnDividers={result.showColumnDividers}>
             <TableHeader>
               <TableRow>{result.columns.map((column, index) => <TableHead key={`${index}-${column}`}>{column}</TableHead>)}</TableRow>
             </TableHeader>

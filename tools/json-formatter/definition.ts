@@ -38,7 +38,6 @@ export default {
           { label: "Minify", value: "minify" },
           { label: "Validate", value: "validate" },
         ],
-        pane: "main",
       },
       indentation: {
         kind: "select",

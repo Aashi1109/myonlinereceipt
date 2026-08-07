@@ -6,11 +6,7 @@
  * transform's own `2 | 4 | "tab"`, so the mapping stays at this boundary.
  */
 
-import {
-  summarizeJson,
-  transformJson,
-  type JsonIndentation,
-} from "../../lib/devtools/shared/json.ts";
+import { transformJson, type JsonIndentation } from "../../lib/devtools/shared/json.ts";
 import { jsonType } from "../../lib/devtools/shared/json-input.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
@@ -52,16 +48,11 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     };
   }
 
-  const summary = summarizeJson(result.value, result.output);
   return {
     render: "code",
     code: result.output,
     language: "json",
     downloadName: "smarttools-formatted.json",
-    stats: [
-      { label: "Keys", value: String(summary.keyCount) },
-      { label: "Size", value: `${summary.byteSize.toLocaleString("en-US")} B` },
-    ],
   };
 };
 

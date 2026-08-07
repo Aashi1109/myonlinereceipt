@@ -15,6 +15,19 @@ export interface FileSelectionResult {
   issue: string;
 }
 
+export function textInputFileIssue(
+  file: File,
+  spec: { readonly accept: string; readonly maxBytes: number },
+): string | null {
+  if (!acceptsFile(file, spec.accept)) {
+    return `${file.name} is not an accepted file type.`;
+  }
+  if (file.size > spec.maxBytes) {
+    return `${file.name} exceeds the ${spec.maxBytes.toLocaleString()} byte limit.`;
+  }
+  return null;
+}
+
 function acceptsFile(file: File, accept: string): boolean {
   const name = file.name.toLowerCase();
   const mime = file.type.toLowerCase();

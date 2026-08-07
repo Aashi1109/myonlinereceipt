@@ -8,7 +8,7 @@ import {
   Input,
   Label,
 } from "@smarttools/ui";
-import { ClipboardPaste, Eye, EyeOff, FileText, Trash2, Upload } from "lucide-react";
+import { ClipboardPaste, Eye, EyeOff, FileText, FolderOpen, Trash2, Upload } from "lucide-react";
 import {
   type ReactNode,
   type TextareaHTMLAttributes,
@@ -20,6 +20,7 @@ import {
 } from "react";
 
 import {
+  textInputFileIssue,
   validateFileSelection,
   workspaceFileId,
 } from "@/components/FileInput";
@@ -188,6 +189,7 @@ export function WorkspaceInputSurface({
   const [pastePending, setPastePending] = useState(false);
   const [pasteSupported, setPasteSupported] = useState(false);
   const [revealedSecrets, setRevealedSecrets] = useState<Readonly<Record<string, boolean>>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef(input);
   inputRef.current = input;
   useEffect(() => {
@@ -235,11 +237,57 @@ export function WorkspaceInputSurface({
   switch (inputSpec.kind) {
     case "text": {
       const acceptedFile = inputSpec.acceptFiles;
+      const chooseFile = async (file: File) => {
+        if (!acceptedFile) return;
+        const issue = textInputFileIssue(file, acceptedFile);
+        if (issue) {
+          setInputIssue(issue);
+          return;
+        }
+        try {
+          const text = await file.text();
+          setInputIssue("");
+          onInputChange({
+            ...inputRef.current,
+            files: [file],
+            text: inputSpec.maxLength === undefined ? text : text.slice(0, inputSpec.maxLength),
+          });
+        } catch {
+          setInputIssue(`${file.name} could not be read.`);
+        }
+      };
+      const browseAction = acceptedFile ? (
+        <>
+          <input
+            accept={acceptedFile.accept}
+            className="sr-only"
+            disabled={disabled}
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void chooseFile(file);
+            }}
+            ref={fileInputRef}
+            tabIndex={-1}
+            type="file"
+          />
+          <Button
+            disabled={disabled}
+            onClick={() => fileInputRef.current?.click()}
+            size="xs"
+            type="button"
+            variant="outline"
+          >
+            <FolderOpen aria-hidden="true" />
+            Browse file
+          </Button>
+        </>
+      ) : null;
       const codeShaped =
         isCodeShaped(input.text) || isCodeShaped(inputSpec.placeholder ?? "");
       return (
         <WorkspaceSurface
-          actions={pasteAction(inputSpec.label, inputSpec.maxLength)}
+          actions={<>{pasteAction(inputSpec.label, inputSpec.maxLength)}{browseAction}</>}
           className="h-full"
           contentClassName={codeShaped ? "gap-4 bg-background" : "gap-4 bg-background p-4"}
           meta={sourceMeta(input.text, codeShaped)}
@@ -276,29 +324,7 @@ export function WorkspaceInputSurface({
               />
             </div>
           ) : null}
-          {acceptedFile ? (
-            <div className="grid gap-1.5">
-              <Label htmlFor={`${idPrefix}-file`}>Attach file</Label>
-              <Input
-                accept={acceptedFile.accept}
-                disabled={disabled}
-                id={`${idPrefix}-file`}
-                onChange={(event) => {
-                  const files = event.currentTarget.files;
-                  const file = files?.[0];
-                  if (!file) return;
-                  if (file.size > acceptedFile.maxBytes) {
-                    setInputIssue(`${file.name} exceeds the ${acceptedFile.maxBytes.toLocaleString()} byte limit.`);
-                    return;
-                  }
-                  setInputIssue("");
-                  onInputChange({ ...input, files: [file] });
-                }}
-                type="file"
-              />
-              {inputIssue ? <p className="text-xs text-destructive" role="alert">{inputIssue}</p> : null}
-            </div>
-          ) : null}
+          {inputIssue ? <p className="px-4 pb-3 text-xs text-destructive" role="alert">{inputIssue}</p> : null}
         </WorkspaceSurface>
       );
     }

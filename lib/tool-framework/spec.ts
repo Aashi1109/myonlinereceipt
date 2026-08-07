@@ -106,6 +106,11 @@ export type ToolWorkbenchMark = {
 
 export type ToolLayout = "side-by-side" | "stacked";
 
+export type ToolOptionsPanel = {
+  readonly collapsible?: boolean;
+  readonly defaultCollapsed?: boolean;
+};
+
 export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   /** `"<app>.<folderName>"`. Primary key in the database; never changes. */
   readonly toolId: string;
@@ -122,6 +127,8 @@ export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
   readonly capabilities?: ToolCapabilities;
   /** How the source and derived result share the main task surface. */
   readonly layout?: ToolLayout;
+  /** Optional behavior for the persistent settings rail. */
+  readonly optionsPanel?: ToolOptionsPanel;
   readonly workbenchMark?: ToolWorkbenchMark;
   readonly labels: ToolLabels;
   readonly content: ToolContent;

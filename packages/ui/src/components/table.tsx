@@ -4,16 +4,21 @@ import * as React from "react"
 
 import { cn } from "#lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+interface TableProps extends React.ComponentProps<"table"> {
+  showColumnDividers?: boolean
+}
+
+function Table({ className, showColumnDividers = false, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className="relative max-h-full w-full overflow-auto"
     >
       <table
         data-slot="table"
         className={cn(
           "w-full caption-bottom font-sans text-sm text-foreground",
+          showColumnDividers && "border-b border-border [&_td:not(:last-child)]:border-r [&_td:not(:last-child)]:border-border [&_th:not(:last-child)]:border-r [&_th:not(:last-child)]:border-border",
           className
         )}
         {...props}
@@ -26,7 +31,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("bg-muted/50 [&_tr]:border-b", className)}
+      className={cn("bg-muted/50 [&_tr]:border-b [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-muted", className)}
       {...props}
     />
   )

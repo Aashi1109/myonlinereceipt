@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   Children,
@@ -119,8 +120,10 @@ export type SplitStackProps = Omit<
   "children" | "onChange"
 > & {
   children: ReactNode;
+  collapseControlPosition?: "bottom" | "center" | "top";
   collapseSide?: SplitCollapseSide;
   collapsible?: boolean;
+  defaultCollapsed?: SplitCollapseSide;
   defaultSize?: number;
   maxSize?: number;
   minSize?: number;
@@ -151,8 +154,10 @@ function useNarrowWorkbench() {
 function SplitStack({
   children,
   className,
+  collapseControlPosition = "center",
   collapseSide = "primary",
   collapsible = false,
+  defaultCollapsed,
   defaultSize = 40,
   maxSize = 80,
   minSize = 20,
@@ -172,7 +177,9 @@ function SplitStack({
   const [size, setSize] = useState(() =>
     clamp(defaultSize, minSize, maxSize),
   );
-  const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(null);
+  const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(
+    collapsible ? defaultCollapsed ?? null : null,
+  );
   const narrow = useNarrowWorkbench();
   const stacked = orientation === "horizontal" && narrow;
 
@@ -206,21 +213,23 @@ function SplitStack({
 
   const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseSide} panel`;
   const CollapseIcon =
-    orientation === "horizontal"
-      ? collapseSide === "primary"
+    collapsed && collapseControlPosition !== "center"
+      ? SlidersHorizontal
+      : orientation === "horizontal"
+        ? collapseSide === "primary"
         ? collapsed
           ? ChevronRight
           : ChevronLeft
         : collapsed
           ? ChevronLeft
           : ChevronRight
-      : collapseSide === "primary"
-        ? collapsed
-          ? ChevronDown
-          : ChevronUp
-        : collapsed
-          ? ChevronUp
-          : ChevronDown;
+        : collapseSide === "primary"
+          ? collapsed
+            ? ChevronDown
+            : ChevronUp
+          : collapsed
+            ? ChevronUp
+            : ChevronDown;
 
   useEffect(() => {
     if (stacked) setCollapsed(null);
@@ -258,17 +267,22 @@ function SplitStack({
 
   const collapseControlStyle =
     orientation === "horizontal"
-      ? {
-          left:
-            collapsed === "primary"
-              ? "1rem"
-              : collapsed === "secondary"
-                ? "calc(100% - 1rem)"
-                : collapseSide === "primary"
-                  ? `calc(${size}% - 2.5rem)`
-                  : `calc(${size}% + 2.5rem)`,
-          top: "50%",
-        }
+      ? collapseControlPosition === "bottom"
+        ? {
+            left: "calc(100% - 1rem)",
+            top: "calc(100% - 1rem)",
+          }
+        : {
+            left:
+              collapsed === "primary"
+                ? "1rem"
+                : collapsed === "secondary"
+                  ? "calc(100% - 1rem)"
+                  : collapseSide === "primary"
+                    ? `calc(${size}% - 2.5rem)`
+                    : `calc(${size}% + 2.5rem)`,
+            top: collapseControlPosition === "top" ? "4rem" : "50%",
+          }
       : {
           left: "50%",
           top:
@@ -324,7 +338,7 @@ function SplitStack({
           collapsible={collapsible && collapseSide === "primary"}
           collapsedSize="0%"
           data-split-pane="primary"
-          defaultSize={`${size}%`}
+          defaultSize={collapsed === "secondary" ? "100%" : collapsed === "primary" ? "0%" : `${size}%`}
           disabled={!resizable}
           id={primaryPaneId}
           maxSize={
@@ -359,7 +373,7 @@ function SplitStack({
           collapsible={collapsible && collapseSide === "secondary"}
           collapsedSize="0%"
           data-split-pane="secondary"
-          defaultSize={`${100 - size}%`}
+          defaultSize={collapsed === "primary" ? "100%" : collapsed === "secondary" ? "0%" : `${100 - size}%`}
           disabled={!resizable}
           id={secondaryPaneId}
           maxSize={
@@ -394,12 +408,12 @@ function SplitStack({
                     : secondaryPaneId
                 }
                 aria-label={collapsedPanelLabel}
-                className="absolute z-30 -translate-x-1/2 -translate-y-1/2 shadow-sm"
+                className="absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm"
                 onClick={toggleCollapsedPane}
                 size="icon-xs"
                 style={collapseControlStyle}
                 type="button"
-                variant="outline"
+                variant={collapsed ? "default" : "outline"}
               >
                 <CollapseIcon aria-hidden="true" />
               </Button>
