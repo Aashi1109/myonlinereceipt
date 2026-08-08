@@ -1,6 +1,7 @@
 "use client";
 
 import { Upload } from "lucide-react";
+import { StatusBadge } from "@smarttools/ui";
 
 import {
   getResultCount,
@@ -33,7 +34,19 @@ export function ResultSurface({
     : result?.render === "table" && result.truncated
       ? `${resultCount} SHOWN`
       : `${resultCount} READY`;
-  const hasResultActions = Boolean(spec.capabilities?.copy || spec.capabilities?.download);
+  const hasResultActions = result?.render !== "json-tree" && Boolean(
+    spec.capabilities?.copy || spec.capabilities?.download,
+  );
+  const jsonHeader = result?.render === "json-tree" ? (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase">
+        {title}
+      </span>
+      <StatusBadge className="shrink-0" variant="success">
+        {resultStatus}
+      </StatusBadge>
+    </div>
+  ) : undefined;
   return (
     <WorkspaceSurface
       actions={hasResultActions ? (
@@ -44,6 +57,7 @@ export function ResultSurface({
         />
       ) : undefined}
       className="h-full"
+      header={jsonHeader ? "sr-only" : "visible"}
       purpose="result"
       state={state}
       stateDescription={error ?? (running ? spec.labels.running : spec.labels.empty)}
@@ -56,7 +70,7 @@ export function ResultSurface({
           : undefined}
       title={title}
     >
-      {result ? <ResultView result={result} /> : null}
+      {result ? <ResultView jsonHeader={jsonHeader} result={result} /> : null}
     </WorkspaceSurface>
   );
 }

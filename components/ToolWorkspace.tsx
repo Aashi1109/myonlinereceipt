@@ -406,9 +406,9 @@ export function ToolWorkspace(props: WorkspaceProps) {
   const workspace = (
     <SplitStack
       className="h-full"
-      collapseControlPosition="bottom"
+      collapseLabel="settings panel"
       collapseSide="secondary"
-      collapsible={props.spec.optionsPanel?.collapsible}
+      collapsible={hasSideSettings}
       defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
       defaultSize={69}
       minSize={52}

@@ -39,7 +39,7 @@ export default {
   },
   trigger: { mode: "live", debounceMs: 200 },
   capabilities: { copy: true },
-  optionsPanel: { collapsible: true, defaultCollapsed: true },
+  optionsPanel: { defaultCollapsed: true },
   workbenchMark: { text: "VIEW" },
   labels: {
     empty: "Paste delimited rows to preview them as a table.",

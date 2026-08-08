@@ -11,6 +11,7 @@ import {
 import { Copy, Download } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
+import { SplitStack } from "@/components/Stacks";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { SourceTextarea } from "@/components/WorkspaceInput";
 
@@ -78,7 +79,14 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-[minmax(0,2fr)_minmax(18rem,0.95fr)] max-[54rem]:h-auto max-[54rem]:grid-cols-1">
+    <SplitStack
+      className="h-full"
+      collapseLabel="settings panel"
+      collapseSide="secondary"
+      collapsible
+      defaultSize={68}
+      minSize={52}
+    >
       <div className="grid min-h-0 grid-rows-[minmax(12rem,0.55fr)_minmax(14rem,1fr)] gap-4 border-r border-border p-5 max-[54rem]:min-h-[44rem] max-[54rem]:border-r-0 max-[54rem]:border-b">
         <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${inputId}-label`}>
           <Label className="font-caption text-xs font-semibold text-muted-foreground" htmlFor={inputId} id={`${inputId}-label`}>
@@ -185,6 +193,6 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
           </AlertBanner>
         ) : null}
       </ToolOptionsPanel>
-    </div>
+    </SplitStack>
   );
 }

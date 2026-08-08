@@ -42,17 +42,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
 
   if (operation === "minify") {
     return {
-      render: "text",
+      render: "json-tree",
       text: result.output,
       downloadName: "smarttools-minified.json",
+      value: result.value,
     };
   }
 
   return {
-    render: "code",
-    code: result.output,
-    language: "json",
+    render: "json-tree",
+    text: result.output,
     downloadName: "smarttools-formatted.json",
+    value: result.value,
   };
 };
 

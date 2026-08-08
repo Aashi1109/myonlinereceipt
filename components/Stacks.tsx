@@ -120,6 +120,7 @@ export type SplitStackProps = Omit<
   "children" | "onChange"
 > & {
   children: ReactNode;
+  collapseLabel?: string;
   collapseControlPosition?: "bottom" | "center" | "top";
   collapseSide?: SplitCollapseSide;
   collapsible?: boolean;
@@ -154,6 +155,7 @@ function useNarrowWorkbench() {
 function SplitStack({
   children,
   className,
+  collapseLabel,
   collapseControlPosition = "center",
   collapseSide = "primary",
   collapsible = false,
@@ -211,7 +213,7 @@ function SplitStack({
     }
   }
 
-  const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseSide} panel`;
+  const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseLabel ?? `${collapseSide} panel`}`;
   const CollapseIcon =
     collapsed && collapseControlPosition !== "center"
       ? SlidersHorizontal
@@ -278,9 +280,7 @@ function SplitStack({
                 ? "1rem"
                 : collapsed === "secondary"
                   ? "calc(100% - 1rem)"
-                  : collapseSide === "primary"
-                    ? `calc(${size}% - 2.5rem)`
-                    : `calc(${size}% + 2.5rem)`,
+                  : `${size}%`,
             top: collapseControlPosition === "top" ? "4rem" : "50%",
           }
       : {
@@ -290,9 +290,7 @@ function SplitStack({
               ? "1rem"
               : collapsed === "secondary"
                 ? "calc(100% - 1rem)"
-                : collapseSide === "primary"
-                  ? `calc(${size}% - 2.5rem)`
-                  : `calc(${size}% + 2.5rem)`,
+                : `${size}%`,
         };
 
   return (
@@ -334,6 +332,7 @@ function SplitStack({
         resizeTargetMinimumSize={{ coarse: 44, fine: 24 }}
       >
         <ResizablePanel
+          aria-hidden={collapsed === "primary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
           collapsible={collapsible && collapseSide === "primary"}
           collapsedSize="0%"
@@ -341,6 +340,7 @@ function SplitStack({
           defaultSize={collapsed === "secondary" ? "100%" : collapsed === "primary" ? "0%" : `${size}%`}
           disabled={!resizable}
           id={primaryPaneId}
+          inert={collapsed === "primary" || undefined}
           maxSize={
             collapsible && collapseSide === "secondary"
               ? "100%"
@@ -369,6 +369,7 @@ function SplitStack({
           disabled={!resizable}
         />
         <ResizablePanel
+          aria-hidden={collapsed === "secondary" || undefined}
           className="min-h-0 min-w-0 overflow-hidden"
           collapsible={collapsible && collapseSide === "secondary"}
           collapsedSize="0%"
@@ -376,6 +377,7 @@ function SplitStack({
           defaultSize={collapsed === "primary" ? "100%" : collapsed === "secondary" ? "0%" : `${100 - size}%`}
           disabled={!resizable}
           id={secondaryPaneId}
+          inert={collapsed === "secondary" || undefined}
           maxSize={
             collapsible && collapseSide === "primary"
               ? "100%"
@@ -408,6 +410,7 @@ function SplitStack({
                     : secondaryPaneId
                 }
                 aria-label={collapsedPanelLabel}
+                aria-expanded={collapsed !== collapseSide}
                 className="absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm"
                 onClick={toggleCollapsedPane}
                 size="icon-xs"

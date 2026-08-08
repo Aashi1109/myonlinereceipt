@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 
 import { ResultSurface } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
-import { SplitStack, Stack } from "@/components/Stacks";
+import { SplitStack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
@@ -33,7 +33,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
 
   return (
     <SplitStack className="h-full" defaultSize={62} minSize={45}>
-      <SplitStack className="h-full" defaultSize={48} minSize={28} orientation="vertical">
+      <SplitStack className="h-full max-[64rem]:h-[34rem]" defaultSize={48} minSize={28} orientation="vertical">
         <WorkspaceInputSurface
           disabled={props.disabled}
           input={props.input}
@@ -48,9 +48,17 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           title="Generated result"
         />
       </SplitStack>
-      <Stack className="h-full">
+      <SplitStack
+        className="h-full max-[64rem]:h-[42rem]"
+        collapseLabel="settings panel"
+        collapseSide="secondary"
+        collapsible
+        defaultSize={48}
+        minSize={28}
+        orientation="vertical"
+      >
         <WorkspaceSurface
-          className="min-h-0 flex-1 border-b border-border"
+          className="h-full"
           contentClassName="p-4"
           purpose="preview"
           state={gradient ? "ready" : "empty"}
@@ -91,7 +99,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
             values={props.settings}
           />
         </ToolOptionsPanel>
-      </Stack>
+      </SplitStack>
     </SplitStack>
   );
 }

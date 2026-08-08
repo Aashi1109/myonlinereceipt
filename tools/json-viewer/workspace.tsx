@@ -17,7 +17,6 @@ import {
 import {
   AlignLeft,
   Copy,
-  Download,
   FileText,
   FileWarning,
   Minimize2,
@@ -57,7 +56,6 @@ type JsonTransformPreview = {
 } | null;
 type JsonViewerSnapshot = { code: string; value: unknown };
 type JsonViewerDraft = JsonViewerSnapshot & {
-  codeError: string | null;
   future: JsonViewerSnapshot[];
   past: JsonViewerSnapshot[];
 };
@@ -260,7 +258,6 @@ function JsonResultPane({
   onSearchQueryChange,
   onStatusChange,
   onViewChange,
-  precisionWarning,
   running,
   searchMatchIndex,
   searchQuery,
@@ -276,7 +273,6 @@ function JsonResultPane({
   onSearchQueryChange: (query: string) => void;
   onStatusChange: (message: string, tone: JsonNoticeTone) => void;
   onViewChange: (view: JsonResultView) => void;
-  precisionWarning: boolean;
   searchMatchIndex: number;
   searchQuery: string;
   source: string;
@@ -296,60 +292,6 @@ function JsonResultPane({
           downloadName="smarttools-json-viewer.json"
           editor={editor}
           formattedValue={formattedValue}
-          headerActions={(
-            <div className="flex shrink-0 items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label="Download JSON result"
-                    disabled={!ready}
-                    onClick={() => {
-                      const url = URL.createObjectURL(
-                        new Blob([output], { type: "application/json;charset=utf-8" }),
-                      );
-                      const link = document.createElement("a");
-                      link.href = url;
-                      link.download = "smarttools-json-viewer.json";
-                      link.click();
-                      URL.revokeObjectURL(url);
-                      onStatusChange("JSON downloaded.", "success");
-                    }}
-                    size="icon-xs"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Download aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Download JSON result</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label="Copy JSON result"
-                    disabled={!ready}
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(output);
-                        onStatusChange("JSON result copied.", "success");
-                      } catch {
-                        onStatusChange(
-                          "Copy failed. Select the value and copy it manually.",
-                          "warning",
-                        );
-                      }
-                    }}
-                    size="icon-xs"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Copy aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Copy JSON result</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
           maxVisibleEntries={1_000}
           onCopy={async (value, label) => {
             try {
@@ -369,8 +311,6 @@ function JsonResultPane({
           searchMatchIndex={searchMatchIndex}
           searchQuery={searchQuery}
           selectedPath={ROOT_JSON_TREE_PATH}
-          showArtifactActions={false}
-          showNodeCopyActions={ready && !precisionWarning}
           value={tree?.value ?? null}
           view={view}
         />
@@ -389,7 +329,7 @@ function JsonResultPane({
 
 export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const editorId = useId();
-  const [resultView, setResultView] = useState<JsonResultView>("tree");
+  const [resultView, setResultView] = useState<JsonResultView>("code");
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
   const [transformPreview, setTransformPreview] =
@@ -412,11 +352,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   }, [props.error]);
   const displayedTree =
     transformPreview?.input === props.input.text ? transformPreview : tree;
-  const workingOutput = viewerDraft
-    ? viewerDraft.codeError
-      ? prettyJson(viewerDraft.value)
-      : viewerDraft.code
-    : displayedTree?.text ?? props.input.text;
+  const workingOutput = viewerDraft?.code ?? displayedTree?.text ?? props.input.text;
   const workingTree = viewerDraft
     ? { text: workingOutput, value: viewerDraft.value }
     : null;
@@ -464,31 +400,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     canRedo: Boolean(viewerDraft?.future.length),
     canUndo: Boolean(viewerDraft?.past.length),
     code: viewerDraft?.code ?? "",
-    codeError: viewerDraft?.codeError ?? null,
-    onCodeChange: (code) => {
-      setViewerDraft((current) => {
-        if (!current) return current;
-        const previous = { code: current.code, value: current.value };
-        try {
-          return {
-            ...current,
-            code,
-            codeError: null,
-            future: [],
-            past: current.codeError ? current.past : [...current.past, previous],
-            value: JSON.parse(code) as unknown,
-          };
-        } catch (error) {
-          return {
-            ...current,
-            code,
-            codeError: error instanceof Error ? error.message : "Invalid JSON.",
-            future: [],
-            past: current.codeError ? current.past : [...current.past, previous],
-          };
-        }
-      });
-    },
     onRedo: () => {
       setViewerDraft((current) => {
         if (!current || current.future.length === 0) return current;
@@ -496,7 +407,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         return {
           ...current,
           ...next,
-          codeError: null,
           future: current.future.slice(0, -1),
           past: [...current.past, { code: current.code, value: current.value }],
         };
@@ -509,7 +419,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         return {
           ...current,
           ...previous,
-          codeError: null,
           future: [...current.future, { code: current.code, value: current.value }],
           past: current.past.slice(0, -1),
         };
@@ -523,7 +432,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         return {
           ...current,
           code,
-          codeError: null,
           future: [],
           past: [...current.past, { code: current.code, value: current.value }],
           value,
@@ -541,7 +449,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     if (!tree) return;
     setViewerDraft({
       code: tree.text,
-      codeError: null,
       future: [],
       past: [],
       value: tree.value,
@@ -549,11 +456,10 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   }, [tree]);
   const showTransformResult = useCallback(
     (text: string, value: unknown, status: string) => {
-      setResultView("formatted");
+      setResultView("code");
       setTransformPreview({ input: props.input.text, text, value });
       setViewerDraft({
         code: text,
-        codeError: null,
         future: [],
         past: [],
         value,
@@ -612,7 +518,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       return;
     }
     setViewerDraft((current) => {
-      if (!current || current.codeError) return current;
+      if (!current) return current;
       const code = mode === "minify"
         ? JSON.stringify(current.value) ?? "null"
         : prettyJson(current.value);
@@ -620,13 +526,12 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       return {
         ...current,
         code,
-        codeError: null,
         future: [],
         past: [...current.past, { code: current.code, value: current.value }],
       };
     });
   }, [precisionWarning]);
-  const canTransformCode = Boolean(viewerDraft && !viewerDraft.codeError);
+  const canTransformCode = Boolean(viewerDraft);
   const loadBrokenExample = useCallback(() => {
     applySource(
       BROKEN_EXAMPLE,
@@ -797,7 +702,6 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             onSearchQueryChange={setResultSearchQuery}
             onStatusChange={showJsonNotice}
             onViewChange={setResultView}
-            precisionWarning={precisionWarning}
             running={props.running}
             searchMatchIndex={resultSearchMatchIndex}
             searchQuery={resultSearchQuery}

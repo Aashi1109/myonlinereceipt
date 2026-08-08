@@ -34,12 +34,16 @@ import type {
 } from "@/lib/tool-framework/result";
 
 export interface ResultViewProps {
+  jsonHeader?: ReactNode;
   result: ToolResult;
 }
+
+type ResultRendererOptions = Pick<ResultViewProps, "jsonHeader">;
 
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
     result: Extract<ToolRender, { render: Kind }>,
+    options?: ResultRendererOptions,
   ) => ReactNode;
 };
 
@@ -341,16 +345,16 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
       <pre className="min-h-0 flex-1 overflow-auto bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
     </RenderFrame>
   ),
-  "json-tree": (result) => {
+  "json-tree": (result, options) => {
     const json = result.text ?? JSON.stringify(result.value, null, 2)!;
     return (
       <JsonResultRenderer
         className="h-full"
         defaultOpenDepth={1}
-        downloadName="result.json"
+        downloadName={result.downloadName ?? "result.json"}
         formattedValue={json}
+        headerStart={options?.jsonHeader}
         maxVisibleEntries={1_000}
-        showArtifactActions={false}
         value={result.value}
       />
     );
@@ -466,8 +470,8 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
   ),
 };
 
-function renderPrimary(result: ToolRender): ReactNode {
-  return RESULT_RENDERERS[result.render](result as never);
+function renderPrimary(result: ToolRender, options?: ResultRendererOptions): ReactNode {
+  return RESULT_RENDERERS[result.render](result as never, options);
 }
 
 function CommonResultDetails({ result }: ResultViewProps) {
@@ -532,10 +536,10 @@ function CommonResultDetails({ result }: ResultViewProps) {
   );
 }
 
-export function ResultView({ result }: ResultViewProps) {
+export function ResultView({ jsonHeader, result }: ResultViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {renderPrimary(result)}
+      {renderPrimary(result, { jsonHeader })}
       <CommonResultDetails result={result} />
     </div>
   );

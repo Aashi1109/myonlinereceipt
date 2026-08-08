@@ -43,6 +43,7 @@ export type ToolJsonTreeRender = {
   readonly value: unknown;
   /** Pretty-printed form, when the tool already produced one. */
   readonly text?: string;
+  readonly downloadName?: string;
 };
 
 export type ToolTableRender = {

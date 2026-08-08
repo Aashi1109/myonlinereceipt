@@ -667,7 +667,15 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   if (!hasSettings) return mainContent;
 
   return (
-    <SplitStack className="h-full" defaultSize={70} minSize={52}>
+    <SplitStack
+      className="h-full"
+      collapseLabel="settings panel"
+      collapseSide="secondary"
+      collapsible={hasSideSettings}
+      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
+      defaultSize={70}
+      minSize={52}
+    >
       {mainContent}
       {settingsContent}
     </SplitStack>

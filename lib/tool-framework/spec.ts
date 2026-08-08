@@ -107,7 +107,6 @@ export type ToolWorkbenchMark = {
 export type ToolLayout = "side-by-side" | "stacked";
 
 export type ToolOptionsPanel = {
-  readonly collapsible?: boolean;
   readonly defaultCollapsed?: boolean;
 };
 

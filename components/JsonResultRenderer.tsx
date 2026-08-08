@@ -41,6 +41,7 @@ import {
   CircleSlash2,
   Copy,
   CopyPlus,
+  Download,
   GripVertical,
   Hash,
   Link,
@@ -56,8 +57,6 @@ import {
   X,
 } from "lucide-react";
 
-import { SourceTextarea } from "@/components/WorkspaceInput";
-
 export type JsonTreePath = readonly (string | number)[];
 export type JsonTreeSelection = {
   key: string;
@@ -68,6 +67,11 @@ export type JsonTreeSelection = {
 type TreeExpansion = { version: number; open?: boolean };
 type JsonEditMode = "form" | "tree";
 type JsonValueType = "string" | "number" | "boolean" | "null" | "object" | "array";
+type JsonEditorSnapshot = { code: string; value: unknown };
+type InternalJsonEditor = JsonEditorSnapshot & {
+  future: JsonEditorSnapshot[];
+  past: JsonEditorSnapshot[];
+};
 
 const JSON_VALUE_TYPES: readonly JsonValueType[] = [
   "string",
@@ -78,13 +82,11 @@ const JSON_VALUE_TYPES: readonly JsonValueType[] = [
   "array",
 ];
 
-export type JsonResultView = "tree" | "formatted" | "code" | "form";
+export type JsonResultView = "tree" | "code" | "form";
 export type JsonEditorController = {
   canRedo: boolean;
   canUndo: boolean;
   code: string;
-  codeError: string | null;
-  onCodeChange: (code: string) => void;
   onRedo: () => void;
   onUndo: () => void;
   onValueChange: (value: unknown) => void;
@@ -945,20 +947,6 @@ function matchingTreePaths(value: unknown, query: string) {
   return matches;
 }
 
-function matchingTextOffsets(value: string, query: string) {
-  if (!query) return [];
-  const normalizedValue = value.toLocaleLowerCase();
-  const matches: number[] = [];
-  let searchFrom = 0;
-  while (searchFrom < normalizedValue.length) {
-    const match = normalizedValue.indexOf(query, searchFrom);
-    if (match === -1) break;
-    matches.push(match);
-    searchFrom = match + query.length;
-  }
-  return matches;
-}
-
 function JsonTreeNode({
   currentSearchPath,
   depth = 0,
@@ -1422,20 +1410,18 @@ export function JsonResultRenderer({
   editor,
   formattedValue,
   headerActions,
+  headerStart,
   label = "JSON result",
   maxVisibleEntries,
   onSearchMatchIndexChange,
   onSearchQueryChange,
   onCopy,
-  onAddRootProperty,
   onSelect,
   onViewChange,
   persistentSearch = false,
   searchMatchIndex: controlledSearchMatchIndex,
   searchQuery: controlledSearchQuery,
   selectedPath,
-  showArtifactActions = true,
-  showNodeCopyActions = true,
   value,
   view: controlledView,
 }: {
@@ -1446,25 +1432,30 @@ export function JsonResultRenderer({
   editor?: JsonEditorController;
   formattedValue?: string;
   headerActions?: ReactNode;
+  headerStart?: ReactNode;
   label?: string;
   maxVisibleEntries?: number;
   onSearchMatchIndexChange?: (index: number) => void;
   onSearchQueryChange?: (query: string) => void;
   onCopy?: (value: string, label: string) => void;
-  onAddRootProperty?: () => void;
   onSelect?: (selection: JsonTreeSelection) => void;
   onViewChange?: (view: JsonResultView) => void;
   persistentSearch?: boolean;
   searchMatchIndex?: number;
   searchQuery?: string;
   selectedPath?: JsonTreePath;
-  showArtifactActions?: boolean;
-  showNodeCopyActions?: boolean;
   value: unknown;
   view?: JsonResultView;
 }) {
   const resultId = useId().replaceAll(":", "");
-  const [internalView, setInternalView] = useState<JsonResultView>("tree");
+  const initialCode = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
+  const [internalView, setInternalView] = useState<JsonResultView>("code");
+  const [internalEditor, setInternalEditor] = useState<InternalJsonEditor>(() => ({
+    code: initialCode,
+    future: [],
+    past: [],
+    value,
+  }));
   const view = controlledView ?? internalView;
   const [searchOpen, setSearchOpen] = useState(false);
   const [internalQuery, setInternalQuery] = useState("");
@@ -1476,11 +1467,44 @@ export function JsonResultRenderer({
   const [internalSelectedPath, setInternalSelectedPath] = useState<JsonTreePath | undefined>(
     selectedPath,
   );
-  const views: readonly JsonResultView[] = editor
-    ? ["tree", "formatted", "code", "form"]
-    : ["tree", "formatted"];
+  const internalEditorController = useMemo<JsonEditorController>(() => ({
+    canRedo: internalEditor.future.length > 0,
+    canUndo: internalEditor.past.length > 0,
+    code: internalEditor.code,
+    onRedo: () => setInternalEditor((current) => {
+      const next = current.future.at(-1);
+      if (!next) return current;
+      return {
+        ...next,
+        future: current.future.slice(0, -1),
+        past: [...current.past, { code: current.code, value: current.value }],
+      };
+    }),
+    onUndo: () => setInternalEditor((current) => {
+      const previous = current.past.at(-1);
+      if (!previous) return current;
+      return {
+        ...previous,
+        future: [...current.future, { code: current.code, value: current.value }],
+        past: current.past.slice(0, -1),
+      };
+    }),
+    onValueChange: (nextValue) => setInternalEditor((current) => {
+      const code = JSON.stringify(nextValue, null, 2) ?? String(nextValue);
+      if (code === current.code) return current;
+      return {
+        code,
+        future: [],
+        past: [...current.past, { code: current.code, value: current.value }],
+        value: nextValue,
+      };
+    }),
+  }), [internalEditor]);
+  const resolvedEditor = editor ?? internalEditorController;
+  const resolvedValue = editor ? value : internalEditor.value;
+  const views: readonly JsonResultView[] = ["code", "tree", "form"];
   const isStructuredView = view === "tree" || view === "form";
-  const formatted = formattedValue ?? JSON.stringify(value, null, 2) ?? String(value);
+  const formatted = editor?.code ?? internalEditor.code;
   const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
   const formattedLines = useMemo(() => formatted.split(/\r\n|\r|\n/), [formatted]);
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -1500,25 +1524,18 @@ export function JsonResultRenderer({
     return matches;
   }, [formattedLines, normalizedQuery]);
   const treeMatches = useMemo(
-    () => matchingTreePaths(value, normalizedQuery),
-    [normalizedQuery, value],
+    () => matchingTreePaths(resolvedValue, normalizedQuery),
+    [normalizedQuery, resolvedValue],
   );
-  const codeMatches = useMemo(
-    () => matchingTextOffsets(editor?.code ?? "", normalizedQuery),
-    [editor?.code, normalizedQuery],
-  );
-  const activeSearchCount = view === "formatted"
+  const activeSearchCount = view === "code"
     ? formattedMatches.length
-    : view === "code"
-      ? codeMatches.length
-      : treeMatches.length;
+    : treeMatches.length;
   const resolvedSearchMatchIndex = activeSearchCount
     ? Math.min(searchMatchIndex, activeSearchCount - 1)
     : 0;
   const currentFormattedMatchLine =
     formattedMatches[resolvedSearchMatchIndex];
   const currentTreeSearchPath = treeMatches[resolvedSearchMatchIndex];
-  const currentCodeSearchOffset = codeMatches[resolvedSearchMatchIndex];
   const formattedMatchLines = useMemo(
     () => new Set(formattedMatches),
     [formattedMatches],
@@ -1528,16 +1545,22 @@ export function JsonResultRenderer({
     [treeMatches],
   );
   const artifact = artifactValue ?? formatted;
+
+  useEffect(() => {
+    if (editor) return;
+    setInternalEditor({ code: initialCode, future: [], past: [], value });
+  }, [editor, initialCode, value]);
+
   const treeView = useMemo(
     () =>
       maxVisibleEntries === undefined
         ? null
         : visibleTreePaths(
-            value,
+            resolvedValue,
             normalizedQuery,
             Math.max(1, Math.floor(maxVisibleEntries)),
           ),
-    [maxVisibleEntries, normalizedQuery, value],
+    [maxVisibleEntries, normalizedQuery, resolvedValue],
   );
   const resolvedSelectedPath = onSelect ? selectedPath : internalSelectedPath;
   const handleSelect =
@@ -1548,27 +1571,17 @@ export function JsonResultRenderer({
 
   useEffect(() => {
     if (!onSelect && selectedPath !== undefined) setInternalSelectedPath(selectedPath);
-  }, [onSelect, selectedPath, value]);
+  }, [onSelect, resolvedValue, selectedPath]);
 
   useEffect(() => {
     if (!persistentSearch || !normalizedQuery) return;
-    if (view === "code") {
-      const input = document.getElementById(`${resultId}-code-editor`);
-      if (input instanceof HTMLTextAreaElement && currentCodeSearchOffset !== undefined) {
-        input.setSelectionRange(
-          currentCodeSearchOffset,
-          currentCodeSearchOffset + normalizedQuery.length,
-        );
-      }
-      return;
-    }
-    const match = view === "formatted"
-      ? document.getElementById(`${resultId}-formatted-line-${currentFormattedMatchLine}`)
+    const match = view === "code"
+      ? document.getElementById(`${resultId}-${view}-line-${currentFormattedMatchLine}`)
       : document.querySelector(
           `#${resultId}-${view} [data-json-search-current=true]`,
         );
     match?.scrollIntoView({ block: "nearest" });
-  }, [currentCodeSearchOffset, currentFormattedMatchLine, currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
+  }, [currentFormattedMatchLine, currentTreeSearchPath, normalizedQuery, persistentSearch, resultId, searchMatchIndex, view]);
 
   async function copyValue(copyValue: string, copyLabel: string) {
     if (onCopy) {
@@ -1623,26 +1636,28 @@ export function JsonResultRenderer({
         data-testid="json-result-renderer"
       >
       <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
-        <Select
-          onValueChange={(nextView) => activateView(nextView as JsonResultView)}
-          value={view}
-        >
-          <SelectTrigger
-            aria-label="JSON result view"
-            className="w-[132px] shrink-0 capitalize"
-            id={`${resultId}-view-select`}
-            size="xs"
+        {headerStart ?? (
+          <Select
+            onValueChange={(nextView) => activateView(nextView as JsonResultView)}
+            value={view}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {views.map((nextView) => (
-              <SelectItem className="capitalize" key={nextView} value={nextView}>
-                {nextView === "formatted" ? "Text" : nextView}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label="JSON result view"
+              className="w-[132px] shrink-0 capitalize"
+              id={`${resultId}-view-select`}
+              size="xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {views.map((nextView) => (
+                <SelectItem className="capitalize" key={nextView} value={nextView}>
+                  {nextView}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div
           className={`flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 max-[42rem]:w-full ${
@@ -1780,13 +1795,13 @@ export function JsonResultRenderer({
               </JsonTooltip>
             </ButtonGroup>
           ) : null}
-          {editor ? (
+          {isStructuredView ? (
             <ButtonGroup aria-label="JSON edit history" className="shrink-0">
               <JsonTooltip label="Undo">
                 <Button
                   aria-label="Undo JSON edit"
-                  disabled={!editor.canUndo}
-                  onClick={editor.onUndo}
+                  disabled={!resolvedEditor.canUndo}
+                  onClick={resolvedEditor.onUndo}
                   size="icon-xs"
                   type="button"
                   variant="outline"
@@ -1797,8 +1812,8 @@ export function JsonResultRenderer({
               <JsonTooltip label="Redo">
                 <Button
                   aria-label="Redo JSON edit"
-                  disabled={!editor.canRedo}
-                  onClick={editor.onRedo}
+                  disabled={!resolvedEditor.canRedo}
+                  onClick={resolvedEditor.onRedo}
                   size="icon-xs"
                   type="button"
                   variant="outline"
@@ -1809,43 +1824,43 @@ export function JsonResultRenderer({
             </ButtonGroup>
           ) : null}
           {headerActions}
-          {showArtifactActions ? (
-            <>
-              <JsonTooltip label="Copy JSON result">
-                <Button
-                  aria-label="Copy JSON result"
-                  className="size-11 shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
-                  onClick={() => void copyValue(artifact, "JSON result")}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                >
-                  <Copy aria-hidden="true" className="size-4" />
-                </Button>
-              </JsonTooltip>
-              <Button
-                className="min-h-11 px-1 text-primary max-[42rem]:col-start-3 max-[42rem]:row-start-2"
-                onClick={downloadValue}
-                size="sm"
-                type="button"
-                variant="link"
-              >
-                Download .json
-              </Button>
-            </>
-          ) : null}
+          <JsonTooltip label="Copy JSON result">
+            <Button
+              aria-label="Copy JSON result"
+              className="shrink-0 text-muted-foreground max-[42rem]:col-start-2 max-[42rem]:row-start-2"
+              onClick={() => void copyValue(artifact, "JSON result")}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <Copy aria-hidden="true" />
+            </Button>
+          </JsonTooltip>
+          <JsonTooltip label="Download JSON result">
+            <Button
+              aria-label="Download JSON result"
+              className="shrink-0 text-muted-foreground max-[42rem]:col-start-3 max-[42rem]:row-start-2"
+              onClick={downloadValue}
+              size="icon-xs"
+              type="button"
+              variant="ghost"
+            >
+              <Download aria-hidden="true" />
+            </Button>
+          </JsonTooltip>
         </div>
       </header>
 
-      {isStructuredView && editor ? (
+      {isStructuredView ? (
         <div
-          aria-labelledby={`${resultId}-view-select`}
+          aria-label={headerStart ? "JSON result" : undefined}
+          aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
           className="flex min-h-0 flex-1 flex-col"
           id={`${resultId}-${view}`}
           role="tabpanel"
         >
           <div className="min-h-0 flex-1 overflow-auto p-1.5">
-            {normalizedQuery && !nodeMatches("root", value, normalizedQuery) ? (
+            {normalizedQuery && !nodeMatches("root", resolvedValue, normalizedQuery) ? (
               <p className="p-4 text-center text-sm text-muted-foreground" role="status">
                 No keys or values match “{query}”.
               </p>
@@ -1859,18 +1874,18 @@ export function JsonResultRenderer({
                   currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
                   defaultOpenDepth={defaultOpenDepth}
                   editMode={view}
-                  editor={editor}
+                  editor={resolvedEditor}
                   expansion={expansion}
                   label="root"
                   onCopy={copyValue}
                   onSelect={handleSelect}
                   query={normalizedQuery}
                   reorderDisabled={Boolean(normalizedQuery || treeView?.truncated)}
-                  rootValue={value}
+                  rootValue={resolvedValue}
                   searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
                   selectedPath={resolvedSelectedPath}
                   showNodeCopyActions={false}
-                  value={value}
+                  value={resolvedValue}
                   visiblePaths={treeView?.paths}
                 />
                 {treeView?.truncated ? (
@@ -1883,49 +1898,12 @@ export function JsonResultRenderer({
             )}
           </div>
         </div>
-      ) : view === "tree" ? (
+      ) : view === "code" ? (
         <div
-          aria-labelledby={`${resultId}-view-select`}
-          className="min-h-0 flex-1 overflow-auto p-1.5"
-          id={`${resultId}-tree`}
-          role="tabpanel"
-        >
-          {normalizedQuery && !nodeMatches("root", value, normalizedQuery) ? (
-            <p className="p-4 text-center text-sm text-muted-foreground" role="status">
-              No keys or values match “{query}”.
-            </p>
-          ) : (
-            <div aria-label="JSON tree" className="w-max min-w-full" role="tree">
-              <JsonTreeNode
-                currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
-                defaultOpenDepth={defaultOpenDepth}
-                expansion={expansion}
-                label="root"
-                onAddRootProperty={onAddRootProperty}
-                onCopy={copyValue}
-                onSelect={handleSelect}
-                query={normalizedQuery}
-                rootValue={value}
-                searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
-                selectedPath={resolvedSelectedPath}
-                showNodeCopyActions={showNodeCopyActions}
-                value={value}
-                visiblePaths={treeView?.paths}
-              />
-              {treeView?.truncated ? (
-                <p className="px-2 py-3 text-xs text-muted-foreground" role="status">
-                  Showing the first {treeView.limit.toLocaleString()} nodes.
-                  Search to narrow the tree.
-                </p>
-              ) : null}
-            </div>
-          )}
-        </div>
-      ) : view === "formatted" ? (
-        <div
-          aria-labelledby={`${resultId}-view-select`}
+          aria-label={headerStart ? "JSON result" : undefined}
+          aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4"
-          id={`${resultId}-formatted`}
+          id={`${resultId}-${view}`}
           role="tabpanel"
           tabIndex={0}
         >
@@ -1939,7 +1917,7 @@ export function JsonResultRenderer({
                     isMatch ? "bg-accent" : ""
                   } ${isCurrentMatch ? "border-l-[3px] border-primary pl-1" : ""}`}
                   data-formatted-match={isMatch || undefined}
-                  id={`${resultId}-formatted-line-${lineIndex}`}
+                  id={`${resultId}-${view}-line-${lineIndex}`}
                   key={lineIndex}
                 >
                   {line ? highlightJson(line) : "\u00a0"}
@@ -1947,36 +1925,6 @@ export function JsonResultRenderer({
               );
             }) : highlightedFormatted}
           </pre>
-        </div>
-      ) : view === "code" && editor ? (
-        <div
-          aria-labelledby={`${resultId}-view-select`}
-          className="flex min-h-0 flex-1 flex-col"
-          id={`${resultId}-code`}
-          role="tabpanel"
-        >
-          <div className={`relative min-h-0 flex-1 overflow-hidden ${editor.codeError ? "ring-1 ring-inset ring-destructive" : ""}`}>
-            <SourceTextarea
-              aria-describedby={editor.codeError ? `${resultId}-code-error` : undefined}
-              aria-invalid={Boolean(editor.codeError)}
-              className="h-full min-h-0"
-              gutter
-              highlightedValue={highlightJson(editor.code)}
-              id={`${resultId}-code-editor`}
-              onChange={editor.onCodeChange}
-              value={editor.code}
-              wrap="soft"
-            />
-            {editor.codeError ? (
-              <p
-                className="pointer-events-none absolute right-3 bottom-2 max-w-[min(80%,28rem)] truncate rounded-sm bg-card px-2 py-1 text-[10px] text-destructive shadow-sm"
-                id={`${resultId}-code-error`}
-                role="alert"
-              >
-                {editor.codeError}
-              </p>
-            ) : null}
-          </div>
         </div>
       ) : null}
       </section>

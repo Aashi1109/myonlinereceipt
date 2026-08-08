@@ -11,7 +11,8 @@
       },
       "expected": {
         "downloadName": "smarttools-formatted.json",
-        "render": "code"
+        "output": "{\n  \"name\": \"Ada\",\n  \"active\": true\n}",
+        "render": "json-tree"
       }
     },
     {
@@ -27,7 +28,7 @@
       "expected": {
         "downloadName": "smarttools-minified.json",
         "output": "{\"name\":\"Ada\",\"active\":true}",
-        "render": "text"
+        "render": "json-tree"
       }
     },
     {

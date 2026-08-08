@@ -248,3 +248,25 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
     ),
   });
 });
+
+test("JSON Formatter uses the shared JSON result controls", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-formatter");
+  await page.getByRole("button", { name: "Example" }).click();
+
+  const result = page.getByTestId("json-result-renderer");
+  const view = result.getByRole("combobox", { name: "JSON result view" });
+  await expect(view).toHaveText(/code/i);
+  await expect(result.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
+  await expect(result.getByRole("button", { name: "Download JSON result" })).toBeVisible();
+  await expect(result.getByRole("group", { name: "Tree expansion controls" })).toHaveCount(0);
+  await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
+
+  await view.click();
+  await page.getByRole("option", { name: "tree", exact: true }).click();
+  await expect(result.getByRole("group", { name: "Tree expansion controls" })).toBeVisible();
+  await expect(result.getByRole("group", { name: "JSON edit history" })).toBeVisible();
+
+  await result.getByRole("combobox", { name: "JSON result view" }).click();
+  await page.getByRole("option", { name: "form", exact: true }).click();
+  await expect(result.getByRole("tree", { name: "JSON value editor" })).toBeVisible();
+});
