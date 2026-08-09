@@ -306,7 +306,6 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
    * this is invoked during render, so any state belongs to the element.
    */
   detail?: (state: FileProcessorDetail) => ReactNode;
-  guidance?: ReactNode;
   /** Shows the reorderable file list, for tools where file order is input. */
   orderFiles?: boolean;
 }
@@ -404,7 +403,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           spec={props.spec.settings}
           values={props.settings}
         />
-      ) : props.guidance}
+      ) : null}
     </ToolOptionsPanel>
   );
   const inputSurface = fileInputSpec ? (

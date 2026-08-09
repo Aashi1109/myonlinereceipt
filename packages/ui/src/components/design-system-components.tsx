@@ -112,13 +112,12 @@ function WorkbenchShell({
       data-slot="workbench-shell"
       data-variant={variant}
       className={cn(
-        "flex h-[680px] max-h-[calc(100dvh-15rem)] min-h-[32rem] w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
+        "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
         "[&_[data-slot=button]]:h-8 [&_[data-slot=button]]:min-h-8 [&_[data-slot=button]]:gap-1.5 [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:px-2.5 [&_[data-slot=button]]:text-[11px] [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
         "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]]:px-2.5 [&_[data-slot=input]]:text-[11px]",
         "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]]:text-[11px] [&_[data-slot=select-trigger]>svg]:size-3.5",
         "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
         variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
-        "max-[54rem]:h-auto max-[54rem]:max-h-none max-[54rem]:min-h-0 max-[54rem]:overflow-visible",
         className
       )}
       {...props}

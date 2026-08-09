@@ -270,7 +270,7 @@ function WorkbenchFrame<
         toolbarActions={
           <div
             aria-label={`${title} actions`}
-            className="flex min-w-0 items-center gap-2 [&_button]:!h-11 [&_button]:!gap-2 [&_button]:min-w-0 [&_button]:!px-4 [&_button]:!text-[15px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 [&_button_svg]:!size-[18px] max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
+            className="flex min-w-0 items-center gap-2 [&_button]:min-w-0 [&_button[data-size=default]]:!h-11 [&_button[data-size=default]]:!gap-2 [&_button[data-size=default]]:!px-4 [&_button[data-size=default]]:!text-[15px] [&_button[data-size=default]_svg]:!size-[18px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
             data-testid="tool-action-toolbar"
             role="toolbar"
           >

@@ -12,6 +12,19 @@
         "output": "Hello 👋",
         "render": "text"
       }
+    },
+    {
+      "input": {
+        "primary": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "secondary": ""
+      },
+      "name": "PNG image",
+      "settings": {},
+      "expected": {
+        "downloadName": "decoded.png",
+        "output": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "render": "image"
+      }
     }
   ]
 }

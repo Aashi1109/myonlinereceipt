@@ -18,6 +18,7 @@ export interface ResultSurfaceProps {
   running?: boolean;
   spec: ToolSpec;
   title?: string;
+  variant?: "card" | "panel";
 }
 
 export function ResultSurface({
@@ -26,6 +27,7 @@ export function ResultSurface({
   running = false,
   spec,
   title = "Result",
+  variant,
 }: ResultSurfaceProps) {
   const state = error ? "error" : running ? "loading" : result ? "ready" : "empty";
   const resultCount = getResultCount(result);
@@ -34,10 +36,11 @@ export function ResultSurface({
     : result?.render === "table" && result.truncated
       ? `${resultCount} SHOWN`
       : `${resultCount} READY`;
-  const hasResultActions = result?.render !== "json-tree" && Boolean(
-    spec.capabilities?.copy || spec.capabilities?.download,
+  const cardJson = result?.render === "json-tree" && variant === "card";
+  const hasResultActions = result?.render !== "files" && Boolean(
+    cardJson || (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)),
   );
-  const jsonHeader = result?.render === "json-tree" ? (
+  const jsonHeader = result?.render === "json-tree" && !cardJson ? (
     <div className="flex min-w-0 items-center gap-2">
       <span className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase">
         {title}
@@ -51,9 +54,10 @@ export function ResultSurface({
     <WorkspaceSurface
       actions={hasResultActions ? (
         <ResultActions
-          canCopy={Boolean(spec.capabilities?.copy)}
-          canDownload={Boolean(spec.capabilities?.download)}
+          canCopy={cardJson || Boolean(spec.capabilities?.copy)}
+          canDownload={cardJson || Boolean(spec.capabilities?.download)}
           result={result}
+          variant={variant === "card" ? "link" : "outline"}
         />
       ) : undefined}
       className="h-full"
@@ -64,13 +68,14 @@ export function ResultSurface({
       stateIcon={running ? <Upload aria-hidden="true" className="animate-pulse" /> : undefined}
       stateTitle={error ? "Unable to create the result" : running ? spec.labels.running : "Result will appear here"}
       status={state === "ready"
-        ? <span className="text-foreground">{resultStatus}</span>
+        ? variant === "card" ? undefined : <span className="text-foreground">{resultStatus}</span>
         : state === "empty"
-          ? <span>0 GENERATED</span>
+          ? variant === "card" ? undefined : <span>0 GENERATED</span>
           : undefined}
       title={title}
+      variant={variant}
     >
-      {result ? <ResultView jsonHeader={jsonHeader} result={result} /> : null}
+      {result ? <ResultView hideJsonHeader={cardJson} jsonHeader={jsonHeader} result={result} /> : null}
     </WorkspaceSurface>
   );
 }

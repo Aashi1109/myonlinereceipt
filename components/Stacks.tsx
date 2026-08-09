@@ -19,7 +19,8 @@ import {
   ChevronRight,
   ChevronUp,
   SlidersHorizontal,
-} from "lucide-react";
+} from "lucide";
+import { MorphIcon } from "morphicons/react";
 import {
   Children,
   type HTMLAttributes,
@@ -214,7 +215,7 @@ function SplitStack({
   }
 
   const collapsedPanelLabel = `${collapsed ? "Restore" : "Collapse"} ${collapseLabel ?? `${collapseSide} panel`}`;
-  const CollapseIcon =
+  const collapseIcon =
     collapsed && collapseControlPosition !== "center"
       ? SlidersHorizontal
       : orientation === "horizontal"
@@ -306,7 +307,12 @@ function SplitStack({
       {...props}
     >
       <ResizablePanelGroup
-        className="h-full min-h-0 min-w-0"
+        className={cn(
+          "h-full min-h-0 min-w-0",
+          orientation === "horizontal"
+            ? "max-[64rem]:!flex-col max-[64rem]:overflow-y-auto max-[64rem]:[&>[data-slot=resizable-handle]]:!hidden"
+            : undefined,
+        )}
         disabled={!resizable}
         id={storageKey ?? splitId}
         onLayoutChanged={(layout, meta) => {
@@ -418,7 +424,7 @@ function SplitStack({
                 type="button"
                 variant={collapsed ? "default" : "outline"}
               >
-                <CollapseIcon aria-hidden="true" />
+                <MorphIcon icon={collapseIcon} reducedMotion="user" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{collapsedPanelLabel}</TooltipContent>

@@ -9,7 +9,7 @@
       "settings": {},
       "expected": {
         "output": "{\n  \"token\": \"eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.\",\n  \"header\": {\n    \"alg\": \"none\"\n  },\n  \"payload\": {\n    \"sub\": \"123\"\n  }\n}",
-        "render": "text"
+        "render": "json-tree"
       }
     },
     {

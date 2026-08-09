@@ -40,9 +40,6 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   return {
     render: "text",
     text: matched ? "Match" : "No match",
-    verdict: matched
-      ? { level: "ok", label: "Match" }
-      : { level: "error", label: "No match" },
   };
 };
 

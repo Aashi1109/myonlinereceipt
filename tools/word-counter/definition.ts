@@ -45,7 +45,7 @@ export default {
       estimateReadingTime: {
         kind: "toggle",
         label: "Estimate reading time",
-        help: "Shows an estimate based on 200 words per minute.",
+        help: "Shows an estimate based on 200 words per minute, accounting for long unbroken text.",
         default: true,
       },
     },
@@ -63,7 +63,7 @@ export default {
       "Paste or type the text. Every count updates as you type — there is nothing to submit.",
       "Adjust the counting toggles to match the convention you are held to. Hyphenation is the one that most often explains a mismatch with another tool.",
       "Read `Characters` for limits that count code points (most CMS fields) and `Characters without spaces` for editorial limits.",
-      "Reading time assumes 200 words per minute and always rounds up to at least one minute once there is any text.",
+      "Reading time assumes 200 words per minute and treats every five non-space characters as at least one word. Short text is shown in seconds; longer text is rounded up to whole minutes.",
     ],
     limitations: [
       "Words are whitespace-delimited tokens. Languages that do not separate words with spaces — Chinese, Japanese, Thai — will not be counted meaningfully.",
@@ -78,7 +78,7 @@ export default {
       },
       {
         q: "How is reading time calculated?",
-        a: "Words divided by 200, rounded up, with a floor of one minute. It is a rough estimate, not a measurement.",
+        a: "It uses 200 words per minute and a five-character word equivalent for long unbroken text. Short text is shown in seconds and longer text in rounded-up whole minutes.",
       },
       {
         q: "Is my text sent anywhere?",

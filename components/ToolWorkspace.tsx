@@ -1,9 +1,6 @@
 "use client";
 
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Button,
   SegmentedControl,
   ToolOptionsPanel,
@@ -99,6 +96,14 @@ function getInputSplitSizes(
     : { defaultSize: 24, minSize: 20 };
 }
 
+function stackedResultTitle(spec: ToolSpec) {
+  if (spec.labels.result) return spec.labels.result;
+  return spec.labels.ready
+    .replace(/^The\s+/i, "")
+    .replace(/\s+(?:is|are)\s+(?:ready.*|valid|current|up to date)\.?$/i, "")
+    || "Result";
+}
+
 const INPUT_RESULT_ITEMS = [
   { label: "Input", value: "input" },
   { label: "Result", value: "result" },
@@ -152,16 +157,21 @@ function InputResultWorkspace({
     );
   }
 
+  if (layout === "stacked") {
+    return (
+      <div className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto p-5">
+        {input}
+        {result}
+      </div>
+    );
+  }
+
   return (
     <SplitStack
-      className={
-        layout === "stacked"
-          ? "h-full [&_[data-purpose=result]_pre]:text-[11px]"
-          : "h-full"
-      }
+      className="h-full"
       defaultSize={defaultSize}
       minSize={minSize}
-      orientation={layout === "stacked" ? "vertical" : "horizontal"}
+      orientation="horizontal"
     >
       {input}
       {result}
@@ -173,9 +183,10 @@ function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction>
   return (
     <Button
       aria-busy={action.running || undefined}
-      className="!h-11 w-full"
+      className="w-full"
       disabled={action.disabled}
       onClick={action.onRun}
+      size="default"
       type="button"
     >
       {action.running ? (
@@ -297,77 +308,29 @@ function TextFileDropTarget({
   );
 }
 
-function ActionRailContent({ props }: { props: WorkspaceProps }) {
-  const state = props.error
-    ? {
-        description: "Review the input, correct the problem, and run the tool again.",
-        title: props.error,
-        variant: "destructive" as const,
-      }
-    : props.lifecycle === "running"
-      ? { description: "Keep this page open while the tool finishes.", title: props.spec.labels.running }
-      : props.lifecycle === "completed"
-        ? { description: "The result is ready in the workspace.", title: props.spec.labels.ready }
-        : props.lifecycle === "ready"
-          ? {
-              description: props.primaryAction
-                ? "The input is valid and the action is available."
-                : "The result updates automatically as the input changes.",
-              title: "Ready",
-            }
-          : {
-              description: props.spec.labels.empty,
-              title: "Waiting for input",
-            };
-
-  return (
-    <>
-      <Alert variant={state.variant}>
-        <AlertTitle>{state.title}</AlertTitle>
-        <AlertDescription>{state.description}</AlertDescription>
-      </Alert>
-      {props.spec.content.limitations?.length ? (
-        <section>
-          <h3 className="text-sm font-semibold">Keep in mind</h3>
-          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-5 text-muted-foreground">
-            {props.spec.content.limitations.map((item, index) => (
-              <li key={`limitation-${index}`}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-      <section>
-        <h3 className="text-sm font-semibold">How to use</h3>
-        <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-xs leading-5 text-muted-foreground">
-          {props.spec.content.howToUse.map((item, index) => (
-            <li key={`step-${index}`}>{item}</li>
-          ))}
-        </ol>
-      </section>
-    </>
-  );
-}
-
 export function ToolWorkspace(props: WorkspaceProps) {
   if (props.spec.input.kind === "files") {
-    return (
-      <FileProcessorWorkspace
-        {...props}
-        guidance={<ActionRailContent props={props} />}
-      />
-    );
+    return <FileProcessorWorkspace {...props} />;
   }
 
   const fields = Object.values(props.spec.settings.fields);
-  const hasMainSettings = fields.some((field) => field.pane === "main");
-  const hasSideSettings = fields.some((field) => field.pane !== "main");
+  const settingsOnly = props.spec.input.kind === "none";
+  const hasMainSettings = !settingsOnly && fields.some((field) => field.pane === "main");
+  const hasSideSettings = settingsOnly
+    ? fields.length > 0
+    : fields.some((field) => field.pane !== "main");
   const inputSplit = getInputSplitSizes(props.spec.input, 50, 30);
+  const surfaceVariant = props.spec.input.kind !== "none" && props.spec.layout === "stacked"
+    ? "card"
+    : "panel";
   const result = (
     <ResultSurface
       error={props.error}
       result={props.result}
       running={props.running}
       spec={props.spec}
+      title={surfaceVariant === "card" ? stackedResultTitle(props.spec) : undefined}
+      variant={surfaceVariant}
     />
   );
   const primaryContent = props.spec.input.kind === "none" ? (
@@ -381,6 +344,7 @@ export function ToolWorkspace(props: WorkspaceProps) {
           input={props.input}
           inputSpec={props.spec.input}
           onInputChange={props.onInputChange}
+          variant={surfaceVariant}
         />
       )}
       layout={props.spec.layout ?? "side-by-side"}
@@ -403,13 +367,17 @@ export function ToolWorkspace(props: WorkspaceProps) {
     </div>
   ) : primaryContent;
 
+  if (fields.length === 0 || (!hasSideSettings && !props.primaryAction)) {
+    return <TextFileDropTarget props={props}>{mainContent}</TextFileDropTarget>;
+  }
+
   const workspace = (
     <SplitStack
       className="h-full"
       collapseLabel="settings panel"
       collapseSide="secondary"
-      collapsible={hasSideSettings}
-      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
+      collapsible={hasSideSettings && !settingsOnly}
+      defaultCollapsed={!settingsOnly && props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
       defaultSize={69}
       minSize={52}
     >
@@ -417,23 +385,26 @@ export function ToolWorkspace(props: WorkspaceProps) {
       <ToolOptionsPanel
         action={hasSideSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
         className="h-full overflow-y-auto bg-card p-[18px]"
-        title={hasSideSettings ? "SETTINGS" : props.primaryAction ? "Action" : "Guidance"}
+        title={hasSideSettings ? props.spec.optionsPanel?.title ?? "SETTINGS" : props.primaryAction ? "Action" : "Guidance"}
         variant="plain"
       >
         {hasSideSettings ? (
-          <SettingsPanel
-            disabled={props.disabled}
-            onChange={props.onSettingChange}
-            pane="side"
-            spec={props.spec.settings}
-            values={props.settings}
-          />
-        ) : (
           <>
-            {props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : null}
-            <ActionRailContent props={props} />
+            <SettingsPanel
+              disabled={props.disabled}
+              layout={props.spec.optionsPanel?.layout}
+              onChange={props.onSettingChange}
+              pane={settingsOnly ? undefined : "side"}
+              spec={props.spec.settings}
+              values={props.settings}
+            />
+            {props.spec.optionsPanel?.note ? (
+              <p className="text-xs text-muted-foreground">{props.spec.optionsPanel.note}</p>
+            ) : null}
           </>
-        )}
+        ) : props.primaryAction ? (
+          <PrimaryAction action={props.primaryAction} />
+        ) : null}
       </ToolOptionsPanel>
     </SplitStack>
   );

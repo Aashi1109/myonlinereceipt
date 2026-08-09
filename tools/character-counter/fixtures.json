@@ -8,14 +8,8 @@
       "name": "definition example",
       "settings": {},
       "expected": {
-        "render": "key-value",
-        "entries": [
-          { "label": "Characters", "value": "7" },
-          { "label": "Characters without spaces", "value": "6" },
-          { "label": "Words", "value": "2" },
-          { "label": "Lines", "value": "1" },
-          { "label": "UTF-8 bytes", "value": "10" }
-        ]
+        "render": "text",
+        "output": "Characters: 7\nCharacters without spaces: 6\nWords: 2\nLines: 1\nUTF-8 bytes: 10"
       }
     },
     {
@@ -30,15 +24,8 @@
         "countLineBreaks": false
       },
       "expected": {
-        "render": "key-value",
-        "entries": [
-          { "label": "Characters", "value": "11 / 280" },
-          { "label": "Remaining", "value": "269" },
-          { "label": "Characters without spaces", "value": "11" },
-          { "label": "Words", "value": "3" },
-          { "label": "Lines", "value": "2" },
-          { "label": "UTF-8 bytes", "value": "13" }
-        ]
+        "render": "text",
+        "output": "Characters: 11 / 280\nRemaining: 269\nCharacters without spaces: 11\nWords: 3\nLines: 2\nUTF-8 bytes: 13"
       }
     }
   ]

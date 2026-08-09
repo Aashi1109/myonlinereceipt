@@ -14,6 +14,7 @@ export default {
   ],
   name: "JSON Schema Validator",
   description: "Validate JSON against common JSON Schema constraints.",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "JSON data and schema",

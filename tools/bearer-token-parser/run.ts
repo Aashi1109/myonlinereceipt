@@ -41,17 +41,15 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     ctx.settings.maskRawToken === true ? "••••••••" : token;
   if ((ctx.settings.decodeJwtParts ?? true) && token.split(".").length === 3) {
     const decoded = decodeJwt(token);
+    const value = {
+      token: displayedToken,
+      header: decoded.header,
+      payload: decoded.payload,
+    };
     return {
-      render: "text",
-      text: JSON.stringify(
-        {
-          token: displayedToken,
-          header: decoded.header,
-          payload: decoded.payload,
-        },
-        null,
-        2,
-      ),
+      render: "json-tree",
+      value,
+      text: JSON.stringify(value, null, 2),
     };
   }
   return {

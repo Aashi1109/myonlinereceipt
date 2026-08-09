@@ -13,7 +13,7 @@ export default {
     "data uri",
   ],
   name: "Base64 Decoder",
-  description: "Decode Base64 text as UTF-8.",
+  description: "Decode Base64 text, images, and binary files.",
   layout: "stacked",
   input: {
     kind: "text",
@@ -25,19 +25,19 @@ export default {
   capabilities: { copy: true, download: true },
   workbenchMark: { text: "64-" },
   labels: {
-    empty: "Paste Base64 text to decode it as UTF-8.",
-    ready: "Decoded UTF-8 text is ready.",
+    empty: "Paste Base64 to decode its contents.",
+    ready: "Decoded content is ready.",
     running: "Decoding Base64…",
   },
   content: {
     howToUse: [
       "Paste the Base64 string. Standard and URL-safe alphabets both work, and missing `=` padding is added for you.",
       "Whitespace and line breaks inside the value are ignored, so a wrapped PEM-style block or a value copied across several lines decodes fine.",
-      "Decode, then copy the plain text.",
+      "Decode, then copy text or preview and download the decoded file.",
     ],
     limitations: [
-      "The result is decoded as UTF-8 text. Binary payloads — an image, a zip, a protobuf — are rejected rather than shown as mojibake.",
-      "Strip the `data:...;base64,` prefix from a data URI first; only the encoded body belongs here.",
+      "Recognized PNG, JPEG, and WebP images are previewed. Other binary payloads are downloaded as `decoded.bin`.",
+      "Base64 data URIs are accepted directly; the encoded body is extracted automatically.",
       "A JWT is three Base64url segments joined by dots. Paste one segment, or use the JWT Decoder for the whole token.",
       "Invalid characters or a length that cannot be padded to a multiple of four are rejected with 'Base64 input is invalid.'",
     ],
@@ -47,8 +47,8 @@ export default {
         a: "No. `-` and `_` are translated automatically and the padding is restored, so Base64url values decode as-is.",
       },
       {
-        q: "Why does it say the input is not valid UTF-8?",
-        a: "The bytes decoded fine but are not text — most often an image or another binary blob. This tool only produces text.",
+        q: "What happens when the result is not text?",
+        a: "Recognized images are previewed. Any other binary payload is preserved and offered as a download.",
       },
       {
         q: "Is my data uploaded?",

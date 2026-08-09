@@ -28,6 +28,7 @@ export default {
   labels: {
     empty: "Paste the raw text you want to embed in JSON.",
     ready: "Escaped string is ready.",
+    result: "Escaped text",
     running: "Escaping text for JSON…",
   },
   content: {

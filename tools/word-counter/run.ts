@@ -18,10 +18,18 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
     excludeEmails: ctx.settings.excludeEmails,
     ignoreNumbers: ctx.settings.ignoreNumbers,
   });
-  const minutes = metrics.words ? Math.max(1, Math.ceil(metrics.words / 200)) : 0;
+  const estimatedWords = Math.max(
+    metrics.words,
+    Math.ceil(metrics.charactersWithoutSpaces / 5),
+  );
+  const readingSeconds = Math.ceil(estimatedWords * 0.3);
+  const readingTime =
+    estimatedWords < 200
+      ? `${readingSeconds} second${readingSeconds === 1 ? "" : "s"}`
+      : `${Math.ceil(estimatedWords / 200)} minute${estimatedWords > 200 ? "s" : ""}`;
   return {
     render: "text",
-    text: `Words: ${metrics.words}\nCharacters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nSentences: ${metrics.sentences}\nParagraphs: ${metrics.paragraphs}\nLines: ${metrics.lines}${ctx.settings.estimateReadingTime ? `\nReading time: ${minutes} minute${minutes === 1 ? "" : "s"}` : ""}`,
+    text: `Words: ${metrics.words}\nCharacters: ${metrics.characters}\nCharacters without spaces: ${metrics.charactersWithoutSpaces}\nSentences: ${metrics.sentences}\nParagraphs: ${metrics.paragraphs}\nLines: ${metrics.lines}${ctx.settings.estimateReadingTime ? `\nReading time: ${readingTime}` : ""}`,
   };
 };
 

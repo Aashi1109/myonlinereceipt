@@ -27,26 +27,17 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ? withoutExcludedLineBreaks
       : withoutExcludedLineBreaks.replace(/[^\S\r\n]/gu, ""),
   ).length;
+  const lines = [
+    `Characters: ${limit280 ? `${countedCharacters} / 280` : countedCharacters}`,
+    ...(limit280 ? [`Remaining: ${280 - countedCharacters}`] : []),
+    `Characters without spaces: ${metrics.charactersWithoutSpaces}`,
+    `Words: ${metrics.words}`,
+    `Lines: ${metrics.lines}`,
+    `UTF-8 bytes: ${metrics.bytes}`,
+  ];
   return {
-    render: "key-value",
-    entries: [
-      {
-        label: "Characters",
-        value: limit280
-          ? `${countedCharacters} / 280`
-          : String(countedCharacters),
-      },
-      ...(limit280
-        ? [{ label: "Remaining", value: String(280 - countedCharacters) }]
-        : []),
-      {
-        label: "Characters without spaces",
-        value: String(metrics.charactersWithoutSpaces),
-      },
-      { label: "Words", value: String(metrics.words) },
-      { label: "Lines", value: String(metrics.lines) },
-      { label: "UTF-8 bytes", value: String(metrics.bytes) },
-    ],
+    render: "text",
+    text: lines.join("\n"),
   };
 };
 

@@ -34,11 +34,12 @@ import type {
 } from "@/lib/tool-framework/result";
 
 export interface ResultViewProps {
+  hideJsonHeader?: boolean;
   jsonHeader?: ReactNode;
   result: ToolResult;
 }
 
-type ResultRendererOptions = Pick<ResultViewProps, "jsonHeader">;
+type ResultRendererOptions = Pick<ResultViewProps, "hideJsonHeader" | "jsonHeader">;
 
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
@@ -94,7 +95,7 @@ function DownloadButton({
 }: DownloadButtonProps) {
   return (
     <Button
-      className={variant === "link" ? "px-2 text-xs" : undefined}
+      className={variant === "link" ? "h-auto px-1 py-0 text-xs" : undefined}
       disabled={disabled}
       onClick={() => href ? saveUrl(href, name) : content !== undefined ? saveBlob(content, mime, name) : undefined}
       type="button"
@@ -161,7 +162,7 @@ function CopyButton({
       className={iconOnly
         ? "relative after:absolute after:-inset-[6px] [&_svg]:size-4"
         : variant === "link"
-          ? "px-2 text-xs"
+          ? "h-auto px-1 py-0 text-xs"
           : undefined}
       disabled={disabled}
       onClick={() => void copy()}
@@ -300,10 +301,12 @@ export function ResultActions({
   canCopy,
   canDownload,
   result,
+  variant = "outline",
 }: {
   canCopy: boolean;
   canDownload: boolean;
   result: ToolResult | null;
+  variant?: "link" | "outline";
 }) {
   const artifact = resultArtifact(result);
   const download = artifact?.download;
@@ -316,7 +319,7 @@ export function ResultActions({
           content={artifact?.copy ?? ""}
           disabled={artifact?.copy === undefined}
           label={artifact?.copyLabel ?? "Copy all"}
-          variant="outline"
+          variant={variant}
         />
       ) : null}
       {canDownload ? (
@@ -327,7 +330,7 @@ export function ResultActions({
           label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
           mime={download?.mime ?? "application/octet-stream"}
           name={download?.name ?? "result"}
-          variant="outline"
+          variant={variant}
         />
       ) : null}
     </>
@@ -349,10 +352,11 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
     const json = result.text ?? JSON.stringify(result.value, null, 2)!;
     return (
       <JsonResultRenderer
-        className="h-full"
+        className={`h-full ${options?.hideJsonHeader ? "!bg-transparent" : ""}`}
         defaultOpenDepth={1}
         downloadName={result.downloadName ?? "result.json"}
         formattedValue={json}
+        header={options?.hideJsonHeader ? "hidden" : "visible"}
         headerStart={options?.jsonHeader}
         maxVisibleEntries={1_000}
         value={result.value}
@@ -536,10 +540,10 @@ function CommonResultDetails({ result }: ResultViewProps) {
   );
 }
 
-export function ResultView({ jsonHeader, result }: ResultViewProps) {
+export function ResultView({ hideJsonHeader, jsonHeader, result }: ResultViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {renderPrimary(result, { jsonHeader })}
+      {renderPrimary(result, { hideJsonHeader, jsonHeader })}
       <CommonResultDetails result={result} />
     </div>
   );

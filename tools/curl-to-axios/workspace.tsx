@@ -95,7 +95,6 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
           <SourceTextarea
             className="min-h-0 flex-1"
             disabled={props.disabled}
-            gutter={false}
             id={inputId}
             maxLength={inputSpec.maxLength}
             onChange={(text) => props.onInputChange({ ...props.input, text })}

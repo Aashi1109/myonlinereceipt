@@ -19,9 +19,11 @@ const buttonVariants = cva(
           "border border-input bg-card text-foreground hover:bg-muted",
         ghost:
           "bg-transparent text-foreground hover:bg-accent active:bg-accent",
+        "input-icon":
+          "bg-transparent text-muted-foreground hover:text-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
         "danger-subtle":
           "border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary underline-offset-4 hover:underline disabled:bg-transparent",
       },
       size: {
         default:

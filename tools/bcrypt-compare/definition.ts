@@ -7,7 +7,7 @@ export default {
   keywords: ["bcrypt", "compare", "verify", "password", "hash", "check"],
   name: "Bcrypt Compare",
   description: "Check plain text against a bcrypt hash.",
-  layout: "side-by-side",
+  layout: "stacked",
   input: {
     kind: "fields",
     label: "Password and bcrypt hash",

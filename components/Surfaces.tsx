@@ -79,6 +79,7 @@ export type WorkspaceSurfaceProps = Omit<
   stateTitle?: ReactNode;
   status?: ReactNode;
   title: ReactNode;
+  variant?: "card" | "panel";
 };
 
 const DEFAULT_STATE_TITLES: Record<
@@ -116,6 +117,7 @@ function WorkspaceSurface({
   stateTitle,
   status,
   title,
+  variant = "panel",
   ...props
 }: WorkspaceSurfaceProps) {
   const headingId = useId();
@@ -168,18 +170,59 @@ function WorkspaceSurface({
     );
   const heading = (
     <h2
-      className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase"
+      className={cn(
+        "truncate font-caption text-xs uppercase",
+        variant === "card"
+          ? "font-medium tracking-[0.04em] text-muted-foreground"
+          : "font-extrabold tracking-[0.06em]",
+      )}
       id={headingId}
     >
       {title}
     </h2>
+  );
+  const workspaceHeader = header === "visible" ? (
+    <header
+      className={cn(
+        "flex shrink-0 items-center justify-between gap-3",
+        variant === "card" ? "min-h-10 px-4 pt-2" : "min-h-[46px] border-b border-border px-4",
+      )}
+      data-slot="workspace-header"
+    >
+      <div className="min-w-0">
+        {status !== undefined && status !== null ? (
+          <div className="flex min-w-0 items-center gap-2">
+            {heading}
+            {variant === "card" ? status : (
+              <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
+                {status}
+              </StatusBadge>
+            )}
+          </div>
+        ) : heading}
+        {description ? (
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      {meta !== undefined && meta !== null ? (
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <span className="text-right font-mono text-xs text-muted-foreground">{meta}</span>
+          {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+        </div>
+      ) : actions ? (
+        <div className="flex shrink-0 items-center gap-1">{actions}</div>
+      ) : null}
+    </header>
+  ) : (
+    <h2 className="sr-only" id={headingId}>{title}</h2>
   );
 
   return (
     <section
       aria-labelledby={headingId}
       className={cn(
-        "flex min-h-0 min-w-0 flex-col overflow-hidden bg-card",
+        "flex min-h-0 min-w-0 flex-col",
+        variant === "card" ? "gap-2 overflow-visible bg-transparent" : "overflow-hidden bg-card",
         className,
       )}
       data-purpose={purpose}
@@ -187,51 +230,20 @@ function WorkspaceSurface({
       data-surface="workspace"
       {...props}
     >
-      {header === "visible" ? (
-        <header
-          className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-4"
-        >
-          <div className="min-w-0">
-            {status !== undefined && status !== null ? (
-              <div className="flex min-w-0 items-center gap-2">
-                {heading}
-                <StatusBadge className="shrink-0" variant={state === "ready" ? "success" : "neutral"}>
-                  {status}
-                </StatusBadge>
-              </div>
-            ) : (
-              heading
-            )}
-            {description ? (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {description}
-              </p>
-            ) : null}
-          </div>
-          {meta !== undefined && meta !== null ? (
-            <div className="ml-auto flex shrink-0 items-center gap-3">
-              <span className="text-right font-mono text-xs text-muted-foreground">
-                {meta}
-              </span>
-              {actions ? (
-                <div className="flex shrink-0 items-center gap-1">
-                  {actions}
-                </div>
-              ) : null}
-            </div>
-          ) : actions ? (
-            <div className="flex shrink-0 items-center gap-1">{actions}</div>
-          ) : null}
-        </header>
-      ) : (
-        <h2 className="sr-only" id={headingId}>
-          {title}
-        </h2>
-      )}
+      {variant === "card" ? null : workspaceHeader}
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          variant === "card" ? "overflow-hidden rounded-lg border border-border bg-muted/45" : undefined,
+        )}
+        data-slot="workspace-card"
+      >
+      {variant === "card" ? workspaceHeader : null}
       {scroll === "content" && state === "ready" ? (
         <ScrollRegion
           accessibleName={`${typeof title === "string" ? title : "Workspace"} content`}
           className="flex-1"
+          data-slot="workspace-content"
         >
           <div
             className={cn(
@@ -248,10 +260,12 @@ function WorkspaceSurface({
             "flex min-h-0 min-w-0 flex-1 flex-col",
             contentClassName,
           )}
+          data-slot="workspace-content"
         >
           {content}
         </div>
       )}
+      </div>
     </section>
   );
 }

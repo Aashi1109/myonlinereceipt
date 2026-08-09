@@ -415,12 +415,12 @@ function ToolToolbar(): ReactElement {
       >
         Reset
       </Button>
-      {!hasSettings && chrome.spec.input.kind === "files" && primaryAction ? (
+      {!hasSettings && primaryAction ? (
         <Button
           aria-busy={primaryAction.running || undefined}
           disabled={primaryAction.disabled}
           onClick={primaryAction.onRun}
-          style={{ height: 44 }}
+          size="xs"
           type="button"
         >
           {primaryAction.running ? (

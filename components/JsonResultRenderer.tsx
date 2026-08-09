@@ -1409,6 +1409,7 @@ export function JsonResultRenderer({
   downloadName = "smarttools-result.json",
   editor,
   formattedValue,
+  header = "visible",
   headerActions,
   headerStart,
   label = "JSON result",
@@ -1431,6 +1432,7 @@ export function JsonResultRenderer({
   downloadName?: string;
   editor?: JsonEditorController;
   formattedValue?: string;
+  header?: "hidden" | "visible";
   headerActions?: ReactNode;
   headerStart?: ReactNode;
   label?: string;
@@ -1635,7 +1637,7 @@ export function JsonResultRenderer({
         className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-card ${className}`}
         data-testid="json-result-renderer"
       >
-      <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
+      {header === "visible" ? <header className="flex min-h-[46px] shrink-0 items-center justify-between gap-3 border-b border-border px-[14px] max-[42rem]:flex-col max-[42rem]:items-stretch max-[42rem]:gap-0 max-[42rem]:pb-2">
         {headerStart ?? (
           <Select
             onValueChange={(nextView) => activateView(nextView as JsonResultView)}
@@ -1849,7 +1851,7 @@ export function JsonResultRenderer({
             </Button>
           </JsonTooltip>
         </div>
-      </header>
+      </header> : null}
 
       {isStructuredView ? (
         <div

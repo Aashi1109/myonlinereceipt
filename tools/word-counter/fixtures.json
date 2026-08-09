@@ -13,7 +13,7 @@
         "estimateReadingTime": true
       },
       "expected": {
-        "output": "Words: 12\nCharacters: 72\nCharacters without spaces: 61\nSentences: 2\nParagraphs: 1\nLines: 1\nReading time: 1 minute",
+        "output": "Words: 12\nCharacters: 72\nCharacters without spaces: 61\nSentences: 2\nParagraphs: 1\nLines: 1\nReading time: 4 seconds",
         "render": "text"
       }
     },
@@ -31,6 +31,23 @@
       },
       "expected": {
         "output": "Words: 12\nCharacters: 72\nCharacters without spaces: 61\nSentences: 2\nParagraphs: 1\nLines: 1",
+        "render": "text"
+      }
+    },
+    {
+      "input": {
+        "primary": "abcdefghijklmnopqrst",
+        "secondary": ""
+      },
+      "name": "long unbroken text uses character equivalent",
+      "settings": {
+        "countHyphenated": true,
+        "ignoreNumbers": false,
+        "excludeEmails": true,
+        "estimateReadingTime": true
+      },
+      "expected": {
+        "output": "Words: 1\nCharacters: 20\nCharacters without spaces: 20\nSentences: 0\nParagraphs: 1\nLines: 1\nReading time: 2 seconds",
         "render": "text"
       }
     }

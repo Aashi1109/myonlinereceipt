@@ -24,7 +24,6 @@ export default {
         label: "Authorization header or raw token",
         placeholder: "Bearer eyJhbGciOiJub25lIn0.eyJzdWIiOiIxMjMifQ.",
         required: true,
-        secret: true,
         multiline: true,
       },
     ],

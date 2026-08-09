@@ -196,7 +196,6 @@ function JsonSourceEditor({
       <SourceTextarea
         className="min-h-0 flex-1"
         disabled={props.disabled}
-        gutter
         highlightedValue={highlightedInput}
         id={editorId}
         onChange={(text) => {

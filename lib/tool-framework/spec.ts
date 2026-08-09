@@ -78,6 +78,7 @@ export type ToolCapabilities = {
 export type ToolLabels = {
   empty: string;
   ready: string;
+  result?: string;
   running: string;
 };
 
@@ -108,6 +109,9 @@ export type ToolLayout = "side-by-side" | "stacked";
 
 export type ToolOptionsPanel = {
   readonly defaultCollapsed?: boolean;
+  readonly layout?: "grid" | "stack";
+  readonly note?: string;
+  readonly title?: string;
 };
 
 export type ToolSpec<S extends SettingsSpec = SettingsSpec> = {
