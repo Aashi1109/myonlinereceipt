@@ -69759,17 +69759,167 @@
                                           "content": "SOURCE TEXT"
                                         },
                                         "fDcDE": {
-                                          "content": "Sample loaded · ready"
+                                          "content": "2 inline replacement previews",
+                                          "fill": "$accent-text"
                                         },
-                                        "n7etr8": {
-                                          "content": "Deploy the staging API, then verify the staging URL."
+                                        "RDa45": {
+                                          "children": [
+                                            {
+                                              "type": "frame",
+                                              "id": "SHB3S",
+                                              "name": "Source Text With Match Highlights",
+                                              "alignItems": "center",
+                                              "children": [
+                                                {
+                                                  "type": "text",
+                                                  "id": "gQFFK",
+                                                  "name": "Source Prefix",
+                                                  "fill": "$fg-primary",
+                                                  "content": "Deploy the ",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "normal"
+                                                },
+                                                {
+                                                  "type": "frame",
+                                                  "id": "eLEaD",
+                                                  "name": "Inline Replacement 1",
+                                                  "height": 20,
+                                                  "fill": "$surface-muted",
+                                                  "gap": 4,
+                                                  "alignItems": "center",
+                                                  "children": [
+                                                    {
+                                                      "type": "text",
+                                                      "id": "wTtLa",
+                                                      "name": "Deleted Word 1",
+                                                      "fill": "$danger-text",
+                                                      "content": "staging",
+                                                      "fontFamily": "$font-body",
+                                                      "fontSize": 12,
+                                                      "fontWeight": "600"
+                                                    },
+                                                    {
+                                                      "type": "icon",
+                                                      "id": "f6WvW",
+                                                      "name": "Replacement Arrow 1",
+                                                      "width": 12,
+                                                      "height": 12,
+                                                      "icon": "arrow-right",
+                                                      "library": "lucide",
+                                                      "fill": "$fg-secondary"
+                                                    },
+                                                    {
+                                                      "type": "frame",
+                                                      "id": "e82sI",
+                                                      "name": "Replacement Word 1",
+                                                      "fill": "$success-soft",
+                                                      "cornerRadius": "$r-sm",
+                                                      "padding": [
+                                                        1,
+                                                        4
+                                                      ],
+                                                      "alignItems": "center",
+                                                      "children": [
+                                                        {
+                                                          "type": "text",
+                                                          "id": "F4U6Bg",
+                                                          "name": "Replacement Word Text 1",
+                                                          "fill": "$success-text",
+                                                          "content": "production",
+                                                          "fontFamily": "$font-body",
+                                                          "fontSize": 12,
+                                                          "fontWeight": "600"
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "O7KAMQ",
+                                                  "name": "Source Middle",
+                                                  "fill": "$fg-primary",
+                                                  "content": " API, then verify the ",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "normal"
+                                                },
+                                                {
+                                                  "type": "frame",
+                                                  "id": "xjgwi",
+                                                  "name": "Inline Replacement 2",
+                                                  "height": 20,
+                                                  "fill": "$surface-muted",
+                                                  "gap": 4,
+                                                  "alignItems": "center",
+                                                  "children": [
+                                                    {
+                                                      "type": "text",
+                                                      "id": "y86zrf",
+                                                      "name": "Deleted Word 2",
+                                                      "fill": "$danger-text",
+                                                      "content": "staging",
+                                                      "fontFamily": "$font-body",
+                                                      "fontSize": 12,
+                                                      "fontWeight": "600"
+                                                    },
+                                                    {
+                                                      "type": "icon",
+                                                      "id": "v0aPL7",
+                                                      "name": "Replacement Arrow 2",
+                                                      "width": 12,
+                                                      "height": 12,
+                                                      "icon": "arrow-right",
+                                                      "library": "lucide",
+                                                      "fill": "$fg-secondary"
+                                                    },
+                                                    {
+                                                      "type": "frame",
+                                                      "id": "g4YQIc",
+                                                      "name": "Replacement Word 2",
+                                                      "fill": "$success-soft",
+                                                      "cornerRadius": "$r-sm",
+                                                      "padding": [
+                                                        1,
+                                                        4
+                                                      ],
+                                                      "alignItems": "center",
+                                                      "children": [
+                                                        {
+                                                          "type": "text",
+                                                          "id": "g770to",
+                                                          "name": "Replacement Word Text 2",
+                                                          "fill": "$success-text",
+                                                          "content": "production",
+                                                          "fontFamily": "$font-body",
+                                                          "fontSize": 12,
+                                                          "fontWeight": "600"
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "text",
+                                                  "id": "ewEmS",
+                                                  "name": "Source Suffix",
+                                                  "fill": "$fg-primary",
+                                                  "content": " URL.",
+                                                  "fontFamily": "$font-body",
+                                                  "fontSize": 12,
+                                                  "fontWeight": "normal"
+                                                }
+                                              ]
+                                            }
+                                          ]
                                         },
                                         "kcoWt": {
                                           "content": "REPLACED TEXT"
                                         },
                                         "Zgk1P": {
-                                          "fill": "#0B7A3B",
-                                          "content": "READY TO APPLY"
+                                          "fill": "$success-text",
+                                          "content": "APPLIED"
                                         },
                                         "TdxFB": {
                                           "opacity": 0.45
@@ -69777,9 +69927,102 @@
                                         "T1Wxe": {
                                           "opacity": 0.45
                                         },
-                                        "ULyke": {
-                                          "content": "Replacement preview will appear after Apply replacements.",
-                                          "fill": "$fg-secondary"
+                                        "BUIMJ": {
+                                          "type": "frame",
+                                          "id": "aZFGo",
+                                          "name": "Output Preview",
+                                          "clip": true,
+                                          "width": 908,
+                                          "height": 259,
+                                          "fill": "$surface-muted",
+                                          "cornerRadius": "$r-md",
+                                          "stroke": "$border-strong",
+                                          "strokeWidth": 1,
+                                          "layout": "none",
+                                          "children": [
+                                            {
+                                              "type": "text",
+                                              "id": "j0opw",
+                                              "x": 14,
+                                              "y": 14,
+                                              "name": "Applied Result Prefix",
+                                              "fill": "$fg-primary",
+                                              "content": "Deploy the ",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "normal"
+                                            },
+                                            {
+                                              "type": "rectangle",
+                                              "cornerRadius": "$r-sm",
+                                              "id": "jMnN6",
+                                              "x": 77,
+                                              "y": 12,
+                                              "name": "Applied Replacement Highlight 1",
+                                              "fill": "$success-soft",
+                                              "width": 71,
+                                              "height": 20
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "vZ9x5",
+                                              "x": 81,
+                                              "y": 14,
+                                              "name": "Applied Replacement Text 1",
+                                              "fill": "$success-text",
+                                              "content": "production",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "L1mQG",
+                                              "x": 148,
+                                              "y": 14,
+                                              "name": "Applied Result Middle",
+                                              "fill": "$fg-primary",
+                                              "content": " API, then verify the ",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "normal"
+                                            },
+                                            {
+                                              "type": "rectangle",
+                                              "cornerRadius": "$r-sm",
+                                              "id": "yCTr2",
+                                              "x": 258,
+                                              "y": 12,
+                                              "name": "Applied Replacement Highlight 2",
+                                              "fill": "$success-soft",
+                                              "width": 71,
+                                              "height": 20
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "F0a5YV",
+                                              "x": 262,
+                                              "y": 14,
+                                              "name": "Applied Replacement Text 2",
+                                              "fill": "$success-text",
+                                              "content": "production",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "600"
+                                            },
+                                            {
+                                              "type": "text",
+                                              "id": "H8Qaz",
+                                              "x": 329,
+                                              "y": 14,
+                                              "name": "Applied Result Suffix",
+                                              "fill": "$fg-primary",
+                                              "content": " URL.",
+                                              "fontFamily": "$font-body",
+                                              "fontSize": 12,
+                                              "fontWeight": "normal"
+                                            }
+                                          ]
                                         },
                                         "mfflH": {
                                           "type": "frame",
@@ -69860,8 +70103,8 @@
                                           "content": "Review the find and replacement values, then apply the change."
                                         },
                                         "Zi1QB": {
-                                          "content": "2 matches found · replacement not applied",
-                                          "fill": "#0B7A3B"
+                                          "content": "2 replacements applied · result ready",
+                                          "fill": "$success-text"
                                         }
                                       }
                                     },
