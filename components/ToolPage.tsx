@@ -27,7 +27,7 @@
  */
 
 import { Button, Select } from "@smarttools/ui";
-import { Loader2 } from "lucide-react";
+import { Loader2, Undo2 } from "lucide-react";
 import {
   createContext,
   lazy,
@@ -346,10 +346,15 @@ function ToolToolbar(): ReactElement {
   const exampleVariant = chrome.toolbarActions?.exampleVariant ?? "link";
   const hasSettings = Object.keys(chrome.spec.settings.fields).length > 0;
   const running = runtime.lifecycle === "running";
+  const [resetSnapshot, setResetSnapshot] = useState<{
+    input: WorkspaceInputState;
+    settings: RuntimeSettings;
+  } | null>(null);
 
   const loadExample = (index: number) => {
     const example = examples[index];
     if (!example) return;
+    setResetSnapshot(null);
     chrome.toolbarActions?.onExample?.();
     runtime.setInput({
       files: [],
@@ -362,8 +367,18 @@ function ToolToolbar(): ReactElement {
   };
 
   const reset = () => {
+    setResetSnapshot({ input: runtime.input, settings: chrome.settings });
     runtime.setInput({ files: [], text: "" });
     chrome.resetPageState();
+  };
+
+  const undoReset = () => {
+    if (!resetSnapshot) return;
+    runtime.setInput(resetSnapshot.input);
+    for (const [key, value] of Object.entries(resetSnapshot.settings)) {
+      chrome.onSettingChange(key, value);
+    }
+    setResetSnapshot(null);
   };
 
   return (
@@ -407,7 +422,7 @@ function ToolToolbar(): ReactElement {
       ) : null}
       {chrome.toolbarActions?.afterExample}
       <Button
-        disabled={running}
+        disabled={running || resetSnapshot !== null}
         onClick={reset}
         size="xs"
         type="button"
@@ -415,6 +430,18 @@ function ToolToolbar(): ReactElement {
       >
         Reset
       </Button>
+      {resetSnapshot ? (
+        <Button
+          disabled={running}
+          onClick={undoReset}
+          size="xs"
+          type="button"
+          variant="ghost"
+        >
+          <Undo2 aria-hidden="true" />
+          Undo reset
+        </Button>
+      ) : null}
       {!hasSettings && primaryAction ? (
         <Button
           aria-busy={primaryAction.running || undefined}

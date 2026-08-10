@@ -15,3 +15,4 @@ word-counter | - | done
 text-case-converter | - | done
 postitional-text-compare | - | not exists
 slug-generator | - | done
+duplicate-line-remover | - | done

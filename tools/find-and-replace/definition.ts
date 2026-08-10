@@ -18,13 +18,13 @@ export default {
   layout: "stacked",
   input: {
     kind: "text",
-    label: "Text input",
-    placeholder: "red green red",
+    label: "Source text",
+    placeholder: "Deploy the staging API, then verify the staging URL.",
   },
   settings: {
     fields: {
-      find: { kind: "text", label: "Find", default: "red" },
-      replace: { kind: "text", label: "Replace", default: "blue" },
+      find: { kind: "text", label: "Find", default: "staging" },
+      replace: { kind: "text", label: "Replace with", default: "production" },
       regex: {
         kind: "toggle",
         label: "Regex",
@@ -44,13 +44,13 @@ export default {
   },
   content: {
     howToUse: [
-      "Paste the text you want to edit.",
-      "Enter what to find and what to replace it with. Every occurrence is replaced, not just the first.",
+      "Paste the text you want to edit. Matching words are highlighted directly in the source.",
+      "Enter what to find and what to replace it with. Each match shows an inline old-to-new preview before you apply the replacement.",
       "Turn on Regex to treat the find field as a regular expression — then $1, $2 and $& work in the replacement.",
       "Turn on Ignore case to match regardless of capitalisation. The replacement is inserted exactly as typed, so it does not follow the original casing.",
     ],
     limitations: [
-      "Replacement is global and unconditional; there is no preview, no per-match confirmation, and no undo beyond keeping the original text.",
+      "Replacement is global and unconditional. Inline previews show every match, but individual matches cannot be excluded.",
       "In literal mode the find text is escaped, so regex metacharacters such as . and * match themselves.",
       "Regex mode uses Unicode mode, which rejects some lenient legacy patterns — an unescaped stray backslash is an error rather than a literal.",
     ],
@@ -68,6 +68,9 @@ export default {
         a: "No. It only affects matching. The replacement text is inserted verbatim.",
       },
     ],
-    examples: [{ label: "Swap a word", text: "red green red" }],
+    examples: [{
+      label: "Replace an environment name",
+      text: "Deploy the staging API, then verify the staging URL.",
+    }],
   },
 } as const satisfies ToolSpec;

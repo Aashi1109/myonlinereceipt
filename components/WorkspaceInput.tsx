@@ -59,6 +59,7 @@ interface SourceTextareaProps extends Pick<
   className: string;
   disabled?: boolean;
   highlightedValue?: ReactNode;
+  highlightMode?: "persistent" | "preview";
   id: string;
   maxLength?: number;
   showLineNumbers?: boolean;
@@ -100,6 +101,7 @@ export function SourceTextarea({
   className,
   disabled,
   highlightedValue,
+  highlightMode = "persistent",
   id,
   maxLength,
   showLineNumbers = true,
@@ -114,7 +116,11 @@ export function SourceTextarea({
 }: SourceTextareaProps) {
   const gutterRef = useRef<HTMLPreElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
+  const [focused, setFocused] = useState(false);
   const resolvedWrap = wrap ?? "soft";
+  const showHighlight = Boolean(
+    highlightedValue && (highlightMode === "persistent" || !focused),
+  );
   const reportCaret = (textarea: HTMLTextAreaElement) => {
     if (!onCaretChange) return;
     const valueBeforeCaret = textarea.value.slice(0, textarea.selectionStart);
@@ -144,7 +150,7 @@ export function SourceTextarea({
         </div>
       ) : null}
       <div className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${showLineNumbers ? "ml-[14px]" : ""}`}>
-        {highlightedValue ? (
+        {showHighlight ? (
           <pre
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 font-mono text-xs leading-[1.55] text-foreground will-change-transform"
@@ -158,7 +164,7 @@ export function SourceTextarea({
           aria-invalid={ariaInvalid}
           autoCapitalize="off"
           autoCorrect="off"
-          className={`relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 font-mono text-xs leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${highlightedValue ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "overflow-x-auto" : "overflow-x-hidden"}`}
+          className={`relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 font-mono text-xs leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${showHighlight ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "overflow-x-auto" : "overflow-x-hidden"}`}
           disabled={disabled}
           id={id}
           maxLength={maxLength}
@@ -166,7 +172,11 @@ export function SourceTextarea({
             onChange(event.currentTarget.value);
             reportCaret(event.currentTarget);
           }}
-          onFocus={(event) => reportCaret(event.currentTarget)}
+          onBlur={() => setFocused(false)}
+          onFocus={(event) => {
+            setFocused(true);
+            reportCaret(event.currentTarget);
+          }}
           onSelect={(event) => reportCaret(event.currentTarget)}
           onScroll={(event) => {
             const { scrollLeft, scrollTop } = event.currentTarget;
