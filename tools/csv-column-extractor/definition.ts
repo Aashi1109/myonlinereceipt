@@ -11,6 +11,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {

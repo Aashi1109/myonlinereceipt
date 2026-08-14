@@ -23,7 +23,6 @@ import {
   type DecodableImageKind,
   type OutputImageFormat,
 } from "../../lib/tool-framework/media/imageCodec.ts";
-import type { MediaOutputFile } from "../../lib/tool-framework/media/pdfDocument.ts";
 import {
   createOutputFilename,
   validateImageSelection,
@@ -44,7 +43,7 @@ function outputFormat(value: string): OutputImageFormat {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
@@ -123,18 +122,17 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   canvas.width = 1;
   canvas.height = 1;
   const buffer = await encodeImage(image, format, ctx.settings.quality / 100, background);
-  const output: MediaOutputFile = {
-    buffer,
-    filename: createOutputFilename(ordered[0].name, extensionFor(format), "combined"),
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(ordered[0].name, extensionFor(format), "combined"),
     mime: mimeFor(format),
-    size: buffer.byteLength,
-  };
+    source: new Uint8Array(buffer),
+  });
   ctx.progress({ completed: total, total, stage: "Image complete" });
 
   return {
     render: "files",
     files: [output],
-    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.data.byteLength, 0),
+    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.size, 0),
     outputBytes: output.size,
   };
 };

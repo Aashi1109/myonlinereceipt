@@ -205,8 +205,8 @@ function WorkspaceSurface({
         ) : null}
       </div>
       {meta !== undefined && meta !== null ? (
-        <div className="ml-auto flex shrink-0 items-center gap-3">
-          <span className="text-right font-mono text-xs text-muted-foreground">{meta}</span>
+        <div className="ml-auto flex min-w-0 items-center gap-3">
+          <span className="min-w-0 truncate text-right font-mono text-xs text-muted-foreground">{meta}</span>
           {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
         </div>
       ) : actions ? (

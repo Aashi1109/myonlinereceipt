@@ -15,6 +15,10 @@ import type {
   ToolSettings,
 } from "@/lib/tool-runtime/types";
 
+import {
+  cleanupArtifactJobWithRetry,
+  createArtifactWriter,
+} from "./artifacts";
 import { assertRunnableText } from "./inputGuard";
 import type { ToolResult } from "./result";
 import type { ToolRun, ToolRunInput, ToolRunProgress } from "./run";
@@ -41,13 +45,21 @@ export function createExecute<S extends SettingsSpec>(
   ): Promise<ToolExecutionOutcome<ToolResult>> => {
     signal.throwIfAborted();
     assertRunnableText(spec, input);
-    const result = await run({
-      input,
-      settings: parseSettings(spec.settings, settings),
-      signal,
-      progress: NO_PROGRESS,
-    });
-    signal.throwIfAborted();
-    return { result, artifacts: result.artifacts, facts: result.stats };
+    const jobId = crypto.randomUUID();
+    const writer = createArtifactWriter(jobId, { signal });
+    try {
+      const result = await run({
+        input,
+        settings: parseSettings(spec.settings, settings),
+        signal,
+        progress: NO_PROGRESS,
+        writeArtifact: writer.write,
+      });
+      signal.throwIfAborted();
+      return { result, artifacts: result.artifacts, facts: result.stats };
+    } catch (error) {
+      await cleanupArtifactJobWithRetry(jobId).catch(() => undefined);
+      throw error;
+    }
   };
 }

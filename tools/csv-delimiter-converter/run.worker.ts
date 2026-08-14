@@ -13,10 +13,14 @@ import {
   serializeTable,
   utilityDelimiter,
 } from "../../lib/devtools/shared/table.ts";
+import {
+  isLargeCsvRun,
+  streamCsvRows,
+} from "../../lib/devtools/shared/streaming-csv-tool.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => {
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const from = utilityDelimiter(ctx.settings.from);
   const to = utilityDelimiter(ctx.settings.to);
   if (from === to) {
@@ -25,6 +29,14 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       "Choose different source and target delimiters.",
       "Pick a target delimiter that differs from the source, or use the CSV Formatter to normalise quoting in place.",
     );
+  }
+  if (isLargeCsvRun(ctx)) {
+    return streamCsvRows(ctx, {
+      inputDelimiter: from,
+      outputDelimiter: to,
+      mime: "text/plain",
+      name: "converted-data.txt",
+    });
   }
   return {
     render: "text",

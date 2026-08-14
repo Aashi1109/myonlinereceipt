@@ -27,7 +27,7 @@ function decodedText(bytes: Uint8Array): string | null {
   }
 }
 
-export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
+export const run: ToolRun<Record<string, never>> = async (ctx): Promise<ToolResult> => {
   const input = requireUtilityInput(ctx.input.text, "Base64 input");
   const dataUri = /^data:[^,]*;base64,(.*)$/is.exec(input.trim());
   const bytes = base64ToBytes(dataUri?.[1] ?? input);
@@ -51,9 +51,13 @@ export const run: ToolRun<Record<string, never>> = (ctx): ToolResult => {
     return { downloadName: "decoded.txt", render: "text", text };
   }
 
-  const buffer = Uint8Array.from(bytes).buffer;
+  const artifact = await ctx.writeArtifact({
+    mime: "application/octet-stream",
+    name: "decoded.bin",
+    source: bytes,
+  });
   return {
-    files: [{ buffer, filename: "decoded.bin", mime: "application/octet-stream", size: bytes.byteLength }],
+    files: [artifact],
     outputBytes: bytes.byteLength,
     render: "files",
   };

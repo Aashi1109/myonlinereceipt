@@ -11,7 +11,6 @@
 import {
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   positionedBox,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
@@ -27,10 +26,10 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  for (const file of ctx.input.files) validatePdfInput(file);
+  for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { StandardFonts, rgb } = await import("pdf-lib");
   const input = ctx.input.files[0];
@@ -57,15 +56,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     });
     ctx.progress({ completed: index + 1, total, stage: "Page complete" });
   });
-  const numbered = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(input.name, "pdf", "numbered"),
-  );
+  const numbered = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "numbered"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
 
   return {
     render: "files",
     files: [numbered],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: numbered.size,
   };
 };

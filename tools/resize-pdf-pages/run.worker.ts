@@ -16,7 +16,6 @@ import { fitRect, type FitMode } from "../../lib/tool-framework/media/geometry.t
 import {
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   pdfSize,
   reportStructuralProgress,
   resolvePageSelection,
@@ -48,10 +47,10 @@ function fitMode(value: string): FitMode {
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  for (const file of ctx.input.files) validatePdfInput(file);
+  for (const file of ctx.input.files) await validatePdfInput(file);
 
   const pdfLib = await import("pdf-lib");
   const { PDFArray, PDFDict, PDFName, PDFNumber } = pdfLib;
@@ -117,15 +116,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       }
     },
   );
-  const resized = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(input.name, "pdf", "resized"),
-  );
+  const resized = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "resized"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
 
   return {
     render: "files",
     files: [resized],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: resized.size,
   };
 };

@@ -19,6 +19,7 @@ export default {
   input: {
     kind: "text",
     label: "Delimited input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
@@ -68,7 +69,7 @@ export default {
       "Every row must have the same number of fields; a ragged row is rejected rather than padded.",
       "Line endings are normalised to `\\n` in the output regardless of the input's CRLF or CR.",
       "This changes the delimiter only. Encoding, BOM, quoting style beyond what re-serialisation requires, and column order are untouched.",
-      "Input is capped at 2,000,000 characters.",
+      "Editable text is capped at 2,000,000 characters. CSV and TSV files up to 100 MiB run in read-only streaming mode.",
     ],
     faq: [
       {

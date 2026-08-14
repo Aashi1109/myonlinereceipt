@@ -54,6 +54,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     downloadName: "qr-code.png",
     artifacts: [
       {
+        storage: "inline",
         content: svg,
         mimeType: "image/svg+xml;charset=utf-8",
         name: "qr-code.svg",

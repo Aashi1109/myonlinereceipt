@@ -136,6 +136,12 @@ export async function POST(
       settings: parseSettings(spec.settings, body.settings) as never,
       signal: request.signal,
       progress: () => {},
+      writeArtifact: async () => {
+        throw new ToolError(
+          "artifact-unsupported",
+          "This server-hosted tool cannot create a browser-local artifact.",
+        );
+      },
     });
 
     return NextResponse.json({ result });

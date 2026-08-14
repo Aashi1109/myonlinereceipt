@@ -17,6 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "TSV input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name\tage\nAda\t36",
   },
   settings: {

@@ -11,7 +11,6 @@
 import {
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   reportStructuralProgress,
   resolvePageSelection,
   validatePdfInput,
@@ -34,9 +33,9 @@ function quarter(value: string): 90 | 180 | 270 {
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to rotate.");
-  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: input.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(input);
+  await validatePdfInput(input);
 
   const { degrees } = await import("pdf-lib");
   const pdf = await loadPdf(input);
@@ -59,14 +58,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     },
   );
 
-  const output = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(input.name, "pdf", "rotated"),
-  );
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "rotated"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
   return {
     render: "files",
     files: [output],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: output.size,
   };
 };

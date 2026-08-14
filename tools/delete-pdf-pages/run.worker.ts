@@ -12,7 +12,6 @@ import {
   checkedPages,
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   reportStructuralProgress,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
@@ -33,9 +32,9 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to delete pages from.");
-  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: input.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(input);
+  await validatePdfInput(input);
 
   const pdf = await loadPdf(input);
   const count = pdf.getPageCount();
@@ -65,14 +64,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     },
   );
 
-  const output = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(input.name, "pdf", "pages-deleted"),
-  );
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "pages-deleted"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
   return {
     render: "files",
     files: [output],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: output.size,
   };
 };

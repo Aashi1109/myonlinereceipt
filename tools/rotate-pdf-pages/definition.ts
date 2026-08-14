@@ -23,7 +23,8 @@ export default {
     accept: "application/pdf",
     multiple: false,
     engine: "pdf",
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -72,7 +73,7 @@ export default {
       "Only quarter turns are supported, because a PDF page rotation is defined as a multiple of 90 degrees. Arbitrary angles are not possible.",
       "Rotation is relative, not absolute: it is added to the page's current rotation rather than replacing it. Two 270° runs leave a page at 180°.",
       "The page content and its box are unchanged — a viewer simply displays the page turned. Nothing is re-rendered and no quality is lost.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Structural jobs are capped at 500 pages, and the PDF must be 50 MiB or smaller.",
       "Encrypted or password-protected PDFs are rejected, and rotating pages invalidates an existing digital signature.",
     ],
     faq: [

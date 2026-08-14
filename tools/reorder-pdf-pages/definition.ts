@@ -22,7 +22,8 @@ export default {
     accept: "application/pdf",
     multiple: false,
     engine: "pdf",
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -53,7 +54,7 @@ export default {
     limitations: [
       "The order must contain every page exactly once. This tool rearranges pages; it cannot drop or duplicate them — use Delete PDF Pages or Extract PDF Pages for that.",
       "Page content, links, and form fields move with their page, but a link that pointed at a page number rather than a named destination may end up pointing somewhere else.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Structural jobs are capped at 500 pages, and the PDF must be 50 MiB or smaller.",
       "Encrypted or password-protected PDFs are rejected, and reordering invalidates an existing digital signature.",
       "One document at a time. To interleave two PDFs, merge them first and then reorder.",
     ],

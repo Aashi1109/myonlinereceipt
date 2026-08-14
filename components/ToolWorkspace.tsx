@@ -27,6 +27,7 @@ import type {
   ToolLayout,
   ToolSpec,
 } from "@/lib/tool-framework/spec";
+import { readTextFileForEditor } from "@/lib/tool-framework/textFileInput";
 import type { ToolLifecycle } from "@/lib/tool-runtime/types";
 
 export interface WorkspaceInputState {
@@ -38,6 +39,7 @@ export interface WorkspaceInputState {
 export type WorkspacePrimaryAction = {
   readonly disabled: boolean;
   readonly label: string;
+  readonly onCancel?: () => void;
   readonly onRun: () => void;
   readonly running: boolean;
 } | null;
@@ -180,19 +182,20 @@ function InputResultWorkspace({
 }
 
 function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction> }) {
+  const canceling = action.running && action.onCancel;
   return (
     <Button
       aria-busy={action.running || undefined}
       className="w-full"
-      disabled={action.disabled}
-      onClick={action.onRun}
+      disabled={canceling ? false : action.disabled}
+      onClick={canceling ? action.onCancel : action.onRun}
       size="default"
       type="button"
     >
-      {action.running ? (
+      {action.running && !canceling ? (
         <Loader2 aria-hidden="true" className="size-4 animate-spin" />
       ) : null}
-      {action.label}
+      {canceling ? "Cancel" : action.label}
     </Button>
   );
 }
@@ -207,11 +210,23 @@ function TextFileDropTarget({
   const [dragActive, setDragActive] = useState(false);
   const [dropIssue, setDropIssue] = useState("");
   const dragDepth = useRef(0);
+  const fileReadRequestRef = useRef(0);
   const acceptedFile = props.spec.input.kind === "text"
     ? props.spec.input.acceptFiles
     : undefined;
+  const inputName = props.spec.input.kind === "text"
+    ? props.spec.input.label
+    : "file";
+  const acceptedDescription = acceptedFile?.accept
+    .split(",")
+    .filter((entry) => entry.trim().startsWith("."))
+    .map((entry) => entry.trim().slice(1).toUpperCase())
+    .join(" or ") || "Accepted text file";
 
-  useEffect(() => setDropIssue(""), [props.input.files, props.input.text]);
+  useEffect(() => {
+    fileReadRequestRef.current += 1;
+    setDropIssue("");
+  }, [props.input.files, props.input.text]);
 
   if (!acceptedFile) return children;
 
@@ -250,14 +265,19 @@ function TextFileDropTarget({
       return;
     }
     try {
-      const text = await file.text();
+      const request = ++fileReadRequestRef.current;
+      const loaded = await readTextFileForEditor(file, {
+        maxEditableBytes: acceptedFile.maxEditableBytes,
+        maxLength: props.spec.input.kind === "text"
+          ? props.spec.input.maxLength
+          : undefined,
+      });
+      if (request !== fileReadRequestRef.current) return;
       setDropIssue("");
       props.onInputChange({
         ...props.input,
         files: [file],
-        text: props.spec.input.kind === "text" && props.spec.input.maxLength !== undefined
-          ? text.slice(0, props.spec.input.maxLength)
-          : text,
+        text: loaded.text,
       });
     } catch {
       setDropIssue(`${file.name} could not be read.`);
@@ -291,14 +311,14 @@ function TextFileDropTarget({
               <ArrowDownToLine aria-hidden="true" className="size-7" />
             </span>
             <div>
-              <h3 className="text-2xl font-semibold tracking-tight">Release to replace the current CSV</h3>
+              <h3 className="text-2xl font-semibold tracking-tight">Release to replace the current {inputName.toLowerCase()}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Drop anywhere in this workbench. The file is read locally and the table updates in place.
+                Drop anywhere in this workbench. The file stays on this device and replaces the current input.
               </p>
             </div>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 text-xs font-semibold shadow-sm">
               <FileSpreadsheet aria-hidden="true" className="size-4 text-primary" />
-              CSV or TSV file
+              {acceptedDescription}
             </span>
             <p className="font-caption text-[10px] font-semibold text-success">Release now · nothing is uploaded</p>
           </div>

@@ -55,11 +55,15 @@ import type { ToolResult } from "@/lib/tool-framework/result";
 import { ToolError, type ToolRun, type ToolRunInput } from "@/lib/tool-framework/run";
 import type { SettingsOf, SettingsSpec } from "@/lib/tool-framework/settings";
 import type { ToolInputSpec, ToolSpec } from "@/lib/tool-framework/spec";
+import { isLargeTextFile } from "@/lib/tool-framework/textFileInput";
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
 import {
-  createWorkerInput,
+  cleanupArtifactJobWithRetry,
+  sweepStaleArtifactJobsOnce,
+} from "@/lib/tool-framework/artifacts";
+import {
+  createToolRunFile,
   type ToolRunRequestInput,
-  type WorkerInputFile,
 } from "@/lib/tool-framework/workerProtocol";
 import { useToolRuntime } from "@/lib/tool-runtime/useToolRuntime";
 import type {
@@ -79,8 +83,6 @@ const EMPTY_INPUT: WorkspaceInputState = { files: [], text: "" };
 /** The tool's own settings live in `ToolPage`; the runtime holds none. */
 const RUNTIME_SETTINGS: ToolSettings = {};
 const NO_ISSUES: readonly ToolValidationIssue[] = [];
-/** A file the browser could not type still has to reach the size/accept checks. */
-const FALLBACK_MIME = "application/octet-stream";
 
 // ---------------------------------------------------------------------------
 // Module resolution by folder name.
@@ -163,34 +165,18 @@ function isEmptyInput(kind: ToolInputSpec["kind"], input: WorkspaceInputState): 
   }
 }
 
-async function toRunInput(input: WorkspaceInputState): Promise<ToolRunInput> {
+function toRunInput(input: WorkspaceInputState): ToolRunInput {
   return {
-    files: await Promise.all(
-      input.files.map(async (file) => ({
-        data: await file.arrayBuffer(),
-        id: workspaceFileId(file),
-        mime: file.type || FALLBACK_MIME,
-        name: file.name,
-      })),
-    ),
+    files: input.files.map((file) => createToolRunFile(workspaceFileId(file), file)),
     secondary: input.secondary,
     text: input.text,
   };
 }
 
-async function toWorkerFiles(
+function toWorkerFiles(
   files: readonly File[],
-): Promise<readonly WorkerInputFile[]> {
-  return Promise.all(
-    files.map(async (file) =>
-      createWorkerInput(
-        workspaceFileId(file),
-        await file.arrayBuffer(),
-        file.name,
-        file.type || FALLBACK_MIME,
-      ),
-    ),
-  );
+): ToolRunInput["files"] {
+  return files.map((file) => createToolRunFile(workspaceFileId(file), file));
 }
 
 function toOutcome(result: ToolResult): ToolExecutionOutcome<ToolResult> {
@@ -203,7 +189,7 @@ function toOutcome(result: ToolResult): ToolExecutionOutcome<ToolResult> {
 
 /** Turns the worker's job state into the promise the runtime's `execute` needs. */
 function useWorkerHost() {
-  const { cancel, state, start } = useToolRun();
+  const { cancel, cleanupArtifacts, reset, state, start } = useToolRun();
   const pending = useRef<{
     reject: (reason: unknown) => void;
     resolve: (result: ToolResult) => void;
@@ -233,6 +219,10 @@ function useWorkerHost() {
   const run = useCallback(
     (request: ToolRunRequestInput, signal: AbortSignal) =>
       new Promise<ToolResult>((resolve, reject) => {
+        if (signal.aborted) {
+          reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
         pending.current = { reject, resolve };
         signal.addEventListener("abort", cancel, { once: true });
         start(request);
@@ -241,6 +231,8 @@ function useWorkerHost() {
   );
 
   return {
+    cleanupArtifacts,
+    reset,
     progress: state.status === "running" ? state.progress : null,
     run,
   };
@@ -292,6 +284,7 @@ async function runOnServer(
 // ---------------------------------------------------------------------------
 
 interface ToolChrome {
+  readonly cleanupWorkerArtifacts: () => void;
   readonly onSettingChange: (key: string, value: unknown) => void;
   readonly onValidationChange: (reason: string | null) => void;
   readonly progress: WorkspaceProps["progress"];
@@ -322,18 +315,39 @@ function usePrimaryAction(): WorkspaceProps["primaryAction"] {
   const runtime = useRuntime();
   const running = runtime.lifecycle === "running";
 
-  if (chrome.spec.trigger.mode !== "manual") return null;
+  const maxEditableBytes = chrome.spec.input.kind === "text"
+    ? chrome.spec.input.acceptFiles?.maxEditableBytes
+    : undefined;
+  const largeFile = isLargeTextFile(runtime.input.files[0], maxEditableBytes);
+  const hasPrimaryAction = chrome.spec.trigger.mode === "manual" || largeFile;
 
-  return {
-    disabled:
-      running ||
-      chrome.validationReason !== null ||
-      runtime.lifecycle === "empty" ||
-      runtime.lifecycle === "invalid",
-    label: chrome.spec.trigger.actionLabel,
-    onRun: runtime.run,
-    running,
-  };
+  return useMemo(
+    () => hasPrimaryAction
+      ? {
+          disabled:
+            running ||
+            chrome.validationReason !== null ||
+            runtime.lifecycle === "empty" ||
+            runtime.lifecycle === "invalid",
+          label:
+            chrome.spec.trigger.mode === "manual"
+              ? chrome.spec.trigger.actionLabel
+              : "Run",
+          onCancel: runtime.cancelRun,
+          onRun: runtime.run,
+          running,
+        }
+      : null,
+    [
+      chrome.spec.trigger,
+      chrome.validationReason,
+      hasPrimaryAction,
+      running,
+      runtime.cancelRun,
+      runtime.lifecycle,
+      runtime.run,
+    ],
+  );
 }
 
 function ToolToolbar(): ReactElement {
@@ -445,15 +459,15 @@ function ToolToolbar(): ReactElement {
       {!hasSettings && primaryAction ? (
         <Button
           aria-busy={primaryAction.running || undefined}
-          disabled={primaryAction.disabled}
-          onClick={primaryAction.onRun}
+          disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
+          onClick={primaryAction.running && primaryAction.onCancel ? primaryAction.onCancel : primaryAction.onRun}
           size="xs"
           type="button"
         >
-          {primaryAction.running ? (
+          {primaryAction.running && !primaryAction.onCancel ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
-          {primaryAction.label}
+          {primaryAction.running && primaryAction.onCancel ? "Cancel" : primaryAction.label}
         </Button>
       ) : null}
     </>
@@ -466,6 +480,23 @@ function ToolWorkspaceSlot(): ReactElement {
   const primaryAction = usePrimaryAction();
   const Workspace = chrome.Workspace;
   const running = runtime.lifecycle === "running";
+  const previousResult = useRef(runtime.result);
+
+  useEffect(() => {
+    const previous = previousResult.current;
+    if (previous !== null && previous !== runtime.result) {
+      cleanupResultArtifacts(previous);
+    }
+    if (previous !== null && runtime.result === null) {
+      chrome.cleanupWorkerArtifacts();
+    }
+    previousResult.current = runtime.result;
+  }, [chrome.cleanupWorkerArtifacts, runtime.result]);
+
+  useEffect(
+    () => () => cleanupResultArtifacts(previousResult.current),
+    [],
+  );
 
   return (
     <Suspense fallback={null}>
@@ -488,6 +519,24 @@ function ToolWorkspaceSlot(): ReactElement {
       />
     </Suspense>
   );
+}
+
+function cleanupResultArtifacts(result: ToolResult | null): void {
+  if (!result) return;
+  const jobIds = new Set<string>();
+  for (const artifact of result.artifacts ?? []) {
+    if (artifact.storage !== "inline") jobIds.add(artifact.jobId);
+  }
+  if (result.render === "files") {
+    for (const artifact of result.files) jobIds.add(artifact.jobId);
+  }
+  for (const section of result.sections ?? []) {
+    if (section.body.render !== "files") continue;
+    for (const artifact of section.body.files) jobIds.add(artifact.jobId);
+  }
+  for (const jobId of jobIds) {
+    void cleanupArtifactJobWithRetry(jobId).catch(() => undefined);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -557,7 +606,16 @@ export default function ToolPage({
   const [validationReason, setValidationReason] = useState<string | null>(null);
   const [toolbarActions, setToolbarActions] = useState<WorkspaceToolbarActions | null>(null);
   const [workspaceKey, setWorkspaceKey] = useState(0);
-  const { progress, run: runOnWorker } = useWorkerHost();
+  const {
+    cleanupArtifacts: cleanupWorkerArtifacts,
+    progress,
+    reset: resetWorker,
+    run: runOnWorker,
+  } = useWorkerHost();
+
+  useEffect(() => {
+    void sweepStaleArtifactJobsOnce().catch(() => undefined);
+  }, []);
 
   const onSettingChange = useCallback((key: string, value: unknown) => {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -566,8 +624,9 @@ export default function ToolPage({
   const resetPageState = useCallback(() => {
     setSettings(defaultSettings(spec));
     setValidationReason(null);
+    resetWorker();
     setWorkspaceKey((current) => current + 1);
-  }, [spec]);
+  }, [resetWorker, spec]);
 
   const execute = useCallback(
     async (
@@ -576,6 +635,7 @@ export default function ToolPage({
       signal: AbortSignal,
     ): Promise<ToolExecutionOutcome<ToolResult>> => {
       const run = await loadMainThreadRun(definitionKey);
+      signal.throwIfAborted();
       if (run) {
         // `parseSettings` treats this as `unknown` and coerces every declared
         // field, so the runtime's flat-scalar view is not the trust boundary.
@@ -589,7 +649,7 @@ export default function ToolPage({
       try {
         const result = await runOnWorker(
           {
-            files: await toWorkerFiles(input.files),
+            files: toWorkerFiles(input.files),
             key: definitionKey,
             secondary: input.secondary,
             settings,
@@ -620,6 +680,12 @@ export default function ToolPage({
       initialInput: EMPTY_INPUT,
       initialSettings: RUNTIME_SETTINGS,
       isEmpty: (input) => isEmptyInput(spec.input.kind, input),
+      shouldAutoRun: (input) => {
+        const maxEditableBytes = spec.input.kind === "text"
+          ? spec.input.acceptFiles?.maxEditableBytes
+          : undefined;
+        return !isLargeTextFile(input.files[0], maxEditableBytes);
+      },
       trigger: spec.trigger.mode,
       validate: () => NO_ISSUES,
     }),
@@ -633,6 +699,7 @@ export default function ToolPage({
 
   const chrome = useMemo<ToolChrome>(
     () => ({
+      cleanupWorkerArtifacts,
       onSettingChange,
       onValidationChange: setValidationReason,
       progress,
@@ -645,7 +712,7 @@ export default function ToolPage({
       Workspace,
       workspaceKey,
     }),
-    [onSettingChange, progress, resetPageState, settings, spec, toolbarActions, validationReason, Workspace, workspaceKey],
+    [cleanupWorkerArtifacts, onSettingChange, progress, resetPageState, settings, spec, toolbarActions, validationReason, Workspace, workspaceKey],
   );
 
   return (

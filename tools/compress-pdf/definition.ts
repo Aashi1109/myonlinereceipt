@@ -20,12 +20,13 @@ export default {
     kind: "files",
     label: "Add a PDF to compress",
     dropzoneDescription:
-      "PDF · 1 file · 200 MB max · processed on this device",
+      "PDF · 1 file · 100 MiB max · processed on this device",
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
     maxFiles: 1,
-    maxBytes: 209_715_200,
+    maxBytes: 104_857_600,
+    maxTotalBytes: 104_857_600,
   },
   settings: {
     fields: {
@@ -83,7 +84,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "PDF-" },
   labels: {
-    empty: "Drop one PDF (.pdf, up to 200 MiB) to compress it.",
+    empty: "Drop one PDF (.pdf, up to 100 MiB) to compress it.",
     ready: "The PDF and compression settings are ready.",
     running: "Compressing PDF…",
   },
@@ -98,7 +99,7 @@ export default {
       "Preserve Document needs a cross-origin-isolated browser, because qpdf runs as WebAssembly over a SharedArrayBuffer. If that is unavailable the run fails outright — there is no silent fallback to a lossy mode.",
       "Strong Compression is destructive. Selectable text, links, forms, digital signatures, bookmarks, annotations, and accessibility information are all lost, and the pages become images.",
       "A file that is already well compressed may barely shrink, or grow slightly. Preserve Document never guarantees a smaller output.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Preserve Document supports PDFs up to 100 MiB and 500 pages. Strong Compression supports PDFs up to 50 MiB and rasterizes at most 200 pages.",
       "Encrypted or password-protected PDFs are rejected. Remove the password in your PDF reader first.",
     ],
     faq: [

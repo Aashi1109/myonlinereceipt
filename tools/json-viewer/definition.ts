@@ -25,11 +25,23 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
+    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: '{"name":"CodeUtilityKit","version":2}',
     maxLength: 2_000_000,
   },
   settings: {
     fields: {
+      largeFileOperation: {
+        kind: "select",
+        label: "Large-file action",
+        help: "Used by the large-file controls in the viewer workspace.",
+        default: "validate",
+        choices: [
+          { label: "Validate", value: "validate" },
+          { label: "Beautify", value: "format" },
+          { label: "Minify", value: "minify" },
+        ],
+      },
       repairMode: {
         kind: "select",
         label: "Repair strategy",
@@ -58,7 +70,7 @@ export default {
       "Copy or download the cleaned JSON once the tree looks right.",
     ],
     limitations: [
-      "Input is capped at 2,000,000 characters. Larger documents are rejected rather than allowed to lock up the tab.",
+      "Editable text is capped at 2,000,000 characters. JSON files up to 100 MiB open in read-only large-file mode for complete validation, beautifying, or minifying with a bounded preview and downloadable output.",
       "Parsing is strict JSON. Comments, trailing commas, and single-quoted strings are errors, though the repair pass can often recover from them.",
       "The tree preview uses JavaScript numbers, so integers beyond 2^53 and high-precision decimals may look rounded. Transform actions are blocked for those values; whole-document copy and download preserve the exact source.",
       "Repair is a best-effort structural fix, not a schema validator. Always compare the repaired output against the original before using it.",

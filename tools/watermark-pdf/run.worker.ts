@@ -16,17 +16,16 @@
 
 import { clamp } from "../../lib/tool-framework/media/imageCodec.ts";
 import { readExifOrientation } from "../../lib/tool-framework/media/geometry.ts";
+import { readToolFile } from "../../lib/tool-framework/media/fileBytes.ts";
 import {
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   positionedBox,
   resolvePageSelection,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
 import {
   createOutputFilename,
-  detectMediaKind,
   validateDecodedImageDimensions,
   validateImageSelection,
   validateMediaSignature,
@@ -52,8 +51,7 @@ function partitionInputs(files: readonly ToolRunFile[]): Partitioned {
   let document: ToolRunFile | null = null;
   let watermark: ToolRunFile | null = null;
   for (const file of files) {
-    const kind = detectMediaKind(new Uint8Array(file.data));
-    if (kind === "pdf") {
+    if (file.mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
       document ??= file;
     } else {
       watermark ??= file;
@@ -65,9 +63,9 @@ function partitionInputs(files: readonly ToolRunFile[]): Partitioned {
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const { document, watermark } = partitionInputs(ctx.input.files);
   if (!document) throw new ToolError("no-files", "Choose a PDF to watermark.");
-  const selection = validatePdfSelection([{ size: document.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: document.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(document);
+  await validatePdfInput(document);
 
   const { StandardFonts, degrees, rgb } = await import("pdf-lib");
   const pdf = await loadPdf(document);
@@ -107,32 +105,33 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     if (!watermark) {
       throw new ToolError("missing-watermark", "Choose a watermark image.");
     }
+    const watermarkBytes = await readToolFile(watermark, ctx.signal);
     const signature = validateMediaSignature(
-      new Uint8Array(watermark.data),
+      new Uint8Array(watermarkBytes),
       watermark.mime,
       ["jpeg", "png"],
     );
     if (!signature.ok) throw new ToolError(signature.code, signature.message);
     const watermarkSelection = validateImageSelection([
-      { size: watermark.data.byteLength },
+      { size: watermark.size },
     ]);
     if (!watermarkSelection.ok) {
       throw new ToolError(watermarkSelection.code, watermarkSelection.message);
     }
     const decoded =
       signature.kind === "jpeg"
-        ? await (await import("@jsquash/jpeg")).decode(watermark.data, {
+        ? await (await import("@jsquash/jpeg")).decode(watermarkBytes, {
             preserveOrientation: true,
           })
-        : await (await import("@jsquash/png")).decode(watermark.data);
+        : await (await import("@jsquash/png")).decode(watermarkBytes);
     const dimensions = validateDecodedImageDimensions(decoded.width, decoded.height);
     if (!dimensions.ok) throw new ToolError(dimensions.code, dimensions.message);
     const orientedJpeg =
       signature.kind === "jpeg" &&
-      readExifOrientation(new Uint8Array(watermark.data)) !== 1;
+      readExifOrientation(new Uint8Array(watermarkBytes)) !== 1;
     const embeddedBytes = orientedJpeg
       ? await (await import("@jsquash/jpeg")).encode(decoded, { quality: 92 })
-      : watermark.data;
+      : watermarkBytes;
     const image =
       signature.kind === "jpeg"
         ? await pdf.embedJpg(embeddedBytes)
@@ -155,14 +154,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
 
   ctx.progress({ completed: selected.length, total: selected.length, stage: "Saving PDF" });
-  const output = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(document.name, "pdf", "watermarked"),
-  );
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(document.name, "pdf", "watermarked"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
   return {
     render: "files",
     files: [output],
-    inputBytes: document.data.byteLength,
+    inputBytes: document.size,
     outputBytes: output.size,
   };
 };

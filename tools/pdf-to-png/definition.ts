@@ -20,12 +20,13 @@ export default {
     kind: "files",
     label: "Add a PDF to convert",
     dropzoneDescription:
-      "PDF · 1 file · 200 MB max · processed on this device",
+      "PDF · 1 file · 100 MiB max · processed on this device",
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
     maxFiles: 1,
-    maxBytes: 209_715_200,
+    maxBytes: 104_857_600,
+    maxTotalBytes: 104_857_600,
     inspect: true,
   },
   settings: {
@@ -62,7 +63,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "P2PN", tone: "accent" },
   labels: {
-    empty: "Drop one PDF (.pdf, up to 200 MiB) to convert its pages to PNG.",
+    empty: "Drop one PDF (.pdf, up to 100 MiB) to convert its pages to PNG.",
     ready: "The PDF and PNG export settings are ready.",
     running: "Converting PDF pages to PNG…",
   },
@@ -78,7 +79,7 @@ export default {
       "PNG is lossless, so files are much larger than the equivalent JPG — a 300 DPI page can run to tens of megabytes. Use PDF to JPG when size matters more than fidelity.",
       "Raster conversion is capped at 200 pages per run, and a single rendered page may not exceed 100 megapixels — a large page at 300 DPI can hit that.",
       "Encrypted or password-protected PDFs are rejected; remove the password in your PDF reader first.",
-      "The PDF must be 200 MiB or smaller.",
+      "The PDF must be 100 MiB or smaller.",
     ],
     faq: [
       {

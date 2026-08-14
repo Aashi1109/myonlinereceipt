@@ -18,12 +18,8 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-/** The `pdf` arm of `detectMediaKind` (`media/validation.ts`): `%PDF-`. */
-const PDF_SIGNATURE = [0x25, 0x50, 0x44, 0x46, 0x2d] as const;
-
 function isPdf(file: ToolRunFile): boolean {
-  const bytes = new Uint8Array(file.data);
-  return PDF_SIGNATURE.every((byte, index) => bytes[index] === byte);
+  return file.mime === "application/pdf" || /\.pdf$/i.test(file.name);
 }
 
 /**

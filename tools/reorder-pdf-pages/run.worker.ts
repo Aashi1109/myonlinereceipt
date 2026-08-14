@@ -12,7 +12,6 @@ import {
   checkedPages,
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
 import {
@@ -28,9 +27,9 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to reorder.");
-  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: input.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(input);
+  await validatePdfInput(input);
 
   const order = ctx.settings.pages;
   if (typeof order === "string") {
@@ -62,14 +61,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.progress,
   );
 
-  const file = pdfOutput(
-    await output.save(),
-    createOutputFilename(input.name, "pdf", "reordered"),
-  );
+  const file = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "reordered"),
+    mime: "application/pdf",
+    source: await output.save(),
+  });
   return {
     render: "files",
     files: [file],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: file.size,
   };
 };

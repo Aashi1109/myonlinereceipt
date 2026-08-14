@@ -14,7 +14,8 @@ export default {
     multiple: true,
     engine: "pdf",
     maxFiles: 20,
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
   },
   settings: { fields: {} },
   trigger: { mode: "manual", actionLabel: "Merge PDFs" },
@@ -33,7 +34,7 @@ export default {
       "Run the merge and download the single combined PDF. The originals are left untouched.",
     ],
     limitations: [
-      "At most 20 PDFs per merge, each 200 MiB or smaller, and 250 MiB across the whole selection.",
+      "At most 20 PDFs per merge, each 50 MiB or smaller, and 50 MiB across the whole selection.",
       "The merged result may not exceed 500 pages; the copy fails the moment the running page count passes that limit.",
       "Encrypted or password-protected PDFs are rejected. Remove the password in your PDF reader first.",
       "Pages are copied structurally, so bookmarks, form fields, and links that depend on document-level structure can be dropped or lose their targets.",

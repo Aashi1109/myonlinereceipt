@@ -38,10 +38,15 @@ import type {
   WorkspaceProps,
 } from "@/components/ToolWorkspace";
 import type { ToolInputSpec } from "@/lib/tool-framework/spec";
+import {
+  isLargeTextFile,
+  readTextFileForEditor,
+} from "@/lib/tool-framework/textFileInput";
 
 const DEFAULT_TEXT_FILE_INPUT = {
   accept: ".txt,.json,.csv,.tsv,.xml,.yaml,.yml,.html,.htm,.css,.js,.mjs,.cjs,.ts,.tsx,.jsx,.md,.markdown,text/*,application/json,application/xml,application/javascript",
   maxBytes: 2_000_000,
+  maxEditableBytes: 2_000_000,
 } as const;
 
 interface InputSurfaceProps {
@@ -93,6 +98,12 @@ function isCodeShaped(value: string): boolean {
 function sourceMeta(value: string, codeShaped: boolean): string {
   const count = codeShaped ? new TextEncoder().encode(value).byteLength : value.length;
   return `${count} ${codeShaped ? "bytes" : count === 1 ? "character" : "characters"}`;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const mib = bytes / (1024 * 1024);
+  return mib >= 1 ? `${mib.toFixed(mib >= 10 ? 0 : 1)} MiB` : `${Math.ceil(bytes / 1024)} KiB`;
 }
 
 export function SourceTextarea({
@@ -212,15 +223,20 @@ export function WorkspaceInputSurface({
   const [pastePending, setPastePending] = useState(false);
   const [pasteSupported, setPasteSupported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileReadRequestRef = useRef(0);
   const inputRef = useRef(input);
   inputRef.current = input;
   useEffect(() => {
     setPasteSupported(typeof navigator !== "undefined" && typeof navigator.clipboard?.readText === "function");
   }, []);
   useEffect(() => setPasteFailed(false), [input.secondary, input.text]);
+  useEffect(() => {
+    fileReadRequestRef.current += 1;
+  }, [input.files, input.text]);
 
   const pastePrimaryInput = async (maxLength?: number) => {
     if (pastePending) return;
+    fileReadRequestRef.current += 1;
     setPasteFailed(false);
     setPastePending(true);
     try {
@@ -232,6 +248,7 @@ export function WorkspaceInputSurface({
       const text = await clipboard.readText();
       onInputChange({
         ...inputRef.current,
+        files: [],
         text: maxLength === undefined ? text : text.slice(0, maxLength),
       });
     } catch {
@@ -260,6 +277,11 @@ export function WorkspaceInputSurface({
   switch (inputSpec.kind) {
     case "text": {
       const acceptedFile = inputSpec.acceptFiles ?? DEFAULT_TEXT_FILE_INPUT;
+      const selectedFile = input.files[0];
+      const largeFile = isLargeTextFile(
+        selectedFile,
+        acceptedFile.maxEditableBytes,
+      );
       const chooseFile = async (file: File) => {
         if (!acceptedFile) return;
         const issue = textInputFileIssue(file, acceptedFile);
@@ -268,12 +290,17 @@ export function WorkspaceInputSurface({
           return;
         }
         try {
-          const text = await file.text();
+          const request = ++fileReadRequestRef.current;
+          const loaded = await readTextFileForEditor(file, {
+            maxEditableBytes: acceptedFile.maxEditableBytes,
+            maxLength: inputSpec.maxLength,
+          });
+          if (request !== fileReadRequestRef.current) return;
           setInputIssue("");
           onInputChange({
             ...inputRef.current,
             files: [file],
-            text: inputSpec.maxLength === undefined ? text : text.slice(0, inputSpec.maxLength),
+            text: loaded.text,
           });
         } catch {
           setInputIssue(`${file.name} could not be read.`);
@@ -303,8 +330,24 @@ export function WorkspaceInputSurface({
             variant={variant === "card" ? "link" : "outline"}
           >
             {variant === "card" ? null : <Upload aria-hidden="true" />}
-            Upload
+            {selectedFile ? "Replace" : "Upload"}
           </Button>
+          {selectedFile ? (
+            <Button
+              aria-label={`Remove ${selectedFile.name}`}
+              disabled={disabled}
+              onClick={() => {
+                fileReadRequestRef.current += 1;
+                onInputChange({ ...inputRef.current, files: [], text: "" });
+              }}
+              size={variant === "card" ? undefined : "xs"}
+              type="button"
+              variant="ghost"
+            >
+              <Trash2 aria-hidden="true" />
+              Remove
+            </Button>
+          ) : null}
         </>
       ) : null;
       const codeShaped =
@@ -314,7 +357,9 @@ export function WorkspaceInputSurface({
           actions={<>{pasteAction(inputSpec.label, inputSpec.maxLength)}{browseAction}</>}
           className="h-full"
           contentClassName="gap-4 bg-background"
-          meta={sourceMeta(input.text, codeShaped)}
+          meta={selectedFile
+            ? `${selectedFile.name} · ${formatBytes(selectedFile.size)}${largeFile ? " · Large-file mode" : ""}`
+            : sourceMeta(input.text, codeShaped)}
           purpose="source"
           title={inputSpec.label}
           variant={variant}
@@ -328,11 +373,17 @@ export function WorkspaceInputSurface({
               showLineNumbers={variant !== "card"}
               transparent={variant === "card"}
               maxLength={inputSpec.maxLength}
-              onChange={(text) => onInputChange({ ...input, text })}
+              onChange={(text) => onInputChange({ ...input, files: [], text })}
               placeholder={inputSpec.placeholder}
+              readOnly={largeFile}
               value={input.text}
             />
           </div>
+          {largeFile ? (
+            <p className="px-4 pb-3 text-xs text-muted-foreground">
+              Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the tool.
+            </p>
+          ) : null}
           {inputSpec.secondary ? (
             <div className="grid gap-1.5">
               <Label htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</Label>

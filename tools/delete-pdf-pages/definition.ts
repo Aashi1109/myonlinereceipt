@@ -29,7 +29,8 @@ export default {
     accept: "application/pdf",
     multiple: false,
     engine: "pdf",
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -62,7 +63,7 @@ export default {
       "At least one page must survive. A PDF with no pages is not a valid document, so an all-pages selection is refused.",
       "Deleting a page does not shrink the file proportionally: shared resources such as fonts and embedded images may still be referenced by the pages that remain.",
       "Bookmarks and internal links that pointed at a deleted page are left dangling.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Structural jobs are capped at 500 pages, and the PDF must be 50 MiB or smaller.",
       "Encrypted or password-protected PDFs are rejected, and deleting pages invalidates an existing digital signature.",
     ],
     faq: [

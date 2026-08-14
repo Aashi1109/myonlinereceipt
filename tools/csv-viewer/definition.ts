@@ -18,8 +18,8 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
-    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 2_000_000 },
   },
   settings: {
     fields: {
@@ -55,7 +55,7 @@ export default {
     ],
     limitations: [
       "Every row must have the same number of fields as the first row. A ragged file is rejected rather than padded.",
-      "The whole table is rendered at once, so very large files will be slow in the browser.",
+      "Files up to 100 MiB are validated completely in a worker while the table stays bounded to the first 1,000 data rows.",
       "There is no sorting, filtering, or column typing — this is a faithful preview, not a spreadsheet.",
       "Blank rows are dropped, and a UTF-8 BOM on the first header cell is not stripped here.",
     ],

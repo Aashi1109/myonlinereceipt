@@ -9,16 +9,9 @@
 import type { PDFDocument, PDFPage } from "pdf-lib";
 
 import { ToolError, type ToolRunFile, type ToolRunProgress } from "../run.ts";
+import { readToolFile } from "./fileBytes.ts";
 import { processStructuralPages } from "./pdfRules.ts";
 import { validateMediaSignature, validatePdfSelection } from "./validation.ts";
-
-/** A produced file, structurally identical to the worker output contract. */
-export type MediaOutputFile = {
-  readonly buffer: ArrayBuffer;
-  readonly mime: string;
-  readonly filename: string;
-  readonly size: number;
-};
 
 /** Nine-point anchor for content drawn onto a page. */
 export type PdfBoxPosition =
@@ -54,7 +47,7 @@ const POSITION_MARGIN = 24;
 export async function loadPdf(file: ToolRunFile): Promise<PDFDocument> {
   const { PDFDocument: Document } = await import("pdf-lib");
   try {
-    const pdf = await Document.load(file.data, {
+    const pdf = await Document.load(await readToolFile(file), {
       ignoreEncryption: false,
       updateMetadata: false,
     });
@@ -77,8 +70,12 @@ export async function loadPdf(file: ToolRunFile): Promise<PDFDocument> {
   }
 }
 
-export function validatePdfInput(file: ToolRunFile): void {
-  const result = validateMediaSignature(new Uint8Array(file.data), file.mime, ["pdf"]);
+export async function validatePdfInput(file: ToolRunFile): Promise<void> {
+  const result = validateMediaSignature(
+    new Uint8Array(await file.source.slice(0, 64 * 1024).arrayBuffer()),
+    file.mime,
+    ["pdf"],
+  );
   if (!result.ok) throw new ToolError(result.code, result.message);
 }
 
@@ -87,7 +84,7 @@ export function enforcePageLimit(
   pageCount: number,
   raster: boolean,
 ): void {
-  const result = validatePdfSelection([{ size: file.data.byteLength }], {
+  const result = validatePdfSelection([{ size: file.size }], {
     pageCount,
     raster,
   });
@@ -202,19 +199,6 @@ export function reportStructuralProgress(
   return (_current, completed, total, stage) => {
     progress?.({ completed, total, stage });
   };
-}
-
-export function pdfOutput(bytes: Uint8Array, filename: string): MediaOutputFile {
-  const buffer = exactBuffer(bytes);
-  return { buffer, filename, mime: "application/pdf", size: buffer.byteLength };
-}
-
-/** Detaches a view into its own `ArrayBuffer` so it can be transferred. */
-export function exactBuffer(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
-  ) as ArrayBuffer;
 }
 
 export function isPasswordError(error: unknown): boolean {

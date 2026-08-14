@@ -4,11 +4,10 @@
  *
  * `pdf.worker.ts:137-138,157` picked the extension, MIME, and quality from the
  * operation name so one handler could serve both `pdf-to-jpg` and `pdf-to-png`.
- * This tool states all three itself. The `zipSync` block at
- * `pdf.worker.ts:175-188` is now `zipOutputs`.
+ * This tool states all three itself. Multiple pages are streamed into one ZIP
+ * as they are encoded.
  */
 
-import type { MediaOutputFile } from "../../lib/tool-framework/media/pdfDocument.ts";
 import { validatePdfInput } from "../../lib/tool-framework/media/pdfDocument.ts";
 import {
   encodeCanvas,
@@ -19,7 +18,10 @@ import {
   createPageOutputFilename,
   validatePdfSelection,
 } from "../../lib/tool-framework/media/validation.ts";
-import { zipOutputs } from "../../lib/tool-framework/media/zip.ts";
+import {
+  createArtifactBatchWriter,
+  type ArtifactBatchWriter,
+} from "../../lib/tool-framework/media/zip.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -28,47 +30,54 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
-  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: input.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(input);
+  await validatePdfInput(input);
 
-  const outputs: MediaOutputFile[] = [];
-  await forEachRenderedPdfPage(
-    {
-      file: input,
-      selection: ctx.settings.pages,
-      dpi: Number(ctx.settings.dpi),
-      background: "white",
-      signal: ctx.signal,
-      progress: ctx.progress,
-    },
-    async (page, index, total) => {
-      ctx.progress({ completed: index, total, stage: "Encoding page" });
-      const buffer = await encodeCanvas(page.canvas, "jpg", ctx.settings.quality / 100);
-      outputs.push({
-        buffer,
-        filename: createPageOutputFilename(
-          input.name,
-          page.pageNumber,
-          page.pageCount,
-          "jpg",
-        ),
-        mime: "image/jpeg",
-        size: buffer.byteLength,
-      });
-      ctx.progress({ completed: index + 1, total, stage: "Page complete" });
-    },
-  );
-
-  const files =
-    outputs.length <= 1
-      ? outputs
-      : [await zipOutputs(outputs, createPageArchiveFilename(input.name))];
+  const batchState: { current: ArtifactBatchWriter | null } = { current: null };
+  try {
+    await forEachRenderedPdfPage(
+      {
+        file: input,
+        selection: ctx.settings.pages,
+        dpi: Number(ctx.settings.dpi),
+        background: "white",
+        signal: ctx.signal,
+        progress: ctx.progress,
+      },
+      async (page, index, total) => {
+        batchState.current ??= await createArtifactBatchWriter(ctx, {
+          archiveName: createPageArchiveFilename(input.name),
+          count: total,
+        });
+        ctx.progress({ completed: index, total, stage: "Encoding page" });
+        const buffer = await encodeCanvas(page.canvas, "jpg", ctx.settings.quality / 100);
+        await batchState.current.add({
+          name: createPageOutputFilename(input.name, page.pageNumber, page.pageCount, "jpg"),
+          mime: "image/jpeg",
+          source: new Uint8Array(buffer),
+        });
+        ctx.progress({ completed: index + 1, total, stage: "Page complete" });
+      },
+    );
+  } catch (error) {
+    await batchState.current?.abort(error);
+    throw error;
+  }
+  const batch = batchState.current;
+  if (!batch) throw new ToolError("empty-range", "Choose at least one PDF page.");
+  let files: Awaited<ReturnType<ArtifactBatchWriter["finish"]>>;
+  try {
+    files = await batch.finish();
+  } catch (error) {
+    await batch.abort(error);
+    throw error;
+  }
 
   return {
     render: "files",
     files,
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: files.reduce((sum, output) => sum + output.size, 0),
   };
 };

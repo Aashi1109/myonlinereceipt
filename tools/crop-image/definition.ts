@@ -24,6 +24,7 @@ export default {
     multiple: false,
     engine: "image",
     maxBytes: 26_214_400,
+    maxTotalBytes: 104_857_600,
   },
   settings: {
     fields: {

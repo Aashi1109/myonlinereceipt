@@ -4,23 +4,33 @@
  * The page-thumbnail surface, shared by every tool whose spec declares
  * `input.inspect`.
  *
- * Thumbnails arrive as bytes: the worker answers an `inspect` with page
- * geometry plus a transferred JPEG buffer per page (`ToolWorkerInspected`).
+ * Inspection first returns geometry only. An IntersectionObserver then asks the
+ * still-open worker session for JPEG bytes as cards approach the viewport.
  * Nothing here renders a PDF — `pdfjs-dist` is worker-only, and importing the
  * renderer from the main thread is what this indirection exists to prevent.
  *
  * `ToolPagePreview` declares only the geometry; the worker forwards whatever
  * the renderer produced, so the image bytes are read defensively rather than
- * through a declared field, and a page whose bytes are missing is dropped.
+ * through a declared field. Pages without bytes remain as loading placeholders.
  */
 
 import { Button } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import { GripVertical } from "lucide-react";
-import { useEffect, useState, type ReactElement } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { ToolPagePreview } from "@/lib/tool-framework/run";
+import { PDF_THUMBNAIL_CACHE_SIZE } from "@/lib/tool-framework/limits";
 import { parsePageSelection } from "@/lib/tool-framework/settings";
 
 /** A rendered page: the declared geometry plus a blob URL for its thumbnail. */
@@ -28,12 +38,30 @@ export interface PdfPageImage {
   readonly pageHeight: number;
   readonly pageNumber: number;
   readonly pageWidth: number;
-  readonly url: string;
+  readonly url?: string;
 }
 
 const NO_IMAGES: readonly PdfPageImage[] = [];
 /** The renderer's own thumbnail type, used when the message carries no MIME. */
 const THUMBNAIL_MIME = "image/jpeg";
+
+const PdfInspectionContext = createContext<
+  ((pageNumbers: readonly number[]) => void) | null
+>(null);
+
+export function PdfInspectionProvider({
+  children,
+  requestThumbnails,
+}: {
+  readonly children: ReactNode;
+  readonly requestThumbnails: (pageNumbers: readonly number[]) => void;
+}): ReactElement {
+  return (
+    <PdfInspectionContext.Provider value={requestThumbnails}>
+      {children}
+    </PdfInspectionContext.Provider>
+  );
+}
 
 function read(value: unknown, key: string): unknown {
   return typeof value === "object" && value !== null && Object.hasOwn(value, key)
@@ -47,64 +75,90 @@ function thumbnailBytes(preview: ToolPagePreview): ArrayBuffer | null {
 }
 
 /**
- * Derived identity for the inspection: page geometry plus thumbnail size. The
- * byte length is part of it because two different documents can share their
- * page geometry exactly, and a stale thumbnail is worse than a re-render.
- */
-function previewKey(preview: ToolPagePreview): string {
-  return [
-    preview.pageNumber,
-    preview.pageWidth,
-    preview.pageHeight,
-    thumbnailBytes(preview)?.byteLength ?? 0,
-  ].join(":");
-}
-
-function toPageImage(preview: ToolPagePreview): PdfPageImage | null {
-  const buffer = thumbnailBytes(preview);
-  if (!buffer) return null;
-  const mime = read(preview, "mime");
-  return {
-    pageHeight: preview.pageHeight,
-    pageNumber: preview.pageNumber,
-    pageWidth: preview.pageWidth,
-    url: URL.createObjectURL(
-      new Blob([buffer], { type: typeof mime === "string" ? mime : THUMBNAIL_MIME }),
-    ),
-  };
-}
-
-/**
- * Turns page previews into blob URLs and owns their lifetime.
- *
- * Every URL created here is revoked when the inspection changes and when the
- * workspace unmounts — a page picker that is re-opened for file after file
- * would otherwise pin every thumbnail it has ever shown in memory.
- *
- * The effect keys on `previewsKey`, not on the array: `previews` is rebuilt by
- * the parent on every render, and an effect that both fires on that identity
- * and calls `setState` never settles.
+ * Turns transferred thumbnail buffers into a bounded cache of blob URLs. Page
+ * geometry is never evicted, so every card remains navigable while at most 24
+ * decoded/downloadable thumbnail blobs stay live on the main thread.
  */
 export function usePdfPageImages(
   previews: readonly ToolPagePreview[],
 ): readonly PdfPageImage[] {
-  const [images, setImages] = useState<readonly PdfPageImage[]>(NO_IMAGES);
-  const previewsKey = previews.map(previewKey).join("|");
+  const cacheRef = useRef(new Map<
+    number,
+    {
+      readonly buffer: ArrayBuffer;
+      readonly pageHeight: number;
+      readonly pageWidth: number;
+      readonly url: string;
+    }
+  >());
+  const [, setRevision] = useState(0);
+
+  const clearCache = useCallback(() => {
+    for (const entry of cacheRef.current.values()) {
+      URL.revokeObjectURL(entry.url);
+    }
+    cacheRef.current.clear();
+  }, []);
 
   useEffect(() => {
-    const next = previews.flatMap((preview) => {
-      const image = toPageImage(preview);
-      return image ? [image] : [];
-    });
-    setImages(next);
-    return () => {
-      for (const { url } of next) URL.revokeObjectURL(url);
-    };
-    // `previews` is read through `previewsKey`, which is what actually changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewsKey]);
+    let changed = false;
+    const previewByPage = new Map(
+      previews.map((preview) => [preview.pageNumber, preview] as const),
+    );
+    for (const [pageNumber, entry] of cacheRef.current) {
+      const preview = previewByPage.get(pageNumber);
+      if (
+        !preview ||
+        !thumbnailBytes(preview) ||
+        preview.pageWidth !== entry.pageWidth ||
+        preview.pageHeight !== entry.pageHeight
+      ) {
+        URL.revokeObjectURL(entry.url);
+        cacheRef.current.delete(pageNumber);
+        changed = true;
+      }
+    }
+    for (const preview of previews) {
+      const buffer = thumbnailBytes(preview);
+      if (!buffer) continue;
+      const existing = cacheRef.current.get(preview.pageNumber);
+      if (existing?.buffer === buffer) continue;
+      if (existing) URL.revokeObjectURL(existing.url);
+      const mime = read(preview, "mime");
+      cacheRef.current.delete(preview.pageNumber);
+      cacheRef.current.set(preview.pageNumber, {
+        buffer,
+        pageHeight: preview.pageHeight,
+        pageWidth: preview.pageWidth,
+        url: URL.createObjectURL(
+          new Blob([buffer], {
+            type: typeof mime === "string" ? mime : THUMBNAIL_MIME,
+          }),
+        ),
+      });
+      changed = true;
+    }
+    while (cacheRef.current.size > PDF_THUMBNAIL_CACHE_SIZE) {
+      const oldest = cacheRef.current.entries().next().value as
+        | [number, { readonly url: string }]
+        | undefined;
+      if (!oldest) break;
+      URL.revokeObjectURL(oldest[1].url);
+      cacheRef.current.delete(oldest[0]);
+      changed = true;
+    }
+    if (changed) setRevision((revision) => revision + 1);
+  }, [previews]);
 
-  return images;
+  useEffect(() => clearCache, [clearCache]);
+
+  if (previews.length === 0) return NO_IMAGES;
+  return previews.map((preview) => ({
+    pageHeight: preview.pageHeight,
+    pageNumber: preview.pageNumber,
+    pageWidth: preview.pageWidth,
+    url: cacheRef.current.get(preview.pageNumber)?.url,
+  }));
 }
 
 /** The expression a `pages` setting holds, whatever shape it was written in. */
@@ -155,13 +209,64 @@ const THUMBNAIL_CLASSES =
 const GRID_CLASSES = "grid grid-cols-2 gap-3 sm:grid-cols-3";
 
 export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
-  return (
+  const requestThumbnails = useContext(PdfInspectionContext);
+  const targetRef = useRef<HTMLImageElement | HTMLDivElement>(null);
+
+  useEffect(() => {
+    const target = targetRef.current;
+    if (page.url || !target || !requestThumbnails) return;
+    if (typeof IntersectionObserver === "undefined") {
+      requestThumbnails([page.pageNumber]);
+      return;
+    }
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    let nearViewport = false;
+    const demand = () => {
+      if (!nearViewport) return;
+      requestThumbnails([page.pageNumber]);
+      retry = setTimeout(demand, 250);
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        nearViewport = entries.some((entry) => entry.isIntersecting);
+        if (retry !== null) clearTimeout(retry);
+        retry = null;
+        if (nearViewport) demand();
+      },
+      {
+        root: target.closest<HTMLElement>("[data-slot=scroll-area-viewport]"),
+        rootMargin: "600px 0px",
+      },
+    );
+    observer.observe(target);
+    return () => {
+      nearViewport = false;
+      if (retry !== null) clearTimeout(retry);
+      observer.disconnect();
+    };
+  }, [page.pageNumber, page.url, requestThumbnails]);
+
+  return page.url ? (
     <img
       alt=""
       className={THUMBNAIL_CLASSES}
+      ref={(node) => {
+        targetRef.current = node;
+      }}
       src={page.url}
       style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
     />
+  ) : (
+    <div
+      aria-label={`Loading preview for page ${page.pageNumber}`}
+      className={`${THUMBNAIL_CLASSES} grid min-h-28 place-items-center text-xs text-muted-foreground`}
+      ref={(node) => {
+        targetRef.current = node;
+      }}
+      style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
+    >
+      Loading preview
+    </div>
   );
 }
 

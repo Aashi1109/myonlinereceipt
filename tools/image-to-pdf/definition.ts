@@ -24,6 +24,7 @@ export default {
     engine: "image",
     maxFiles: 50,
     maxBytes: 26_214_400,
+    maxTotalBytes: 52_428_800,
   },
   settings: {
     fields: {
@@ -114,7 +115,7 @@ export default {
     limitations: [
       "Original quality only avoids re-encoding for untouched JPG and PNG files. Rotating a page, an EXIF-rotated photo, or a WebP or HEIC source forces a JPEG re-encode.",
       "The PDF contains pictures, not text. Nothing in it is searchable or selectable, and this tool does no OCR.",
-      "Each image must be 25 MiB or smaller, up to 50 images per run, and no more than 100 megapixels once decoded.",
+      "Each image must be 25 MiB or smaller, selected images must total 50 MiB or less, and each decoded image is capped at 100 megapixels.",
       "Transparency is flattened onto the alpha background colour, because a PDF page cannot be transparent.",
       "HEIC images are supported but may not preview as thumbnails in every browser — check the order by filename.",
     ],

@@ -17,6 +17,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
+    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: '{\n  "name": "Ada",\n  "active": true\n}',
   },
   settings: {
@@ -52,7 +53,7 @@ export default {
       "Minifying re-serialises through JSON.parse, so comments, trailing commas, and any other JSON5 syntax are lost rather than preserved.",
       "Key order is preserved, but duplicate keys collapse to the last occurrence — that is JSON.parse behaviour, not a choice this tool makes.",
       "Numbers are re-emitted in JavaScript's shortest round-trip form, so 1.50 becomes 1.5 and integers beyond 2^53 lose precision.",
-      "Input is capped at 2,000,000 characters.",
+      "Editable text is capped at 2,000,000 characters. Strict JSON files up to 100 MiB can be minified in read-only large-file mode; repair remains available for editable input only.",
     ],
     faq: [
       {

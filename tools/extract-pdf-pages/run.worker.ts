@@ -12,7 +12,6 @@ import {
   addCopiedPagesWithProgress,
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   resolvePageSelection,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
@@ -28,10 +27,10 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  for (const file of ctx.input.files) validatePdfInput(file);
+  for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
   const input = ctx.input.files[0];
@@ -47,15 +46,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     "Extracting PDF page",
     ctx.progress,
   );
-  const extracted = pdfOutput(
-    await output.save(),
-    createOutputFilename(input.name, "pdf", "extracted"),
-  );
+  const extracted = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "extracted"),
+    mime: "application/pdf",
+    source: await output.save(),
+  });
 
   return {
     render: "files",
     files: [extracted],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: extracted.size,
   };
 };

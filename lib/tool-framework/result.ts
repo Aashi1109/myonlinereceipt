@@ -8,7 +8,7 @@
  * deliberately rather than smuggling a payload through.
  */
 
-import type { WorkerOutputFile } from "./workerProtocol";
+import type { StoredToolArtifact } from "./artifacts";
 import type {
   ToolArtifact,
   ToolFact,
@@ -35,6 +35,8 @@ export type ToolCodeRender = {
   /** Highlighter hint, e.g. a language id. */
   readonly language: string;
   readonly downloadName?: string;
+  /** The displayed code is a bounded preview of a complete generated artifact. */
+  readonly truncated?: boolean;
 };
 
 export type ToolJsonTreeRender = {
@@ -67,6 +69,7 @@ export type ToolListRender = {
   /** Optional caption per item, shown as secondary text. */
   readonly labels?: readonly string[];
   readonly downloadName?: string;
+  readonly truncated?: boolean;
 };
 
 export type ToolHtmlRender = {
@@ -101,7 +104,7 @@ export type ToolDiffRender = {
 
 export type ToolFilesRender = {
   readonly render: "files";
-  readonly files: readonly WorkerOutputFile[];
+  readonly files: readonly StoredToolArtifact[];
   readonly inputBytes?: number;
   readonly outputBytes?: number;
 };

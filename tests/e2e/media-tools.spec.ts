@@ -147,7 +147,7 @@ test("file selection and drag ordering work without arrow controls or mobile ove
   const second = await createJpegFixture(page, 8, 6, "#2563eb");
   const dropZone = page.getByRole("button", { name: /Choose or drop local files/ });
   await expect(
-    page.getByText("JPG · 50 files max · 25 MiB each · 250 MiB total", {
+    page.getByText("JPG · 50 files max · 25 MiB each · 100 MiB total", {
       exact: true,
     }),
   ).toBeVisible();

@@ -1,4 +1,8 @@
-import type { ToolInputSpec } from "@/lib/tool-framework/spec";
+export {
+  textInputFileIssue,
+  validateFileSelection,
+} from "@/lib/tool-framework/fileSelection";
+import { validateFileSelection } from "@/lib/tool-framework/fileSelection";
 
 const FILE_IDS = new WeakMap<File, string>();
 
@@ -8,59 +12,4 @@ export function workspaceFileId(file: File): string {
   const id = crypto.randomUUID();
   FILE_IDS.set(file, id);
   return id;
-}
-
-export interface FileSelectionResult {
-  files: readonly File[];
-  issue: string;
-}
-
-export function textInputFileIssue(
-  file: File,
-  spec: { readonly accept: string; readonly maxBytes: number },
-): string | null {
-  if (!acceptsFile(file, spec.accept)) {
-    return `${file.name} is not an accepted file type.`;
-  }
-  if (file.size > spec.maxBytes) {
-    return `${file.name} exceeds the ${spec.maxBytes.toLocaleString()} byte limit.`;
-  }
-  return null;
-}
-
-function acceptsFile(file: File, accept: string): boolean {
-  const name = file.name.toLowerCase();
-  const mime = file.type.toLowerCase();
-  return accept.split(",").some((rawPattern) => {
-    const pattern = rawPattern.trim().toLowerCase();
-    if (!pattern) return false;
-    if (pattern === "*/*") return true;
-    if (pattern.startsWith(".")) return name.endsWith(pattern);
-    if (pattern.endsWith("/*")) return mime.startsWith(pattern.slice(0, -1));
-    return mime === pattern;
-  });
-}
-
-export function validateFileSelection(
-  current: readonly File[],
-  incoming: readonly File[],
-  inputSpec: Extract<ToolInputSpec, { kind: "files" }>,
-): FileSelectionResult {
-  const accepted: File[] = [];
-  const issues: string[] = [];
-  for (const file of incoming) {
-    if (!acceptsFile(file, inputSpec.accept)) {
-      issues.push(`${file.name} is not an accepted file type.`);
-    } else if (inputSpec.maxBytes !== undefined && file.size > inputSpec.maxBytes) {
-      issues.push(`${file.name} exceeds the ${inputSpec.maxBytes.toLocaleString()} byte limit.`);
-    } else {
-      accepted.push(file);
-    }
-  }
-  const combined = inputSpec.multiple ? [...current, ...accepted] : accepted.slice(0, 1);
-  const limit = inputSpec.maxFiles ?? combined.length;
-  if (combined.length > limit) {
-    issues.push(`Only ${limit} ${limit === 1 ? "file" : "files"} can be added.`);
-  }
-  return { files: combined.slice(0, limit), issue: issues.join(" ") };
 }

@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import type { StoredToolArtifact } from "@/lib/tool-framework/artifacts";
 
 export type ToolLifecycle =
   | "empty"
@@ -19,7 +20,8 @@ export type ToolValidationIssue = {
   targetId?: string;
 };
 
-export type ToolArtifact = {
+export type ToolArtifact = StoredToolArtifact | {
+  storage: "inline";
   content: string;
   mimeType: string;
   name: string;
@@ -75,6 +77,8 @@ export type ToolRuntimeSpec<
   initialInput: Input;
   initialSettings: Settings;
   isEmpty: (input: Input) => boolean;
+  /** Live tools may require an explicit run for an unusually expensive input. */
+  shouldAutoRun?: (input: Input) => boolean;
   trigger: "live" | "manual";
   validate: (
     input: Input,
@@ -88,6 +92,7 @@ export type ToolRuntimeController<
   Result,
 > = {
   artifacts: readonly ToolArtifact[];
+  cancelRun: () => void;
   cancelPendingCommand: () => void;
   canUndo: boolean;
   confirmPendingCommand: () => void;

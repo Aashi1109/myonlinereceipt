@@ -33,7 +33,7 @@ export function ResultSurface({
   const resultCount = getResultCount(result);
   const resultStatus = resultCount === null
     ? "READY"
-    : result?.render === "table" && result.truncated
+    : result && "truncated" in result && result.truncated
       ? `${resultCount} SHOWN`
       : `${resultCount} READY`;
   const cardJson = result?.render === "json-tree" && variant === "card";

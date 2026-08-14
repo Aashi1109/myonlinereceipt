@@ -6,10 +6,15 @@ import { utilityDelimiter } from "../../lib/devtools/shared/table.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
+import {
+  createTextArtifactSink,
+  isLargeCsvRun,
+  parseCsvRun,
+} from "../../lib/devtools/shared/streaming-csv-tool.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => {
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
   const normalizeCell = (value: string): string | number => {
     const normalized = ctx.settings.trimWhitespace ? value.trim() : value;
@@ -19,6 +24,65 @@ export const run: ToolRun<Settings> = (ctx): ToolResult => {
       ? Number(normalized)
       : normalized;
   };
+
+  if (isLargeCsvRun(ctx)) {
+    const sink = createTextArtifactSink(ctx, {
+      mime: "application/json",
+      name: "data.json",
+    });
+    const useHeaders = ctx.settings.firstRowAsHeaders !== false;
+    let headers: readonly string[] = [];
+    let outputRows = 0;
+    try {
+      await sink.write("[");
+      const parsed = await parseCsvRun(ctx, {
+        delimiter,
+        onRow: async (row, rowNumber) => {
+          if (useHeaders && rowNumber === 1) {
+            headers = row.map((header) => header.trim());
+            if (headers.some((header) => !header)) {
+              throw new ToolError("empty-header", "Every CSV column needs a header.");
+            }
+            if (new Set(headers).size !== headers.length) {
+              throw new ToolError("duplicate-header", "CSV headers must be unique.");
+            }
+            return;
+          }
+          const values = row.map(normalizeCell);
+          if (ctx.settings.trimWhitespace && values.every((value) => value === "")) return;
+          const value = useHeaders
+            ? Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]))
+            : values;
+          await sink.write(`${outputRows === 0 ? "\n" : ",\n"}  ${JSON.stringify(value)}`);
+          outputRows += 1;
+        },
+        previewRows: 0,
+      });
+      if (parsed.rowCount === 0) {
+        throw new ToolError("empty", "Paste CSV to convert it to JSON.");
+      }
+      await sink.write(`${outputRows > 0 ? "\n" : ""}]`);
+      const artifact = await sink.finish();
+      const columnCount = useHeaders ? headers.length : parsed.columnCount;
+      return {
+        render: "code",
+        code: sink.preview,
+        language: "json",
+        truncated: sink.previewTruncated,
+        stats: [
+          { label: "Rows", value: String(outputRows) },
+          { label: "Columns", value: String(columnCount) },
+        ],
+        sections: [{
+          title: sink.previewTruncated ? "Complete JSON file" : "Download",
+          body: { render: "files", files: [artifact], outputBytes: artifact.size },
+        }],
+      };
+    } catch (error) {
+      await sink.abort(error);
+      throw error;
+    }
+  }
 
   let output: string;
   let rowCount: number;

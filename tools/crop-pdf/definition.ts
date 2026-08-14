@@ -23,7 +23,8 @@ export default {
     accept: "application/pdf",
     multiple: false,
     engine: "pdf",
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -87,7 +88,7 @@ export default {
       "Cropping only sets the crop box. The content outside it is hidden, not deleted — it is still present in the file and can be recovered by resetting the box.",
       "One crop box is applied to every selected page. If the box would fall outside any of them the run is rejected rather than silently clamped.",
       "Everything is measured in PDF points, not pixels or millimetres, and the origin is the bottom-left corner.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Structural jobs are capped at 500 pages, and the PDF must be 50 MiB or smaller.",
       "Encrypted or password-protected PDFs are rejected, and cropping invalidates an existing digital signature.",
     ],
     faq: [

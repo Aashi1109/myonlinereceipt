@@ -18,6 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name,role,active\nMaya,Engineer,true\nNoah,Designer,false",
     maxLength: 2_000_000,
   },
@@ -74,7 +75,7 @@ export default {
       "In header mode, every column needs a non-empty, unique header. All rows must contain the same number of fields.",
       "Cell values remain strings unless Parse numbers is enabled. Booleans, dates, and empty values are never inferred.",
       "Header mode returns flat objects; without headers, the result is an array of rows. Dotted headers remain literal keys.",
-      "Blank rows are ignored, headers are trimmed in header mode, and input is limited to 2,000,000 characters.",
+      "Editable input is limited to 2,000,000 characters; CSV and TSV files up to 100 MiB are converted as a stream with bounded preview output.",
     ],
     faq: [
       {

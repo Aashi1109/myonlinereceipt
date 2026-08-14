@@ -23,6 +23,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
+    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: '{"name":"CodeUtilityKit","version":2}',
     maxLength: 2_000_000,
   },
@@ -69,9 +70,9 @@ export default {
       "Copy or download the formatted JSON once it looks right.",
     ],
     limitations: [
-      "Input is capped at 2,000,000 characters. Larger documents are rejected rather than allowed to lock up the tab.",
+      "Editable text is capped at 2,000,000 characters. JSON files up to 100 MiB are processed in read-only large-file mode.",
       "Parsing is strict JSON. Comments, trailing commas, and single-quoted strings are rejected — use the JSON Viewer's repair pass to recover from those first.",
-      "Numbers go through JavaScript's number type, so integers beyond 2^53 and high-precision decimals lose exactness on the round trip.",
+      "Number lexemes are preserved exactly while formatting or minifying, including integers beyond 2^53 and high-precision decimals.",
       "Formatting rewrites whitespace only. Key order is preserved as parsed, and no keys are sorted, added, or removed.",
     ],
     faq: [

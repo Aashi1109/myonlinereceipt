@@ -16,11 +16,14 @@ import {
 } from "@smarttools/ui";
 import {
   AlignLeft,
+  CircleCheckBig,
   Copy,
   FileText,
   FileWarning,
+  Loader2,
   Minimize2,
   Trash2,
+  Upload,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -28,6 +31,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -41,10 +45,16 @@ import {
 import { SplitStack } from "@/components/Stacks";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import { SourceTextarea } from "@/components/WorkspaceInput";
+import { textInputFileIssue } from "@/components/FileInput";
+import { ResultView } from "@/components/ResultView";
 import type {
   WorkspaceProps,
   WorkspaceToolbarActions,
 } from "@/components/ToolWorkspace";
+import {
+  isLargeTextFile,
+  readTextFileForEditor,
+} from "@/lib/tool-framework/textFileInput";
 
 import { describeJsonViewerRepair } from "./execution";
 
@@ -153,6 +163,14 @@ function JsonSourceEditor({
   onSourceChange: (text: string) => void;
 }) {
   const inputSpec = props.spec.input;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileReadRequestRef = useRef(0);
+  const selectedFile = props.input.files[0];
+  const acceptedFile = inputSpec.kind === "text" ? inputSpec.acceptFiles : undefined;
+  const largeFile = isLargeTextFile(selectedFile, acceptedFile?.maxEditableBytes);
+  const selectedFileMeta = selectedFile
+    ? `${selectedFile.name} · ${selectedFile.size.toLocaleString()} bytes`
+    : null;
   const inputBytes = useMemo(
     () => new TextEncoder().encode(props.input.text).length,
     [props.input.text],
@@ -162,33 +180,105 @@ function JsonSourceEditor({
     [props.input.text],
   );
 
+  useEffect(() => {
+    fileReadRequestRef.current += 1;
+  }, [props.input.files, props.input.text]);
+
   if (inputSpec.kind !== "text") return null;
+
+  const chooseFile = async (file: File) => {
+    if (!acceptedFile) return;
+    const issue = textInputFileIssue(file, acceptedFile);
+    if (issue) {
+      onNotice(issue, "warning");
+      return;
+    }
+    try {
+      const request = ++fileReadRequestRef.current;
+      const loaded = await readTextFileForEditor(file, {
+        maxEditableBytes: acceptedFile.maxEditableBytes,
+        maxLength: inputSpec.maxLength,
+      });
+      if (request !== fileReadRequestRef.current) return;
+      props.onInputChange({ ...props.input, files: [file], text: loaded.text });
+    } catch {
+      onNotice(`${file.name} could not be read.`, "warning");
+    }
+  };
 
   return (
     <WorkspaceSurface
       actions={(
-        <Button
-          aria-label="Copy JSON input"
-          disabled={props.input.text.length === 0}
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(props.input.text);
-              onNotice("JSON input copied.", "success");
-            } catch {
-              onNotice("Copy failed. Select the input and copy it manually.", "warning");
-            }
-          }}
-          size="xs"
-          type="button"
-          variant="ghost"
-        >
-          <Copy aria-hidden="true" />
-          Copy
-        </Button>
+        <div className="flex items-center gap-1">
+          {acceptedFile ? (
+            <>
+              <input
+                accept={acceptedFile.accept}
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) void chooseFile(file);
+                }}
+                ref={fileInputRef}
+                type="file"
+              />
+              <Button
+                disabled={props.disabled}
+                onClick={() => fileInputRef.current?.click()}
+                size="xs"
+                type="button"
+                variant="ghost"
+              >
+                <Upload aria-hidden="true" />
+          {selectedFile ? "Replace" : "Upload"}
+              </Button>
+              {selectedFile ? (
+                <Button
+                  aria-label={`Remove ${selectedFile.name}`}
+                  disabled={props.disabled}
+                  onClick={() => {
+                    fileReadRequestRef.current += 1;
+                    props.onInputChange({ ...props.input, files: [], text: "" });
+                  }}
+                  size="xs"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Trash2 aria-hidden="true" />
+                  Remove
+                </Button>
+              ) : null}
+            </>
+          ) : null}
+          <Button
+            aria-label={largeFile ? "Copy JSON preview" : "Copy JSON input"}
+            disabled={props.input.text.length === 0}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(props.input.text);
+                onNotice(largeFile ? "JSON preview copied." : "JSON input copied.", "success");
+              } catch {
+                onNotice("Copy failed. Select the input and copy it manually.", "warning");
+              }
+            }}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
+            <Copy aria-hidden="true" />
+            {largeFile ? "Copy preview" : "Copy"}
+          </Button>
+        </div>
       )}
       className="h-full"
       contentClassName="bg-background"
-      meta={`${inputBytes} bytes`}
+      meta={selectedFile
+        ? largeFile
+          ? <><span className="sr-only">{selectedFileMeta} · </span>Large-file mode</>
+          : selectedFileMeta
+        : `${inputBytes} bytes`}
+      description={largeFile ? selectedFileMeta : undefined}
       purpose="editor"
       title="JSON input"
     >
@@ -202,6 +292,7 @@ function JsonSourceEditor({
           onSourceChange(text);
         }}
         placeholder={inputSpec.placeholder}
+        readOnly={largeFile}
         value={props.input.text}
         wrap="soft"
       />
@@ -331,6 +422,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
   const [resultView, setResultView] = useState<JsonResultView>("code");
   const [resultSearchQuery, setResultSearchQuery] = useState("");
   const [resultSearchMatchIndex, setResultSearchMatchIndex] = useState(0);
+  const pendingLargeActionRef = useRef<
+    "format" | "minify" | "validate" | null
+  >(null);
   const [transformPreview, setTransformPreview] =
     useState<JsonTransformPreview>(null);
   const [viewerDraft, setViewerDraft] = useState<JsonViewerDraft | null>(null);
@@ -341,9 +435,16 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
         : null,
     [props.result],
   );
+  const acceptedFile = props.spec.input.kind === "text"
+    ? props.spec.input.acceptFiles
+    : undefined;
+  const largeFile = isLargeTextFile(
+    props.input.files[0],
+    acceptedFile?.maxEditableBytes,
+  );
   const precisionWarning = useMemo(
-    () => risksNumericPrecisionLoss(props.input.text),
-    [props.input.text],
+    () => !largeFile && risksNumericPrecisionLoss(props.input.text),
+    [largeFile, props.input.text],
   );
   const errorLocation = useMemo(() => {
     const match = /line (\d+), column (\d+)/i.exec(props.error ?? "");
@@ -376,9 +477,15 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       Math.min(offset + 1, props.input.text.length),
     );
   }, [editorId, errorLocation, props.input.text]);
+  const errorIsInPreview = useMemo(() => {
+    if (!errorLocation) return false;
+    const lines = props.input.text.split(/\r\n|\r|\n/);
+    const line = lines[errorLocation.line - 1];
+    return line !== undefined && errorLocation.column <= line.length + 1;
+  }, [errorLocation, props.input.text]);
 
   const updateSource = useCallback(
-    (text: string) => props.onInputChange({ ...props.input, text }),
+    (text: string) => props.onInputChange({ ...props.input, files: [], text }),
     [props.input, props.onInputChange],
   );
   const applySource = useCallback(
@@ -531,6 +638,33 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
     });
   }, [precisionWarning]);
   const canTransformCode = Boolean(viewerDraft);
+  const requestLargeAction = useCallback(
+    (operation: "format" | "minify" | "validate") => {
+      if (!props.primaryAction || props.disabled) return;
+      pendingLargeActionRef.current = operation;
+      props.onSettingChange("largeFileOperation", operation);
+    },
+    [props.disabled, props.onSettingChange, props.primaryAction],
+  );
+
+  useEffect(() => {
+    const pendingLargeAction = pendingLargeActionRef.current;
+    if (
+      pendingLargeAction === null ||
+      props.settings.largeFileOperation !== pendingLargeAction ||
+      props.running
+    ) return;
+    const timeout = window.setTimeout(() => {
+      if (pendingLargeActionRef.current !== pendingLargeAction) return;
+      pendingLargeActionRef.current = null;
+      props.primaryAction?.onRun();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [
+    props.primaryAction,
+    props.running,
+    props.settings.largeFileOperation,
+  ]);
   const loadBrokenExample = useCallback(() => {
     applySource(
       BROKEN_EXAMPLE,
@@ -543,26 +677,29 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       exampleIcon: <FileText aria-hidden="true" />,
       exampleVariant: "outline",
       statusMeta: errorLocation ? (
-        <GoToJsonError location={errorLocation} onClick={goToError} />
+        errorIsInPreview ? (
+          <GoToJsonError location={errorLocation} onClick={goToError} />
+        ) : (
+          <span className="text-destructive">Error is beyond the loaded preview</span>
+        )
       ) : "UTF-8",
       before: (
         <div className="flex min-w-0 items-center gap-2 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end">
-          <Button
-            disabled={props.disabled || props.input.text.trim().length === 0}
-            onClick={repairSource}
-            size="xs"
-            type="button"
-            variant="default"
-          >
-            <WandSparkles aria-hidden="true" />
-            Repair &amp; clean
-          </Button>
-          {resultView === "code" ? (
+          {largeFile ? (
             <>
               <Button
-                aria-label="Beautify JSON code"
-                disabled={props.disabled || !canTransformCode}
-                onClick={() => transformViewerCode("beautify")}
+                disabled={props.disabled || !props.primaryAction}
+                onClick={() => requestLargeAction("validate")}
+                size="xs"
+                type="button"
+                variant="default"
+              >
+                <CircleCheckBig aria-hidden="true" />
+                Validate
+              </Button>
+              <Button
+                disabled={props.disabled || !props.primaryAction}
+                onClick={() => requestLargeAction("format")}
                 size="xs"
                 type="button"
                 variant="outline"
@@ -571,9 +708,8 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                 Beautify
               </Button>
               <Button
-                aria-label="Minify JSON code"
-                disabled={props.disabled || !canTransformCode}
-                onClick={() => transformViewerCode("minify")}
+                disabled={props.disabled || !props.primaryAction}
+                onClick={() => requestLargeAction("minify")}
                 size="xs"
                 type="button"
                 variant="outline"
@@ -582,42 +718,85 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                 Minify
               </Button>
             </>
-          ) : null}
+          ) : (
+            <>
+              <Button
+                disabled={props.disabled || props.input.text.trim().length === 0}
+                onClick={repairSource}
+                size="xs"
+                type="button"
+                variant="default"
+              >
+                <WandSparkles aria-hidden="true" />
+                Repair &amp; clean
+              </Button>
+              {resultView === "code" ? (
+                <>
+                  <Button
+                    aria-label="Beautify JSON code"
+                    disabled={props.disabled || !canTransformCode}
+                    onClick={() => transformViewerCode("beautify")}
+                    size="xs"
+                    type="button"
+                    variant="outline"
+                  >
+                    <AlignLeft aria-hidden="true" />
+                    Beautify
+                  </Button>
+                  <Button
+                    aria-label="Minify JSON code"
+                    disabled={props.disabled || !canTransformCode}
+                    onClick={() => transformViewerCode("minify")}
+                    size="xs"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Minimize2 aria-hidden="true" />
+                    Minify
+                  </Button>
+                </>
+              ) : null}
+            </>
+          )}
         </div>
       ),
       afterExample: (
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            aria-label="Broken example"
-            disabled={props.disabled}
-            onClick={loadBrokenExample}
-            size="xs"
-            type="button"
-            variant="outline"
-          >
-            <FileWarning aria-hidden="true" />
-            Broken example
-          </Button>
-          <Select
-            disabled={props.disabled}
-            onValueChange={(value) => props.onSettingChange("repairMode", value)}
-            value={props.settings.repairMode === "null" ? "null" : "remove"}
-          >
-            <SelectTrigger
-              aria-label="Repair strategy"
-              className="relative w-[168px] gap-1.5 after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
-              size="xs"
-            >
-              <span className="text-[8px] font-extrabold tracking-[0.06em] text-muted-foreground">
-                REPAIR
-              </span>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="remove">Remove broken</SelectItem>
-              <SelectItem value="null">Set to null</SelectItem>
-            </SelectContent>
-          </Select>
+          {!largeFile ? (
+            <>
+              <Button
+                aria-label="Broken example"
+                disabled={props.disabled}
+                onClick={loadBrokenExample}
+                size="xs"
+                type="button"
+                variant="outline"
+              >
+                <FileWarning aria-hidden="true" />
+                Broken example
+              </Button>
+              <Select
+                disabled={props.disabled}
+                onValueChange={(value) => props.onSettingChange("repairMode", value)}
+                value={props.settings.repairMode === "null" ? "null" : "remove"}
+              >
+                <SelectTrigger
+                  aria-label="Repair strategy"
+                  className="relative w-[168px] gap-1.5 after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
+                  size="xs"
+                >
+                  <span className="text-[8px] font-extrabold tracking-[0.06em] text-muted-foreground">
+                    REPAIR
+                  </span>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="remove">Remove broken</SelectItem>
+                  <SelectItem value="null">Set to null</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          ) : null}
           <Button
             disabled={props.disabled || props.input.text.length === 0}
             onClick={clearSource}
@@ -648,10 +827,13 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
       props.onSettingChange,
       props.settings.repairMode,
       repairSource,
+      requestLargeAction,
+      largeFile,
       resultView,
       transformViewerCode,
       displayedTree,
       errorLocation,
+      errorIsInPreview,
       goToError,
       updateSource,
     ],
@@ -691,6 +873,89 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
           />
         </div>
         <div className="h-full min-h-0 max-[64.01rem]:h-[28rem]">
+          {largeFile ? (
+            <WorkspaceSurface
+              className="h-full"
+              contentClassName="bg-background"
+              meta="Read-only · bounded preview"
+              purpose="result"
+              title="Large JSON result"
+            >
+              {props.result ? (
+                <ResultView result={props.result} />
+              ) : props.error ? (
+                <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
+                  <div className="max-w-md">
+                    <p className="text-sm font-semibold text-destructive">JSON validation failed</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{props.error}</p>
+                    {errorLocation && errorIsInPreview ? (
+                      <GoToJsonError
+                        className="mt-3 text-xs"
+                        location={errorLocation}
+                        onClick={goToError}
+                      />
+                    ) : errorLocation ? (
+                      <p className="mt-3 text-xs font-medium text-destructive">
+                        The reported location is beyond the loaded preview.
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
+                  <div className="max-w-sm">
+                    <p className="text-sm font-semibold">
+                      {props.running ? "Processing the complete JSON file" : "Ready to process"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {props.running
+                        ? "The file stays local while the worker reads it incrementally."
+                        : "Validate every byte, or generate a formatted or minified download without loading the full file into the editor."}
+                    </p>
+                    {props.running && props.primaryAction?.onCancel ? (
+                      <Button
+                        className="mt-4"
+                        onClick={props.primaryAction.onCancel}
+                        type="button"
+                        variant="outline"
+                      >
+                        Cancel
+                      </Button>
+                    ) : props.primaryAction ? (
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Button
+                        disabled={props.primaryAction.disabled}
+                        onClick={() => requestLargeAction("validate")}
+                        type="button"
+                      >
+                        <CircleCheckBig aria-hidden="true" />
+                        Validate
+                      </Button>
+                      <Button
+                        disabled={props.primaryAction.disabled}
+                        onClick={() => requestLargeAction("format")}
+                        type="button"
+                        variant="outline"
+                      >
+                        <AlignLeft aria-hidden="true" />
+                        Beautify
+                      </Button>
+                      <Button
+                        disabled={props.primaryAction.disabled}
+                        onClick={() => requestLargeAction("minify")}
+                        type="button"
+                        variant="outline"
+                      >
+                        <Minimize2 aria-hidden="true" />
+                        Minify
+                      </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+            </WorkspaceSurface>
+          ) : (
           <JsonResultPane
             editor={editorController}
             error={props.error}
@@ -708,6 +973,7 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
             tree={workingTree}
             view={resultView}
           />
+          )}
         </div>
       </SplitStack>
     </>

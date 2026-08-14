@@ -300,6 +300,10 @@ test("CSV parsing handles quoted delimiters, escaped quotes, and line breaks", (
   assert.equal(convertCsvToJson("id,name\n1").ok, false);
 });
 
+test("small CSV parsing applies the same strict closing-quote rule as streaming input", () => {
+  assert.equal(convertCsvToJson('id,name\n1,"Alice"x').ok, false);
+});
+
 test("repairs common broken JSON without evaluating input", () => {
   assert.deepEqual(
     repairJson("{/* note */ name: 'Ada', active: true, age:,}", "remove"),

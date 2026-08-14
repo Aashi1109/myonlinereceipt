@@ -32,7 +32,8 @@ export default {
     multiple: true,
     engine: "pdf",
     maxFiles: 2,
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -112,7 +113,7 @@ export default {
       "Text watermarks use the standard Helvetica font, which covers Latin characters only. Text it cannot encode is rejected — use an image watermark for other scripts.",
       "Image watermarks accept JPG and PNG only, and a rotated JPEG is re-encoded once so its EXIF orientation is applied.",
       "The watermark is drawn on top of existing content and may obscure it. Lower the opacity or move the anchor if that matters.",
-      "Structural jobs are capped at 500 pages, and the PDF must be 200 MiB or smaller.",
+      "Structural jobs are capped at 500 pages, and the PDF must be 50 MiB or smaller.",
     ],
     faq: [
       {

@@ -32,6 +32,10 @@ import type {
   ToolRenderKind,
   ToolResult,
 } from "@/lib/tool-framework/result";
+import {
+  readArtifact,
+  type StoredToolArtifact,
+} from "@/lib/tool-framework/artifacts";
 
 export interface ResultViewProps {
   hideJsonHeader?: boolean;
@@ -104,6 +108,51 @@ function DownloadButton({
       {variant === "outline" ? <Download aria-hidden="true" /> : null}
       {label}
     </Button>
+  );
+}
+
+function ArtifactDownloadButton({
+  artifact,
+  label = "Download file",
+  variant = "outline",
+}: {
+  artifact: StoredToolArtifact;
+  label?: string;
+  variant?: "link" | "outline";
+}) {
+  const [pending, setPending] = useState(false);
+  const [failure, setFailure] = useState("");
+  const download = async () => {
+    if (pending) return;
+    setPending(true);
+    setFailure("");
+    try {
+      const file = await readArtifact(artifact);
+      const url = URL.createObjectURL(file);
+      saveUrl(url, artifact.name);
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (error) {
+      setFailure(
+        error instanceof Error
+          ? error.message
+          : "The generated file is unavailable. Run the tool again.",
+      );
+    } finally {
+      setPending(false);
+    }
+  };
+  return (
+    <div className="inline-flex flex-col items-start gap-1">
+      <Button disabled={pending} onClick={() => void download()} type="button" variant={variant}>
+        {variant === "outline" ? <Download aria-hidden="true" /> : null}
+        {pending ? "Preparing…" : failure ? "Try download again" : label}
+      </Button>
+      {failure ? (
+        <span className="text-xs font-medium text-destructive" role="alert">
+          {failure}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -215,6 +264,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
     case "code":
       return {
         copy: result.code,
+        copyLabel: result.truncated ? "Copy preview" : undefined,
         download: result.downloadName
           ? { content: result.code, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -251,6 +301,7 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
       const content = result.items.join("\n");
       return {
         copy: content,
+        copyLabel: result.truncated ? "Copy shown items" : undefined,
         download: result.downloadName
           ? { content, mime: "text/plain;charset=utf-8", name: result.downloadName }
           : undefined,
@@ -281,6 +332,22 @@ function resultArtifact(result: ToolResult | null): ResultArtifact | null {
   }
 }
 
+function firstStoredArtifact(result: ToolResult | null): StoredToolArtifact | null {
+  if (!result) return null;
+  const direct = result.artifacts?.find(
+    (artifact): artifact is StoredToolArtifact => artifact.storage !== "inline",
+  );
+  if (direct) return direct;
+  for (const section of result.sections ?? []) {
+    if (section.body.render !== "files") continue;
+    const stored = section.body.files.find(
+      (file): file is StoredToolArtifact => "storage" in file,
+    );
+    if (stored) return stored;
+  }
+  return null;
+}
+
 export function getResultCount(result: ToolResult | null): number | null {
   if (!result) return null;
   switch (result.render) {
@@ -309,6 +376,7 @@ export function ResultActions({
   variant?: "link" | "outline";
 }) {
   const artifact = resultArtifact(result);
+  const storedArtifact = firstStoredArtifact(result);
   const download = artifact?.download;
   const extension = download?.name.match(/\.[^.]+$/)?.[0];
 
@@ -323,15 +391,19 @@ export function ResultActions({
         />
       ) : null}
       {canDownload ? (
-        <DownloadButton
-          content={download?.content}
-          disabled={!download}
-          href={download?.href}
-          label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
-          mime={download?.mime ?? "application/octet-stream"}
-          name={download?.name ?? "result"}
-          variant={variant}
-        />
+        storedArtifact ? (
+          <ArtifactDownloadButton artifact={storedArtifact} variant={variant} />
+        ) : (
+          <DownloadButton
+            content={download?.content}
+            disabled={!download}
+            href={download?.href}
+            label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
+            mime={download?.mime ?? "application/octet-stream"}
+            name={download?.name ?? "result"}
+            variant={variant}
+          />
+        )
       ) : null}
     </>
   );
@@ -345,7 +417,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
   ),
   code: (result) => (
     <RenderFrame>
-      <pre className="min-h-0 flex-1 overflow-auto bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
+      <pre className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
     </RenderFrame>
   ),
   "json-tree": (result, options) => {
@@ -448,15 +520,17 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
   },
   files: (result) => (
     <div className="grid gap-3 p-4">
-      {result.files.map((file) => (
+      {result.files.map((file) => {
+        return (
         <DownloadResult
-          action={<DownloadButton content={file.buffer} label="Download file" mime={file.mime} name={file.filename} variant="outline" />}
+          action={<ArtifactDownloadButton artifact={file} />}
           className="[&_p]:truncate"
-          key={`${file.filename}-${file.size}`}
+          key={`${file.name}-${file.size}`}
           metadata={`${file.mime} · ${file.size.toLocaleString()} bytes`}
-          title={file.filename}
+          title={file.name}
         />
-      ))}
+        );
+      })}
       {result.inputBytes !== undefined || result.outputBytes !== undefined ? (
         <p className="text-xs text-muted-foreground">
           {result.inputBytes !== undefined ? `Input: ${result.inputBytes.toLocaleString()} bytes` : null}
@@ -487,8 +561,20 @@ function CommonResultDetails({ result }: ResultViewProps) {
     result.sections?.length,
   );
   if (!hasDetails) return null;
+  const generatedFileSections = result.sections?.filter(
+    (section) => section.body.render === "files",
+  );
+  const otherSections = result.sections?.filter(
+    (section) => section.body.render !== "files",
+  );
   return (
     <div className="grid gap-4 border-t border-border p-4">
+      {generatedFileSections?.map((section) => (
+        <section key={section.title}>
+          <SectionHeading title={section.title} />
+          {renderPrimary(section.body)}
+        </section>
+      ))}
       {result.stats?.length ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
           {result.stats.map((stat) => (
@@ -525,12 +611,14 @@ function CommonResultDetails({ result }: ResultViewProps) {
       {result.artifacts?.length ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Downloads</span>
-          {result.artifacts.map((artifact) => (
+          {result.artifacts.map((artifact) => artifact.storage === "inline" ? (
             <DownloadButton content={artifact.content} label={artifact.name} key={artifact.name} mime={artifact.mimeType} name={artifact.name} variant="outline" />
+          ) : (
+            <ArtifactDownloadButton artifact={artifact} key={artifact.id} label={artifact.name} />
           ))}
         </div>
       ) : null}
-      {result.sections?.map((section) => (
+      {otherSections?.map((section) => (
         <section key={section.title}>
           <SectionHeading title={section.title} />
           {renderPrimary(section.body)}

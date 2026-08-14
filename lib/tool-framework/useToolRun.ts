@@ -10,14 +10,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CANCEL_WATCHDOG_MS, PDF_THUMBNAIL_CACHE_SIZE } from "./limits";
+import { cleanupArtifactJobWithRetry } from "./artifacts";
 import type { ToolPagePreview } from "./run";
 import {
   beginWorkerJob,
   cancelWorkerJob,
+  createToolInspectionCloseRequest,
   createToolInspectRequest,
   createToolJobState,
   createToolWorkerRequest,
-  getRequestTransferables,
+  createToolThumbnailRequest,
   isToolWorkerResponse,
   reduceWorkerJobState,
   type ToolInspectRequestInput,
@@ -34,7 +37,12 @@ export type ToolRunHandle = {
   readonly start: (request: ToolRunRequestInput) => string;
   /** Starts a page inspection, replacing any job already running. */
   readonly inspect: (request: ToolInspectRequestInput) => string;
+  /** Requests raster bytes for pages in or near the page-picker viewport. */
+  readonly requestThumbnails: (pageNumbers: readonly number[]) => void;
+  /** Closes the open inspection document while retaining its page geometry. */
+  readonly closeInspection: () => void;
   readonly cancel: () => void;
+  readonly cleanupArtifacts: () => void;
   readonly reset: () => void;
 };
 
@@ -42,6 +50,11 @@ export function useToolRun(): ToolRunHandle {
   const [state, setState] = useState<ToolJobState>(createToolJobState);
   const stateRef = useRef(state);
   const workerRef = useRef<Worker | null>(null);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inspectionRef = useRef<{
+    readonly jobId: string;
+    readonly inFlight: Set<number>;
+  } | null>(null);
 
   const apply = useCallback((next: ToolJobState) => {
     stateRef.current = next;
@@ -49,16 +62,71 @@ export function useToolRun(): ToolRunHandle {
   }, []);
 
   const terminate = useCallback(() => {
+    if (watchdogRef.current !== null) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
     workerRef.current?.terminate();
     workerRef.current = null;
+    inspectionRef.current = null;
   }, []);
 
-  useEffect(() => terminate, [terminate]);
+  const cleanupJob = useCallback((jobId: string | null) => {
+    if (!jobId) return;
+    void cleanupArtifactJobWithRetry(jobId).catch(() => undefined);
+  }, []);
+
+  const abortWorker = useCallback((jobId: string | null) => {
+    if (jobId && workerRef.current) {
+      workerRef.current.postMessage({ type: "cancel", jobId });
+    }
+  }, []);
+
+  const cleanupCurrentArtifacts = useCallback(() => {
+    const { jobId, status } = stateRef.current;
+    if (status === "completed") cleanupJob(jobId);
+  }, [cleanupJob]);
+
+  useEffect(
+    () => () => {
+      const jobId = stateRef.current.jobId;
+      const currentWorker = workerRef.current;
+      if (jobId && currentWorker && inspectionRef.current?.jobId === jobId) {
+        currentWorker.postMessage(createToolInspectionCloseRequest(jobId));
+        window.setTimeout(() => currentWorker.terminate(), CANCEL_WATCHDOG_MS);
+        workerRef.current = null;
+        inspectionRef.current = null;
+      } else {
+        abortWorker(jobId);
+        terminate();
+      }
+      cleanupJob(jobId);
+    },
+    [abortWorker, cleanupJob, terminate],
+  );
 
   /** One job at a time: every dispatch replaces the worker and the job state. */
   const dispatch = useCallback(
-    (message: ToolWorkerMessage, transfer: Transferable[]): string => {
+    (message: ToolWorkerMessage): string => {
+      const previousJobId = stateRef.current.jobId;
+      const previousInspection = inspectionRef.current;
+      const inspectionWorker = workerRef.current;
+      if (
+        message.type === "inspect" &&
+        previousInspection &&
+        inspectionWorker
+      ) {
+        cleanupJob(previousJobId);
+        apply(beginWorkerJob(stateRef.current, message.jobId));
+        inspectionRef.current = { jobId: message.jobId, inFlight: new Set() };
+        // `inspectJob` closes the previous range-backed document before opening
+        // this one, so a selection change does not rely on abrupt termination.
+        inspectionWorker.postMessage(message);
+        return message.jobId;
+      }
+      abortWorker(previousJobId);
       terminate();
+      cleanupJob(previousJobId);
       const worker = new Worker(
         new URL("./tool.worker.ts", import.meta.url),
         { name: "smarttools-tool-worker" },
@@ -67,15 +135,38 @@ export function useToolRun(): ToolRunHandle {
       worker.onmessage = (event: MessageEvent<unknown>) => {
         if (workerRef.current !== worker) return;
         if (!isToolWorkerResponse(event.data)) return;
+        if (event.data.type === "inspection-closed") {
+          terminate();
+          return;
+        }
+        if (event.data.type === "thumbnails") {
+          const session = inspectionRef.current;
+          if (!session || session.jobId !== event.data.jobId) return;
+          for (const preview of event.data.previews) {
+            session.inFlight.delete(preview.pageNumber);
+          }
+          apply(reduceWorkerJobState(stateRef.current, event.data));
+          return;
+        }
         const next = reduceWorkerJobState(stateRef.current, event.data);
-        if (next.status !== "running") terminate();
+        if (event.data.type === "inspected" && next.status === "completed") {
+          inspectionRef.current = {
+            jobId: event.data.jobId,
+            inFlight: new Set(),
+          };
+        } else if (next.status !== "running") {
+          terminate();
+        }
         apply(next);
       };
       apply(beginWorkerJob(stateRef.current, message.jobId));
-      worker.postMessage(message, transfer);
+      if (message.type === "inspect") {
+        inspectionRef.current = { jobId: message.jobId, inFlight: new Set() };
+      }
+      worker.postMessage(message);
       return message.jobId;
     },
-    [apply, terminate],
+    [abortWorker, apply, cleanupJob, terminate],
   );
 
   const start = useCallback(
@@ -84,34 +175,101 @@ export function useToolRun(): ToolRunHandle {
         ...request,
         jobId: crypto.randomUUID(),
       });
-      return dispatch(message, getRequestTransferables(message));
+      return dispatch(message);
     },
     [dispatch],
   );
 
-  // No transferables: the caller keeps reading the same buffer for its hooks,
-  // and transferring it would detach the copy it still holds.
   const inspect = useCallback(
     (request: ToolInspectRequestInput): string =>
-      dispatch(
-        createToolInspectRequest({ ...request, jobId: crypto.randomUUID() }),
-        [],
-      ),
+      dispatch(createToolInspectRequest({ ...request, jobId: crypto.randomUUID() })),
     [dispatch],
   );
+
+  const requestThumbnails = useCallback((pageNumbers: readonly number[]) => {
+    const session = inspectionRef.current;
+    const worker = workerRef.current;
+    const current = stateRef.current;
+    if (
+      !session ||
+      !worker ||
+      current.jobId !== session.jobId ||
+      current.status !== "completed"
+    ) {
+      return;
+    }
+    const geometryPages = new Set(
+      current.previews.map((preview) => preview.pageNumber),
+    );
+    const bufferedPages = new Set(
+      current.previews
+        .filter((preview) => {
+          const buffer = (preview as { readonly buffer?: unknown }).buffer;
+          return buffer instanceof ArrayBuffer;
+        })
+        .map((preview) => preview.pageNumber),
+    );
+    const room = PDF_THUMBNAIL_CACHE_SIZE - session.inFlight.size;
+    if (room < 1) return;
+    const requested = [...new Set(pageNumbers)]
+      .filter(
+        (pageNumber) =>
+          geometryPages.has(pageNumber) &&
+          !bufferedPages.has(pageNumber) &&
+          !session.inFlight.has(pageNumber),
+      )
+      .slice(0, room);
+    if (requested.length === 0) return;
+    for (const pageNumber of requested) session.inFlight.add(pageNumber);
+    worker.postMessage(
+      createToolThumbnailRequest({ jobId: session.jobId, pageNumbers: requested }),
+    );
+  }, []);
+
+  const closeInspection = useCallback(() => {
+    const session = inspectionRef.current;
+    const worker = workerRef.current;
+    if (!session || !worker) return;
+    inspectionRef.current = null;
+    worker.postMessage(createToolInspectionCloseRequest(session.jobId));
+    watchdogRef.current = setTimeout(() => {
+      if (workerRef.current === worker) terminate();
+    }, CANCEL_WATCHDOG_MS);
+  }, [terminate]);
 
   const cancel = useCallback(() => {
     const canceled = cancelWorkerJob(stateRef.current);
     if (!canceled) return;
     workerRef.current?.postMessage(canceled.message);
-    terminate();
     apply(canceled.state);
-  }, [apply, terminate]);
+    watchdogRef.current = setTimeout(() => {
+      terminate();
+      cleanupJob(canceled.message.jobId);
+    }, CANCEL_WATCHDOG_MS);
+  }, [apply, cleanupJob, terminate]);
 
   const reset = useCallback(() => {
-    terminate();
+    const jobId = stateRef.current.jobId;
+    const session = inspectionRef.current;
+    if (session && workerRef.current) {
+      closeInspection();
+    } else {
+      abortWorker(jobId);
+      terminate();
+    }
+    cleanupJob(jobId);
     apply(createToolJobState());
-  }, [apply, terminate]);
+  }, [abortWorker, apply, cleanupJob, closeInspection, terminate]);
 
-  return { state, previews: state.previews, start, inspect, cancel, reset };
+  return {
+    state,
+    previews: state.previews,
+    start,
+    inspect,
+    requestThumbnails,
+    closeInspection,
+    cancel,
+    cleanupArtifacts: cleanupCurrentArtifacts,
+    reset,
+  };
 }

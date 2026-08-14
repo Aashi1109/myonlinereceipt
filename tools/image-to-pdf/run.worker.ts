@@ -19,10 +19,7 @@ import {
   type DecodableImageKind,
 } from "../../lib/tool-framework/media/imageCodec.ts";
 import { fitRect, readExifOrientation } from "../../lib/tool-framework/media/geometry.ts";
-import {
-  exactBuffer,
-  type MediaOutputFile,
-} from "../../lib/tool-framework/media/pdfDocument.ts";
+import { readToolFile } from "../../lib/tool-framework/media/fileBytes.ts";
 import {
   clipEndOperators,
   clipStartOperators,
@@ -40,6 +37,7 @@ import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 const ALLOWED: readonly DecodableImageKind[] = ["jpeg", "png", "webp", "heic"];
+const PDF_LIB_MAX_INPUT_BYTES = 50 * 1024 * 1024;
 
 /** Inlined from `app/media/_lib/tools.ts:321-325`. */
 const QUALITY_PRESETS: Readonly<
@@ -53,8 +51,16 @@ const QUALITY_PRESETS: Readonly<
 const MARGINS: Readonly<Record<string, number>> = { none: 0, small: 18, normal: 36 };
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
+  const inputBytes = ctx.input.files.reduce((sum, file) => sum + file.size, 0);
+  if (inputBytes > PDF_LIB_MAX_INPUT_BYTES) {
+    throw new ToolError(
+      "total-too-large",
+      "Images selected for one PDF must total 50 MiB or less.",
+      "Remove images or create more than one PDF.",
+    );
+  }
   const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
@@ -78,9 +84,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.progress({ completed: index, total, stage: "Adding image to PDF" });
     const { file, rotation } = inputs[index];
     const decoded = await decodeImage(file, ALLOWED);
+    const sourceBytes = await readToolFile(file, ctx.signal);
     const image = rotation ? rotateImage(decoded.image, rotation) : decoded.image;
     const hasExifOrientation =
-      decoded.kind === "jpeg" && readExifOrientation(new Uint8Array(file.data)) !== 1;
+      decoded.kind === "jpeg" && readExifOrientation(new Uint8Array(sourceBytes)) !== 1;
     const flattenOriginalPng =
       decoded.kind === "png" &&
       !quality.reencode &&
@@ -99,7 +106,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
             hasExifOrientation ||
             !["jpeg", "png"].includes(decoded.kind)
           ? await encodeImage(image, "jpeg", quality.quality, ctx.settings.background)
-          : file.data;
+          : sourceBytes;
     const embedded =
       !quality.reencode && !rotation && !hasExifOrientation && decoded.kind === "png"
         ? await pdf.embedPng(embeddedBytes)
@@ -133,23 +140,20 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     ctx.progress({ completed: index + 1, total, stage: "Page complete" });
   }
 
-  const saved = await pdf.save();
-  const buffer = exactBuffer(saved);
   const requestedName = sanitizeFileName(ctx.settings.filename, "converted-images.pdf");
   const filename = requestedName.toLowerCase().endsWith(".pdf")
     ? requestedName
     : `${requestedName}.pdf`;
-  const output: MediaOutputFile = {
-    buffer,
-    filename,
+  const output = await ctx.writeArtifact({
+    name: filename,
     mime: "application/pdf",
-    size: buffer.byteLength,
-  };
+    source: await pdf.save(),
+  });
 
   return {
     render: "files",
     files: [output],
-    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.data.byteLength, 0),
+    inputBytes,
     outputBytes: output.size,
   };
 };

@@ -12,12 +12,13 @@ export default {
     kind: "files",
     label: "Add a PDF to split",
     dropzoneDescription:
-      "PDF · 1 file · 200 MB max · processed on this device",
+      "PDF · 1 file · 50 MiB max · processed on this device",
     accept: "application/pdf,.pdf",
     multiple: false,
     engine: "pdf",
     maxFiles: 1,
-    maxBytes: 209_715_200,
+    maxBytes: 52_428_800,
+    maxTotalBytes: 52_428_800,
     inspect: true,
   },
   settings: {
@@ -61,7 +62,7 @@ export default {
   capabilities: { cancel: true, download: true, progress: true },
   workbenchMark: { text: "P|P", tone: "contrast" },
   labels: {
-    empty: "Drop one PDF (up to 200 MiB) to split by page, interval, or range.",
+    empty: "Drop one PDF (up to 50 MiB) to split by page, interval, or range.",
     ready: "The PDF and split settings are ready.",
     running: "Splitting PDF…",
   },

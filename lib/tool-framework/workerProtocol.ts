@@ -18,27 +18,14 @@
 // Extension-qualified so this module loads under plain `node --test`, which is
 // how its job-state reducer is covered. The type-only imports below are erased.
 import { sanitizeFileName } from "./media/validation.ts";
+import { PDF_THUMBNAIL_CACHE_SIZE } from "./limits.ts";
 import type { ToolResult } from "./result";
-import type { ToolPagePreview, ToolRunItem, ToolRunProgress } from "./run";
-
-export interface WorkerFileMetadata {
-  readonly name: string;
-  readonly mime: string;
-  readonly size: number;
-}
-
-export interface WorkerInputFile {
-  readonly id: string;
-  readonly data: ArrayBuffer;
-  readonly metadata: WorkerFileMetadata;
-}
-
-export interface WorkerOutputFile {
-  readonly buffer: ArrayBuffer;
-  readonly mime: string;
-  readonly filename: string;
-  readonly size: number;
-}
+import type {
+  ToolPagePreview,
+  ToolRunFile,
+  ToolRunItem,
+  ToolRunProgress,
+} from "./run";
 
 /** The 3x3 placement grid used by watermarks and page numbering. */
 export type WatermarkPosition =
@@ -53,21 +40,20 @@ export type WatermarkPosition =
   | "bottom-right";
 
 /**
- * Builds a transferable input file. The name is sanitised and the MIME type is
- * shape-checked here because this is the boundary a picked `File` crosses on
- * its way to a worker.
+ * Builds the structured-clone input. The original `File` remains the byte
+ * source; only its untrusted metadata is normalised at the boundary.
  */
-export function createWorkerInput(
+export function createToolRunFile(
   id: string,
-  data: ArrayBuffer,
-  name: string,
-  mime: string,
-): WorkerInputFile {
+  source: File,
+): ToolRunFile {
   if (!id.trim()) throw new TypeError("Worker input ID is required.");
-  if (!(data instanceof ArrayBuffer)) {
-    throw new TypeError("Worker input must be an ArrayBuffer.");
+  if (!(source instanceof File)) {
+    throw new TypeError("Worker input source must be a File.");
   }
-  const normalizedMime = mime.trim().toLowerCase();
+  const normalizedMime = (source.type || "application/octet-stream")
+    .trim()
+    .toLowerCase();
   if (
     !/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/.test(normalizedMime)
   ) {
@@ -75,12 +61,10 @@ export function createWorkerInput(
   }
   return {
     id: id.trim(),
-    data,
-    metadata: {
-      name: sanitizeFileName(name),
-      mime: normalizedMime,
-      size: data.byteLength,
-    },
+    name: sanitizeFileName(source.name),
+    mime: normalizedMime,
+    size: source.size,
+    source,
   };
 }
 
@@ -91,27 +75,33 @@ export type ToolWorkerRequest = {
   readonly key: string;
   readonly text?: string;
   readonly secondary?: string;
-  readonly files: readonly WorkerInputFile[];
+  readonly files: readonly ToolRunFile[];
   readonly items?: readonly ToolRunItem[];
   readonly settings: Readonly<Record<string, unknown>>;
 };
 
 /**
- * Page inspection for the tools whose spec declares `input.inspect`. One
- * document per request — page geometry is a property of a single document, and
- * carrying exactly one file keeps the same `assertRunnableFiles` boundary the
- * run path uses applicable unchanged.
- *
- * The buffer is deliberately not transferred (there is no transferables helper
- * for this request): the caller keeps reading the same bytes for its pre-run
- * hooks, and transferring would detach them.
+ * Opens a persistent page-inspection session for a single File-backed PDF.
+ * The first response contains geometry only; thumbnails are requested later as
+ * their cards enter (or approach) the viewport.
  */
 export type ToolWorkerInspect = {
   readonly type: "inspect";
   readonly jobId: string;
   readonly key: string;
-  readonly files: readonly WorkerInputFile[];
+  readonly files: readonly ToolRunFile[];
   readonly thumbnailWidth: number;
+};
+
+export type ToolWorkerThumbnailRequest = {
+  readonly type: "inspect-thumbnails";
+  readonly jobId: string;
+  readonly pageNumbers: readonly number[];
+};
+
+export type ToolWorkerInspectionClose = {
+  readonly type: "inspect-close";
+  readonly jobId: string;
 };
 
 export type ToolWorkerCancel = {
@@ -122,6 +112,8 @@ export type ToolWorkerCancel = {
 export type ToolWorkerMessage =
   | ToolWorkerRequest
   | ToolWorkerInspect
+  | ToolWorkerThumbnailRequest
+  | ToolWorkerInspectionClose
   | ToolWorkerCancel;
 
 export type ToolWorkerProgress = ToolRunProgress & {
@@ -155,6 +147,24 @@ export type ToolWorkerInspected = {
   readonly previews: readonly ToolPagePreview[];
 };
 
+export type ToolPageThumbnail = ToolPagePreview & {
+  readonly width: number;
+  readonly height: number;
+  readonly buffer: ArrayBuffer;
+  readonly mime: "image/jpeg";
+};
+
+export type ToolWorkerThumbnails = {
+  readonly type: "thumbnails";
+  readonly jobId: string;
+  readonly previews: readonly ToolPageThumbnail[];
+};
+
+export type ToolWorkerInspectionClosed = {
+  readonly type: "inspection-closed";
+  readonly jobId: string;
+};
+
 export type ToolWorkerCanceled = {
   readonly type: "canceled";
   readonly jobId: string;
@@ -164,6 +174,8 @@ export type ToolWorkerResponse =
   | ToolWorkerProgress
   | ToolWorkerSuccess
   | ToolWorkerInspected
+  | ToolWorkerThumbnails
+  | ToolWorkerInspectionClosed
   | ToolWorkerFailure
   | ToolWorkerCanceled;
 
@@ -207,7 +219,7 @@ export type ToolRunRequestInput = {
   readonly key: string;
   readonly text?: string;
   readonly secondary?: string;
-  readonly files?: readonly WorkerInputFile[];
+  readonly files?: readonly ToolRunFile[];
   readonly items?: readonly ToolRunItem[];
   readonly settings: Readonly<Record<string, unknown>>;
 };
@@ -234,7 +246,7 @@ export const INSPECT_THUMBNAIL_WIDTH = 180;
 
 export type ToolInspectRequestInput = {
   readonly key: string;
-  readonly file: WorkerInputFile;
+  readonly file: ToolRunFile;
   readonly thumbnailWidth?: number;
 };
 
@@ -256,17 +268,41 @@ export function createToolInspectRequest(
   };
 }
 
-/** Same expression as the media protocol's helper, retyped for this request. */
-export function getRequestTransferables(
-  message: ToolWorkerRequest,
-): Transferable[] {
-  return [...new Set(message.files.map(({ data }) => data))];
+export type ToolThumbnailRequestInput = {
+  readonly jobId: string;
+  readonly pageNumbers: readonly number[];
+};
+
+export function createToolThumbnailRequest(
+  input: ToolThumbnailRequestInput,
+): ToolWorkerThumbnailRequest {
+  const jobId = input.jobId.trim();
+  if (!jobId) throw new TypeError("Worker job ID is required.");
+  if (
+    input.pageNumbers.some(
+      (pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1,
+    )
+  ) {
+    throw new RangeError("Thumbnail page numbers must be positive integers.");
+  }
+  const pageNumbers = [...new Set(input.pageNumbers)];
+  if (pageNumbers.length === 0) {
+    throw new RangeError("Choose at least one thumbnail page.");
+  }
+  if (pageNumbers.length > PDF_THUMBNAIL_CACHE_SIZE) {
+    throw new RangeError(
+      `At most ${PDF_THUMBNAIL_CACHE_SIZE} thumbnail pages may be requested at once.`,
+    );
+  }
+  return { type: "inspect-thumbnails", jobId, pageNumbers };
 }
 
-export function getResultTransferables(result: ToolResult): Transferable[] {
-  return result.render === "files"
-    ? [...new Set(result.files.map(({ buffer }) => buffer))]
-    : [];
+export function createToolInspectionCloseRequest(
+  jobId: string,
+): ToolWorkerInspectionClose {
+  const normalized = jobId.trim();
+  if (!normalized) throw new TypeError("Worker job ID is required.");
+  return { type: "inspect-close", jobId: normalized };
 }
 
 /**
@@ -278,12 +314,24 @@ export function isToolWorkerMessage(
 ): value is ToolWorkerMessage {
   if (!isRecord(value) || !isNonEmptyString(value.jobId)) return false;
   if (value.type === "cancel") return true;
+  if (value.type === "inspect-close") return true;
+  if (value.type === "inspect-thumbnails") {
+    return (
+      Array.isArray(value.pageNumbers) &&
+      value.pageNumbers.length > 0 &&
+      value.pageNumbers.length <= PDF_THUMBNAIL_CACHE_SIZE &&
+      value.pageNumbers.every(
+        (pageNumber) => Number.isInteger(pageNumber) && pageNumber > 0,
+      ) &&
+      new Set(value.pageNumbers).size === value.pageNumbers.length
+    );
+  }
   if (value.type === "inspect") {
     return (
       isNonEmptyString(value.key) &&
       Array.isArray(value.files) &&
       value.files.length === 1 &&
-      value.files.every(isWorkerInputFile) &&
+      value.files.every(isToolRunFile) &&
       Number.isInteger(value.thumbnailWidth) &&
       (value.thumbnailWidth as number) > 0
     );
@@ -294,7 +342,7 @@ export function isToolWorkerMessage(
     isOptionalString(value.text) &&
     isOptionalString(value.secondary) &&
     Array.isArray(value.files) &&
-    value.files.every(isWorkerInputFile) &&
+    value.files.every(isToolRunFile) &&
     (value.items === undefined ||
       (Array.isArray(value.items) && value.items.every(isRunItem))) &&
     isRecord(value.settings)
@@ -306,6 +354,7 @@ export function isToolWorkerResponse(
 ): value is ToolWorkerResponse {
   if (!isRecord(value) || !isNonEmptyString(value.jobId)) return false;
   if (value.type === "canceled") return true;
+  if (value.type === "inspection-closed") return true;
   if (value.type === "progress") {
     return (
       typeof value.completed === "number" &&
@@ -325,6 +374,13 @@ export function isToolWorkerResponse(
       typeof value.pageCount === "number" &&
       Array.isArray(value.previews) &&
       value.previews.every(isPagePreview)
+    );
+  }
+  if (value.type === "thumbnails") {
+    return (
+      Array.isArray(value.previews) &&
+      value.previews.length <= PDF_THUMBNAIL_CACHE_SIZE &&
+      value.previews.every(isPageThumbnail)
     );
   }
   // The result is produced by this repo's own worker, so only the envelope is
@@ -357,7 +413,13 @@ export function reduceWorkerJobState(
   state: ToolJobState,
   message: ToolWorkerResponse,
 ): ToolJobState {
-  if (state.status !== "running" || message.jobId !== state.jobId) return state;
+  if (message.jobId !== state.jobId) return state;
+  if (message.type === "thumbnails") {
+    if (state.status !== "completed" || state.pageCount < 1) return state;
+    return { ...state, previews: mergePageThumbnails(state.previews, message.previews) };
+  }
+  if (message.type === "inspection-closed") return state;
+  if (state.status !== "running") return state;
   if (message.type === "progress") {
     const { completed, total, stage } = message;
     return { ...state, progress: { completed, total, stage } };
@@ -394,6 +456,35 @@ export function reduceWorkerJobState(
   };
 }
 
+function pageGeometry(preview: ToolPagePreview): ToolPagePreview {
+  return {
+    pageNumber: preview.pageNumber,
+    pageWidth: preview.pageWidth,
+    pageHeight: preview.pageHeight,
+  };
+}
+
+/** Keeps geometry for every page while bounding retained thumbnail buffers. */
+function mergePageThumbnails(
+  pages: readonly ToolPagePreview[],
+  incoming: readonly ToolPageThumbnail[],
+): readonly ToolPagePreview[] {
+  const incomingByPage = new Map(
+    incoming.map((preview) => [preview.pageNumber, preview] as const),
+  );
+  const bufferedOrder = pages
+    .filter((preview) => readOwn(preview, "buffer") instanceof ArrayBuffer)
+    .map((preview) => preview.pageNumber)
+    .filter((pageNumber) => !incomingByPage.has(pageNumber));
+  bufferedOrder.push(...incoming.map((preview) => preview.pageNumber));
+  const retained = new Set(bufferedOrder.slice(-PDF_THUMBNAIL_CACHE_SIZE));
+
+  return pages.map((preview) => {
+    const next = incomingByPage.get(preview.pageNumber) ?? preview;
+    return retained.has(preview.pageNumber) ? next : pageGeometry(preview);
+  });
+}
+
 export function cancelWorkerJob(
   state: ToolJobState,
 ): { state: ToolJobState; message: ToolWorkerCancel } | null {
@@ -416,15 +507,14 @@ function isOptionalString(value: unknown): boolean {
   return value === undefined || typeof value === "string";
 }
 
-function isWorkerInputFile(value: unknown): value is WorkerInputFile {
+function isToolRunFile(value: unknown): value is ToolRunFile {
   if (!isRecord(value) || !isNonEmptyString(value.id)) return false;
-  if (!(value.data instanceof ArrayBuffer)) return false;
-  const metadata = value.metadata;
+  if (!(value.source instanceof File)) return false;
   return (
-    isRecord(metadata) &&
-    typeof metadata.name === "string" &&
-    typeof metadata.mime === "string" &&
-    typeof metadata.size === "number"
+    isNonEmptyString(value.name) &&
+    isNonEmptyString(value.mime) &&
+    typeof value.size === "number" &&
+    value.size === value.source.size
   );
 }
 
@@ -435,6 +525,20 @@ function isPagePreview(value: unknown): value is ToolPagePreview {
     typeof value.pageWidth === "number" &&
     typeof value.pageHeight === "number"
   );
+}
+
+function isPageThumbnail(value: unknown): value is ToolPageThumbnail {
+  return (
+    isPagePreview(value) &&
+    readOwn(value, "buffer") instanceof ArrayBuffer &&
+    readOwn(value, "mime") === "image/jpeg" &&
+    typeof readOwn(value, "width") === "number" &&
+    typeof readOwn(value, "height") === "number"
+  );
+}
+
+function readOwn(value: unknown, key: string): unknown {
+  return isRecord(value) && Object.hasOwn(value, key) ? value[key] : undefined;
 }
 
 function isRunItem(value: unknown): value is ToolRunItem {

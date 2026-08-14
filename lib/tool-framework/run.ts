@@ -3,17 +3,23 @@
  * default-exports a `ToolRun`; the filename decides the host, so nothing here
  * needs to name one.
  *
- * `ToolRunFile.data` is an `ArrayBuffer` so a run can cross a worker boundary
- * as a transferable, matching the worker protocol already in use.
+ * `ToolRunFile.source` keeps the browser's original `File` so large inputs can
+ * cross the worker boundary without first being copied into one contiguous
+ * main-thread allocation.
  */
 
+import type {
+  ArtifactWriteInput,
+  StoredToolArtifact,
+} from "./artifacts";
 import type { ToolResult } from "./result";
 
 export type ToolRunFile = {
   readonly id: string;
   readonly name: string;
   readonly mime: string;
-  readonly data: ArrayBuffer;
+  readonly size: number;
+  readonly source: File;
 };
 
 /** Per-item state for collection layouts (reorder, rotate, include/exclude). */
@@ -41,6 +47,9 @@ export type ToolRunContext<S> = {
   readonly settings: S;
   readonly signal: AbortSignal;
   readonly progress: (p: ToolRunProgress) => void;
+  readonly writeArtifact: (
+    input: ArtifactWriteInput,
+  ) => Promise<StoredToolArtifact>;
 };
 
 export type ToolRun<S = never> = (

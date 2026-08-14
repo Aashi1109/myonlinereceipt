@@ -14,7 +14,7 @@ import {
   encodeImage,
   type DecodableImageKind,
 } from "../../lib/tool-framework/media/imageCodec.ts";
-import type { MediaOutputFile } from "../../lib/tool-framework/media/pdfDocument.ts";
+import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
 import {
   createOutputFilename,
   validateImageSelection,
@@ -29,34 +29,41 @@ const ALLOWED: readonly DecodableImageKind[] = ["png"];
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validateImageSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
 
   const quality = ctx.settings.quality / 100;
   const total = ctx.input.files.length;
-  const outputs: MediaOutputFile[] = [];
-  for (let index = 0; index < total; index += 1) {
-    ctx.signal.throwIfAborted();
-    ctx.progress({ completed: index, total, stage: "Decoding image" });
-    const input = ctx.input.files[index];
-    const { image } = await decodeImage(input, ALLOWED);
-    ctx.progress({ completed: index, total, stage: "Encoding image" });
-    const buffer = await encodeImage(image, "jpeg", quality, ctx.settings.background);
-    outputs.push({
-      buffer,
-      filename: createOutputFilename(input.name, "jpg", "converted"),
-      mime: "image/jpeg",
-      size: buffer.byteLength,
-    });
-    ctx.progress({ completed: index + 1, total, stage: "Image complete" });
-  }
+  const files = await writeArtifactBatch(
+    ctx,
+    {
+      archiveName: createOutputFilename(ctx.input.files[0].name, "zip", "converted"),
+      count: total,
+    },
+    async (write) => {
+      for (let index = 0; index < total; index += 1) {
+        ctx.signal.throwIfAborted();
+        ctx.progress({ completed: index, total, stage: "Decoding image" });
+        const input = ctx.input.files[index];
+        const { image } = await decodeImage(input, ALLOWED);
+        ctx.progress({ completed: index, total, stage: "Encoding image" });
+        const buffer = await encodeImage(image, "jpeg", quality, ctx.settings.background);
+        await write({
+          name: createOutputFilename(input.name, "jpg", "converted"),
+          mime: "image/jpeg",
+          source: new Uint8Array(buffer),
+        });
+        ctx.progress({ completed: index + 1, total, stage: "Image complete" });
+      }
+    },
+  );
 
   return {
     render: "files",
-    files: outputs,
-    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.data.byteLength, 0),
-    outputBytes: outputs.reduce((sum, output) => sum + output.size, 0),
+    files,
+    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.size, 0),
+    outputBytes: files.reduce((sum, output) => sum + output.size, 0),
   };
 };
 

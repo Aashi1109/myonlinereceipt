@@ -18,6 +18,7 @@ export default {
   input: {
     kind: "text",
     label: "JSON input",
+    acceptFiles: { accept: ".json,application/json,text/json", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: '{"valid":true}',
   },
   settings: {

@@ -41,7 +41,11 @@ export type ToolInputSpec =
       placeholder?: string;
       maxLength?: number;
       secondary?: { label: string; placeholder?: string };
-      acceptFiles?: { accept: string; maxBytes: number };
+      acceptFiles?: {
+        accept: string;
+        maxBytes: number;
+        maxEditableBytes?: number;
+      };
     }
   | { kind: "fields"; label: string; fields: readonly ToolInputField[] }
   /**
@@ -60,6 +64,7 @@ export type ToolInputSpec =
       engine: "image" | "pdf";
       maxFiles?: number;
       maxBytes?: number;
+      maxTotalBytes?: number;
       inspect?: boolean;
     };
 

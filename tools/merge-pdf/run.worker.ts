@@ -12,7 +12,6 @@ import {
   addCopiedPagesWithProgress,
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   validatePdfInput,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
 import {
@@ -27,11 +26,11 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
     { merge: true },
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  for (const file of ctx.input.files) validatePdfInput(file);
+  for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
   const output = await PDFDocument.create();
@@ -63,15 +62,16 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     );
   }
 
-  const merged = pdfOutput(
-    await output.save(),
-    createOutputFilename(ordered[0].name, "pdf", "merged"),
-  );
+  const merged = await ctx.writeArtifact({
+    name: createOutputFilename(ordered[0].name, "pdf", "merged"),
+    mime: "application/pdf",
+    source: await output.save(),
+  });
 
   return {
     render: "files",
     files: [merged],
-    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.data.byteLength, 0),
+    inputBytes: ctx.input.files.reduce((sum, file) => sum + file.size, 0),
     outputBytes: merged.size,
   };
 };

@@ -47,12 +47,12 @@ import {
   INSPECT_THUMBNAIL_WIDTH,
   beginWorkerJob,
   cancelWorkerJob,
+  createToolInspectionCloseRequest,
   createToolInspectRequest,
   createToolJobState,
+  createToolRunFile,
+  createToolThumbnailRequest,
   createToolWorkerRequest,
-  createWorkerInput,
-  getRequestTransferables,
-  getResultTransferables,
   isToolWorkerMessage,
   isToolWorkerResponse,
   reduceWorkerJobState,
@@ -238,8 +238,11 @@ test("worker teardown invalidates async continuations before releasing resources
   // A message from a worker that is no longer current never reaches the reducer.
   assert.ok(guard > spawn);
   assert.ok(source.indexOf("reduceWorkerJobState(", guard) > guard);
-  // Unmount tears the worker down.
-  assert.match(source, /useEffect\(\(\) => terminate, \[terminate\]\)/);
+  // Unmount asks a persistent inspection to close, with forced teardown as a
+  // watchdog; ordinary run workers still terminate immediately.
+  assert.match(source, /postMessage\(createToolInspectionCloseRequest\(jobId\)\)/);
+  assert.match(source, /setTimeout\(\(\) => currentWorker\.terminate\(\)/);
+  assert.match(source, /cleanupJob\(jobId\);/);
   assert.match(source, /workerRef\.current\?\.terminate\(\);/);
 });
 
@@ -810,14 +813,11 @@ test("crop, rotation, and EXIF orientation helpers keep pixels in bounds", () =>
   );
 });
 
-test("worker runs expose transferable buffers with only sanitized metadata", () => {
-  const data = Uint8Array.of(1, 2, 3).buffer;
-  const input = createWorkerInput(
-    "file-1",
-    data,
-    "../private/photo?.jpg",
-    "IMAGE/JPEG",
-  );
+test("worker runs keep the original File with sanitized metadata", () => {
+  const source = new File([Uint8Array.of(1, 2, 3)], "../private/photo?.jpg", {
+    type: "IMAGE/JPEG",
+  });
+  const input = createToolRunFile("file-1", source);
   const message = createToolWorkerRequest({
     jobId: " job-1 ",
     key: " jpg-to-png ",
@@ -825,42 +825,28 @@ test("worker runs expose transferable buffers with only sanitized metadata", () 
     settings: {},
   });
 
-  assert.equal(message.files[0].data, data);
-  assert.deepEqual(message.files[0].metadata, {
-    name: "photo.jpg",
-    mime: "image/jpeg",
-    size: 3,
-  });
+  assert.equal(message.files[0].source, source);
+  assert.equal(message.files[0].name, "photo.jpg");
+  assert.equal(message.files[0].mime, "image/jpeg");
+  assert.equal(message.files[0].size, 3);
   assert.deepEqual(
     { type: message.type, jobId: message.jobId, key: message.key },
     { type: "run", jobId: "job-1", key: "jpg-to-png" },
   );
-  assert.deepEqual(getRequestTransferables(message), [data]);
-
-  // The same buffer sent twice is transferred once — transferring a detached
-  // buffer throws.
-  assert.deepEqual(
-    getRequestTransferables({ ...message, files: [input, input] }),
-    [data],
-  );
-  assert.deepEqual(
-    getRequestTransferables({ ...message, files: [] }),
-    [],
-  );
   assert.equal(isToolWorkerMessage(message), true);
 });
 
-test("worker protocol rejects malformed runs and exposes result transferables", () => {
-  const data = new ArrayBuffer(1);
-  const file = createWorkerInput("file-1", data, "photo.jpg", "image/jpeg");
+test("worker protocol rejects malformed File-backed runs", () => {
+  const source = new File([Uint8Array.of(1)], "photo.jpg", { type: "image/jpeg" });
+  const file = createToolRunFile("file-1", source);
 
-  assert.throws(() => createWorkerInput(" ", data, "photo.jpg", "image/jpeg"), /ID/);
+  assert.throws(() => createToolRunFile(" ", source), /ID/);
   assert.throws(
-    () => createWorkerInput("file", new Uint8Array(1), "photo.jpg", "image/jpeg"),
-    /ArrayBuffer/,
+    () => createToolRunFile("file", new Blob([Uint8Array.of(1)])),
+    /File/,
   );
   assert.throws(
-    () => createWorkerInput("file", data, "photo.jpg", "not a mime"),
+    () => createToolRunFile("file", new File(["x"], "bad.txt", { type: "not a mime" })),
     /MIME/,
   );
   assert.throws(
@@ -900,26 +886,12 @@ test("worker protocol rejects malformed runs and exposes result transferables", 
     true,
   );
 
-  const output = new ArrayBuffer(2);
-  assert.deepEqual(
-    getResultTransferables({
-      render: "files",
-      files: [
-        { buffer: output, mime: "image/png", filename: "a.png", size: 2 },
-        { buffer: output, mime: "image/png", filename: "b.png", size: 2 },
-      ],
-    }),
-    [output],
-  );
-  assert.deepEqual(getResultTransferables({ render: "text", text: "ok" }), []);
 });
 
 test("page inspection requests keep one document and a positive thumbnail width", () => {
-  const file = createWorkerInput(
+  const file = createToolRunFile(
     "pdf-1",
-    new ArrayBuffer(8),
-    "document.pdf",
-    "application/pdf",
+    new File([new ArrayBuffer(8)], "document.pdf", { type: "application/pdf" }),
   );
   assert.deepEqual(
     createToolInspectRequest({ jobId: " inspect-1 ", key: "crop-pdf", file }),
@@ -963,6 +935,50 @@ test("page inspection requests keep one document and a positive thumbnail width"
       key: "crop-pdf",
       files: [file, file],
       thumbnailWidth: 180,
+    }),
+    false,
+  );
+
+  assert.deepEqual(
+    createToolThumbnailRequest({
+      jobId: " inspect-1 ",
+      pageNumbers: [3, 1, 3, 2],
+    }),
+    {
+      type: "inspect-thumbnails",
+      jobId: "inspect-1",
+      pageNumbers: [3, 1, 2],
+    },
+  );
+  assert.deepEqual(createToolInspectionCloseRequest(" inspect-1 "), {
+    type: "inspect-close",
+    jobId: "inspect-1",
+  });
+  assert.throws(
+    () => createToolThumbnailRequest({ jobId: "inspect-1", pageNumbers: [0] }),
+    /positive integers/,
+  );
+  assert.throws(
+    () =>
+      createToolThumbnailRequest({
+        jobId: "inspect-1",
+        pageNumbers: Array.from({ length: 25 }, (_, index) => index + 1),
+      }),
+    /24/,
+  );
+  assert.equal(
+    isToolWorkerMessage({
+      type: "inspect-thumbnails",
+      jobId: "inspect-1",
+      pageNumbers: [1, 2],
+    }),
+    true,
+  );
+  assert.equal(
+    isToolWorkerMessage({
+      type: "inspect-thumbnails",
+      jobId: "inspect-1",
+      pageNumbers: [1, 1],
     }),
     false,
   );
@@ -1064,9 +1080,13 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
     render: "files",
     files: [
       {
-        buffer: new ArrayBuffer(2),
+        storage: "blob",
+        blob: new Blob([Uint8Array.of(1, 2)], { type: "application/pdf" }),
+        createdAt: 1,
+        id: "artifact-1",
+        jobId: "job-3",
         mime: "application/pdf",
-        filename: "merged.pdf",
+        name: "merged.pdf",
         size: 2,
       },
     ],
@@ -1094,6 +1114,67 @@ test("worker failures, cancellations, and successes produce frozen terminal stat
   assert.equal(inspected.status, "completed");
   assert.equal(inspected.pageCount, 2);
   assert.equal(inspected.previews.length, 2);
+
+  const thumbnail = {
+    pageNumber: 2,
+    pageWidth: 612,
+    pageHeight: 792,
+    width: 139,
+    height: 180,
+    buffer: new ArrayBuffer(8),
+    mime: "image/jpeg",
+  };
+  const withThumbnail = reduceWorkerJobState(inspected, {
+    type: "thumbnails",
+    jobId: "job-4",
+    previews: [thumbnail],
+  });
+  assert.equal(withThumbnail.status, "completed");
+  assert.equal(withThumbnail.previews.length, 2);
+  assert.equal(withThumbnail.previews[0].pageNumber, 1);
+  assert.equal(withThumbnail.previews[1].buffer, thumbnail.buffer);
+  assert.equal(
+    isToolWorkerResponse({
+      type: "thumbnails",
+      jobId: "job-4",
+      previews: [{ pageNumber: 2, pageWidth: 612, pageHeight: 792 }],
+    }),
+    false,
+  );
+
+  let cached = reduceWorkerJobState(
+    beginWorkerJob(createToolJobState(), "job-4"),
+    {
+      type: "inspected",
+      jobId: "job-4",
+      pageCount: 25,
+      previews: Array.from({ length: 25 }, (_, index) => ({
+        pageNumber: index + 1,
+        pageWidth: 612,
+        pageHeight: 792,
+      })),
+    },
+  );
+  for (let pageNumber = 1; pageNumber <= 25; pageNumber += 1) {
+    cached = reduceWorkerJobState(cached, {
+      type: "thumbnails",
+      jobId: "job-4",
+      previews: [{
+        pageNumber,
+        pageWidth: 612,
+        pageHeight: 792,
+        width: 139,
+        height: 180,
+        buffer: new ArrayBuffer(1),
+        mime: "image/jpeg",
+      }],
+    });
+  }
+  assert.equal(
+    cached.previews.filter((preview) => "buffer" in preview).length,
+    24,
+  );
+  assert.equal("buffer" in cached.previews[0], false);
 
   const stopped = reduceWorkerJobState(
     beginWorkerJob(createToolJobState(), "job-5"),

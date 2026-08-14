@@ -7,6 +7,7 @@
  */
 
 import { ToolError, type ToolRunFile } from "../run.ts";
+import { readToolFile } from "./fileBytes.ts";
 import {
   calculateResizeDimensions,
   fitRect,
@@ -55,7 +56,8 @@ export async function decodeImage(
   file: ToolRunFile,
   allowed: readonly DecodableImageKind[],
 ): Promise<DecodedImage> {
-  const bytes = new Uint8Array(file.data);
+  const data = await readToolFile(file);
+  const bytes = new Uint8Array(data);
   const signature = validateMediaSignature(bytes, file.mime, allowed);
   if (!signature.ok) throw new ToolError(signature.code, signature.message);
   if (signature.kind === "pdf") {
@@ -64,17 +66,17 @@ export async function decodeImage(
   let image: ImageData;
   if (signature.kind === "jpeg") {
     const { decode } = await import("@jsquash/jpeg");
-    image = await decode(file.data, { preserveOrientation: true });
+    image = await decode(data, { preserveOrientation: true });
   } else if (signature.kind === "png") {
     const { decode } = await import("@jsquash/png");
-    image = await decode(file.data);
+    image = await decode(data);
   } else if (signature.kind === "webp") {
     const { decode } = await import("@jsquash/webp");
-    image = await decode(file.data);
+    image = await decode(data);
   } else {
     const { heicTo } = await import("heic-to/csp");
     const bitmap = await heicTo({
-      blob: new Blob([file.data], { type: file.mime }),
+      blob: new Blob([data], { type: file.mime }),
       type: "bitmap",
     });
     if (!(bitmap instanceof ImageBitmap)) {

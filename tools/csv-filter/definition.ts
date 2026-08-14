@@ -19,6 +19,7 @@ export default {
   input: {
     kind: "text",
     label: "CSV input",
+    acceptFiles: { accept: ".csv,.tsv,text/csv,text/tab-separated-values", maxBytes: 104_857_600, maxEditableBytes: 2_000_000 },
     placeholder: "name,role\nAda,Admin\nLin,Editor",
   },
   settings: {
@@ -68,7 +69,7 @@ export default {
       "Every row must have the same number of fields as the header. A ragged file is rejected rather than silently misaligned.",
       "Matching is a plain substring test — there is no regular-expression, numeric-comparison, or date-range mode.",
       "Only one filter term is supported per run. Chain runs to combine conditions.",
-      "The whole file is parsed in memory in your browser, so very large exports are limited by the tab's available memory.",
+      "CSV and TSV files up to 100 MiB are filtered row by row in a worker; only a bounded preview is kept in the page.",
     ],
     faq: [
       {

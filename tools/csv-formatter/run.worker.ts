@@ -11,11 +11,24 @@ import {
   serializeTable,
   utilityDelimiter,
 } from "../../lib/devtools/shared/table.ts";
+import {
+  isLargeCsvRun,
+  streamCsvRows,
+} from "../../lib/devtools/shared/streaming-csv-tool.ts";
 
 type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 
-export const run: ToolRun<Settings> = (ctx): ToolResult => {
+export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const delimiter = utilityDelimiter(ctx.settings.delimiter);
+  if (isLargeCsvRun(ctx)) {
+    return streamCsvRows(ctx, {
+      inputDelimiter: delimiter,
+      mapRow: (row) => row.map((cell) => cell.trim()),
+      mime: "text/plain",
+      name: "formatted-data.txt",
+      outputDelimiter: delimiter,
+    });
+  }
   const rows = parseUtilityTable(ctx.input.text, delimiter).map((row) =>
     row.map((cell) => cell.trim()),
   );

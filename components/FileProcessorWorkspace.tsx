@@ -13,8 +13,10 @@ import {
 import { FileText, Loader2, Upload, X } from "lucide-react";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
 } from "react";
 
@@ -25,6 +27,7 @@ import {
 } from "@/components/FileInput";
 import { SplitStack, Stack } from "@/components/Stacks";
 import { ResultView } from "@/components/ResultView";
+import { PdfInspectionProvider } from "@/components/PdfPagesSurface";
 import {
   FileIntakeSurface,
   FileQueueSurface,
@@ -34,6 +37,7 @@ import type { WorkspaceProps } from "@/components/ToolWorkspace";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { loadToolHooks } from "@/lib/tool-framework/hooks";
+import { readArtifact } from "@/lib/tool-framework/artifacts";
 import type {
   ToolHooks,
   ToolPagePreview,
@@ -42,12 +46,11 @@ import type {
 import { parseSettings } from "@/lib/tool-framework/settings";
 import type { ToolSpec } from "@/lib/tool-framework/spec";
 import { useToolRun } from "@/lib/tool-framework/useToolRun";
-import { createWorkerInput } from "@/lib/tool-framework/workerProtocol";
+import { createToolRunFile } from "@/lib/tool-framework/workerProtocol";
 
 type Hooks = ToolHooks<Record<string, unknown>>;
 
 const NO_HOOKS: Hooks = {};
-const NO_FILES: readonly ToolRunFile[] = [];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1_000) return `${bytes} B`;
@@ -59,61 +62,62 @@ function formatFileSize(bytes: number): string {
   const value = bytes / 1_000 ** unit;
   return `${value.toFixed(1).replace(/\.0$/, "")} ${units[unit - 1]}`;
 }
-function useImageDimensions(
-  files: readonly File[],
-): ReadonlyMap<File, { readonly height: number; readonly width: number }> {
-  const [dimensions, setDimensions] = useState<
-    ReadonlyMap<File, { readonly height: number; readonly width: number }>
-  >(new Map());
 
-  useEffect(() => {
-    let current = true;
-    const pending = files
-      .filter((file) => file.type.startsWith("image/"))
-      .map((file) => {
-        const url = URL.createObjectURL(file);
-        const image = new Image();
-        image.onload = () => {
-          URL.revokeObjectURL(url);
-          if (!current || image.naturalWidth === 0 || image.naturalHeight === 0) {
-            return;
-          }
-          setDimensions((existing) =>
-            new Map(existing).set(file, {
-              height: image.naturalHeight,
-              width: image.naturalWidth,
-            }),
-          );
-        };
-        image.onerror = () => URL.revokeObjectURL(url);
-        image.src = url;
-        return { image, url };
-      });
-
-    setDimensions(new Map());
-    return () => {
-      current = false;
-      for (const { image, url } of pending) {
-        image.onload = null;
-        image.onerror = null;
-        image.src = "";
-        URL.revokeObjectURL(url);
-      }
-    };
-  }, [files]);
-
-  return dimensions;
+async function downloadStoredFile(
+  artifact: Extract<NonNullable<WorkspaceProps["result"]>, { render: "files" }>["files"][number],
+): Promise<void> {
+  const file = await readArtifact(artifact);
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.download = artifact.name;
+  link.href = url;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function downloadFile(buffer: ArrayBuffer, mime: string, name: string): void {
-  const url = URL.createObjectURL(new Blob([buffer], { type: mime }));
-  const link = document.createElement("a");
-  link.download = name;
-  link.href = url;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+type StoredOutputFile = Extract<
+  NonNullable<WorkspaceProps["result"]>,
+  { render: "files" }
+>["files"][number];
+
+function StoredFileResult({ file }: { readonly file: StoredOutputFile }): ReactElement {
+  const [downloadFailed, setDownloadFailed] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const download = async () => {
+    setDownloadFailed(false);
+    setDownloading(true);
+    try {
+      await downloadStoredFile(file);
+    } catch {
+      setDownloadFailed(true);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-2">
+      <DownloadResult
+        action={(
+          <Button disabled={downloading} onClick={() => void download()} type="button">
+            {downloadFailed ? "Retry download" : downloading ? "Preparing…" : "Download file"}
+          </Button>
+        )}
+        className="[&_p]:truncate"
+        metadata={`${file.name} · ${formatFileSize(file.size)}`}
+        title="Your file is ready"
+      />
+      {downloadFailed ? (
+        <Alert variant="destructive">
+          <AlertTitle>Download unavailable</AlertTitle>
+          <AlertDescription>
+            The browser could not reopen this stored output. Retry the download,
+            or run the tool again if the file was cleared from browser storage.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+    </div>
+  );
 }
 
 /**
@@ -135,53 +139,6 @@ function useToolHooks(toolId: string): Hooks {
 }
 
 /**
- * Reads the picked files once per selection change and holds them, so the
- * hooks that take `ToolRunFile`s stay synchronous and cheap enough to call on
- * a keystroke.
- *
- * The effect depends on the selection's identity, not the array's. A parent
- * that rebuilds `input.files` on every render would otherwise refire the read
- * effect, whose `setRunFiles` triggers another render — an endless loop. This
- * is the same reference-identity trap that bites effects keyed on a whole spec
- * object, and every effect below follows the same rule.
- */
-function useRunFiles(files: readonly File[]): readonly ToolRunFile[] {
-  const [runFiles, setRunFiles] = useState<readonly ToolRunFile[]>(NO_FILES);
-  const filesKey = files
-    .map((file) => `${workspaceFileId(file)}:${file.size}:${file.lastModified}`)
-    .join("|");
-
-  useEffect(() => {
-    let current = true;
-    void Promise.all(
-      files.map(async (file) => ({
-        id: workspaceFileId(file),
-        name: file.name,
-        mime: file.type,
-        data: await file.arrayBuffer(),
-      })),
-    ).then(
-      (loaded) => {
-        if (current) setRunFiles(loaded);
-      },
-      // An unreadable file leaves the hook with nothing to inspect, which
-      // blocks the run rather than letting it start on bytes nobody has.
-      () => {
-        if (current) setRunFiles(NO_FILES);
-      },
-    );
-    return () => {
-      current = false;
-    };
-    // `files` is read through `filesKey`, which is what actually changes when
-    // the selection does.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filesKey]);
-
-  return runFiles;
-}
-
-/**
  * Renders page previews for the tools whose spec declares `input.inspect`.
  *
  * The worker owns the renderer, so nothing PDF-specific is imported here; the
@@ -190,17 +147,33 @@ function useRunFiles(files: readonly File[]): readonly ToolRunFile[] {
 function useInspectedPages(
   spec: ToolSpec,
   runFiles: readonly ToolRunFile[],
-): { readonly inspecting: boolean; readonly previews: readonly ToolPagePreview[] } {
-  const { inspect, previews, reset, state } = useToolRun();
+  suspended: boolean,
+): {
+  readonly inspecting: boolean;
+  readonly previews: readonly ToolPagePreview[];
+  readonly requestThumbnails: (pageNumbers: readonly number[]) => void;
+} {
+  const {
+    closeInspection,
+    inspect,
+    previews,
+    requestThumbnails,
+    reset,
+    state,
+  } = useToolRun();
   const key =
     spec.input.kind === "files" && spec.input.inspect === true
       ? (spec.toolId.split(".")[1] ?? "")
       : "";
   const file = runFiles[0];
   // Derived identity again: `runFiles` is a new array on every read.
-  const fileKey = file ? `${file.id}:${file.data.byteLength}` : "";
+  const fileKey = file ? `${file.id}:${file.size}:${file.source.lastModified}` : "";
 
   useEffect(() => {
+    if (suspended) {
+      closeInspection();
+      return;
+    }
     if (!key || !file) {
       reset();
       return;
@@ -208,7 +181,7 @@ function useInspectedPages(
     try {
       inspect({
         key,
-        file: createWorkerInput(file.id, file.data, file.name, file.mime),
+        file,
       });
     } catch {
       // An input the protocol rejects outright (an unusable MIME type, say)
@@ -217,11 +190,15 @@ function useInspectedPages(
     }
     // `file` is read through `fileKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, fileKey, inspect, reset]);
+  }, [closeInspection, key, fileKey, inspect, reset, suspended]);
 
   // This hook owns the only job this `useToolRun` ever starts, so a running
   // job here is always the inspection.
-  return { inspecting: state.status === "running", previews };
+  return {
+    inspecting: state.status === "running",
+    previews,
+    requestThumbnails,
+  };
 }
 
 function sameSetting(current: unknown, next: unknown): boolean {
@@ -312,9 +289,20 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
 
 export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
   const hooks = useToolHooks(props.spec.toolId);
-  const runFiles = useRunFiles(props.input.files);
-  const imageDimensions = useImageDimensions(props.input.files);
-  const { inspecting, previews } = useInspectedPages(props.spec, runFiles);
+  const filesKey = props.input.files
+    .map((file) => `${workspaceFileId(file)}:${file.size}:${file.lastModified}`)
+    .join("|");
+  const runFiles = useMemo(
+    () => props.input.files.map((file) => createToolRunFile(workspaceFileId(file), file)),
+    // The selection identity is its stable file metadata, not the parent array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filesKey],
+  );
+  const { inspecting, previews, requestThumbnails } = useInspectedPages(
+    props.spec,
+    runFiles,
+    props.running ?? false,
+  );
   const [inputIssue, setInputIssue] = useState("");
   const [wasCancelled, setWasCancelled] = useState(false);
   useSettingsHooks(props, hooks, previews);
@@ -381,14 +369,14 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
         <Button
           aria-busy={props.primaryAction.running || undefined}
           className="w-full"
-          disabled={props.primaryAction.disabled}
-          onClick={props.primaryAction.onRun}
+          disabled={props.primaryAction.running && props.primaryAction.onCancel ? false : props.primaryAction.disabled}
+          onClick={props.primaryAction.running && props.primaryAction.onCancel ? props.primaryAction.onCancel : props.primaryAction.onRun}
           type="button"
         >
-          {props.primaryAction.running ? (
+          {props.primaryAction.running && !props.primaryAction.onCancel ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
-          {props.primaryAction.label}
+          {props.primaryAction.running && props.primaryAction.onCancel ? "Cancel" : props.primaryAction.label}
         </Button>
       ) : undefined}
       className="h-full overflow-y-auto bg-card p-[22px]"
@@ -455,12 +443,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           }
           getIcon={() => <FileText aria-hidden="true" />}
           getId={workspaceFileId}
-          getMetadata={(file) => {
-            const dimensions = imageDimensions.get(file);
-            return dimensions
-              ? `${dimensions.width} × ${dimensions.height} px · ${formatFileSize(file.size)}`
-              : formatFileSize(file.size);
-          }}
+          getMetadata={(file) => formatFileSize(file.size)}
           getName={(file) => file.name}
           items={props.input.files}
           renderAction={(file) => (
@@ -502,11 +485,13 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
             onInputChange={props.onInputChange}
           />
         ) : null}
-        {props.detail?.({
-          disabled: props.disabled ?? false,
-          inspecting,
-          previews,
-        })}
+        <PdfInspectionProvider requestThumbnails={requestThumbnails}>
+          {props.detail?.({
+            disabled: props.disabled ?? false,
+            inspecting,
+            previews,
+          })}
+        </PdfInspectionProvider>
       </Stack>
     ) : null;
   const inputContent = detailSurface ? (
@@ -545,7 +530,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
             <Button
               onClick={() => {
                 setWasCancelled(true);
-                props.onInputChange({ ...props.input });
+                props.primaryAction?.onCancel?.();
               }}
               type="button"
               variant="secondary"
@@ -568,22 +553,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       ) : props.result?.render === "files" ? (
         <div className="grid gap-3">
           {props.result.files.map((file) => (
-            <DownloadResult
-              action={(
-                <Button
-                  onClick={() =>
-                    downloadFile(file.buffer, file.mime, file.filename)
-                  }
-                  type="button"
-                >
-                  Download file
-                </Button>
-              )}
-              className="[&_p]:truncate"
-              key={`${file.filename}-${file.size}`}
-              metadata={`${file.filename} · ${formatFileSize(file.size)}`}
-              title="Your file is ready"
-            />
+            <StoredFileResult file={file} key={`${file.name}-${file.size}`} />
           ))}
           {props.result.inputBytes !== undefined ||
           props.result.outputBytes !== undefined ? (

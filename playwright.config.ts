@@ -4,6 +4,17 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must point to a migrated disposable database for E2E tests.");
 }
 
+const appUrl = process.env.PLAYWRIGHT_APP_URL ?? "http://localhost:3000";
+const parsedAppUrl = new URL(appUrl);
+const appPort =
+  process.env.PLAYWRIGHT_PORT ||
+  parsedAppUrl.port ||
+  (parsedAppUrl.protocol === "https:" ? "443" : "80");
+
+if (!/^\d+$/.test(appPort)) {
+  throw new Error("PLAYWRIGHT_PORT must be a valid port number.");
+}
+
 const e2eEnvironment = {
   APP_URL: "http://localhost:3000",
   BETTER_AUTH_SECRET:
@@ -14,6 +25,10 @@ const e2eEnvironment = {
   GOOGLE_CLIENT_ID: "google-e2e-client",
   GOOGLE_CLIENT_SECRET: "google-e2e-secret",
 };
+
+if (appUrl !== e2eEnvironment.APP_URL) {
+  e2eEnvironment.APP_URL = appUrl;
+}
 
 Object.assign(process.env, e2eEnvironment);
 
@@ -27,6 +42,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { outputFolder: "playwright-report", open: "never" }]],
   use: {
+    baseURL: appUrl,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -42,12 +58,28 @@ export default defineConfig({
       name: "chromium-mobile",
       use: { ...devices["Pixel 7"], channel: "chrome" },
     },
+    {
+      name: "firefox-desktop",
+      testMatch: /json-large-file-mode\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit-desktop",
+      testMatch: /json-large-file-mode\.spec\.ts/,
+      use: { ...devices["Desktop Safari"] },
+    },
   ],
   webServer: {
     command: "pnpm dev",
     url: "http://localhost:3000",
     env: appEnvironment,
-    reuseExistingServer: false,
+    reuseExistingServer: process.env.PLAYWRIGHT_REUSE_SERVER === "1",
     timeout: 180_000,
+    ...(appPort === "3000"
+      ? null
+      : {
+          command: `pnpm exec next dev -p ${appPort}`,
+          url: appUrl,
+        }),
   },
 });

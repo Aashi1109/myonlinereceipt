@@ -7,24 +7,28 @@
  * folder and fetch only the requested one. There is no map and no registry.
  */
 
-import {
-  detectMediaKind,
-  validateMediaSignature,
-} from "./media/validation";
 import { TOOL_SLUG_PATTERN } from "@smarttools/tool-catalog";
 
+import {
+  ArtifactStorageError,
+  cleanupArtifactJobWithRetry,
+  createArtifactWriter,
+} from "./artifacts";
+import { assertRunnableFiles } from "./fileGuard";
 import { assertRunnableText } from "./inputGuard";
-import { ToolError, type ToolRun, type ToolRunFile } from "./run";
+import { createThrottledProgressReporter } from "./progress";
+import { ToolError, type ToolRun, type ToolRunProgress } from "./run";
 import { parseSettings } from "./settings";
 import type { ToolInputSpec, ToolSpec } from "./spec";
 import {
-  getResultTransferables,
   isToolWorkerMessage,
+  type ToolWorkerInspectionClose,
   type ToolWorkerInspect,
   type ToolWorkerRequest,
   type ToolWorkerResponse,
-  type WorkerInputFile,
+  type ToolWorkerThumbnailRequest,
 } from "./workerProtocol";
+import type { PdfInspectionSession } from "./media/pdfRender";
 
 type WorkerScope = {
   addEventListener(
@@ -36,16 +40,36 @@ type WorkerScope = {
 
 const scope = globalThis as unknown as WorkerScope;
 
-/** Fallback limits for a spec that declares none. */
-const DEFAULT_MAX_FILES = 50;
-const DEFAULT_MAX_BYTES = 200 * 1024 * 1024;
 let running: AbortController | null = null;
+let openingInspection: { readonly jobId: string; readonly controller: AbortController } | null = null;
+let inspection: {
+  readonly jobId: string;
+  readonly controller: AbortController;
+  readonly session: PdfInspectionSession;
+} | null = null;
 
 scope.addEventListener("message", (event) => {
   const message = event.data;
   if (!isToolWorkerMessage(message)) return;
   if (message.type === "cancel") {
-    running?.abort();
+    if (
+      openingInspection?.jobId === message.jobId ||
+      inspection?.jobId === message.jobId
+    ) {
+      void closeInspection(message.jobId).then(() => {
+        scope.postMessage({ type: "canceled", jobId: message.jobId });
+      });
+    } else {
+      running?.abort();
+    }
+    return;
+  }
+  if (message.type === "inspect-close") {
+    void closeInspectionJob(message);
+    return;
+  }
+  if (message.type === "inspect-thumbnails") {
+    void thumbnailJob(message);
     return;
   }
   if (message.type === "inspect") {
@@ -67,7 +91,20 @@ async function runJob(message: ToolWorkerRequest): Promise<void> {
   const controller = beginJob();
   const jobId = message.jobId;
   const signal = controller.signal;
+  const progress = createThrottledProgressReporter<ToolRunProgress>((value) => {
+    if (signal.aborted) return;
+    scope.postMessage({ type: "progress", jobId, ...value });
+  });
+  const artifactWriter = createArtifactWriter(jobId, {
+    signal,
+    onStorageWarning: (warning) => {
+      progress({ completed: 0, total: 1, stage: warning.message });
+    },
+  });
+  let succeeded = false;
+  let failure: ToolWorkerResponse | null = null;
   try {
+    await closeInspection();
     if (!TOOL_SLUG_PATTERN.test(message.key)) {
       throw new ToolError("unknown-tool", "This tool is not available.");
     }
@@ -77,32 +114,32 @@ async function runJob(message: ToolWorkerRequest): Promise<void> {
     ]);
     const spec = readSpec(specModule);
     signal.throwIfAborted();
-    assertRunnableFiles(spec, message.files);
+    await assertRunnableFiles(spec, message.files, signal);
     assertRunnableText(spec, { text: message.text, secondary: message.secondary });
     const result = await readRun(runModule)({
       input: {
         text: message.text ?? "",
         secondary: message.secondary,
-        files: message.files.map(toRunFile),
+        files: message.files,
         items: message.items,
       },
       settings: parseSettings(spec.settings, message.settings),
       signal,
-      progress: (progress) => {
-        if (signal.aborted) return;
-        scope.postMessage({ type: "progress", jobId, ...progress });
-      },
+      progress,
+      writeArtifact: artifactWriter.write,
     });
     signal.throwIfAborted();
-    scope.postMessage(
-      { type: "success", jobId, result },
-      getResultTransferables(result),
-    );
+    succeeded = true;
+    scope.postMessage({ type: "success", jobId, result });
   } catch (error) {
-    scope.postMessage(toFailureMessage(error, jobId));
+    failure = toFailureMessage(error, jobId);
   } finally {
+    if (!succeeded) {
+      await cleanupArtifactJobWithRetry(jobId).catch(() => undefined);
+    }
     if (running === controller) running = null;
   }
+  if (failure) scope.postMessage(failure);
 }
 
 /**
@@ -114,9 +151,13 @@ async function runJob(message: ToolWorkerRequest): Promise<void> {
  * keeping it behind this branch keeps the vendor chunk off every other job.
  */
 async function inspectJob(message: ToolWorkerInspect): Promise<void> {
-  const controller = beginJob();
+  running?.abort();
+  await closeInspection();
+  const controller = new AbortController();
   const jobId = message.jobId;
   const signal = controller.signal;
+  openingInspection = { jobId, controller };
+  let openedSession: PdfInspectionSession | null = null;
   try {
     if (!TOOL_SLUG_PATTERN.test(message.key)) {
       throw new ToolError("unknown-tool", "This tool is not available.");
@@ -137,31 +178,67 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
       );
     }
     // The same trust boundaries the run path applies, in the same order.
-    assertRunnableFiles(spec, message.files);
+    await assertRunnableFiles(spec, message.files, signal);
     assertRunnableText(spec, { text: undefined, secondary: undefined });
     const file = message.files[0];
     if (!file) throw new ToolError("no-files", "Choose at least one file.");
-    const { inspectPdf } = await import("./media/pdfRender");
-    const inspection = await inspectPdf(
-      toRunFile(file),
+    const { openPdfInspectionSession } = await import("./media/pdfRender");
+    const session = await openPdfInspectionSession(
+      file,
       message.thumbnailWidth,
       signal,
     );
+    openedSession = session;
     signal.throwIfAborted();
-    scope.postMessage(
-      {
-        type: "inspected",
-        jobId,
-        pageCount: inspection.pageCount,
-        previews: inspection.thumbnails,
-      },
-      inspection.thumbnails.map(({ buffer }) => buffer),
-    );
+    inspection = { jobId, controller, session };
+    openedSession = null;
+    scope.postMessage({
+      type: "inspected",
+      jobId,
+      pageCount: session.pageCount,
+      previews: session.pages,
+    });
   } catch (error) {
+    await openedSession?.close().catch(() => undefined);
     scope.postMessage(toFailureMessage(error, jobId));
   } finally {
-    if (running === controller) running = null;
+    if (openingInspection?.controller === controller) openingInspection = null;
   }
+}
+
+async function thumbnailJob(message: ToolWorkerThumbnailRequest): Promise<void> {
+  const current = inspection;
+  if (!current || current.jobId !== message.jobId) return;
+  try {
+    const previews = await current.session.renderThumbnails(message.pageNumbers);
+    if (inspection !== current || current.controller.signal.aborted) return;
+    scope.postMessage(
+      { type: "thumbnails", jobId: message.jobId, previews },
+      previews.map((preview) => preview.buffer),
+    );
+  } catch (error) {
+    if (inspection !== current) return;
+    scope.postMessage(toFailureMessage(error, message.jobId));
+  }
+}
+
+async function closeInspectionJob(
+  message: ToolWorkerInspectionClose,
+): Promise<void> {
+  await closeInspection(message.jobId);
+  scope.postMessage({ type: "inspection-closed", jobId: message.jobId });
+}
+
+async function closeInspection(jobId?: string): Promise<void> {
+  if (openingInspection && (!jobId || openingInspection.jobId === jobId)) {
+    openingInspection.controller.abort();
+    openingInspection = null;
+  }
+  const current = inspection;
+  if (!current || (jobId && current.jobId !== jobId)) return;
+  inspection = null;
+  current.controller.abort();
+  await current.session.close().catch(() => undefined);
 }
 
 /** Never leaks a stack trace, a module path, or an internal message. */
@@ -181,103 +258,23 @@ function toFailureMessage(
       recovery: error.recovery,
     };
   }
+  if (error instanceof ArtifactStorageError) {
+    return {
+      type: "failure",
+      jobId,
+      code: error.code,
+      message: error.message,
+      recovery:
+        error.code === "output-too-large"
+          ? "Reduce the output size or process fewer files at once."
+          : "Free browser storage, keep this tab open, and run the tool again.",
+    };
+  }
   return {
     type: "failure",
     jobId,
     code: "processing-failed",
     message: "This tool could not finish. The input may be malformed or unsupported.",
-  };
-}
-
-/** The single trust boundary for file input: limits come from the spec only. */
-export function assertRunnableFiles(
-  spec: ToolSpec,
-  files: readonly WorkerInputFile[],
-): void {
-  const limits = fileLimits(spec.input);
-  if (!limits) {
-    if (files.length > 0) {
-      throw new ToolError("unexpected-files", "This tool does not accept files.");
-    }
-    return;
-  }
-  if (spec.input.kind === "files" && files.length === 0) {
-    throw new ToolError("no-files", "Choose at least one file.");
-  }
-  if (files.length > limits.maxFiles) {
-    throw new ToolError(
-      "too-many-files",
-      `Choose no more than ${limits.maxFiles} file${limits.maxFiles === 1 ? "" : "s"}.`,
-    );
-  }
-  for (const file of files) {
-    const size = file.data.byteLength;
-    if (size === 0) {
-      throw new ToolError("invalid-size", "A selected file is empty.");
-    }
-    if (size > limits.maxBytes) {
-      throw new ToolError(
-        "file-too-large",
-        `Each file must be ${Math.floor(limits.maxBytes / (1024 * 1024))} MiB or smaller.`,
-      );
-    }
-    const { mime, name } = file.metadata;
-    if (!isAccepted(limits.accept, mime, name)) {
-      throw new ToolError(
-        "unsupported-type",
-        "This file type is not supported by this tool.",
-      );
-    }
-    // Content is checked only when the shared detector recognises the bytes,
-    // so a file disguised behind an accepted MIME is rejected while formats
-    // the detector does not know stay usable on their declared type.
-    const bytes = new Uint8Array(file.data);
-    if (detectMediaKind(bytes)) {
-      const signature = validateMediaSignature(bytes, mime);
-      if (!signature.ok) throw new ToolError(signature.code, signature.message);
-    }
-  }
-}
-
-function fileLimits(
-  input: ToolInputSpec,
-): { accept: string; maxFiles: number; maxBytes: number } | null {
-  if (input.kind === "files") {
-    return {
-      accept: input.accept,
-      maxFiles: input.maxFiles ?? (input.multiple ? DEFAULT_MAX_FILES : 1),
-      maxBytes: input.maxBytes ?? DEFAULT_MAX_BYTES,
-    };
-  }
-  if (input.kind === "text" && input.acceptFiles) {
-    return { accept: input.acceptFiles.accept, maxFiles: 1, maxBytes: input.acceptFiles.maxBytes };
-  }
-  return null;
-}
-
-function isAccepted(accept: string, mime: string, name: string): boolean {
-  const entries = accept
-    .split(",")
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-  if (entries.length === 0) return true;
-  const declaredMime = mime.trim().toLowerCase();
-  const fileName = name.toLowerCase();
-  return entries.some((entry) =>
-    entry.startsWith(".")
-      ? fileName.endsWith(entry)
-      : entry.endsWith("/*")
-        ? declaredMime.startsWith(entry.slice(0, -1))
-        : entry === declaredMime,
-  );
-}
-
-function toRunFile(file: WorkerInputFile): ToolRunFile {
-  return {
-    id: file.id,
-    name: file.metadata.name,
-    mime: file.metadata.mime,
-    data: file.data,
   };
 }
 

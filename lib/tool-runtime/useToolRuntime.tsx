@@ -137,7 +137,7 @@ export function ToolRuntimeProvider<
     }
 
     setLifecycle("ready");
-    if (spec.trigger !== "live") return;
+    if (spec.trigger !== "live" || spec.shouldAutoRun?.(input) === false) return;
 
     const timeout = window.setTimeout(
       () => void execute(),
@@ -186,6 +186,29 @@ export function ToolRuntimeProvider<
     }
     void execute();
   }, [execute, input, settings, spec]);
+
+  const cancelRun = useCallback(() => {
+    if (lifecycle !== "running") return;
+    revisionRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    const nextIssues = spec.isEmpty(input)
+      ? []
+      : [...spec.validate(input, settings)];
+    setIssues(nextIssues);
+    setResult(null);
+    setArtifacts([]);
+    setFacts([]);
+    setError("");
+    setNotice("Processing cancelled. Your input is unchanged.");
+    setLifecycle(
+      spec.isEmpty(input)
+        ? "empty"
+        : nextIssues.length > 0
+          ? "invalid"
+          : "ready",
+    );
+  }, [input, lifecycle, settings, spec]);
 
   const runCommand = useCallback(
     async (command: string) => {
@@ -252,6 +275,7 @@ export function ToolRuntimeProvider<
 
   const controller: ToolRuntimeController<Input, Settings, Result> = {
     artifacts: artifacts ?? [],
+    cancelRun,
     cancelPendingCommand,
     canUndo: Boolean(undoSnapshot),
     confirmPendingCommand,

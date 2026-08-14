@@ -13,17 +13,19 @@ import {
   checkedPages,
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   validatePdfInput,
-  type MediaOutputFile,
 } from "../../lib/tool-framework/media/pdfDocument.ts";
+import {
+  readArtifact,
+  type StoredToolArtifact,
+} from "../../lib/tool-framework/artifacts.ts";
 import {
   createOutputFilename,
   parsePageRange,
   validatePdfSelection,
   MEDIA_LIMITS,
 } from "../../lib/tool-framework/media/validation.ts";
-import { zipOutputs } from "../../lib/tool-framework/media/zip.ts";
+import { writeArtifactBatch } from "../../lib/tool-framework/media/zip.ts";
 import type { ToolResult } from "../../lib/tool-framework/result.ts";
 import { ToolError, type ToolRun } from "../../lib/tool-framework/run.ts";
 import type { SettingsOf } from "../../lib/tool-framework/settings.ts";
@@ -42,10 +44,10 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files?.[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to split.");
   const selection = validatePdfSelection(
-    ctx.input.files.map((file) => ({ size: file.data.byteLength })),
+    ctx.input.files.map((file) => ({ size: file.size })),
   );
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  for (const file of ctx.input.files) validatePdfInput(file);
+  for (const file of ctx.input.files) await validatePdfInput(file);
 
   const { PDFDocument } = await import("pdf-lib");
   const source = await loadPdf(input);
@@ -73,7 +75,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   }
   if (!groups.length) throw new ToolError("empty-range", "Choose at least one page range.");
 
-  const outputs: MediaOutputFile[] = [];
+  const outputs: StoredToolArtifact[] = [];
   for (let index = 0; index < groups.length; index += 1) {
     ctx.signal.throwIfAborted();
     const pages = checkedPages(groups[index], count);
@@ -85,29 +87,44 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
       "Creating split PDF",
       ctx.progress,
     );
-    outputs.push(
-      pdfOutput(
-        await document.save(),
-        createOutputFilename(
-          input.name,
-          "pdf",
-          `part-${String(index + 1).padStart(2, "0")}`,
-        ),
+    outputs.push(await ctx.writeArtifact({
+      name: createOutputFilename(
+        input.name,
+        "pdf",
+        `part-${String(index + 1).padStart(2, "0")}`,
       ),
-    );
+      mime: "application/pdf",
+      source: await document.save(),
+    }));
   }
 
-  const files = ctx.settings.bundleAsZip
-    ? [
-        ...outputs,
-        await zipOutputs(outputs, createOutputFilename(input.name, "zip", "split")),
-      ]
-    : outputs;
+  let files: readonly StoredToolArtifact[] = outputs;
+  if (ctx.settings.bundleAsZip) {
+    const archive = await writeArtifactBatch(
+      ctx,
+      {
+        archiveName: createOutputFilename(input.name, "zip", "split"),
+        count: outputs.length,
+        forceArchive: true,
+      },
+      async (add) => {
+        for (const output of outputs) {
+          ctx.signal.throwIfAborted();
+          await add({
+            name: output.name,
+            mime: output.mime,
+            source: await readArtifact(output),
+          });
+        }
+      },
+    );
+    files = [...outputs, ...archive];
+  }
 
   return {
     render: "files",
     files,
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: files.reduce((sum, output) => sum + output.size, 0),
   };
 };

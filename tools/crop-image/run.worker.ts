@@ -52,20 +52,18 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   ctx.progress({ completed: 0, total: 1, stage: "Encoding image" });
   const buffer = await encodeImage(cropped, format, ctx.settings.quality / 100);
   ctx.signal.throwIfAborted();
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, extensionFor(format), "cropped"),
+    mime: mimeFor(format),
+    source: new Uint8Array(buffer),
+  });
   ctx.progress({ completed: 1, total: 1, stage: "Image complete" });
 
   return {
     render: "files",
-    files: [
-      {
-        buffer,
-        filename: createOutputFilename(input.name, extensionFor(format), "cropped"),
-        mime: mimeFor(format),
-        size: buffer.byteLength,
-      },
-    ],
-    inputBytes: input.data.byteLength,
-    outputBytes: buffer.byteLength,
+    files: [output],
+    inputBytes: input.size,
+    outputBytes: output.size,
   };
 };
 

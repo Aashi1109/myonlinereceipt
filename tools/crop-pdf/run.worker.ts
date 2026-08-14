@@ -10,7 +10,6 @@
 import {
   enforcePageLimit,
   loadPdf,
-  pdfOutput,
   reportStructuralProgress,
   resolvePageSelection,
   validatePdfInput,
@@ -32,9 +31,9 @@ type Settings = SettingsOf<typeof import("./definition.ts").default.settings>;
 export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   const input = ctx.input.files[0];
   if (!input) throw new ToolError("no-files", "Choose a PDF to crop.");
-  const selection = validatePdfSelection([{ size: input.data.byteLength }]);
+  const selection = validatePdfSelection([{ size: input.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  validatePdfInput(input);
+  await validatePdfInput(input);
 
   const pdf = await loadPdf(input);
   enforcePageLimit(input, pdf.getPageCount(), false);
@@ -66,14 +65,15 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     },
   );
 
-  const output = pdfOutput(
-    await pdf.save(),
-    createOutputFilename(input.name, "pdf", "cropped"),
-  );
+  const output = await ctx.writeArtifact({
+    name: createOutputFilename(input.name, "pdf", "cropped"),
+    mime: "application/pdf",
+    source: await pdf.save(),
+  });
   return {
     render: "files",
     files: [output],
-    inputBytes: input.data.byteLength,
+    inputBytes: input.size,
     outputBytes: output.size,
   };
 };

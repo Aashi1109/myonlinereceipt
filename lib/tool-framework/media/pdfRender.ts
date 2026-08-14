@@ -53,8 +53,110 @@ export type PdfPageThumbnail = {
 
 export type PdfInspection = {
   readonly pageCount: number;
-  readonly thumbnails: readonly PdfPageThumbnail[];
+  readonly pages: readonly {
+    readonly pageNumber: number;
+    readonly pageWidth: number;
+    readonly pageHeight: number;
+  }[];
 };
+
+export type PdfInspectionSession = PdfInspection & {
+  readonly renderThumbnails: (
+    pageNumbers: readonly number[],
+  ) => Promise<readonly PdfPageThumbnail[]>;
+  readonly close: () => Promise<void>;
+};
+
+async function openPdfDocument(file: ToolRunFile, signal: AbortSignal) {
+  signal.throwIfAborted();
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "../../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+    import.meta.url,
+  ).toString();
+  const range = new pdfjs.PDFDataRangeTransport(file.size, null);
+  let aborted = false;
+  let loadingTask: ReturnType<typeof pdfjs.getDocument> | null = null;
+  let rejectRangeRead: (reason: unknown) => void = () => undefined;
+  const rangeReadFailure = new Promise<never>((_resolve, reject) => {
+    rejectRangeRead = reject;
+  });
+  // The race below observes this rejection while the document is opening. The
+  // extra observer also prevents a late Blob read failure from becoming an
+  // unhandled rejection after PDF.js has already rejected for another reason.
+  void rangeReadFailure.catch(() => undefined);
+
+  const failRangeRead = (_cause: unknown) => {
+    if (aborted || signal.aborted) return;
+    aborted = true;
+    const error = new ToolError(
+      "file-read-failed",
+      "The PDF could not be read from this device.",
+      "Choose the file again and keep it available until processing finishes.",
+    );
+    rejectRangeRead(error);
+    range.abort();
+    void loadingTask?.destroy();
+  };
+  range.requestDataRange = (begin, end) => {
+    if (aborted || signal.aborted) return;
+    let read: Promise<ArrayBuffer>;
+    try {
+      read = file.source.slice(begin, end).arrayBuffer();
+    } catch (error) {
+      failRangeRead(error);
+      return;
+    }
+    void read.then(
+      (buffer) => {
+        if (!aborted && !signal.aborted) {
+          range.onDataRange(begin, new Uint8Array(buffer));
+        }
+      },
+      failRangeRead,
+    );
+  };
+  range.abort = () => {
+    aborted = true;
+  };
+  const documentOptions = {
+    disableAutoFetch: true,
+    disableStream: true,
+    isEvalSupported: false,
+    length: file.size,
+    maxImageSize: MAX_RENDERED_PIXELS,
+    range,
+    stopAtErrors: true,
+    useWorkerFetch: false,
+  } as unknown as Parameters<typeof pdfjs.getDocument>[0];
+  loadingTask = pdfjs.getDocument(documentOptions);
+  const abort = () => {
+    range.abort();
+    void loadingTask.destroy();
+  };
+  let closed = false;
+  signal.addEventListener("abort", abort, { once: true });
+  try {
+    return {
+      document: await Promise.race([loadingTask.promise, rangeReadFailure]),
+      read<T>(operation: Promise<T>) {
+        return Promise.race([operation, rangeReadFailure]);
+      },
+      async close() {
+        if (closed) return;
+        closed = true;
+        signal.removeEventListener("abort", abort);
+        range.abort();
+        await loadingTask.destroy().catch(() => undefined);
+      },
+    };
+  } catch (error) {
+    signal.removeEventListener("abort", abort);
+    range.abort();
+    await loadingTask.destroy().catch(() => undefined);
+    throw error;
+  }
+}
 
 export async function forEachRenderedPdfPage(
   request: RenderPdfRequest,
@@ -75,28 +177,16 @@ export async function forEachRenderedPdfPage(
       setTimeout(() => callback(performance.now()), 0),
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
   };
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "../../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
-    import.meta.url,
-  ).toString();
-  let loadingTask: ReturnType<typeof pdfjs.getDocument> | null = null;
+  let opened: Awaited<ReturnType<typeof openPdfDocument>> | null = null;
   try {
-    const documentOptions = {
-      data: new Uint8Array(file.data),
-      isEvalSupported: false,
-      maxImageSize: MAX_RENDERED_PIXELS,
-      stopAtErrors: true,
-      useWorkerFetch: false,
-    } as unknown as Parameters<typeof pdfjs.getDocument>[0];
-    loadingTask = pdfjs.getDocument(documentOptions);
-    const document = await loadingTask.promise;
+    opened = await openPdfDocument(file, signal);
+    const { document } = opened;
     const pages = resolvePageNumbers(selection, document.numPages);
     enforcePageLimit(file, pages.length, rasterLimit);
     for (let index = 0; index < pages.length; index += 1) {
       signal.throwIfAborted();
       const pageNumber = pages[index];
-      const page = await document.getPage(pageNumber);
+      const page = await opened.read(document.getPage(pageNumber));
       const pointViewport = page.getViewport({ scale: 1 });
       const viewport = page.getViewport({ scale: dpi / 72 });
       const width = Math.max(1, Math.ceil(viewport.width));
@@ -113,12 +203,14 @@ export async function forEachRenderedPdfPage(
       progress?.({ completed: index, total: pages.length, stage: "Rendering PDF page" });
       Object.assign(globalThis, { window: renderScheduler });
       try {
-        await page.render({
-          background: background === "white" ? "#ffffff" : "rgba(0,0,0,0)",
-          canvas: null,
-          canvasContext: context as unknown as CanvasRenderingContext2D,
-          viewport,
-        }).promise;
+        await opened.read(
+          page.render({
+            background: background === "white" ? "#ffffff" : "rgba(0,0,0,0)",
+            canvas: null,
+            canvasContext: context as unknown as CanvasRenderingContext2D,
+            viewport,
+          }).promise,
+        );
       } finally {
         Reflect.deleteProperty(globalThis, "window");
       }
@@ -151,9 +243,9 @@ export async function forEachRenderedPdfPage(
     }
     throw error;
   } finally {
-    if (loadingTask) {
+    if (opened) {
       try {
-        await loadingTask.destroy();
+        await opened.close();
       } catch {
         // The document may already be torn down after a parse failure.
       }
@@ -161,49 +253,149 @@ export async function forEachRenderedPdfPage(
   }
 }
 
-/** Renders every page down to a JPEG thumbnail, for page-picker surfaces. */
-export async function inspectPdf(
+/**
+ * Opens one range-backed inspection document and returns geometry for every
+ * page. Raster work is deliberately deferred until `renderThumbnails` asks for
+ * pages that are visible or close to the viewport.
+ */
+export async function openPdfInspectionSession(
   file: ToolRunFile,
   thumbnailWidth: number,
   signal: AbortSignal,
-): Promise<PdfInspection> {
-  validatePdfInput(file);
-  const selection = validatePdfSelection([{ size: file.data.byteLength }]);
+): Promise<PdfInspectionSession> {
+  await validatePdfInput(file);
+  const selection = validatePdfSelection([{ size: file.size }]);
   if (!selection.ok) throw new ToolError(selection.code, selection.message);
-  const thumbnails: PdfPageThumbnail[] = [];
-  const inspection = await forEachRenderedPdfPage(
-    {
-      file,
-      selection: "all",
-      dpi: 36,
-      background: "white",
-      signal,
-      rasterLimit: false,
-    },
-    async (page) => {
-      const scale = Math.min(1, thumbnailWidth / page.canvas.width);
-      const width = Math.max(1, Math.round(page.canvas.width * scale));
-      const height = Math.max(1, Math.round(page.canvas.height * scale));
+  let opened: Awaited<ReturnType<typeof openPdfDocument>>;
+  try {
+    opened = await openPdfDocument(file, signal);
+  } catch (error) {
+    if (isPasswordError(error)) {
+      throw new ToolError(
+        "encrypted-pdf",
+        "Encrypted or password-protected PDFs are not supported.",
+      );
+    }
+    throw error;
+  }
+  const pages: PdfInspection["pages"][number][] = [];
+  const scheduler = {
+    requestAnimationFrame: (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(performance.now()), 0),
+    cancelAnimationFrame: (handle: number) => clearTimeout(handle),
+  };
+  let closed = false;
+  let queue: Promise<void> = Promise.resolve();
+
+  const renderRequested = async (
+    pageNumbers: readonly number[],
+  ): Promise<readonly PdfPageThumbnail[]> => {
+    if (closed) throw new DOMException("The inspection is closed.", "AbortError");
+    signal.throwIfAborted();
+    const unique = [...new Set(pageNumbers)];
+    if (
+      unique.some(
+        (pageNumber) =>
+          !Number.isInteger(pageNumber) ||
+          pageNumber < 1 ||
+          pageNumber > opened.document.numPages,
+      )
+    ) {
+      throw new ToolError(
+        "invalid-page-selection",
+        "A requested PDF preview page does not exist.",
+      );
+    }
+    const thumbnails: PdfPageThumbnail[] = [];
+    for (const pageNumber of unique) {
+      signal.throwIfAborted();
+      if (closed) throw new DOMException("The inspection is closed.", "AbortError");
+      const page = await opened.read(opened.document.getPage(pageNumber));
+      const point = page.getViewport({ scale: 1 });
+      const scale = Math.min(1, thumbnailWidth / point.width);
+      const viewport = page.getViewport({ scale });
+      const width = Math.max(1, Math.round(viewport.width));
+      const height = Math.max(1, Math.round(viewport.height));
       const canvas = new OffscreenCanvas(width, height);
-      const context = context2d(canvas);
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-      context.drawImage(page.canvas, 0, 0, width, height);
-      const buffer = await encodeCanvas(canvas, "jpg", 0.72);
-      canvas.width = 1;
-      canvas.height = 1;
-      thumbnails.push({
-        pageNumber: page.pageNumber,
-        pageWidth: Math.max(1, Math.round(page.canvas.width * 2)),
-        pageHeight: Math.max(1, Math.round(page.canvas.height * 2)),
-        width,
-        height,
-        buffer,
-        mime: "image/jpeg",
-      });
-    },
-  );
-  return { pageCount: inspection.pageCount, thumbnails };
+      try {
+        const context = context2d(canvas);
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, width, height);
+        Object.assign(globalThis, { window: scheduler });
+        try {
+          await opened.read(
+            page.render({
+              background: "#ffffff",
+              canvas: null,
+              canvasContext: context as unknown as CanvasRenderingContext2D,
+              viewport,
+            }).promise,
+          );
+        } finally {
+          Reflect.deleteProperty(globalThis, "window");
+        }
+        thumbnails.push({
+          pageNumber,
+          pageWidth: point.width,
+          pageHeight: point.height,
+          width,
+          height,
+          buffer: await encodeCanvas(canvas, "jpg", 0.72),
+          mime: "image/jpeg",
+        });
+      } finally {
+        canvas.width = 1;
+        canvas.height = 1;
+        page.cleanup();
+      }
+    }
+    return thumbnails;
+  };
+
+  try {
+    enforcePageLimit(file, opened.document.numPages, false);
+    for (let pageNumber = 1; pageNumber <= opened.document.numPages; pageNumber += 1) {
+      signal.throwIfAborted();
+      const page = await opened.read(opened.document.getPage(pageNumber));
+      try {
+        const point = page.getViewport({ scale: 1 });
+        pages.push({
+          pageNumber,
+          pageWidth: point.width,
+          pageHeight: point.height,
+        });
+      } finally {
+        page.cleanup();
+      }
+    }
+    return {
+      pageCount: opened.document.numPages,
+      pages,
+      renderThumbnails(pageNumbers) {
+        const result = queue.then(() => renderRequested(pageNumbers));
+        queue = result.then(
+          () => undefined,
+          () => undefined,
+        );
+        return result;
+      },
+      async close() {
+        if (closed) return;
+        closed = true;
+        await queue.catch(() => undefined);
+        await opened.close();
+      },
+    };
+  } catch (error) {
+    await opened.close().catch(() => undefined);
+    if (isPasswordError(error)) {
+      throw new ToolError(
+        "encrypted-pdf",
+        "Encrypted or password-protected PDFs are not supported.",
+      );
+    }
+    throw error;
+  }
 }
 
 export async function encodeCanvas(

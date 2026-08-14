@@ -10,13 +10,13 @@ export const MEDIA_LIMITS = {
   images: {
     maxFileBytes: 25 * MIB,
     maxFiles: 50,
-    maxTotalBytes: 250 * MIB,
+    maxTotalBytes: 100 * MIB,
     maxPixels: 100_000_000,
   },
   pdfs: {
-    maxFileBytes: 200 * MIB,
+    maxFileBytes: 100 * MIB,
     maxMergeFiles: 20,
-    maxMergeTotalBytes: 250 * MIB,
+    maxMergeTotalBytes: 50 * MIB,
     maxStructuralPages: 500,
     maxRasterPages: 200,
   },
@@ -121,7 +121,7 @@ export function validateImageSelection(
     return failure("file-too-large", "Each image must be 25 MiB or smaller.");
   }
   if (sum(sizes) > MEDIA_LIMITS.images.maxTotalBytes) {
-    return failure("total-too-large", "The selected images must total 250 MiB or less.");
+    return failure("total-too-large", "The selected images must total 100 MiB or less.");
   }
   return { ok: true };
 }
@@ -147,7 +147,7 @@ export function validatePdfSelection(
   const sizes = validSizes(files);
   if (!sizes) return failure("invalid-size", "A selected file has an invalid size.");
   if (sizes.some((size) => size > MEDIA_LIMITS.pdfs.maxFileBytes)) {
-    return failure("file-too-large", "Each PDF must be 200 MiB or smaller.");
+    return failure("file-too-large", "Each PDF must be 100 MiB or smaller.");
   }
   if (options.merge) {
     if (files.length > MEDIA_LIMITS.pdfs.maxMergeFiles) {
@@ -157,7 +157,7 @@ export function validatePdfSelection(
       );
     }
     if (sum(sizes) > MEDIA_LIMITS.pdfs.maxMergeTotalBytes) {
-      return failure("total-too-large", "PDFs selected for merging must total 250 MiB or less.");
+      return failure("total-too-large", "PDFs selected for merging must total 50 MiB or less.");
     }
   }
   if (options.pageCount !== undefined) {

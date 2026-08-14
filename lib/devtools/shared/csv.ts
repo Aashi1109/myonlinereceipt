@@ -160,21 +160,24 @@ export function parseDelimitedRows(
   input: string,
   delimiter: CsvDelimiter,
 ): { ok: true; rows: string[][] } | { ok: false; message: string } {
+  const text = input.startsWith("\uFEFF") ? input.slice(1) : input;
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";
   let quoted = false;
+  let afterQuote = false;
 
-  for (let index = 0; index < input.length; index += 1) {
-    const character = input[index];
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
 
     if (quoted) {
       if (character === '"') {
-        if (input[index + 1] === '"') {
+        if (text[index + 1] === '"') {
           field += '"';
           index += 1;
         } else {
           quoted = false;
+          afterQuote = true;
         }
       } else {
         field += character;
@@ -182,18 +185,33 @@ export function parseDelimitedRows(
       continue;
     }
 
+    if (
+      afterQuote &&
+      character !== delimiter &&
+      character !== "\n" &&
+      character !== "\r"
+    ) {
+      return {
+        ok: false,
+        message: `Unexpected character ${JSON.stringify(character)} after a closing quote.`,
+      };
+    }
+
     if (character === '"') {
       if (field) return { ok: false, message: "A quoted field must start after a delimiter." };
       quoted = true;
+      afterQuote = false;
     } else if (character === delimiter) {
       row.push(field);
       field = "";
+      afterQuote = false;
     } else if (character === "\n" || character === "\r") {
       row.push(field);
       rows.push(row);
       row = [];
       field = "";
-      if (character === "\r" && input[index + 1] === "\n") index += 1;
+      afterQuote = false;
+      if (character === "\r" && text[index + 1] === "\n") index += 1;
     } else {
       field += character;
     }
