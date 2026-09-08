@@ -1,5 +1,88 @@
 import { expect, test } from "@playwright/test";
 
+test("JSON result views can scroll to the final value", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer");
+  await page.getByRole("button", { name: "Example", exact: true }).click();
+  await page.getByRole("textbox", { name: "JSON input" }).fill(JSON.stringify({
+    entries: Array.from({ length: 120 }, (_, index) => `Value ${index}`),
+    lastEntry: "End of JSON",
+  }));
+  const result = page.getByTestId("json-result-renderer");
+  for (const mode of ["read-only", "form", "tree", "code"]) {
+    await result.getByRole("combobox", { name: "JSON result view" }).click();
+    await page.getByRole("option", { name: mode, exact: true }).click();
+    if (mode !== "code") {
+      await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
+    }
+    const viewport = result.locator('[data-slot="scroll-area-viewport"]');
+    await viewport.hover();
+    await page.mouse.wheel(0, 100_000);
+    await expect.poll(() => viewport.evaluate((element) =>
+      element.scrollHeight - element.scrollTop - element.clientHeight,
+    )).toBeLessThanOrEqual(1);
+    const last = mode === "code"
+      ? result.getByText(/"lastEntry": "End of JSON"/)
+      : result.getByRole("treeitem", { name: "lastEntry", exact: true });
+    const viewportBox = await viewport.boundingBox();
+    const lastBox = await last.boundingBox();
+    expect(viewportBox).not.toBeNull();
+    expect(lastBox).not.toBeNull();
+    expect(lastBox!.y).toBeGreaterThanOrEqual(viewportBox!.y);
+    expect(lastBox!.y + lastBox!.height).toBeLessThanOrEqual(viewportBox!.y + viewportBox!.height);
+  }
+});
+
+test("JSON Viewer read-only view preserves values and editable Form view", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer");
+  const input = page.getByRole("textbox", { name: "JSON input" });
+  const result = page.getByTestId("json-result-renderer");
+  const view = result.getByRole("combobox", { name: "JSON result view" });
+  const source = JSON.stringify({
+    name: "Example",
+    nested: { values: [0, false, null, "", {}, []] },
+  });
+  await input.fill(source);
+  await view.click();
+  await page.getByRole("option", { name: "read-only", exact: true }).click();
+  await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
+  const values = result.getByRole("tree", { name: "Read-only JSON values" });
+  await expect(values).toContainText('"Example"');
+  for (const value of ["0", "false", "null", '""', "{0 keys}", "[0 items]"]) {
+    await expect(values.getByText(value, { exact: true }).first()).toBeVisible();
+  }
+  await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
+  await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
+  await expect(values.getByRole("button", { name: /Reorder|Delete|Duplicate|Add|Edit|Change/ })).toHaveCount(0);
+  await expect(result.getByRole("button", { name: "Copy JSON result" })).toBeVisible();
+  await expect(result.getByRole("button", { name: "Download JSON result" })).toBeVisible();
+  await result.getByRole("button", { name: "Collapse all JSON nodes" }).click();
+  await expect(values.getByRole("treeitem", { name: "name", exact: true })).toHaveCount(0);
+  const search = result.getByRole("searchbox", { name: "Search JSON result" });
+  await search.fill("Example");
+  await expect(values).toContainText('"Example"');
+  await search.fill("missing-value");
+  await expect(result.getByRole("status")).toContainText("No keys or values match");
+  await search.fill("");
+  await expect(input).toHaveValue(source);
+  await view.click();
+  await page.getByRole("option", { name: "form", exact: true }).click();
+  await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
+  const name = result.getByRole("textbox", { name: "Edit name", exact: true });
+  await name.fill("Updated");
+  await name.press("Enter");
+  await view.click();
+  await page.getByRole("option", { name: "read-only", exact: true }).click();
+  await expect(values).toContainText('"Updated"');
+  await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
+  await expect(input).toHaveValue(source);
+  for (const scalar of ['"root value"', "0", "false", "null", "{}", "[]"]) {
+    await input.fill(scalar);
+    await expect(result.getByRole("tree", { name: "Read-only JSON values" })).toBeVisible();
+    await expect(values).toContainText(scalar === "{}" ? "{0 keys}" : scalar === "[]" ? "[0 items]" : scalar);
+    await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
+  }
+});
+
 test("JSON Viewer matches the approved split-workbench flow", async ({
   context,
   page,

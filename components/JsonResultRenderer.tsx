@@ -16,6 +16,8 @@ import {
   Label,
   OrderableList,
   Popover as PopoverPrimitive,
+  ScrollArea,
+  ScrollBar,
   Select,
   SelectContent,
   SelectItem,
@@ -82,7 +84,7 @@ const JSON_VALUE_TYPES: readonly JsonValueType[] = [
   "array",
 ];
 
-export type JsonResultView = "tree" | "code" | "form";
+export type JsonResultView = "tree" | "code" | "form" | "read-only";
 export type JsonEditorController = {
   canRedo: boolean;
   canUndo: boolean;
@@ -1111,7 +1113,7 @@ function JsonTreeNode({
   const keyText = isRoot ? (entries ? "root" : "") : displayedLabel;
   const keyLabel = keyText ? (
     <span
-      className={`${isEditing ? "min-w-0 max-w-[92px] shrink truncate" : ""} font-[650] ${valueError ? "text-destructive" : "text-foreground"}`}
+      className={`${isEditing ? "min-w-0 max-w-[92px] shrink truncate" : "min-w-0 max-w-[40%] break-all"} font-[650] ${valueError ? "text-destructive" : "text-foreground"}`}
     >
       {keyText}
     </span>
@@ -1132,18 +1134,18 @@ function JsonTreeNode({
     >
       <GripVertical aria-hidden="true" className="size-[13px]" />
     </button>
-  ) : (
+  ) : editMode === "tree" ? (
     <GripVertical
       aria-hidden="true"
       className="size-[13px] shrink-0 text-input group-hover:text-primary group-focus-within:text-primary"
     />
-  );
+  ) : null;
   const copyButtonLabel = `Copy ${isRoot ? "root" : label} value`;
   const copyButton = showNodeCopyActions ? (
     <JsonTooltip label={copyButtonLabel}>
       <Button
         aria-label={copyButtonLabel}
-        className="relative ml-auto shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        className="relative ml-auto size-6 shrink-0 text-muted-foreground opacity-0 before:absolute before:inset-[-6px] before:content-[''] group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
         onClick={(event) => {
           event.stopPropagation();
           onCopy(JSON.stringify(value, null, 2) ?? String(value), copyLabel);
@@ -1182,7 +1184,7 @@ function JsonTreeNode({
       <div
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex w-full items-center gap-[7px] rounded-sm pr-1.5 font-mono text-[11px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "h-9 min-w-0" : "h-7 min-w-max"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
+        className={`group flex w-full items-center gap-[7px] rounded-sm pr-1.5 font-mono text-[11px] leading-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "h-9 min-w-0" : "min-h-7 min-w-0"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
         data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
@@ -1201,6 +1203,7 @@ function JsonTreeNode({
         >
           {nodeType.toUpperCase()}
         </span>
+        {!isEditing && keyText ? <span>:</span> : null}
         {isEditing ? (
           <JsonScalarEditor
             label={treeItemLabel}
@@ -1211,7 +1214,7 @@ function JsonTreeNode({
           />
         ) : (
           <span
-            className={
+            className={`min-w-0 flex-1 whitespace-pre-wrap break-all ${
               nodeType === "string"
                 ? "text-syntax-string"
                 : nodeType === "number"
@@ -1219,7 +1222,7 @@ function JsonTreeNode({
                   : nodeType === "boolean"
                     ? "text-primary"
                     : "text-violet-700 dark:text-violet-400"
-            }
+            }`}
           >
             {displayedValue}
           </span>
@@ -1244,12 +1247,12 @@ function JsonTreeNode({
     : `{${entries.length} key${entries.length === 1 ? "" : "s"}}`;
 
   return (
-    <div className={`w-full font-mono text-[11px] leading-4 text-foreground ${isEditing ? "min-w-0" : "min-w-max"}`}>
+    <div className="w-full min-w-0 font-mono text-[11px] leading-4 text-foreground">
       <div
         aria-expanded={canExpand ? open : undefined}
         aria-label={treeItemLabel}
         aria-selected={onSelect ? isSelected : undefined}
-        className={`group flex h-7 w-full items-center gap-[7px] rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "min-w-0" : "min-w-max"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
+        className={`group flex w-full items-center gap-[7px] rounded-sm pr-1.5 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring ${isEditing ? "h-7 min-w-0" : "min-h-7 min-w-0"} ${rowIndent} ${selectedClassName} ${currentSearchClassName} ${dragState?.isDragging ? "bg-accent shadow-sm" : ""}`}
         data-json-search-current={isCurrentSearchMatch || undefined}
         onClick={selectNode}
         onFocus={selectNode}
@@ -1281,6 +1284,7 @@ function JsonTreeNode({
         >
           {nodeType.toUpperCase()}
         </span>
+        {!isEditing ? <span>:</span> : null}
         <span className="text-muted-foreground">{countLabel}</span>
         {editMode === "tree" && editor && !isRoot ? (
           <JsonTreeActions
@@ -1504,8 +1508,8 @@ export function JsonResultRenderer({
   }), [internalEditor]);
   const resolvedEditor = editor ?? internalEditorController;
   const resolvedValue = editor ? value : internalEditor.value;
-  const views: readonly JsonResultView[] = ["code", "tree", "form"];
-  const isStructuredView = view === "tree" || view === "form";
+  const views: readonly JsonResultView[] = ["code", "tree", "form", "read-only"];
+  const isStructuredView = view !== "code";
   const formatted = editor?.code ?? internalEditor.code;
   const highlightedFormatted = useMemo(() => highlightJson(formatted), [formatted]);
   const formattedLines = useMemo(() => formatted.split(/\r\n|\r|\n/), [formatted]);
@@ -1797,7 +1801,7 @@ export function JsonResultRenderer({
               </JsonTooltip>
             </ButtonGroup>
           ) : null}
-          {isStructuredView ? (
+          {isStructuredView && view !== "read-only" ? (
             <ButtonGroup aria-label="JSON edit history" className="shrink-0">
               <JsonTooltip label="Undo">
                 <Button
@@ -1861,55 +1865,61 @@ export function JsonResultRenderer({
           id={`${resultId}-${view}`}
           role="tabpanel"
         >
-          <div className="min-h-0 flex-1 overflow-auto p-1.5">
-            {normalizedQuery && !nodeMatches("root", resolvedValue, normalizedQuery) ? (
-              <p className="p-4 text-center text-sm text-muted-foreground" role="status">
-                No keys or values match “{query}”.
-              </p>
-            ) : (
-              <div
-                aria-label={view === "form" ? "JSON value editor" : "JSON tree editor"}
-                className="w-full min-w-0"
-                role="tree"
-              >
-                <JsonTreeNode
-                  currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
-                  defaultOpenDepth={defaultOpenDepth}
-                  editMode={view}
-                  editor={resolvedEditor}
-                  expansion={expansion}
-                  label="root"
-                  onCopy={copyValue}
-                  onSelect={handleSelect}
-                  query={normalizedQuery}
-                  reorderDisabled={Boolean(normalizedQuery || treeView?.truncated)}
-                  rootValue={resolvedValue}
-                  searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
-                  selectedPath={resolvedSelectedPath}
-                  showNodeCopyActions={false}
-                  value={resolvedValue}
-                  visiblePaths={treeView?.paths}
-                />
-                {treeView?.truncated ? (
-                  <p className="px-2 py-3 text-xs text-muted-foreground" role="status">
-                    Showing the first {treeView.limit.toLocaleString()} nodes.
-                    Search to narrow the tree.
-                  </p>
-                ) : null}
-              </div>
-            )}
-          </div>
+          <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:!block">
+            <div className="p-1.5 pb-4">
+              {normalizedQuery && !nodeMatches("root", resolvedValue, normalizedQuery) ? (
+                <p className="p-4 text-center text-sm text-muted-foreground" role="status">
+                  No keys or values match “{query}”.
+                </p>
+              ) : (
+                <div
+                  aria-label={view === "read-only" ? "Read-only JSON values" : view === "form" ? "JSON value editor" : "JSON tree editor"}
+                  className="w-full min-w-0"
+                  role="tree"
+                >
+                  <JsonTreeNode
+                    currentSearchPath={persistentSearch ? currentTreeSearchPath : undefined}
+                    defaultOpenDepth={defaultOpenDepth}
+                    editMode={view === "tree" || view === "form" ? view : undefined}
+                    editor={view === "read-only" ? undefined : resolvedEditor}
+                    expansion={expansion}
+                    label="root"
+                    onCopy={copyValue}
+                    onSelect={handleSelect}
+                    query={normalizedQuery}
+                    reorderDisabled={Boolean(normalizedQuery || treeView?.truncated)}
+                    rootValue={resolvedValue}
+                    searchMatchPaths={persistentSearch ? treeMatchPaths : undefined}
+                    selectedPath={resolvedSelectedPath}
+                    showNodeCopyActions={view === "read-only"}
+                    value={resolvedValue}
+                    visiblePaths={treeView?.paths}
+                  />
+                  {treeView?.truncated ? (
+                    <p className="px-2 py-3 text-xs text-muted-foreground" role="status">
+                      Showing the first {treeView.limit.toLocaleString()} nodes.
+                      Search to narrow the tree.
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
         </div>
       ) : view === "code" ? (
-        <div
-          aria-label={headerStart ? "JSON result" : undefined}
-          aria-labelledby={headerStart ? undefined : `${resultId}-view-select`}
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-muted/20 p-4"
-          id={`${resultId}-${view}`}
-          role="tabpanel"
-          tabIndex={0}
+        <ScrollArea
+          className="min-h-0 flex-1 bg-muted/20"
+          viewportClassName="[&>div]:!block"
+          viewportProps={{
+            "aria-label": headerStart ? "JSON result" : undefined,
+            "aria-labelledby": headerStart ? undefined : `${resultId}-view-select`,
+            id: `${resultId}-${view}`,
+            role: "tabpanel",
+            tabIndex: 0,
+          }}
         >
-          <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-4 text-foreground">
+          <pre className="whitespace-pre-wrap break-all p-4 font-mono text-xs leading-4 text-foreground">
             {persistentSearch ? formattedLines.map((line, lineIndex) => {
               const isMatch = formattedMatchLines.has(lineIndex);
               const isCurrentMatch = currentFormattedMatchLine === lineIndex;
@@ -1927,7 +1937,7 @@ export function JsonResultRenderer({
               );
             }) : highlightedFormatted}
           </pre>
-        </div>
+        </ScrollArea>
       ) : null}
       </section>
     </TooltipProvider>
