@@ -43,6 +43,8 @@ import {
 } from "react";
 
 import { UniversalWorkbench } from "@/components/UniversalWorkbench";
+import { ToolIcon } from "@/components/ToolIcon";
+import type { ResolvedIcon } from "@/lib/tool-framework/icons";
 import { workspaceFileId } from "@/components/FileInput";
 import {
   ToolWorkspace,
@@ -588,6 +590,7 @@ export interface ToolPageProps {
   /** The tool's folder under `tools/`. Never the public slug. */
   definitionKey: string;
   description: string;
+  icon: ResolvedIcon;
   relatedTools: readonly { href: string; label: string }[];
   spec: ToolSpec;
   title: string;
@@ -598,6 +601,7 @@ export default function ToolPage({
   category,
   definitionKey,
   description,
+  icon,
   relatedTools,
   spec,
   title,
@@ -728,6 +732,7 @@ export default function ToolPage({
         statusMeta={toolbarActions?.statusMeta}
         title={title}
         Toolbar={ToolToolbar}
+        workbenchIcon={icon.kind === "url" ? <ToolIcon icon={icon} size={28} /> : undefined}
         workbenchMark={spec.workbenchMark}
         Workspace={ToolWorkspaceSlot}
       />

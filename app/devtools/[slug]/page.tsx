@@ -35,6 +35,7 @@ export default async function DevtoolsToolPage({
       category={TOOL_CATEGORIES[tool.category].label}
       definitionKey={tool.definitionKey}
       description={tool.description}
+      icon={tool.icon}
       relatedTools={related.map((candidate) => ({
         href: candidate.href,
         label: candidate.name,

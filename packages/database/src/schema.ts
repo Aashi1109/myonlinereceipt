@@ -253,7 +253,7 @@ export const toolIconsTable = pgTable("tool_icons", {
     .references(() => managedToolsTable.toolId, { onDelete: "cascade" }),
   publicId: text("public_id").notNull(),
   version: text("version").notNull(),
-  format: text("format").$type<"png">().notNull(),
+  format: text("format").$type<"png" | "svg">().notNull(),
   width: integer("width").notNull(),
   height: integer("height").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })

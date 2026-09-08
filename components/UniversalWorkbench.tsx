@@ -55,6 +55,7 @@ type UniversalWorkbenchProps<
   StatusMeta?: ComponentType;
   statusMeta?: ReactNode;
   Toolbar: ComponentType;
+  workbenchIcon?: ReactNode;
   workbenchMark?: ToolWorkbenchMark;
   Workspace: ComponentType;
 };
@@ -125,6 +126,7 @@ function WorkbenchFrame<
   statusMeta,
   title,
   Toolbar,
+  workbenchIcon,
   workbenchMark,
   Workspace,
 }: Omit<UniversalWorkbenchProps<Input, Settings, Result>, "runtimeSpec">) {
@@ -258,13 +260,13 @@ function WorkbenchFrame<
             className="size-[34px]"
             tone={workbenchMarkText ? workbenchMark?.tone : undefined}
           >
-            {workbenchMarkText ? (
+            {workbenchIcon ?? (workbenchMarkText ? (
               <span className="font-mono text-[13px] font-bold leading-none">
                 {workbenchMarkText}
               </span>
             ) : (
               <Wrench />
-            )}
+            ))}
           </IconTile>
         }
         toolbarActions={
