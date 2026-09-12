@@ -64,6 +64,23 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     };
   }
 
+  // Match complete strings first so digits in keys and string values are ignored.
+  for (const [, number] of output.matchAll(/"(?:[^"\\]|\\.)*"|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g)) {
+    if (number !== undefined && String(Number(number)) !== number) {
+      return {
+        render: "code",
+        code: output,
+        language: "json",
+        downloadName: "smarttools-formatted.json",
+        verdict: {
+          level: "ok",
+          label: "Exact numbers preserved",
+          detail: "Shown as code because a tree view would change some numeric values. Copy and download keep the original numbers.",
+        },
+      };
+    }
+  }
+
   return {
     render: "json-tree",
     text: output,

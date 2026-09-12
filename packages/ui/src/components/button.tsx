@@ -1,11 +1,12 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
+import { ClipboardPaste, Copy, Download, LoaderCircle, Upload } from "lucide-react"
 
 import { cn } from "#lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center whitespace-nowrap font-sans font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-muted disabled:text-muted-foreground disabled:opacity-65 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex shrink-0 items-center justify-center whitespace-nowrap font-sans font-semibold outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/15 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -19,6 +20,8 @@ const buttonVariants = cva(
           "border border-input bg-card text-foreground hover:bg-muted",
         ghost:
           "bg-transparent text-foreground hover:bg-accent active:bg-accent",
+        "card-action":
+          "bg-transparent text-foreground hover:bg-muted focus-visible:ring-inset focus-visible:ring-offset-0",
         "input-icon":
           "bg-transparent text-muted-foreground hover:text-foreground focus-visible:ring-inset focus-visible:ring-primary/30 focus-visible:ring-offset-0 disabled:bg-transparent",
         "danger-subtle":
@@ -45,6 +48,7 @@ const buttonVariants = cva(
       },
     },
     compoundVariants: [
+      { variant: "card-action", className: "rounded-none" },
       {
         variant: "ghost",
         size: "default",
@@ -63,11 +67,15 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  disabled,
+  children,
   type,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -76,11 +84,58 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }), loading && "[&>svg:not([data-slot=button-spinner])]:hidden")}
       type={asChild ? type : (type ?? "button")}
       {...props}
-    />
+      disabled={disabled || loading}
+      aria-busy={loading || props["aria-busy"]}
+      aria-disabled={asChild && (disabled || loading) ? true : props["aria-disabled"]}
+      inert={asChild && (disabled || loading) ? true : props.inert}
+    >
+      {loading && <LoaderCircle aria-hidden="true" data-slot="button-spinner" className="animate-spin" />}
+      <Slot.Slottable>{children}</Slot.Slottable>
+    </Comp>
   )
 }
 
-export { Button, buttonVariants }
+const TOOL_ACTIONS = {
+  paste: { icon: ClipboardPaste, label: "Paste" },
+  upload: { icon: Upload, label: "Upload" },
+  copy: { icon: Copy, label: "Copy" },
+  download: { icon: Download, label: "Download" },
+} as const
+
+/** Shared tool intake and output actions; keep labels specific to the artifact. */
+function ToolActionButton({
+  action,
+  children,
+  className,
+  icon,
+  iconOnly = false,
+  ...props
+}: Omit<React.ComponentProps<typeof Button>, "asChild" | "size" | "variant"> & {
+  action: keyof typeof TOOL_ACTIONS
+  icon?: React.ReactNode
+  iconOnly?: boolean
+}) {
+  const Icon = TOOL_ACTIONS[action].icon
+  const label = children ?? TOOL_ACTIONS[action].label
+
+  return (
+    <Button
+      {...props}
+      className={cn(
+        "disabled:bg-transparent",
+        iconOnly && "text-muted-foreground",
+        className,
+      )}
+      size={iconOnly ? "icon-xs" : "xs"}
+      variant="ghost"
+    >
+      {icon ?? <Icon aria-hidden="true" />}
+      <span className={iconOnly ? "sr-only" : undefined}>{label}</span>
+    </Button>
+  )
+}
+
+export { Button, buttonVariants, ToolActionButton }

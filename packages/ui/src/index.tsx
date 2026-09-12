@@ -1,10 +1,12 @@
+export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./components/accordion.tsx";
+export { InlineTextEditor, type InlineTextEditorProps } from "./components/InlineTextEditor.tsx";
+import { Caption, Display, H1, H2, H3, Large, Lead, Muted, Overline, P, Strong, Text } from "./components/typography.tsx";
+export { H1, H2, H3, H4, H5, H6, Display, P, Text, Lead, Large, Small, Muted, Caption, Overline, Metric, Strong, Blockquote, List, OrderedList, InlineCode, TextLink, CodeBlock, typographyStyles } from "./components/typography.tsx";
 import {
   Bookmark,
-  ChevronDown,
   CircleCheck,
   CircleX,
   Info,
-  Search,
   TriangleAlert,
 } from "lucide-react";
 import { cloneElement } from "react";
@@ -19,6 +21,7 @@ import smartToolsIcon from "./assets/smarttools-icon.png";
 import { Alert, AlertDescription, AlertTitle } from "./components/alert.tsx";
 import { Badge } from "./components/badge.tsx";
 import { Checkbox as CheckboxControl } from "./components/checkbox.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./components/tooltip.tsx";
 import {
   Empty,
   EmptyContent,
@@ -32,6 +35,8 @@ import {
   FieldError as FieldPrimitiveError,
   FieldLabel as FieldPrimitiveLabel,
 } from "./components/field.tsx";
+import { EcosystemTabFilters } from "./components/EcosystemTabFilters.tsx";
+import { GlobalToolSearch } from "./components/GlobalToolSearch.tsx";
 import { ToolPageIntro } from "./components/patterns.tsx";
 import { cn } from "./lib/utils.ts";
 
@@ -47,7 +52,7 @@ export {
   AvatarImage,
 } from "./components/avatar.tsx";
 export { Badge, badgeVariants } from "./components/badge.tsx";
-export { Button, buttonVariants } from "./components/button.tsx";
+export { Button, buttonVariants, ToolActionButton } from "./components/button.tsx";
 export {
   ButtonGroup,
   ButtonGroupSeparator,
@@ -70,6 +75,10 @@ export type {
 } from "./components/ChapterScrubber.tsx";
 export { OrderableList } from "./components/OrderableList.tsx";
 export type { OrderableItemState } from "./components/OrderableList.tsx";
+export { MediaOutputCard } from "./components/MediaOutputCard.tsx";
+export type { MediaOutputCardProps } from "./components/MediaOutputCard.tsx";
+export { MediaPreview } from "./components/MediaPreview.tsx";
+export type { MediaPreviewProps } from "./components/MediaPreview.tsx";
 export { PdfViewer } from "./components/PdfViewer.tsx";
 export type {
   PdfOutlineItem,
@@ -213,54 +222,8 @@ export function AppContainer({ className, ...props }: HTMLAttributes<HTMLDivElem
   );
 }
 
-export type AccountNavigationProps = {
-  className?: string;
-  returnTo: string;
-  user: { name: string } | null;
-};
-
-export function AccountNavigation({
-  className,
-  returnTo,
-  user,
-}: AccountNavigationProps) {
-  const target = `${user ? "/auth/profile" : "/auth"}?${new URLSearchParams({ returnTo })}`;
-  const accountName = user?.name.trim() || "Account";
-  const initials = accountName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
-
-  return (
-    <nav aria-label="Account" className={cn("flex items-center", className)}>
-      {user ? (
-        <a
-          aria-label={`Open profile for ${accountName}`}
-          className="group inline-flex h-10 max-w-48 items-center gap-2 rounded-full border border-border bg-muted py-1 pr-2.5 pl-1 text-foreground no-underline outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          href={target}
-          title={accountName}
-        >
-          <span
-            aria-hidden="true"
-            className="grid size-[30px] shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground"
-          >
-            {initials}
-          </span>
-          <span className="truncate text-[11px] font-semibold">{accountName}</span>
-          <ChevronDown aria-hidden="true" className="size-[13px] shrink-0 text-muted-foreground" />
-        </a>
-      ) : (
-        <a
-          className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground no-underline outline-none transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          href={target}
-        >
-          Sign in
-        </a>
-      )}
-    </nav>
-  );
-}
+export { AccountNavigation } from "./components/AccountNavigation.tsx";
+export type { AccountNavigationProps } from "./components/AccountNavigation.tsx";
 
 export function BrandLockup({
   className,
@@ -287,11 +250,11 @@ export function BrandLockup({
         width={30}
       />
       <span className="flex h-full flex-col justify-center gap-1 leading-none">
-        <span className="block font-heading text-[17px] font-semibold leading-none">{name}</span>
+        <Text className="block">{name}</Text>
         {name !== "SmartTools" ? (
-          <span className="text-caption block font-semibold tracking-wide text-muted-foreground">
+          <Caption className="block text-muted-foreground">
             by SmartTools
-          </span>
+          </Caption>
         ) : null}
       </span>
     </a>
@@ -302,11 +265,13 @@ export function ProductHeader({
   actions,
   className,
   compact = false,
+  minimal = false,
   name,
 }: {
   actions?: ReactNode;
   className?: string;
   compact?: boolean;
+  minimal?: boolean;
   href: string;
   name: string;
 }) {
@@ -328,46 +293,27 @@ export function ProductHeader({
             <span className="absolute top-2.5 left-8 size-[7px] rounded-full bg-success" />
           </span>
           <span className="hidden flex-col gap-0.5 sm:flex">
-            <strong className="font-heading text-[18px] leading-none font-bold">
+            <Strong className="">
               Smart<span className="text-primary">Tools</span>
-            </strong>
-            <span className="font-caption text-xs font-medium text-muted-foreground">
+            </Strong>
+            <Caption className="text-muted-foreground">
               small tools, thoughtfully made
-            </span>
+            </Caption>
           </span>
         </a>
 
-        <a
-          className="hidden h-[46px] w-[250px] items-center gap-2 rounded-full border border-border bg-muted px-3 text-[13px] text-muted-foreground no-underline outline-none hover:border-input focus-visible:ring-2 focus-visible:ring-ring xl:flex"
-          href="/?search=open"
-        >
-          <Search aria-hidden="true" className="size-[17px]" />
-          <span>Search 150+ tools</span>
-          <kbd className="ml-auto grid size-6 place-items-center rounded border border-border bg-card font-caption text-[11px] font-semibold">/</kbd>
-        </a>
+        {!minimal ? <GlobalToolSearch /> : null}
 
-        <nav
-          aria-label="Tool suites"
-          className="hidden h-[46px] items-center gap-0.5 rounded-full border border-border bg-card p-[5px] font-caption text-xs font-semibold xl:flex"
-        >
-          <a className="rounded-full bg-accent px-[13px] py-2.5 text-primary no-underline" href="/">All tools</a>
-          <a className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/paperwork">
-            Documents <ChevronDown aria-hidden="true" className="size-3" />
-          </a>
-          <a className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/devtools">
-            Developer <ChevronDown aria-hidden="true" className="size-3" />
-          </a>
-          <a className="rounded-full px-[13px] py-2.5 text-muted-foreground no-underline hover:bg-muted hover:text-foreground" href="/paperwork">Business</a>
-        </nav>
+        {!minimal ? <EcosystemTabFilters /> : null}
 
         <div className="flex shrink-0 items-center gap-2">
-          <a
+          {!minimal ? <a
             className="hidden h-10 items-center gap-1.5 rounded-full border border-input bg-card px-3 text-[11px] font-semibold text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:inline-flex"
             href="/auth?returnTo=%2Fauth%2Fprofile"
           >
             <Bookmark aria-hidden="true" className="size-3.5 text-muted-foreground" />
             Saved
-          </a>
+          </a> : null}
           {actions}
         </div>
       </AppContainer>
@@ -476,7 +422,7 @@ export function ToolPageShell({
             </nav>
           </AppContainer>
         </section>
-        {!showIntro ? <h1 className="sr-only">{title}</h1> : null}
+        {!showIntro ? <H1 className="sr-only">{title}</H1> : null}
         {showIntro ? (
           <section className="bg-card">
             <AppContainer className="max-w-[1440px] px-4 pt-[18px] sm:px-6 lg:px-10">
@@ -557,12 +503,15 @@ export function PageHero({
   eyebrow?: ReactNode;
   title: ReactNode;
 }) {
+  const Title = compact ? H1 : Display;
+  const Description = compact ? P : Lead;
+
   return (
     <section className={cn(compact ? "py-10 lg:py-12" : "py-16 lg:py-20", className)}>
       <AppContainer>
-        {eyebrow ? <p className={cn(compact ? "mb-3" : "mb-4", "font-caption text-[13px] font-semibold uppercase tracking-[0.05em] text-primary", align === "center" && "text-center")}>{eyebrow}</p> : null}
-        <h1 className={cn("max-w-3xl font-heading font-semibold tracking-tight text-foreground", compact ? "text-[32px]" : "text-[48px]", align === "center" && "mx-auto text-center")}>{title}</h1>
-        <p className={cn("max-w-2xl text-muted-foreground", compact ? "mt-3 text-sm leading-6 sm:text-base" : "mt-5 text-base leading-7 sm:text-lg", align === "center" && "mx-auto text-center")}>{description}</p>
+        {eyebrow ? <Overline className={cn("block text-primary", compact ? "mb-3" : "mb-4", align === "center" && "text-center")}>{eyebrow}</Overline> : null}
+        <Title className={cn("max-w-3xl text-foreground", align === "center" && "mx-auto text-center")}>{title}</Title>
+        <Description className={cn("max-w-2xl text-muted-foreground", compact ? "mt-3" : "mt-5", align === "center" && "mx-auto text-center")}>{description}</Description>
         {actions ? <div className={cn(compact ? "mt-5" : "mt-8", "flex flex-wrap gap-3", align === "center" && "justify-center")}>{actions}</div> : null}
       </AppContainer>
     </section>
@@ -585,24 +534,24 @@ export function ToolPageHeader({
   title: ReactNode;
 }) {
   const titleNode = (
-    <h1
+    <H1
       className={cn(
-        "font-heading text-[2.125rem] font-semibold tracking-[-0.0375rem] text-foreground",
+        "text-foreground",
         inlineEyebrow && "min-w-0 break-words",
       )}
     >
       {title}
-    </h1>
+    </H1>
   );
   const eyebrowNode = eyebrow ? (
-    <div
+    <Overline
       className={cn(
-        "flex flex-wrap items-center gap-2 font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary",
+        "flex flex-wrap items-center gap-2 text-primary",
         inlineEyebrow ? "max-w-full" : "mb-2",
       )}
     >
       {eyebrow}
-    </div>
+    </Overline>
   ) : null;
 
   return (
@@ -619,7 +568,7 @@ export function ToolPageHeader({
             {titleNode}
           </>
         )}
-        {description ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
+        {description ? <Muted className="max-w-2xl text-muted-foreground">{description}</Muted> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </header>
@@ -642,9 +591,9 @@ export function SectionHeading({
   return (
     <div className={cn("mb-4 flex items-start justify-between gap-4", className)}>
       <div>
-        {eyebrow ? <p className="mb-2 font-caption text-[13px] font-semibold uppercase tracking-[0.03125rem] text-primary">{eyebrow}</p> : null}
-        <h2 className="font-heading text-[30px] leading-[1.12] font-semibold tracking-[-0.025rem] text-foreground">{title}</h2>
-        {description ? <p className="mt-2 font-sans text-[15px] leading-[1.55] text-muted-foreground">{description}</p> : null}
+        {eyebrow ? <Overline className="mb-2 block text-primary">{eyebrow}</Overline> : null}
+        <H2 className="text-foreground">{title}</H2>
+        {description ? <P className="mt-2 text-muted-foreground">{description}</P> : null}
       </div>
       {action}
     </div>
@@ -709,21 +658,42 @@ export function Checkbox({
   className,
   description,
   label,
+  tooltip,
   ...props
 }: Omit<ComponentProps<typeof CheckboxControl>, "className"> & {
   className?: string;
   description?: ReactNode;
   label: ReactNode;
+  tooltip?: ReactNode;
 }) {
-  return (
+  const checkbox = <CheckboxControl className="mt-0.5" {...props} />;
+  const control = (
     <label className={cn("flex min-h-10 items-start gap-3 text-sm text-foreground", className)}>
-      <CheckboxControl className="mt-0.5" {...props} />
+      {tooltip && !props.disabled ? <TooltipTrigger asChild>{checkbox}</TooltipTrigger> : checkbox}
       <span>
         <span className="block font-semibold">{label}</span>
         {description ? <span className="mt-1 block leading-5 text-muted-foreground">{description}</span> : null}
       </span>
     </label>
   );
+  return tooltip ? (
+    <Tooltip>
+      {props.disabled ? (
+        <TooltipTrigger asChild>
+          <span
+            className="block rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+            tabIndex={0}
+            role="group"
+            aria-label={typeof label === "string" ? label : undefined}
+            aria-disabled="true"
+          >
+            {control}
+          </span>
+        </TooltipTrigger>
+      ) : control}
+      <TooltipContent className="max-w-xs">{tooltip}</TooltipContent>
+    </Tooltip>
+  ) : control;
 }
 
 const cardClassName =
@@ -770,9 +740,9 @@ export function CatalogCard({
           {status ? <span className="min-w-0">{status}</span> : null}
         </span>
       ) : null}
-      <span className="font-heading text-lg font-semibold">{title}</span>
-      <span className="-mt-2 font-sans text-sm leading-[1.5] text-muted-foreground">{description}</span>
-      <span className="mt-auto font-sans text-sm font-semibold text-primary group-hover:underline">{action}</span>
+      <Large>{title}</Large>
+      <Caption className="-mt-2 text-muted-foreground">{description}</Caption>
+      <Caption className="mt-auto text-primary group-hover:underline">{action}</Caption>
     </a>
   );
 }
@@ -872,14 +842,14 @@ export function EmptyState({
   icon?: ReactNode;
   title: ReactNode;
 }) {
-  const Heading = headingLevel;
+  const Heading = { h1: H1, h2: H2, h3: H3 }[headingLevel];
 
   return (
     <Empty className={cn("gap-3.5 rounded-xl border-solid p-10", className)}>
       <EmptyHeader className="max-w-md gap-0">
         {icon ? <EmptyMedia className="mb-3.5 size-14 rounded-xl bg-muted text-muted-foreground [&_svg]:size-[26px]">{icon}</EmptyMedia> : null}
-        <Heading className="font-heading text-[17px] font-semibold text-foreground">{title}</Heading>
-        {description ? <EmptyDescription className="mt-2 max-w-md leading-[1.5]">{description}</EmptyDescription> : null}
+        <Heading className="text-foreground">{title}</Heading>
+        {description ? <EmptyDescription className="mt-2 max-w-md">{description}</EmptyDescription> : null}
       </EmptyHeader>
       {action ? <EmptyContent className="mt-0">{action}</EmptyContent> : null}
     </Empty>

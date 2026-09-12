@@ -36,7 +36,6 @@ body {
   --border: #eaecef;
   --input: #d6d9de;
   --ring: #0066ff;
-  font-family: var(--font-geist, Geist), ui-sans-serif, system-ui, sans-serif;
 }
 
 .platform-header {
@@ -56,13 +55,6 @@ body {
   #app-root main input.h-10,
   #app-root main select.h-10 {
     height: 2.25rem;
-  }
-
-  #app-root main input.text-sm,
-  #app-root main select.text-sm,
-  #app-root main textarea.text-sm {
-    font-size: 0.75rem;
-    line-height: 1rem;
   }
 
   #app-root main textarea.min-h-28 {

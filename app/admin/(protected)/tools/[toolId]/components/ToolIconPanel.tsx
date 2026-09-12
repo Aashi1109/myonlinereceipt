@@ -1,10 +1,17 @@
 "use client";
 
-import { AlertBanner, Button, Input } from "@smarttools/ui";
-import { ImagePlus, Trash2, Upload } from "lucide-react";
+import {
+  H3,
+  Label,
+  Caption,
+  Muted,
+  Text, AlertBanner, Button, Input } from "@smarttools/ui";
+import { ImagePlus, RotateCcw, Trash2, Upload } from "lucide-react";
 import {
   useActionState,
   useEffect,
+  useId,
+  useRef,
   useState,
   type ChangeEvent,
   type ReactElement,
@@ -32,11 +39,26 @@ export function ToolIconPanel({
   toolId,
   uploadsEnabled,
 }: ToolIconPanelProps): ReactElement {
-  const [uploadState, uploadAction, isUploading] = useActionState(uploadToolIconAction, IDLE);
-  const [removeState, removeAction, isRemoving] = useActionState(removeToolIconAction, IDLE);
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const state = uploadState.status === "idle" ? removeState : uploadState;
+  const [state, setState] = useState<ToolContentActionState>(IDLE);
+  const [, uploadAction, isUploading] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
+    // React resets file inputs after a form action; retain the file for retries.
+    if (selectedFile) data.set("icon", selectedFile);
+    const next = await uploadToolIconAction(previous, data);
+    if (next.status === "success") resetSelection();
+    setState(next);
+    return next;
+  }, IDLE);
+  const [, removeAction, isRemoving] = useActionState(async (previous: ToolContentActionState, data: FormData) => {
+    const next = await removeToolIconAction(previous, data);
+    if (next.status === "success") resetSelection();
+    setState(next);
+    return next;
+  }, IDLE);
+  const busy = isUploading || isRemoving;
 
   useEffect(() => () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -44,18 +66,26 @@ export function ToolIconPanel({
 
   function preview(event: ChangeEvent<HTMLInputElement>): void {
     const file = event.target.files?.[0];
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(file ? URL.createObjectURL(file) : null);
-    setFileName(file?.name ?? null);
+    if (!file) return;
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setState(IDLE);
+  }
+
+  function resetSelection(): void {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (inputRef.current) inputRef.current.value = "";
+    setState(IDLE);
   }
 
   return (
     <section className="grid gap-5">
-      <div className="border-b border-border pb-5">
-        <h2 className="font-heading text-xl font-semibold">Tool icon</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div>
+        <H3 >Tool icon</H3>
+        <Muted className="mt-1 text-muted-foreground">
           Upload a square source. The catalog generates its display sizes automatically.
-        </p>
+        </Muted>
       </div>
 
       {state.status !== "idle" ? (
@@ -73,25 +103,30 @@ export function ToolIconPanel({
               <ToolIcon name={name} row={iconRow} size={72} toolId={toolId} />
             )}
           </span>
-          <p className="text-center text-[11px] text-muted-foreground">
-            {fileName ?? (iconRow ? "Uploaded icon" : "Generated identicon")}
-          </p>
+          <Caption className="block break-all text-center text-muted-foreground">
+            {selectedFile?.name ?? (iconRow ? "Uploaded icon" : "Generated identicon")}
+          </Caption>
         </div>
 
         {uploadsEnabled ? (
           <form action={uploadAction} className="grid content-start gap-4">
             <input name="toolId" type="hidden" value={toolId} />
-            <label className="group grid min-h-32 cursor-pointer place-items-center rounded-xl border border-dashed border-input bg-muted/40 p-5 text-center outline-none transition-colors hover:border-primary/45 hover:bg-accent focus-within:ring-2 focus-within:ring-ring">
-              <span>
-                <span className="mx-auto grid size-9 place-items-center rounded-lg bg-card text-primary"><ImagePlus aria-hidden="true" className="size-4" /></span>
-                <span className="mt-2 block text-sm font-semibold">Choose a replacement icon</span>
-                <span className="mt-1 block text-xs text-muted-foreground">PNG, JPG, or WebP · square recommended · 1 MB maximum</span>
-              </span>
-              <Input accept="image/png,image/jpeg,image/webp" className="sr-only" name="icon" onChange={preview} required type="file" />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={isUploading || !fileName} type="submit"><Upload aria-hidden="true" />{isUploading ? "Uploading…" : "Upload icon"}</Button>
-            </div>
+            <Input accept="image/png,image/jpeg,image/webp" aria-label="Choose an icon" className="peer sr-only" disabled={busy} id={inputId} name="icon" onChange={preview} ref={inputRef} required={!selectedFile} tabIndex={selectedFile ? -1 : 0} type="file" />
+            {selectedFile ? (
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={busy} onClick={resetSelection} size="sm" type="button" variant="secondary"><RotateCcw aria-hidden="true" />Reset</Button>
+                <Button disabled={busy} loading={isUploading} size="sm" type="submit"><Upload aria-hidden="true" />{isUploading ? "Uploading…" : "Upload"}</Button>
+                <Button disabled={busy} onClick={() => inputRef.current?.click()} size="sm" type="button" variant="secondary"><ImagePlus aria-hidden="true" />Choose another</Button>
+              </div>
+            ) : (
+              <Label className="group grid min-h-32 cursor-pointer place-items-center rounded-xl border border-dashed border-input bg-muted/40 p-5 text-center outline-none transition-colors hover:border-primary/45 hover:bg-accent peer-focus-visible:ring-2 peer-focus-visible:ring-ring" htmlFor={inputId}>
+                <span>
+                  <span className="mx-auto grid size-9 place-items-center rounded-lg bg-card text-primary"><ImagePlus aria-hidden="true" className="size-4" /></span>
+                  <Text className="mt-2 block">Choose a replacement icon</Text>
+                  <Caption className="mt-1 block text-muted-foreground">PNG, JPG, or WebP · square recommended · 1 MB maximum</Caption>
+                </span>
+              </Label>
+            )}
           </form>
         ) : (
           <AlertBanner title="Icon uploads are disabled" variant="warning">
@@ -103,7 +138,7 @@ export function ToolIconPanel({
       {iconRow ? (
         <form action={removeAction} className="border-t border-border pt-4">
           <input name="toolId" type="hidden" value={toolId} />
-          <Button disabled={isRemoving} size="sm" type="submit" variant="danger-subtle"><Trash2 aria-hidden="true" />Remove uploaded icon</Button>
+          <Button disabled={busy} loading={isRemoving} size="sm" type="submit" variant="danger-subtle"><Trash2 aria-hidden="true" />Remove uploaded icon</Button>
         </form>
       ) : null}
     </section>

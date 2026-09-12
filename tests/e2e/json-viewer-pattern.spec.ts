@@ -1,7 +1,31 @@
 import { expect, test } from "@playwright/test";
 
+test("JSON result controls disable without a result and recover with valid input", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
+  const input = page.getByRole("textbox", { name: "JSON input", exact: true });
+  const result = page.getByTestId("json-result-renderer");
+  const view = result.locator('[aria-label="JSON result view"]');
+  await expect(view).toBeDisabled();
+
+  await input.fill('{"name":"Example"}');
+  await expect(view).toBeEnabled();
+  await view.click();
+  await page.getByRole("option", { name: "Tree", exact: true }).click();
+
+  for (const source of ["", '{"broken":}']) {
+    await input.fill(source);
+    await expect(result.locator("header button:enabled, header input:enabled")).toHaveCount(0);
+    await expect(result.locator('[aria-label="Expand all JSON nodes"]')).toBeDisabled();
+  }
+
+  await input.fill('{"restored":true}');
+  for (const label of ["JSON result view", "Search JSON result", "Expand all JSON nodes", "Copy JSON result", "Download JSON result"]) {
+    await expect(result.locator(`[aria-label="${label}"]`)).toBeEnabled();
+  }
+});
+
 test("JSON result views can scroll to the final value", async ({ page }) => {
-  await page.goto("http://localhost:3000/devtools/json-viewer");
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
   await page.getByRole("button", { name: "Example", exact: true }).click();
   await page.getByRole("textbox", { name: "JSON input" }).fill(JSON.stringify({
     entries: Array.from({ length: 120 }, (_, index) => `Value ${index}`),
@@ -10,7 +34,7 @@ test("JSON result views can scroll to the final value", async ({ page }) => {
   const result = page.getByTestId("json-result-renderer");
   for (const mode of ["read-only", "form", "tree", "code"]) {
     await result.getByRole("combobox", { name: "JSON result view" }).click();
-    await page.getByRole("option", { name: mode, exact: true }).click();
+    await page.getByRole("option", { name: mode === "read-only" ? "View" : mode[0].toUpperCase() + mode.slice(1), exact: true }).click();
     if (mode !== "code") {
       await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
     }
@@ -33,7 +57,7 @@ test("JSON result views can scroll to the final value", async ({ page }) => {
 });
 
 test("JSON Viewer read-only view preserves values and editable Form view", async ({ page }) => {
-  await page.goto("http://localhost:3000/devtools/json-viewer");
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
   const input = page.getByRole("textbox", { name: "JSON input" });
   const result = page.getByTestId("json-result-renderer");
   const view = result.getByRole("combobox", { name: "JSON result view" });
@@ -43,7 +67,7 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   });
   await input.fill(source);
   await view.click();
-  await page.getByRole("option", { name: "read-only", exact: true }).click();
+  await page.getByRole("option", { name: "View", exact: true }).click();
   await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
   const values = result.getByRole("tree", { name: "Read-only JSON values" });
   await expect(values).toContainText('"Example"');
@@ -65,13 +89,13 @@ test("JSON Viewer read-only view preserves values and editable Form view", async
   await search.fill("");
   await expect(input).toHaveValue(source);
   await view.click();
-  await page.getByRole("option", { name: "form", exact: true }).click();
+  await page.getByRole("option", { name: "Form", exact: true }).click();
   await result.getByRole("button", { name: "Expand all JSON nodes" }).click();
   const name = result.getByRole("textbox", { name: "Edit name", exact: true });
   await name.fill("Updated");
   await name.press("Enter");
   await view.click();
-  await page.getByRole("option", { name: "read-only", exact: true }).click();
+  await page.getByRole("option", { name: "View", exact: true }).click();
   await expect(values).toContainText('"Updated"');
   await expect(values.locator("input, textarea, select, [contenteditable=true], [role=switch]")).toHaveCount(0);
   await expect(input).toHaveValue(source);
@@ -93,7 +117,7 @@ test("JSON Viewer matches the approved split-workbench flow", async ({
   await page.addInitScript(() => {
     window.localStorage.removeItem("smarttools:json-viewer:split-size");
   });
-  await page.goto("http://localhost:3000/devtools/json-viewer");
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
 
   const workbench = page.getByTestId("tool-workspace");
   const toolbar = workbench.getByTestId("tool-action-toolbar");
@@ -345,11 +369,89 @@ test("JSON Formatter uses the shared JSON result controls", async ({ page }) => 
   await expect(result.getByRole("group", { name: "JSON edit history" })).toHaveCount(0);
 
   await view.click();
-  await page.getByRole("option", { name: "tree", exact: true }).click();
+  await page.getByRole("option", { name: "Tree", exact: true }).click();
   await expect(result.getByRole("group", { name: "Tree expansion controls" })).toBeVisible();
   await expect(result.getByRole("group", { name: "JSON edit history" })).toBeVisible();
 
   await result.getByRole("combobox", { name: "JSON result view" }).click();
-  await page.getByRole("option", { name: "form", exact: true }).click();
+  await page.getByRole("option", { name: "Form", exact: true }).click();
   await expect(result.getByRole("tree", { name: "JSON value editor" })).toBeVisible();
+});
+
+test("JSON search supports Enter and Shift+Enter with wraparound", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
+  await page.getByRole("textbox", { name: "JSON input", exact: true }).fill(
+    JSON.stringify({ first: "match", second: "match", third: "match" }),
+  );
+  const result = page.getByTestId("json-result-renderer");
+  const search = result.getByRole("searchbox", { name: "Search JSON result" });
+  const counter = result.getByTestId("json-search-control").locator('[aria-live="polite"]');
+  for (const mode of ["code", "tree", "form", "read-only"]) {
+    await result.getByRole("combobox", { name: "JSON result view" }).click();
+    await page.getByRole("option", { name: mode === "read-only" ? "View" : mode[0].toUpperCase() + mode.slice(1), exact: true }).click();
+    await search.fill("match");
+    await expect(counter).toHaveText("1/3");
+    await search.press("Enter");
+    await expect(counter).toHaveText("2/3");
+    await search.press("Shift+Enter");
+    await expect(counter).toHaveText("1/3");
+    await search.press("Shift+Enter");
+    await expect(counter).toHaveText("3/3");
+    await search.press("Enter");
+    await expect(counter).toHaveText("1/3");
+    await expect(search).toBeFocused();
+    await search.fill("missing");
+    await search.press("Enter");
+    await search.press("Shift+Enter");
+    await expect(counter).toHaveText("0/0");
+    await expect(result.getByRole("button", { name: "Next JSON search match" })).toBeDisabled();
+    await search.fill("first");
+    await search.press("Enter");
+    await search.press("Shift+Enter");
+    await expect(counter).toHaveText("1/1");
+    await search.fill("");
+    await search.press("Enter");
+    await expect(counter).toHaveCount(0);
+  }
+});
+
+test("JSON search highlights exact occurrences and only the active line", async ({ page }) => {
+  await page.goto("http://localhost:3000/devtools/json-viewer", { waitUntil: "networkidle" });
+  await page.getByRole("textbox", { name: "JSON input", exact: true }).fill(
+    JSON.stringify({ first: "match match", second: "MATCH", literal: "a.b [x]", escaped: '<tag> "quoted"' }),
+  );
+  const result = page.getByTestId("json-result-renderer");
+  const search = result.getByRole("searchbox", { name: "Search JSON result" });
+  const code = result.getByRole("tabpanel");
+  await expect(code).toContainText('"first": "match match"');
+  const source = await code.innerText();
+  const marks = code.locator("mark");
+  const active = code.locator('mark[data-search-current="true"]');
+  const currentLine = code.locator('[data-formatted-current="true"]');
+  await search.fill("match");
+  await expect(marks).toHaveText(["match", "match", "MATCH"]);
+  await expect(currentLine).toHaveCount(1);
+  await expect(currentLine).toContainText('"first"');
+  await expect(active).toHaveCount(1);
+  await expect(marks.nth(0)).toHaveAttribute("data-search-current", "true");
+  await search.press("Enter");
+  await expect(marks.nth(1)).toHaveAttribute("data-search-current", "true");
+  await expect(currentLine).toContainText('"first"');
+  await search.press("Enter");
+  await expect(active).toHaveText("MATCH");
+  await expect(currentLine).toHaveCount(1);
+  await expect(currentLine).toContainText('"second"');
+  await search.press("Shift+Enter");
+  await expect(marks.nth(1)).toHaveAttribute("data-search-current", "true");
+  for (const query of ["a.b", "[x]", "<tag>", '\\"quoted\\"', '"first": "match']) {
+    await search.fill(query);
+    await expect.poll(async () => (await marks.allTextContents()).join("")).toBe(query);
+    await expect.poll(() => code.innerText()).toBe(source);
+  }
+  await search.fill("missing");
+  await expect(marks).toHaveCount(0);
+  await expect(currentLine).toHaveCount(0);
+  await search.fill("");
+  await expect(marks).toHaveCount(0);
+  await expect.poll(() => code.innerText()).toBe(source);
 });

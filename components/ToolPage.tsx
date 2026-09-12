@@ -360,7 +360,6 @@ function ToolToolbar(): ReactElement {
   const exampleIcon = chrome.toolbarActions?.exampleIcon;
   const exampleLabel = chrome.toolbarActions?.exampleLabel ?? "Example";
   const exampleVariant = chrome.toolbarActions?.exampleVariant ?? "link";
-  const hasSettings = Object.keys(chrome.spec.settings.fields).length > 0;
   const running = runtime.lifecycle === "running";
   const [resetSnapshot, setResetSnapshot] = useState<{
     input: WorkspaceInputState;
@@ -458,7 +457,7 @@ function ToolToolbar(): ReactElement {
           Undo reset
         </Button>
       ) : null}
-      {!hasSettings && primaryAction ? (
+      {primaryAction ? (
         <Button
           aria-busy={primaryAction.running || undefined}
           disabled={primaryAction.running && primaryAction.onCancel ? false : primaryAction.disabled}
@@ -469,7 +468,7 @@ function ToolToolbar(): ReactElement {
           {primaryAction.running && !primaryAction.onCancel ? (
             <Loader2 aria-hidden="true" className="size-4 animate-spin" />
           ) : null}
-          {primaryAction.running && primaryAction.onCancel ? "Cancel" : primaryAction.label}
+          {primaryAction.running && primaryAction.onCancel ? "Cancel" : chrome.toolbarActions?.primaryActionLabel ?? primaryAction.label}
         </Button>
       ) : null}
     </>
@@ -585,7 +584,7 @@ function toWorkbenchDefinition(spec: ToolSpec, definitionKey: string): ToolDefin
 }
 
 export interface ToolPageProps {
-  account: { returnTo: string; user: { name: string } | null };
+  account: { returnTo: string; user: { name: string; isAdmin?: boolean } | null };
   category: string;
   /** The tool's folder under `tools/`. Never the public slug. */
   definitionKey: string;

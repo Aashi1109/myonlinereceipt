@@ -17,6 +17,15 @@ import {
   type PdfmeSchema,
 } from "@smarttools/invoice-templates";
 import {
+  Strong,
+  Caption,
+  H1,
+  H3,
+  List,
+  Muted,
+  Overline,
+  P,
+  Text,
   AlertBanner,
   Button,
   Card,
@@ -28,6 +37,7 @@ import {
   StatusBadge,
   Textarea,
   buttonVariants,
+  typographyStyles,
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
@@ -53,7 +63,7 @@ import {
   Hand,
   ImageIcon,
   Layers,
-  List,
+  List as ListIcon,
   ListFilter,
   LoaderCircle,
   Maximize2,
@@ -79,6 +89,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
 import {
   startTransition,
   useCallback,
@@ -162,7 +173,7 @@ const ADD_TOOLS: AddTool[] = [
   {
     description: "Bulleted or numbered items",
     group: "Content",
-    icon: List,
+    icon: ListIcon,
     label: "List",
     pluginKey: "list",
   },
@@ -313,8 +324,8 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
       "display:flex;align-items:center;justify-content:space-between;gap:8px;";
     const text = document.createElement("div");
     text.innerHTML =
-      '<div style="font-size:12px;font-weight:600;color:#1a1a1a;line-height:1.3;">Repeat on every page</div>' +
-      '<div style="font-size:10px;color:#666;line-height:1.3;">Move into header or footer</div>';
+      `<div class="${typographyStyles.strong}" style="color:#1a1a1a;">Repeat on every page</div>` +
+      `<div class="${typographyStyles.caption}" style="color:#666;">Move into header or footer</div>`;
 
     const toggle = document.createElement("button");
     toggle.type = "button";
@@ -335,8 +346,9 @@ function renderSmarttoolsControls(props: PropPanelWidgetProps): void {
     const del = document.createElement("button");
     del.type = "button";
     del.textContent = "Delete element";
+    del.className = typographyStyles.caption;
     del.style.cssText =
-      "height:36px;width:100%;border:1px solid #d6d9de;border-radius:8px;background:#fff;color:#dc2626;font-size:12px;font-weight:600;cursor:pointer;";
+      "height:36px;width:100%;border:1px solid #d6d9de;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;";
     del.addEventListener("click", () => smarttoolsBridge.deleteElement());
 
     wrap.append(row, del);
@@ -455,24 +467,42 @@ export default function AdvancedTemplateEditor({
   const restoringHistoryRef = useRef(false);
   const saveFromDesignerRef = useRef<(next: Template) => void>(() => {});
 
-  const [activePanel, setActivePanel] = useState<ActivePanel>("add");
-  const [addQuery, setAddQuery] = useState("");
+  const [panelQuery, setPanelQuery] = useAdminQueryState(
+    "panel", "add", ["add", "layers", "data", "pages", "none"],
+  );
+  const activePanel: ActivePanel = panelQuery === "none" ? null : panelQuery;
+  const setActivePanel = (panel: ActivePanel) => setPanelQuery(panel ?? "none");
+  const [addQuery, setAddQuery] = useAdminQueryState<string>("q", "");
   const [expandedBindingKey, setExpandedBindingKey] = useState<string | null>(null);
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
-  const [canvasMode, setCanvasMode] = useState<"pan" | "select">("select");
-  const [currentPage, setCurrentPage] = useState(0);
+  const [canvasMode, setCanvasMode] = useAdminQueryState("canvas", "select", ["pan", "select"]);
   const [designerReady, setDesignerReady] = useState(false);
-  const [documentStripOpen, setDocumentStripOpen] = useState(true);
+  const [stripQuery, setStripQuery] = useAdminQueryState("strip", "open", ["open", "closed"]);
+  const documentStripOpen = stripQuery === "open";
   const [error, setError] = useState("");
-  const [focusMode, setFocusMode] = useState(false);
+  const [focusQuery] = useAdminQueryState("focus", "false", ["false", "true"]);
+  const focusMode = focusQuery === "true";
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isDirty, setIsDirty] = useState(true);
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [savingAction, setSavingAction] = useState<"draft" | "publish" | null>(null);
+  const isSaving = savingAction !== null;
   const [name, setName] = useState(template.name);
   const [pageCount, setPageCount] = useState(
     initialTemplate.current.schemas.length,
   );
+  const [pageQuery, setPageQuery] = useAdminQueryState(
+    "page", "1", Array.from({ length: pageCount }, (_, index) => String(index + 1)),
+  );
+  const currentPage = Number(pageQuery) - 1;
+  const currentPageRef = useRef(currentPage);
+  currentPageRef.current = currentPage;
+  const restoringPageRef = useRef(true);
+  const setCurrentPage = (pageIndex: number) => {
+    currentPageRef.current = pageIndex;
+    restoringPageRef.current = true;
+    setPageQuery(String(pageIndex + 1));
+  };
   const [pageFormat, setPageFormat] = useState(template.config.pageFormat);
   const [pendingPageRemoval, setPendingPageRemoval] = useState<number | null>(
     null,
@@ -599,7 +629,7 @@ export default function AdvancedTemplateEditor({
       }
 
       setError("");
-      setIsSaving(true);
+      setSavingAction(publish ? "publish" : "draft");
       const formData = new FormData();
       formData.set("templateId", template.id);
       formData.set(
@@ -621,7 +651,7 @@ export default function AdvancedTemplateEditor({
       } catch (saveError) {
         setError(errorMessage(saveError));
       } finally {
-        setIsSaving(false);
+        setSavingAction(null);
       }
     },
     [form, name, pageFormat, sampleData, template.config, template.id],
@@ -662,7 +692,10 @@ export default function AdvancedTemplateEditor({
         designer.onChangeTemplate((next) => rememberTemplate(next));
         designer.onChangeSelection((next) => setSelection(next));
         designer.onPageChange(({ currentPage: page, totalPages }) => {
-          setCurrentPage(Math.max(0, page - 1));
+          if (page === currentPageRef.current) restoringPageRef.current = false;
+          if (!restoringPageRef.current) {
+            updateAdminQuery({ page: page > 0 ? String(page + 1) : null }, true);
+          }
           setPageCount(totalPages);
         });
         designer.onSaveTemplate((next) => saveFromDesignerRef.current(next));
@@ -670,20 +703,16 @@ export default function AdvancedTemplateEditor({
         setDesignerReady(true);
         window.setTimeout(() => {
           if (disposed) return;
-          const firstPage = currentTemplateRef.current.schemas[0] ?? [];
+          const pageIndex = currentPageRef.current;
+          const firstPage = currentTemplateRef.current.schemas[pageIndex] ?? [];
           const schemaIndex = firstPage.findIndex((schema) =>
             schema.name.toLowerCase().includes("total"),
           );
           const selectedIndex = schemaIndex >= 0 ? schemaIndex : 0;
           const selected = firstPage[selectedIndex];
-          if (!selected || designer.getSelectedSchemas().length) return;
           designer.selectSchemas(
-            {
-              name: selected.name,
-              pageIndex: 0,
-              schemaIndex: selectedIndex,
-            },
-            { pageIndex: 0, scroll: true },
+            selected ? [{ name: selected.name, pageIndex, schemaIndex: selectedIndex }] : [],
+            { pageIndex, scroll: true },
           );
         }, 300);
       })
@@ -699,6 +728,27 @@ export default function AdvancedTemplateEditor({
       }
     };
   }, [rememberTemplate]);
+
+  useEffect(() => {
+    const container = designerContainerRef.current;
+    if (!designerReady || !container) return;
+    restoringPageRef.current = designerRef.current?.getPageCursor() !== currentPage;
+    const scrollToPage = () => {
+      const canvas = container.querySelector<HTMLElement>(".pdfme-designer-canvas");
+      const paper = canvas?.querySelectorAll<HTMLElement>("div[style*=background-image]")[currentPage];
+      if (!canvas || !paper) return false;
+      if (designerRef.current?.getPageCursor() === currentPage) restoringPageRef.current = false;
+      // pdfme's selection API cannot navigate to an empty page; scroll its actual paper.
+      canvas.scrollTop += paper.getBoundingClientRect().top - canvas.getBoundingClientRect().top;
+      return true;
+    };
+    if (scrollToPage()) return;
+    const observer = new MutationObserver(() => {
+      if (scrollToPage()) observer.disconnect();
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [currentPage, designerReady, pageCount]);
 
   useEffect(() => {
     if (!designerReady || canvasMode !== "pan") return;
@@ -1277,12 +1327,12 @@ export default function AdvancedTemplateEditor({
         className="absolute bottom-5 left-[5.5rem] top-[4.625rem] z-30 flex min-h-0 max-h-[574px] w-[17.5rem] flex-col overflow-hidden rounded-r-xl rounded-bl-xl border border-border bg-card shadow-[0_8px_24px_rgba(17,18,20,0.06)]"
       >
         <div className="flex h-12 shrink-0 items-center justify-between px-3">
-          <h2
-            className="font-heading text-sm font-semibold"
+          <H3
+
             id={panelTitleId}
           >
             {panelTitle}
-          </h2>
+          </H3>
           <Button
             aria-label={`Close ${activePanel} panel`}
             className="text-muted-foreground"
@@ -1297,17 +1347,17 @@ export default function AdvancedTemplateEditor({
 
         {activePanel === "add" ? (
           <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-3 pb-3">
-            <label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-xs text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
+            <Label className="flex h-9 shrink-0 items-center gap-2 rounded-lg border border-border bg-muted px-2.5 text-muted-foreground focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
               <Search aria-hidden="true" size={15} />
               <input
                 aria-label="Search elements"
-                className="min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
-                onChange={(event) => setAddQuery(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+                onChange={(event) => setAddQuery(event.target.value, true)}
                 placeholder="Search elements"
                 type="search"
                 value={addQuery}
               />
-            </label>
+            </Label>
             <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
               {ADD_TOOL_GROUPS.filter((group) => group !== "Codes").map(
                 (group) => {
@@ -1324,9 +1374,9 @@ export default function AdvancedTemplateEditor({
                   });
                   return (
                     <section key={group}>
-                      <h3 className="mb-1 px-1 font-caption text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                      <Overline className="mb-1 block px-1 text-muted-foreground">
                         {group === "Fields" ? "Fields & codes" : group}
-                      </h3>
+                      </Overline>
                       <div className="grid gap-1">
                         {visibleTools.map((tool) => {
                           const Icon = tool.icon;
@@ -1343,12 +1393,12 @@ export default function AdvancedTemplateEditor({
                                 <Icon aria-hidden="true" size={15} />
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span className="block text-[11px] font-semibold text-foreground">
+                                <Caption className="block text-foreground">
                                   {tool.label}
-                                </span>
-                                <span className="block truncate text-[9px] text-muted-foreground">
+                                </Caption>
+                                <Caption className="block truncate text-muted-foreground">
                                   {tool.description}
-                                </span>
+                                </Caption>
                               </span>
                               <Plus
                                 aria-hidden="true"
@@ -1369,13 +1419,13 @@ export default function AdvancedTemplateEditor({
 
         {activePanel === "layers" ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-            <div className="mb-2 flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
-              <span>
+            <div className="mb-2 flex items-center justify-between text-muted-foreground">
+              <Caption>
                 {layerItems.length ? "Populated" : "Empty"} · Page {currentPage + 1}
-              </span>
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[8px] font-medium normal-case">
+              </Caption>
+              <Caption className="rounded bg-muted px-1.5 py-0.5">
                 {layerItems.length} elements
-              </span>
+              </Caption>
             </div>
             {layerItems.length ? (
               <OrderableList
@@ -1406,15 +1456,15 @@ export default function AdvancedTemplateEditor({
                     </button>
                     <Type aria-hidden="true" className="shrink-0" size={13} />
                     <button
-                      className="min-w-0 flex-1 truncate text-left text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="min-w-0 flex-1 truncate text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       onClick={() => selectLayer(item)}
                       type="button"
                     >
-                      {item.schema.name}
+                      <Caption>{item.schema.name}</Caption>
                     </button>
-                    <span className="mr-1 font-caption text-[8px] uppercase text-muted-foreground">
+                    <Overline className="mr-1 text-muted-foreground">
                       {item.schema.type}
-                    </span>
+                    </Overline>
                   </div>
                 )}
               />
@@ -1423,10 +1473,10 @@ export default function AdvancedTemplateEditor({
                 <span className="grid size-[34px] place-items-center rounded-md bg-card text-muted-foreground">
                   <Layers aria-hidden="true" size={17} />
                 </span>
-                <p className="text-xs font-semibold">No elements yet</p>
-                <p className="text-[10px] text-muted-foreground">
+                <Caption className="block ">No elements yet</Caption>
+                <Caption className="block text-muted-foreground">
                   Add an element to start this page.
-                </p>
+                </Caption>
               </div>
             )}
           </div>
@@ -1436,24 +1486,24 @@ export default function AdvancedTemplateEditor({
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
             <div className="mb-3 flex h-10 items-center justify-between rounded-lg bg-muted px-3">
               <div>
-                <p className="font-caption text-[8px] font-semibold uppercase text-muted-foreground">
+                <Overline className="block text-muted-foreground">
                   Document type
-                </p>
-                <p className="text-[11px] font-semibold">{definition.label}</p>
+                </Overline>
+                <Caption className="block ">{definition.label}</Caption>
               </div>
               <ChevronDown aria-hidden="true" className="text-muted-foreground" size={14} />
             </div>
-            <p className="mb-2 font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <Overline className="block mb-2 text-muted-foreground">
               Canvas bindings
-            </p>
+            </Overline>
             <div className="grid gap-2">
                 {Array.from(
                   new Set(definition.fields.map((field) => field.section)),
                 ).map((fieldSection) => (
                   <section className="grid gap-1.5" key={fieldSection}>
-                    <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Overline className="text-muted-foreground">
                       {fieldSection}
-                    </h3>
+                    </Overline>
                     {definition.fields
                       .filter((field) => field.section === fieldSection)
                       .map((field) => {
@@ -1475,15 +1525,15 @@ export default function AdvancedTemplateEditor({
                                 onClick={() => setExpandedBindingKey((key) => key === field.key ? null : field.key)}
                                 type="button"
                               >
-                                <p className="truncate text-[11px] font-semibold text-foreground">
+                                <Caption className="block truncate text-foreground">
                                   {field.label}
-                                </p>
-                                <p className="mt-0.5 truncate font-mono text-[9px] text-muted-foreground">
+                                </Caption>
+                                <Caption className="block mt-0.5 truncate text-muted-foreground">
                                   {field.key}
-                                </p>
+                                </Caption>
                               </button>
                               <Button
-                                className="h-6 px-2 text-[9px] font-semibold"
+                                className="h-6 px-2"
                                 disabled={!selectedSchema || !compatible}
                                 onClick={() => {
                                   setExpandedBindingKey(field.key);
@@ -1497,20 +1547,20 @@ export default function AdvancedTemplateEditor({
                               </Button>
                             </div>
                             <div className="mt-1.5 flex items-center gap-1.5">
-                              <StatusBadge className="px-1.5 py-0 text-[8px]">
+                              <StatusBadge className="px-1.5 py-0">
                                 {field.source}
                               </StatusBadge>
-                              <StatusBadge className="px-1.5 py-0 text-[8px]">
+                              <StatusBadge className="px-1.5 py-0">
                                 {field.valueType}
                               </StatusBadge>
-                              <span className="min-w-0 truncate text-[9px] text-muted-foreground">
+                              <Text className="min-w-0 truncate text-muted-foreground">
                                 {String(sampleData[field.key] ?? field.sampleValue ?? "No sample")}
-                              </span>
+                              </Text>
                             </div>
                             {expandedBindingKey === field.key ? (
                               <Textarea
                                 aria-label={`${field.label} sample value`}
-                                className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 text-[10px] outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                                className="mt-2 min-h-10 resize-y rounded-md border border-input bg-background px-2 py-1.5 outline-none read-only:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
                                 onChange={(event) => {
                                   if (readOnly) return;
                                   setSampleData((values) => ({ ...values, [field.key]: event.target.value }));
@@ -1528,15 +1578,15 @@ export default function AdvancedTemplateEditor({
             </div>
 
             <details className="mt-4 border-t border-border pt-3">
-              <summary className="cursor-pointer font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <summary className="cursor-pointer text-muted-foreground"><Strong>
                 Published form configuration
-              </summary>
+              </Strong></summary>
             <div className="mt-3 flex items-center justify-between gap-2">
               <div>
-                <h3 className="text-xs font-semibold">Published form</h3>
-                <p className="text-[10px] text-muted-foreground">
+                <H3 >Published form</H3>
+                <Caption className="block text-muted-foreground">
                   Drag handles work with pointer and keyboard.
-                </p>
+                </Caption>
               </div>
               <Button
                 onClick={addCustomSection}
@@ -1573,7 +1623,7 @@ export default function AdvancedTemplateEditor({
                     </Button>
                     <Input
                       aria-label="Section label"
-                      className="h-8 text-xs font-extrabold"
+                      className="h-8"
                       onChange={(event) =>
                         updateSection(section.id, (current) => ({
                           ...current,
@@ -1650,7 +1700,7 @@ export default function AdvancedTemplateEditor({
                             </Button>
                             <Input
                               aria-label={`${entry.key} label`}
-                              className="h-8 min-w-0 text-xs font-bold"
+                              className="h-8 min-w-0"
                               onChange={(event) =>
                                 updateFormEntry(
                                   section.id,
@@ -1664,7 +1714,7 @@ export default function AdvancedTemplateEditor({
                               value={entry.label}
                             />
                             <Button
-                              className="h-auto rounded-md px-2 py-1 text-[10px] font-extrabold"
+                              className="h-auto rounded-md px-2 py-1"
                               disabled={!selectedSchema || !compatible}
                               onClick={() => bindSelection(entry.key)}
                               size="xs"
@@ -1675,15 +1725,15 @@ export default function AdvancedTemplateEditor({
                             </Button>
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                            <StatusBadge className="text-[9px]">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusBadge >
                               {entry.kind === "builtin"
                                 ? definitionField?.source
                                 : "custom"}
                             </StatusBadge>
-                            <span className="max-w-48 truncate text-muted-foreground">
+                            <Text className="max-w-48 truncate text-muted-foreground">
                               {entry.key}
-                            </span>
+                            </Text>
                             <span className="ml-auto flex items-center gap-1">
                               <CheckboxControl
                                 className="size-4"
@@ -1702,7 +1752,7 @@ export default function AdvancedTemplateEditor({
                                 }
                               />
                               <Label
-                                className="text-[10px] text-foreground"
+                                className="text-foreground"
                                 htmlFor={`${section.id}-${entry.key}-enabled`}
                               >
                                 Enabled
@@ -1726,7 +1776,7 @@ export default function AdvancedTemplateEditor({
                                 }
                               />
                               <Label
-                                className="text-[10px] text-foreground"
+                                className="text-foreground"
                                 htmlFor={`${section.id}-${entry.key}-required`}
                               >
                                 Required
@@ -1736,7 +1786,7 @@ export default function AdvancedTemplateEditor({
 
                           <Input
                             aria-label={`${entry.label} help text`}
-                            className="h-8 text-xs"
+                            className="h-8"
                             onChange={(event) =>
                               updateFormEntry(
                                 section.id,
@@ -1752,12 +1802,12 @@ export default function AdvancedTemplateEditor({
                           />
 
                           <Field
-                            className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                            className="gap-1 [&_[data-slot=field-label]]:text-foreground"
                             htmlFor={`${section.id}-${entry.key}-section`}
                             label="Move to section"
                           >
                             <Select
-                              className="h-8 text-xs"
+                              className="h-8"
                               onChange={(event) =>
                                 moveFormEntry(
                                   section.id,
@@ -1781,12 +1831,12 @@ export default function AdvancedTemplateEditor({
                           {entry.kind === "custom" ? (
                             <>
                               <Field
-                                className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                                className="gap-1 [&_[data-slot=field-label]]:text-foreground"
                                 htmlFor={`${section.id}-${entry.key}-control`}
                                 label="Control"
                               >
                                 <Select
-                                  className="h-8 text-xs"
+                                  className="h-8"
                                   onChange={(event) =>
                                     updateFormEntry(
                                       section.id,
@@ -1811,7 +1861,7 @@ export default function AdvancedTemplateEditor({
                               {entry.control === "select" ? (
                                 <Input
                                   aria-label={`${entry.label} select options`}
-                                  className="h-8 text-xs"
+                                  className="h-8"
                                   onChange={(event) =>
                                     updateFormEntry(
                                       section.id,
@@ -1838,12 +1888,12 @@ export default function AdvancedTemplateEditor({
                           {entry.kind === "repeater" ? (
                             <div className="grid gap-2 rounded-lg bg-muted/40 p-2">
                               <Field
-                                className="gap-1 [&_[data-slot=field-label]]:text-[10px] [&_[data-slot=field-label]]:font-bold [&_[data-slot=field-label]]:text-foreground"
+                                className="gap-1 [&_[data-slot=field-label]]:text-foreground"
                                 htmlFor={`${section.id}-${entry.key}-min-rows`}
                                 label="Minimum rows"
                               >
                                 <Input
-                                  className="h-8 text-xs"
+                                  className="h-8"
                                   max={MAX_RUNTIME_REPEATER_ROWS}
                                   min={0}
                                   onChange={(event) =>
@@ -1902,7 +1952,7 @@ export default function AdvancedTemplateEditor({
                                     </Button>
                                     <Input
                                       aria-label={`${column.key} column label`}
-                                      className="h-8 text-xs"
+                                      className="h-8"
                                       onChange={(event) =>
                                         updateFormEntry(
                                           section.id,
@@ -1932,7 +1982,7 @@ export default function AdvancedTemplateEditor({
                                     />
                                     <Select
                                       aria-label={`${column.label} control`}
-                                      className="h-8 text-xs"
+                                      className="h-8"
                                       onChange={(event) =>
                                         updateFormEntry(
                                           section.id,
@@ -1994,7 +2044,7 @@ export default function AdvancedTemplateEditor({
                                     {column.control === "select" ? (
                                       <Input
                                         aria-label={`${column.label} options`}
-                                        className="col-span-4 h-8 text-xs"
+                                        className="col-span-4 h-8"
                                         onChange={(event) =>
                                           updateFormEntry(
                                             section.id,
@@ -2050,7 +2100,7 @@ export default function AdvancedTemplateEditor({
 
                           <Textarea
                             aria-label={`${entry.label} sample value`}
-                            className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="min-h-12 resize-y rounded-lg border border-input bg-background px-2.5 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                             onChange={(event) => {
                               setSampleData((values) => ({
                                 ...values,
@@ -2105,15 +2155,15 @@ export default function AdvancedTemplateEditor({
 
         {activePanel === "pages" ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
-            <div className="flex items-center justify-between font-caption text-[9px] font-semibold uppercase text-muted-foreground">
-              <h3>Document pages</h3>
+            <div className="flex items-center justify-between text-muted-foreground">
+              <Overline>Document pages</Overline>
               <button
-                className="font-bold text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={addPage}
                 type="button"
-              >
+              ><Caption>
                 + Add
-              </button>
+              </Caption></button>
             </div>
             <div className="mt-2 flex h-9 items-center rounded-lg border border-border bg-muted/60 p-1">
               <Button
@@ -2128,11 +2178,11 @@ export default function AdvancedTemplateEditor({
                 <ChevronDown aria-hidden="true" className="rotate-90" size={13} strokeWidth={1.75} />
               </Button>
               <button
-                className="min-w-0 flex-1 truncate text-center text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="min-w-0 flex-1 truncate text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => goToPage(currentPage)}
                 type="button"
-              >
-                Page {currentPage + 1} of {pageCount}
+              ><Caption>
+                Page </Caption><Caption>{currentPage + 1}</Caption><Caption> of </Caption><Caption>{pageCount}</Caption>
               </button>
               <Button
                 aria-label="Next document page"
@@ -2173,20 +2223,20 @@ export default function AdvancedTemplateEditor({
                     onClick={() => goToPage(index)}
                     type="button"
                   >
-                    <span className={`grid h-8 w-7 shrink-0 place-items-center rounded border bg-card font-mono text-[9px] font-bold ${
+                    <Text className={`grid h-8 w-7 shrink-0 place-items-center rounded border bg-card ${
                       currentPage === index
                         ? "text-primary"
                         : "text-muted-foreground"
                     }`}>
                       {index + 1}
-                    </span>
+                    </Text>
                     <span className="min-w-0">
-                      <span className="block text-[10px] font-semibold">
+                      <Caption className="block">
                         Page {index + 1}
-                      </span>
-                      <span className="block text-[9px] text-muted-foreground">
+                      </Caption>
+                      <Caption className="block text-muted-foreground">
                         {page.length} elements
-                      </span>
+                      </Caption>
                     </span>
                   </button>
                   <div className="flex shrink-0 items-center gap-0.5">
@@ -2214,12 +2264,12 @@ export default function AdvancedTemplateEditor({
 
             <div className="mt-4 border-t border-border pt-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-caption text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                <Overline className="text-muted-foreground">
                   Repeating regions
-                </h3>
-                <span className={`text-[9px] font-medium ${selection?.schemas.length ? "text-primary" : "text-muted-foreground"}`}>
+                </Overline>
+                <Caption className={selection?.schemas.length ? "text-primary" : "text-muted-foreground"}>
                   {selection?.schemas.length ? "Elements ready" : "No selection"}
-                </span>
+                </Caption>
               </div>
               <div className="mt-2 grid gap-2">
                 {(["header", "footer"] as const).map((region) => {
@@ -2241,11 +2291,11 @@ export default function AdvancedTemplateEditor({
                     >
                       <Icon aria-hidden="true" className={editing || assigned ? "text-primary" : "text-muted-foreground"} size={14} strokeWidth={1.75} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[10px] font-semibold capitalize">{region}</p>
-                        <p className={`text-[8px] ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>{state}</p>
+                        <Caption className="block ">{region}</Caption>
+                        <Muted className={` ${editing || assigned ? "text-primary" : "text-muted-foreground"}`}>{state}</Muted>
                       </div>
                       <Button
-                        className="h-6 px-2 text-[9px]"
+                        className="h-6 px-2"
                         disabled={!ready}
                         onClick={() => moveSelectionToRegion(region)}
                         size="xs"
@@ -2260,7 +2310,7 @@ export default function AdvancedTemplateEditor({
               </div>
               {staticSchemas.length ? (
                 <div className="mt-3 grid gap-1">
-                  <p className="font-caption text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Assigned elements</p>
+                  <Overline className="block text-muted-foreground">Assigned elements</Overline>
                   {staticSchemas.map((schema, index) => {
                     const region = schema.smarttoolsRegion as Region | undefined;
                     const editing = editingRegion === region;
@@ -2269,11 +2319,11 @@ export default function AdvancedTemplateEditor({
                         className={`flex h-8 items-center justify-between gap-2 rounded-md border px-2 ${editing ? "border-primary bg-primary/10" : "border-border bg-card"}`}
                         key={`${schema.name}-${index}`}
                       >
-                        <span className="min-w-0 truncate text-[9px] font-medium">
+                        <Text className="min-w-0 truncate">
                           {schema.name} · {String(region ?? "repeat")}
-                        </span>
+                        </Text>
                         <Button
-                          className="h-6 px-2 text-[9px] font-semibold"
+                          className="h-6 px-2"
                           onClick={() => restoreRepeatingRegion(index)}
                           size="xs"
                           type="button"
@@ -2302,13 +2352,13 @@ export default function AdvancedTemplateEditor({
             className="mx-auto text-primary"
             size={28}
           />
-          <h1 className="mt-4 text-xl font-extrabold">
+          <H1 className="mt-4">
             Open the advanced designer on desktop
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          </H1>
+          <Muted className="mt-2 text-muted-foreground">
             Freeform positioning needs a larger workspace. You can still
             preview and use published templates from smaller devices.
-          </p>
+          </Muted>
           <Link
             className={buttonVariants({ className: "mt-5", variant: "secondary" })}
             href="/admin/templates"
@@ -2333,22 +2383,16 @@ export default function AdvancedTemplateEditor({
           </Link>
           <div className="w-[18.75rem] min-w-0 shrink-0">
             <div className="flex h-8 items-center gap-2">
-              <input
+              <Input
                 aria-label="Template name"
-                className="h-7 min-w-20 max-w-[210px] bg-transparent font-heading text-[15px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-7 min-w-20 max-w-[210px] [field-sizing:content] bg-transparent text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onChange={(event) => {
                   setName(event.target.value);
                   setIsDirty(true);
                 }}
-                size={Math.max(8, Math.min(24, name.length))}
-                style={{
-                  fontFamily: "Inter",
-                  fontSize: 15,
-                  fontWeight: 650,
-                }}
                 value={name}
               />
-              <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 font-caption text-[9px] font-semibold capitalize ${
+              <Text className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1 ${
                 template.status === "published"
                   ? "bg-emerald-50 text-emerald-700"
                   : "bg-amber-50 text-amber-700"
@@ -2359,16 +2403,16 @@ export default function AdvancedTemplateEditor({
                     : "bg-amber-600"
                 }`} />
                 {template.status}
-              </span>
+              </Text>
             </div>
-            <p className="truncate font-caption text-[10px] font-medium text-muted-foreground">
+            <Caption className="block truncate text-muted-foreground">
               Templates / Advanced · {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]} · Version {template.version}
-            </p>
+            </Caption>
           </div>
-          <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted text-xs font-bold">
+          <span className="flex h-9 w-[118px] shrink-0 items-center rounded-lg border border-border bg-muted">
             <Select
               aria-label="Page size"
-              className="h-9 w-full border-0 bg-transparent px-2.5 text-[11px] font-semibold shadow-none"
+              className="h-9 w-full border-0 bg-transparent px-2.5 shadow-none"
               disabled={!designerReady || isSaving}
               onChange={(event) =>
                 changePageFormat(event.target.value as PageFormat)
@@ -2409,21 +2453,15 @@ export default function AdvancedTemplateEditor({
             <Button
               className="h-9 px-3.5"
               disabled={!designerReady || isPreviewing}
+              loading={isPreviewing}
               onClick={() => void previewPdf()}
               size="sm"
               type="button"
               variant="secondary"
             >
-              {isPreviewing ? (
-                <LoaderCircle
-                  aria-hidden="true"
-                  className="animate-spin"
-                  size={15}
-                />
-              ) : null}
               Preview
             </Button>
-            <span className={`min-w-14 text-right font-caption text-[10px] font-semibold ${
+            <Caption className={`min-w-14 text-right ${
               isPreviewing
                 ? "text-primary"
                 : isSaving
@@ -2443,10 +2481,11 @@ export default function AdvancedTemplateEditor({
                     : savedAt
                       ? "Saved just now"
                       : `Version ${template.version}`}
-            </span>
+            </Caption>
             <Button
               className="h-9 px-3.5"
               disabled={isSaving || name.trim().length < 2}
+              loading={savingAction === "draft"}
               onClick={() =>
                 startTransition(() => {
                   void persistTemplate(false);
@@ -2461,6 +2500,7 @@ export default function AdvancedTemplateEditor({
             <Button
               className="h-9 px-4"
               disabled={isSaving || name.trim().length < 2}
+              loading={savingAction === "publish"}
               onClick={() =>
                 startTransition(() => {
                   void persistTemplate(true);
@@ -2475,8 +2515,8 @@ export default function AdvancedTemplateEditor({
               aria-label={focusMode ? "Exit focus mode" : "Enter focus mode"}
               className="size-9 text-foreground"
               onClick={() => {
-                setFocusMode((value) => !value);
-                closePanels();
+                updateAdminQuery({ focus: focusMode ? null : "true", panel: "none" });
+                setEditingRegion(null);
                 designerRef.current?.updateOptions({ sidebarOpen: false });
               }}
               size="icon"
@@ -2502,23 +2542,23 @@ export default function AdvancedTemplateEditor({
                 <X aria-hidden="true" size={14} />
               </Button>
             }
-            className="min-h-10 shrink-0 rounded-none border-x-0 border-t-0 border-b border-destructive/20 px-4 py-2 text-xs font-bold text-destructive"
+            className="min-h-10 shrink-0 rounded-none border-x-0 border-t-0 border-b border-destructive/20 px-4 py-2 text-destructive"
             variant="error"
           >
             {error}
           </AlertBanner>
         ) : null}
         {warnings.length ? (
-          <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
-            <summary className="cursor-pointer font-bold">
-              {warnings.length} non-blocking publish{" "}
-              {warnings.length === 1 ? "warning" : "warnings"}
+          <details className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-amber-900">
+            <summary className="cursor-pointer">
+              <Strong>{warnings.length}</Strong><Strong> non-blocking publish</Strong><Strong>{" "}</Strong>
+              <Strong>{warnings.length === 1 ? "warning" : "warnings"}</Strong>
             </summary>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
+            <List className="mt-2 list-disc space-y-1 pl-5">
               {warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
+                <li key={warning}><Text>{warning}</Text></li>
               ))}
-            </ul>
+            </List>
           </details>
         ) : null}
 
@@ -2600,11 +2640,11 @@ export default function AdvancedTemplateEditor({
             className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[oklch(0.965_0.004_255)]"
           >
             {!focusMode ? (
-              <div className="flex h-[54px] shrink-0 items-center border-b border-border bg-card px-3.5 text-xs">
+              <div className="flex h-[54px] shrink-0 items-center border-b border-border bg-card px-3.5">
                 <div className="flex h-full w-[292px] items-center gap-1 border-r border-border px-3.5">
-                  <span className="mr-1 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground">
+                  <Overline className="mr-1 text-muted-foreground">
                     Canvas
-                  </span>
+                  </Overline>
                   <Button
                     aria-label="Select tool"
                     aria-pressed={canvasMode === "select"}
@@ -2644,9 +2684,9 @@ export default function AdvancedTemplateEditor({
                   >
                     <Scan aria-hidden="true" size={15} />
                   </Button>
-                  <span className="ml-1 truncate rounded-md border border-border bg-muted px-2 py-1.5 text-[10px] font-bold">
+                  <Caption className="ml-1 truncate rounded-md border border-border bg-muted px-2 py-1.5">
                     {definition.label} · {PAGE_FORMAT_LABELS[pageFormat]}
-                  </span>
+                  </Caption>
                 </div>
 
                 <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
@@ -2664,14 +2704,14 @@ export default function AdvancedTemplateEditor({
                       size={14}
                     />
                   </Button>
-                  <span className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5 text-[11px] font-bold">
+                  <Caption className="flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1.5">
                     <File
                       aria-hidden="true"
                       className="text-muted-foreground"
                       size={13}
                     />
                     {currentPage + 1} / {pageCount}
-                  </span>
+                  </Caption>
                   <Button
                     aria-label="Next page"
                     disabled={currentPage >= pageCount - 1}
@@ -2699,9 +2739,9 @@ export default function AdvancedTemplateEditor({
                   >
                     <Minus aria-hidden="true" size={14} />
                   </Button>
-                  <span className="min-w-12 text-center text-[11px] font-bold">
+                  <Caption className="min-w-12 text-center">
                     {Math.round(zoom * 100)}%
-                  </span>
+                  </Caption>
                   <Button
                     aria-label="Zoom in"
                     onClick={() => updateZoom(zoom + 0.1)}
@@ -2749,17 +2789,17 @@ export default function AdvancedTemplateEditor({
                 </div>
 
                 <div className="flex h-full w-[336px] items-center justify-end gap-1 border-l border-border pl-3">
-                  <span className="mr-1 max-w-16 truncate font-caption text-[9px] font-bold uppercase tracking-[0.08em] text-muted-foreground">
+                  <Overline className="mr-1 max-w-16 truncate text-muted-foreground">
                     {selectedPdfmeSchema
                       ? selectedPdfmeSchema.type
                       : "No selection"}
-                  </span>
+                  </Overline>
                   {selectedPdfmeSchema ? (
                     <>
-                      <span className="w-[108px] truncate rounded bg-muted px-2 py-2 text-[10px] font-bold">
+                      <Caption className="w-[108px] truncate rounded bg-muted px-2 py-2">
                         {selectedPdfmeSchema.name} ·{" "}
                         {String(selectedPdfmeSchema.fontSize ?? 12)} px
-                      </span>
+                      </Caption>
                       <Button
                         aria-label="Bold selected text"
                         className={
@@ -2830,8 +2870,8 @@ export default function AdvancedTemplateEditor({
                 </div>
               </div>
             ) : null}
-            <div className="pointer-events-none absolute left-7 top-[82px] z-10 font-caption text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Page {currentPage + 1} of {pageCount} · {name}
+            <div className="pointer-events-none absolute left-7 top-[82px] z-10 text-muted-foreground"><Text>
+              Page </Text><Text>{currentPage + 1}</Text><Text> of </Text><Text>{pageCount}</Text><Text> · </Text><Text>{name}</Text>
             </div>
             {!designerReady ? (
               <div
@@ -2839,14 +2879,14 @@ export default function AdvancedTemplateEditor({
                 className="absolute inset-0 z-40 grid place-items-center bg-background/80"
                 role="status"
               >
-                <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                <div className="flex items-center gap-2 text-muted-foreground">
                   <LoaderCircle
                     aria-hidden="true"
                     className="animate-spin text-primary"
                     size={20}
-                  />
+                  /><Text>
                   Loading designer…
-                </div>
+                </Text></div>
               </div>
             ) : null}
             <div
@@ -2868,12 +2908,12 @@ export default function AdvancedTemplateEditor({
               <button
                 aria-controls="advanced-editor-document-strip"
                 aria-expanded={documentStripOpen}
-                className="flex h-full w-28 shrink-0 items-center justify-between border-r border-border pr-3 text-left font-heading text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-                onClick={() => setDocumentStripOpen((value) => !value)}
+                className="flex h-full w-28 shrink-0 items-center justify-between border-r border-border pr-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                onClick={() => setStripQuery(documentStripOpen ? "closed" : "open")}
                 type="button"
-              >
+              ><Caption>
                 Document
-                {documentStripOpen ? (
+                </Caption>{documentStripOpen ? (
                   <ChevronDown aria-hidden="true" size={15} />
                 ) : (
                   <ChevronUp aria-hidden="true" size={15} />
@@ -2904,13 +2944,13 @@ export default function AdvancedTemplateEditor({
                           <span className="h-0.5 w-full rounded-[1px] bg-input" />
                           <span className="h-0.5 w-[15px] rounded-[1px] bg-input" />
                         </span>
-                        <span className={`absolute bottom-[3px] left-[3px] grid size-4 place-items-center rounded bg-card font-caption text-[9px] font-extrabold shadow-sm ${
+                        <Text className={`absolute bottom-[3px] left-[3px] grid size-4 place-items-center rounded bg-card shadow-sm ${
                           currentPage === index
                             ? "text-primary"
                             : "text-muted-foreground"
                         }`}>
                           {index + 1}
-                        </span>
+                        </Text>
                       </button>
                     ))}
                     <button
@@ -2925,7 +2965,7 @@ export default function AdvancedTemplateEditor({
 
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <button
-                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 font-caption text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         editingRegion === "header" && activePanel === "pages"
                           ? "border-primary bg-primary text-primary-foreground"
                           : repeatingHeaderCount
@@ -2938,10 +2978,10 @@ export default function AdvancedTemplateEditor({
                       type="button"
                     >
                       <PanelTop aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
-                      <span className="truncate">Header · {editingRegion === "header" && activePanel === "pages" ? "editing" : repeatingHeaderCount ? `${repeatingHeaderCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</span>
+                      <Text className="truncate">Header · {editingRegion === "header" && activePanel === "pages" ? "editing" : repeatingHeaderCount ? `${repeatingHeaderCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</Text>
                     </button>
                     <button
-                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 font-caption text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      className={`flex h-[34px] min-w-0 flex-1 items-center gap-1.5 rounded-lg border px-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                         editingRegion === "footer" && activePanel === "pages"
                           ? "border-primary bg-primary text-primary-foreground"
                           : repeatingFooterCount
@@ -2954,22 +2994,22 @@ export default function AdvancedTemplateEditor({
                       type="button"
                     >
                       <PanelBottom aria-hidden="true" className="shrink-0" size={13} strokeWidth={1.75} />
-                      <span className="truncate">Footer · {editingRegion === "footer" && activePanel === "pages" ? "editing" : repeatingFooterCount ? `${repeatingFooterCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</span>
+                      <Text className="truncate">Footer · {editingRegion === "footer" && activePanel === "pages" ? "editing" : repeatingFooterCount ? `${repeatingFooterCount} assigned` : selection?.schemas.length ? "ready" : "not set"}</Text>
                     </button>
                   </div>
                 </div>
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <Caption className="text-muted-foreground">
                   Page {currentPage + 1} of {pageCount}
-                </span>
+                </Caption>
               )}
 
               <div
                 aria-live="polite"
-                className="ml-auto flex shrink-0 items-center gap-2 font-caption text-[10px] font-semibold text-muted-foreground"
+                className="ml-auto flex shrink-0 items-center gap-2 text-muted-foreground"
                 role="status"
               >
-                <span className="hidden items-center gap-1.5 xl:flex">
+                <Text className="hidden items-center gap-1.5 xl:flex">
                   <span
                     className={`size-[7px] rounded-full ${
                       error
@@ -2988,8 +3028,8 @@ export default function AdvancedTemplateEditor({
                       : designerReady
                         ? "No overflow errors"
                         : "Checking template"}
-                </span>
-                <span className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</span>
+                </Text>
+                <Text className="hidden 2xl:inline">{Object.keys(sampleData).length} sample fields</Text>
                 <div className="flex h-8 items-center rounded-lg border border-border bg-muted/50">
                   <button
                     aria-label="Zoom out"
@@ -2999,9 +3039,9 @@ export default function AdvancedTemplateEditor({
                   >
                     <Minus aria-hidden="true" size={14} />
                   </button>
-                  <span className="min-w-10 text-center font-mono text-[10px] text-foreground">
+                  <Caption className="min-w-10 text-center text-foreground">
                     {Math.round(zoom * 100)}%
-                  </span>
+                  </Caption>
                   <button
                     aria-label="Zoom in"
                     className="grid size-8 place-items-center rounded-r-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
@@ -3011,7 +3051,7 @@ export default function AdvancedTemplateEditor({
                     <Plus aria-hidden="true" size={14} />
                   </button>
                 </div>
-                <span className="flex items-center gap-1.5">
+                <Text className="flex items-center gap-1.5">
                   {designerReady ? (
                     <Check aria-hidden="true" className="text-emerald-600" size={13} />
                   ) : (
@@ -3022,7 +3062,7 @@ export default function AdvancedTemplateEditor({
                     />
                   )}
                   {designerReady ? "pdfme ready" : "Loading designer"}
-                </span>
+                </Text>
               </div>
             </div>
           </footer>
@@ -3051,29 +3091,29 @@ export default function AdvancedTemplateEditor({
                   <Trash2 aria-hidden="true" size={19} />
                 </span>
                 <div className="grid gap-0.5">
-                  <h2
-                    className="font-heading text-[19px] font-bold"
+                  <H3
+
                     id="delete-page-title"
                   >
                     Delete page {pendingPageRemoval + 1}?
-                  </h2>
-                  <p className="text-[13px] text-muted-foreground">
+                  </H3>
+                  <Caption className="block text-muted-foreground">
                     Selected page ·{" "}
                     {currentTemplateRef.current.schemas[pendingPageRemoval]
                       ?.length ?? 0}{" "}
                     elements
-                  </p>
+                  </Caption>
                 </div>
               </div>
               <div
-                className="min-h-0 flex-1 px-[22px] py-[18px] text-[13px] leading-6 text-muted-foreground"
+                className="min-h-0 flex-1 px-[22px] py-[18px] text-muted-foreground"
                 id="delete-page-description"
               >
-                <p>
+                <P>
                   Deleting this page will not remove document fields or data
                   bindings. Header and footer regions stay unchanged.
-                </p>
-                <p className="mt-4">
+                </P>
+                <P className="mt-4">
                   Page{" "}
                   {Math.max(
                     0,
@@ -3084,7 +3124,7 @@ export default function AdvancedTemplateEditor({
                   ) + 1}{" "}
                   becomes selected after deletion. You can undo until the
                   draft is saved.
-                </p>
+                </P>
               </div>
               <div className="flex justify-end gap-2.5 border-t border-border px-[22px] py-4">
                 <Button

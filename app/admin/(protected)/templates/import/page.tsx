@@ -1,4 +1,9 @@
-import { buttonVariants } from "@smarttools/ui";
+import {
+  Caption,
+  H1,
+  H2,
+  Muted,
+  Overline, buttonVariants } from "@smarttools/ui";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { requirePagePermission } from "../../../../../lib/admin/access";
@@ -18,22 +23,22 @@ export default async function ImportTemplatePage() {
           <ArrowLeft aria-hidden="true" className="size-4" />
         </Link>
         <div>
-          <h1 className="font-heading text-base font-semibold text-foreground">Import template JSON</h1>
-          <p className="font-caption text-[11px] text-muted-foreground">Validated locally before upload</p>
+          <H1 className="text-foreground">Import template JSON</H1>
+          <Caption className="block text-muted-foreground">Validated locally before upload</Caption>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-6xl p-5 sm:p-7">
         <div className="mb-6">
-          <p className="font-caption text-xs font-semibold uppercase tracking-[0.06em] text-primary">
+          <Overline className="block text-primary">
             Template operations
-          </p>
-          <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground">
+          </Overline>
+          <H2 className="mt-2 text-foreground">
             Import a reusable document template
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          </H2>
+          <Muted className="mt-2 max-w-2xl text-muted-foreground">
             Load a SmartTools template export, review its JSON, and create a new draft without changing existing templates.
-          </p>
+          </Muted>
         </div>
 
         <ImportTemplateForm />

@@ -6,6 +6,7 @@
  */
 
 import { ToolError, type ToolRunFile, type ToolRunProgress } from "../run.ts";
+import { PDF_PREVIEW_MAX_PIXELS, PDF_PREVIEW_MAX_WIDTH } from "../limits.ts";
 import { clamp, context2d } from "./imageCodec.ts";
 import {
   enforcePageLimit,
@@ -48,7 +49,8 @@ export type PdfPageThumbnail = {
   readonly width: number;
   readonly height: number;
   readonly buffer: ArrayBuffer;
-  readonly mime: "image/jpeg";
+  readonly mime: "image/jpeg" | "image/png";
+  readonly renderWidth?: number;
 };
 
 export type PdfInspection = {
@@ -63,9 +65,36 @@ export type PdfInspection = {
 export type PdfInspectionSession = PdfInspection & {
   readonly renderThumbnails: (
     pageNumbers: readonly number[],
+    renderWidth?: number,
   ) => Promise<readonly PdfPageThumbnail[]>;
   readonly close: () => Promise<void>;
 };
+
+type WorkerCanvas = {
+  canvas: OffscreenCanvas | null;
+  context: OffscreenCanvasRenderingContext2D | null;
+};
+
+// PDF.js also needs scratch canvases for image scaling and transparency.
+// Its default DOMCanvasFactory cannot create those inside a worker.
+class WorkerCanvasFactory {
+  create(width: number, height: number) {
+    const canvas = new OffscreenCanvas(width, height);
+    return { canvas, context: context2d(canvas) };
+  }
+
+  reset({ canvas }: WorkerCanvas, width: number, height: number) {
+    if (!canvas) throw new Error("Canvas is not available.");
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  destroy(target: WorkerCanvas) {
+    if (target.canvas) target.canvas.width = target.canvas.height = 0;
+    target.canvas = null;
+    target.context = null;
+  }
+}
 
 async function openPdfDocument(file: ToolRunFile, signal: AbortSignal) {
   signal.throwIfAborted();
@@ -119,12 +148,16 @@ async function openPdfDocument(file: ToolRunFile, signal: AbortSignal) {
   range.abort = () => {
     aborted = true;
   };
+  const workerFonts = (globalThis as unknown as { fonts?: FontFaceSet }).fonts;
   const documentOptions = {
+    CanvasFactory: WorkerCanvasFactory,
     disableAutoFetch: true,
     disableStream: true,
     isEvalSupported: false,
     length: file.size,
     maxImageSize: MAX_RENDERED_PIXELS,
+    // OffscreenCanvas uses the worker's font set, not document.fonts.
+    ownerDocument: workerFonts ? { fonts: workerFonts } : undefined,
     range,
     stopAtErrors: true,
     useWorkerFetch: false,
@@ -289,9 +322,13 @@ export async function openPdfInspectionSession(
 
   const renderRequested = async (
     pageNumbers: readonly number[],
+    renderWidth?: number,
   ): Promise<readonly PdfPageThumbnail[]> => {
     if (closed) throw new DOMException("The inspection is closed.", "AbortError");
     signal.throwIfAborted();
+    if (renderWidth !== undefined && (!Number.isInteger(renderWidth) || renderWidth < 1 || renderWidth > PDF_PREVIEW_MAX_WIDTH)) {
+      throw new ToolError("invalid-preview-size", "The requested PDF preview size is invalid.");
+    }
     const unique = [...new Set(pageNumbers)];
     if (
       unique.some(
@@ -312,10 +349,13 @@ export async function openPdfInspectionSession(
       if (closed) throw new DOMException("The inspection is closed.", "AbortError");
       const page = await opened.read(opened.document.getPage(pageNumber));
       const point = page.getViewport({ scale: 1 });
-      const scale = Math.min(1, thumbnailWidth / point.width);
+      const scale = Math.min(
+        renderWidth === undefined ? Math.min(1, thumbnailWidth / point.width) : renderWidth / point.width,
+        Math.sqrt(PDF_PREVIEW_MAX_PIXELS / (point.width * point.height)),
+      );
       const viewport = page.getViewport({ scale });
-      const width = Math.max(1, Math.round(viewport.width));
-      const height = Math.max(1, Math.round(viewport.height));
+      const width = Math.max(1, Math.floor(viewport.width));
+      const height = Math.max(1, Math.floor(viewport.height));
       const canvas = new OffscreenCanvas(width, height);
       try {
         const context = context2d(canvas);
@@ -340,8 +380,9 @@ export async function openPdfInspectionSession(
           pageHeight: point.height,
           width,
           height,
-          buffer: await encodeCanvas(canvas, "jpg", 0.72),
-          mime: "image/jpeg",
+          buffer: await encodeCanvas(canvas, renderWidth === undefined ? "jpg" : "png", 0.72),
+          mime: renderWidth === undefined ? "image/jpeg" : "image/png",
+          ...(renderWidth === undefined ? {} : { renderWidth }),
         });
       } finally {
         canvas.width = 1;
@@ -371,8 +412,8 @@ export async function openPdfInspectionSession(
     return {
       pageCount: opened.document.numPages,
       pages,
-      renderThumbnails(pageNumbers) {
-        const result = queue.then(() => renderRequested(pageNumbers));
+      renderThumbnails(pageNumbers, renderWidth) {
+        const result = queue.then(() => renderRequested(pageNumbers, renderWidth));
         queue = result.then(
           () => undefined,
           () => undefined,

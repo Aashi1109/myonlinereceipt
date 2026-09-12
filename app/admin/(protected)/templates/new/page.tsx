@@ -1,5 +1,12 @@
+import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import {
-  Button,
+  H3,
+  Label,
+  Caption,
+  H1,
+  List,
+  Muted,
+  Text,
   Field,
   Input,
   Select,
@@ -29,15 +36,15 @@ export default async function NewTemplatePage() {
             <ArrowLeft aria-hidden="true" className="size-[18px]" />
           </Link>
           <div className="min-w-0">
-            <h1 className="truncate font-heading text-base font-semibold text-foreground">
+            <H1 className="truncate text-foreground">
               New standard template
-            </h1>
-            <p className="mt-0.5 font-caption text-[11px] text-muted-foreground">
+            </H1>
+            <Caption className="block mt-0.5 text-muted-foreground">
               Templates / Create
-            </p>
+            </Caption>
           </div>
         </div>
-        <span className="font-caption text-[11px] font-semibold text-warning">Not saved</span>
+        <Caption className="text-warning">Not saved</Caption>
       </header>
 
       <div className="grid flex-1 items-stretch gap-7 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -48,12 +55,12 @@ export default async function NewTemplatePage() {
           <input name="category" type="hidden" value="professional" />
 
           <div>
-            <h2 className="font-heading text-[21px] font-semibold tracking-tight text-foreground">
+            <H3 className="text-foreground">
               Create a standard template
-            </h2>
-            <p className="mt-1.5 max-w-3xl text-[13px] leading-[1.5] text-muted-foreground">
+            </H3>
+            <Caption className="block mt-1.5 max-w-3xl text-muted-foreground">
               Set the core details and creation defaults. You can refine the template after it has been created.
-            </p>
+            </Caption>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -79,7 +86,7 @@ export default async function NewTemplatePage() {
               <Input
                 autoCapitalize="none"
                 autoComplete="off"
-                className="font-mono"
+
                 name="slug"
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 placeholder="service-invoice"
@@ -116,37 +123,37 @@ export default async function NewTemplatePage() {
           </Field>
 
           <section className="grid gap-3.5 rounded-lg bg-muted p-4" aria-label="Initial settings">
-            <label className="flex items-center justify-between gap-4">
+            <Label className="flex items-center justify-between gap-4">
               <span>
-                <span className="block text-[13px] font-semibold text-foreground">Start as a draft</span>
-                <span className="mt-0.5 block font-caption text-[11px] text-muted-foreground">
+                <Text className="block text-foreground">Start as a draft</Text>
+                <Caption className="mt-0.5 block text-muted-foreground">
                   Review before customers can use it
-                </span>
+                </Caption>
               </span>
               <Switch defaultChecked aria-label="Start as a draft" />
-            </label>
-            <label className="flex items-center justify-between gap-4">
+            </Label>
+            <Label className="flex items-center justify-between gap-4">
               <span>
-                <span className="block text-[13px] font-semibold text-foreground">Include sample data</span>
-                <span className="mt-0.5 block font-caption text-[11px] text-muted-foreground">
+                <Text className="block text-foreground">Include sample data</Text>
+                <Caption className="mt-0.5 block text-muted-foreground">
                   Adds realistic content to the new template
-                </span>
+                </Caption>
               </span>
               <Switch defaultChecked aria-label="Include sample data" />
-            </label>
+            </Label>
           </section>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-caption text-[11px] text-muted-foreground">
+            <Caption className="block text-muted-foreground">
               Creates one standard template with these settings.
-            </p>
+            </Caption>
             <div className="flex items-center justify-end gap-2.5">
               <Link className={buttonVariants({ className: "rounded-full px-5", variant: "ghost" })} href="/admin/templates">
                 Cancel
               </Link>
-              <Button className="rounded-full px-6" size="lg" type="submit">
+              <SubmitButton className="rounded-full px-6" size="lg" type="submit">
                 Create template
-              </Button>
+              </SubmitButton>
             </div>
           </div>
         </form>
@@ -155,13 +162,13 @@ export default async function NewTemplatePage() {
           <span className="grid size-[52px] place-items-center rounded-xl bg-primary/10 text-primary">
             <LayoutTemplate aria-hidden="true" className="size-6" />
           </span>
-          <h2 id="standard-guidance-title" className="mt-[22px] font-heading text-[22px] font-semibold leading-[1.2] text-foreground">
+          <H3 id="standard-guidance-title" className="mt-[22px] text-foreground">
             A dependable starting point
-          </h2>
-          <p className="mt-[22px] text-sm leading-[1.55] text-muted-foreground">
+          </H3>
+          <Muted className="mt-[22px] text-muted-foreground">
             Standard templates begin with a proven layout family and safe defaults, so creation stays quick and predictable.
-          </p>
-          <ul className="mt-[22px] grid gap-[22px] text-[13px] text-foreground">
+          </Muted>
+          <List className="list-none p-0 space-y-0 mt-[22px] grid gap-[22px] text-foreground">
             {[
               "Structured document foundation",
               "Print-safe defaults included",
@@ -169,10 +176,10 @@ export default async function NewTemplatePage() {
             ].map((item) => (
               <li className="flex items-center gap-2.5" key={item}>
                 <CircleCheck aria-hidden="true" className="size-4 shrink-0 text-success" />
-                {item}
+                <Text>{item}</Text>
               </li>
             ))}
-          </ul>
+          </List>
         </aside>
       </div>
     </div>

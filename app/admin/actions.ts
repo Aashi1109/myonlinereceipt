@@ -134,27 +134,51 @@ export async function createRoleAction(formData: FormData) {
 }
 
 export async function updateRoleAction(formData: FormData) {
+  const actorUserId = await getActorUserId();
   const access: Record<string, Record<string, boolean>> = {};
   for (const [key] of formData) {
     if (!key.startsWith("permission:")) continue;
     const [, resource, action] = key.split(":");
     (access[resource] ??= {})[action] = true;
   }
-  await updateCustomRole(
-    await getActorUserId(),
-    text(formData, "roleId"),
-    {
+  try {
+    const role = await updateCustomRole(actorUserId, text(formData, "roleId"), {
       name: text(formData, "name"),
       description: text(formData, "description"),
       access,
-    },
-  );
-  revalidatePath("/admin/roles");
-  revalidatePath(`/admin/roles/${text(formData, "roleId")}`);
+    });
+    revalidatePath("/admin/roles");
+    revalidatePath(`/admin/roles/${role.id}`);
+    return {
+      error: null,
+      role: {
+        id: role.id,
+        name: role.name,
+        description: role.description,
+        access: role.access,
+        isSystem: role.isSystem,
+      },
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error.message
+        : "Unable to save the role. Please try again.",
+    };
+  }
 }
 
 export async function deleteRoleAction(formData: FormData) {
-  await deleteCustomRole(await getActorUserId(), text(formData, "roleId"));
+  const actorUserId = await getActorUserId();
+  try {
+    await deleteCustomRole(actorUserId, text(formData, "roleId"));
+  } catch (error) {
+    return {
+      error: error instanceof Error
+        ? error.message
+        : "Unable to delete the role. Please try again.",
+    };
+  }
   redirect("/admin/roles");
 }
 

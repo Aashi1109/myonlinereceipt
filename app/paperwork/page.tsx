@@ -44,7 +44,7 @@ export default async function HomePage() {
         actions={
           <AccountNavigation
             returnTo="/paperwork"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         href="/paperwork"

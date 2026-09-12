@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import {
+  Text,
+  Caption,
+  List,
+  Muted,
+  Overline,
+  P,
+  Strong,
   AlertBanner,
   Avatar,
   AvatarFallback,
@@ -33,14 +40,14 @@ type Feedback = { kind: "error" | "success"; text: string } | null;
 function LoadingState({ label }: { label: string }) {
   return (
     <div
-      className="flex items-center justify-center gap-3 py-10 text-sm text-muted-foreground"
+      className="flex items-center justify-center gap-3 py-10 text-muted-foreground"
       role="status"
     >
       <span
         aria-hidden="true"
         className="size-4 animate-spin rounded-full border-2 border-border border-t-primary"
       />
-      {label}
+      <Text>{label}</Text>
     </div>
   );
 }
@@ -356,12 +363,12 @@ export function ProfileManager({
           aria-labelledby="account-overview-label"
           className="min-w-0 lg:sticky lg:top-24 lg:self-start"
         >
-          <p
-            className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary"
+          <Overline
+            className="block text-primary"
             id="account-overview-label"
           >
             Account overview
-          </p>
+          </Overline>
           <div className="mt-4 flex min-w-0 items-center gap-4 lg:block">
             <Avatar
               aria-hidden="true"
@@ -374,15 +381,15 @@ export function ProfileManager({
                   src={profileImage}
                 />
               ) : null}
-              <AvatarFallback className="bg-primary text-xl font-black text-primary-foreground">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {avatarInitial}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 lg:mt-4">
-              <p className="truncate font-extrabold text-foreground">{user.name}</p>
-              <p className="mt-1 break-all text-sm leading-5 text-muted-foreground">
+              <P className="truncate text-foreground">{user.name}</P>
+              <Muted className="mt-1 break-all text-muted-foreground">
                 {user.email}
-              </p>
+              </Muted>
             </div>
           </div>
 
@@ -456,21 +463,21 @@ export function ProfileManager({
                         src={profileImage}
                       />
                     ) : null}
-                    <AvatarFallback className="bg-primary text-xl font-black text-primary-foreground">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
                       {avatarInitial}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-extrabold text-foreground">
+                    <P className="text-foreground">
                       Profile photo
-                    </p>
-                    <p
-                      className="mt-1 text-xs leading-5 text-muted-foreground"
+                    </P>
+                    <Caption
+                      className="block mt-1 text-muted-foreground"
                       id="profile-image-help"
                     >
                       Choose a JPG, PNG, or WebP up to 5 MB. It is cropped and
                       compressed in your browser.
-                    </p>
+                    </Caption>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <input
                         accept="image/jpeg,image/png,image/webp"
@@ -536,7 +543,7 @@ export function ProfileManager({
               {loadingSecurity ? (
                 <LoadingState label="Loading sign-in methods…" />
               ) : accounts.length > 0 ? (
-                <ul className="overflow-hidden rounded-xl border border-border">
+                <List className="list-none p-0 space-y-0 overflow-hidden rounded-xl border border-border">
                   {accounts.map((account) => (
                     <li
                       className="flex min-w-0 flex-col gap-4 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
@@ -544,17 +551,17 @@ export function ProfileManager({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar aria-hidden="true">
-                          <AvatarFallback className="font-black text-accent-foreground">
+                          <AvatarFallback className="text-accent-foreground">
                             {account.providerId === "google" ? "G" : "@"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="grid min-w-0 gap-1">
-                          <strong className="break-words text-sm">
+                          <Strong className="break-words">
                             {providerName(account.providerId)}
-                          </strong>
-                          <span className="text-xs leading-5 text-muted-foreground">
+                          </Strong>
+                          <Caption className="text-muted-foreground">
                             Connected {formatDate(account.createdAt)}
-                          </span>
+                          </Caption>
                         </div>
                       </div>
                       {account.providerId === "google" && accounts.length > 1 ? (
@@ -570,12 +577,12 @@ export function ProfileManager({
                       ) : null}
                     </li>
                   ))}
-                </ul>
+                </List>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                  <p className="text-sm text-muted-foreground">
+                  <Muted className="text-muted-foreground">
                     Sign-in methods could not be loaded.
-                  </p>
+                  </Muted>
                   <Button
                     onClick={() => void loadSecurityData()}
                     size="sm"
@@ -598,9 +605,9 @@ export function ProfileManager({
                 </Button>
               ) : null}
               {googleAccount && accounts.length === 1 ? (
-                <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                <Caption className="block mt-4 text-muted-foreground">
                   Add another sign-in method before unlinking your only identity.
-                </p>
+                </Caption>
               ) : null}
             </section>
 
@@ -612,9 +619,9 @@ export function ProfileManager({
               {loadingSecurity ? (
                 <LoadingState label="Checking password access…" />
               ) : accounts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <Muted className="text-muted-foreground">
                   Password settings are unavailable until sign-in methods load.
-                </p>
+                </Muted>
               ) : hasPassword ? (
                 <form
                   aria-busy={pending === "password"}
@@ -672,9 +679,9 @@ export function ProfileManager({
                   </Button>
                 </form>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <Muted className="text-muted-foreground">
                   This account currently signs in through Google.
-                </p>
+                </Muted>
               )}
             </section>
 
@@ -702,7 +709,7 @@ export function ProfileManager({
               {loadingSecurity ? (
                 <LoadingState label="Loading sessions…" />
               ) : sessions.length > 0 ? (
-                <ul className="overflow-hidden rounded-xl border border-border">
+                <List className="list-none p-0 space-y-0 overflow-hidden rounded-xl border border-border">
                   {sessions.map((session) => {
                     const isCurrent = session.id === currentSessionId;
                     return (
@@ -711,15 +718,15 @@ export function ProfileManager({
                         key={session.id}
                       >
                         <div className="grid min-w-0 gap-1">
-                          <strong className="break-words text-sm">
+                          <Strong className="break-words">
                             {isCurrent
                               ? "This device"
                               : session.userAgent || "Unknown device"}
-                          </strong>
-                          <span className="break-words text-xs leading-5 text-muted-foreground">
+                          </Strong>
+                          <Caption className="break-words text-muted-foreground">
                             {session.ipAddress || "IP unavailable"} · Started{" "}
                             {formatDate(session.createdAt)}
-                          </span>
+                          </Caption>
                         </div>
                         {isCurrent ? (
                           <StatusBadge variant="success">Current</StatusBadge>
@@ -739,12 +746,12 @@ export function ProfileManager({
                       </li>
                     );
                   })}
-                </ul>
+                </List>
               ) : (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
-                  <p className="text-sm text-muted-foreground">
+                  <Muted className="text-muted-foreground">
                     Active sessions could not be loaded.
-                  </p>
+                  </Muted>
                   <Button
                     onClick={() => void loadSecurityData()}
                     size="sm"

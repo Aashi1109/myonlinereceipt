@@ -11,8 +11,7 @@
  * can only show a value `run.ts` already validated both colours for.
  */
 
-import { Button, ToolOptionsPanel } from "@smarttools/ui";
-import { Loader2 } from "lucide-react";
+import { ToolOptionsPanel } from "@smarttools/ui";
 
 import { ResultSurface } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
@@ -32,7 +31,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
   const gradient = gradientValue(props.result);
 
   return (
-    <SplitStack className="h-full" defaultSize={62} minSize={45}>
+    <SplitStack className="h-full" defaultSize={75} minSize={75}>
       <SplitStack className="h-full max-[64rem]:h-[34rem]" defaultSize={48} minSize={28} orientation="vertical">
         <WorkspaceInputSurface
           disabled={props.disabled}
@@ -53,6 +52,7 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
         collapseLabel="settings panel"
         collapseSide="secondary"
         collapsible
+        defaultCollapsed="secondary"
         defaultSize={48}
         minSize={28}
         orientation="vertical"
@@ -74,20 +74,6 @@ export default function GradientGeneratorWorkspace(props: WorkspaceProps) {
           />
         </WorkspaceSurface>
         <ToolOptionsPanel
-          action={props.primaryAction ? (
-            <Button
-              aria-busy={props.primaryAction.running || undefined}
-              className="w-full"
-              disabled={props.primaryAction.disabled}
-              onClick={props.primaryAction.onRun}
-              type="button"
-            >
-              {props.primaryAction.running ? (
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              ) : null}
-              {props.primaryAction.label}
-            </Button>
-          ) : undefined}
           className="h-full overflow-y-auto bg-card p-[22px]"
           title={props.spec.input.kind === "fields" ? props.spec.input.label : "Generator settings"}
           variant="plain"

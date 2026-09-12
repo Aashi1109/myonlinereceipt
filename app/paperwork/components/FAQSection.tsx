@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Button, SectionCard, SectionHeading } from "@smarttools/ui";
+import {
+  Muted,
+  Button,
+  SectionCard,
+  SectionHeading,
+} from "@smarttools/ui";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -66,7 +71,7 @@ export default function FAQSection() {
               <Button
                 aria-controls={`faq-panel-${faq.id}`}
                 aria-expanded={isOpen}
-                className="h-auto w-full justify-between whitespace-normal rounded-md px-0 py-3 text-left text-sm font-bold text-foreground hover:bg-transparent hover:text-primary"
+                className="h-auto w-full justify-between whitespace-normal rounded-md px-0 py-3 text-left text-foreground hover:bg-transparent hover:text-primary"
                 id={`faq-trigger-${faq.id}`}
                 onClick={() => handleToggle(faq.id)}
                 type="button"
@@ -82,11 +87,11 @@ export default function FAQSection() {
               {isOpen && (
                 <div
                   aria-labelledby={`faq-trigger-${faq.id}`}
-                  className="pb-3 pr-8 text-sm leading-6 text-muted-foreground"
+                  className="pb-3 pr-8 text-muted-foreground"
                   id={`faq-panel-${faq.id}`}
                   role="region"
                 >
-                  {faq.answer}
+                  <Muted>{faq.answer}</Muted>
                 </div>
               )}
             </div>

@@ -71,6 +71,7 @@ Do not create a standalone file for a one-use wrapper, interface, constant, or t
 
 ## UI and Design-System Rules
 
+- Use shared design-system tooltips for hover and keyboard-focus help, never native HTML `title` attributes. Prefer a shared control's `tooltip` prop over repeating tooltip wrappers; scope `TooltipProvider` around a group. Keep disabled-control help keyboard-accessible and show essential descriptions inline. Semantic component props such as a page heading's `title` are unaffected.
 - Design page layouts around content relationships and available space. Keep related headings, filters, actions, and supporting content inline or in responsive grids when that improves scanning and space use; stack them into full-width rows only when the content or viewport requires it. Do not default to a repetitive row-after-row layout.
 - Before creating or redesigning UI, inspect the existing reusable components and design tokens in the relevant codebase or `.pen` document.
 - Reuse existing design-system components through real component instances or references. Do not create hand-built visual lookalikes for an available header, footer, button, input, select, textarea, toggle, checkbox, alert, badge, card, table row, navigation item, workbench, or other reusable component.
@@ -128,7 +129,7 @@ For code changes:
 1. Run the smallest relevant test while iterating.
 2. Run `pnpm test`.
 3. Run `pnpm lint`.
-4. Run `pnpm build` when runtime, routing, dependency, or configuration behavior changed.
+4. Run `pnpm build` when runtime, routing, dependency, or configuration behavior changed. Else not for every minor changes.
 5. Run the affected package's own checks when shared packages changed.
 6. Finish with `git diff --check` and `git status --short`; inspect all changed and untracked files.
 

@@ -1,6 +1,17 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { getOptionalSession } from "@smarttools/auth/session";
-import { AccountNavigation, Button, ProductHeader } from "@smarttools/ui";
+import {
+  Caption,
+  Display,
+  H2,
+  H3,
+  List,
+  Metric,
+  Muted,
+  Overline,
+  P,
+  Text,
+  TextLink, AccountNavigation, Button, ProductHeader } from "@smarttools/ui";
 import { headers } from "next/headers";
 
 const projects = [
@@ -39,7 +50,7 @@ export default async function HomePage() {
         actions={
           <AccountNavigation
             returnTo="/"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         className="platform-header sticky top-0 z-50"
@@ -51,10 +62,10 @@ export default async function HomePage() {
         <section className="overflow-hidden border-b border-border bg-card">
           <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(0,1.08fr)_minmax(28rem,0.92fr)]">
             <div className="flex min-h-[36rem] flex-col justify-center px-4 py-16 sm:px-6 sm:py-20 lg:min-h-[44rem] lg:border-r lg:border-border lg:px-8 lg:py-24">
-              <p className="mb-6 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <Overline className="block mb-6 text-primary">
                 Focused utilities for everyday work
-              </p>
-              <h1 className="max-w-4xl text-[clamp(3rem,8vw,7.5rem)] leading-[0.86] font-black tracking-[-0.075em]">
+              </Overline>
+              <Display className="max-w-4xl">
                 Less time
                 <br />
                 between
@@ -62,76 +73,76 @@ export default async function HomePage() {
                 <span className="text-primary">need</span>
                 <br />
                 and done.
-              </h1>
-              <p className="mt-8 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+              </Display>
+              <Muted className="mt-8 max-w-xl text-muted-foreground">
                 SmartTools brings image and PDF tools, business paperwork, and
                 developer utilities into one clear place to start.
-              </p>
+              </Muted>
               <div className="mt-9 flex flex-wrap gap-3">
                 <Button
                   asChild
-                  className="h-auto min-h-12 rounded-none px-5 text-sm hover:bg-foreground"
+                  className="h-auto min-h-12 rounded-none px-5 hover:bg-foreground"
                 >
                   <a href={projects[0].href}>Explore Paperwork</a>
                 </Button>
                 <Button
                   asChild
-                  className="h-auto min-h-12 rounded-none border-foreground px-5 text-sm hover:bg-foreground hover:text-card"
+                  className="h-auto min-h-12 rounded-none border-foreground px-5 hover:bg-foreground hover:text-card"
                   variant="outline"
                 >
                   <a href={projects[1].href}>Browse Devtools</a>
                 </Button>
                 <Button
                   asChild
-                  className="h-auto min-h-12 rounded-none border-foreground px-5 text-sm hover:bg-foreground hover:text-card"
+                  className="h-auto min-h-12 rounded-none border-foreground px-5 hover:bg-foreground hover:text-card"
                   variant="outline"
                 >
                   <a href={projects[2].href}>Open Media Tools</a>
                 </Button>
               </div>
-              <p className="mt-6 text-xs font-semibold text-muted-foreground">
+              <Caption className="block mt-6 text-muted-foreground">
                 Public tools are available without an account.
-              </p>
+              </Caption>
             </div>
 
             <nav
               aria-labelledby="suite-navigation-title"
               className="platform-grid flex flex-col justify-center bg-background px-4 py-12 sm:px-6 lg:px-8 lg:py-16"
             >
-              <h2 className="mb-4 text-sm font-bold" id="suite-navigation-title">
+              <H2 className="mb-4" id="suite-navigation-title">
                 Choose a suite
-              </h2>
-              <ul className="border border-border bg-card">
+              </H2>
+              <List className="list-none p-0 space-y-0 border border-border bg-card">
                 {projects.map((project) => (
                   <li className="border-b border-border last:border-b-0" key={project.name}>
-                    <a
-                      className="group grid min-h-56 grid-cols-[5rem_minmax(0,1fr)] text-foreground outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
+                    <TextLink
+                      className="no-underline group grid min-h-56 grid-cols-[5rem_minmax(0,1fr)] text-foreground outline-none transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:grid-cols-[6.5rem_minmax(0,1fr)]"
                       href={project.href}
                     >
                       <span
                         aria-hidden="true"
-                        className="flex items-start justify-center border-r border-border px-3 py-6 text-4xl font-black tracking-[-0.08em] text-primary transition-colors group-hover:border-white/35 group-hover:text-primary-foreground sm:text-5xl"
+                        className="flex items-start justify-center border-r border-border px-3 py-6 text-primary transition-colors group-hover:border-white/35 group-hover:text-primary-foreground"
                       >
-                        {project.number}
+                        <Metric>{project.number}</Metric>
                       </span>
-                      <span className="flex min-w-0 flex-col p-6">
-                        <span className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground transition-colors group-hover:text-white/70">
+                      <div className="flex min-w-0 flex-col p-6">
+                        <Overline className="text-muted-foreground transition-colors group-hover:text-white/70">
                           {project.category}
-                        </span>
-                        <span className="mt-3 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+                        </Overline>
+                        <H3 className="mt-3">
                           {project.name}
-                        </span>
-                        <span className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground transition-colors group-hover:text-white/80">
+                        </H3>
+                        <Text className="mt-4 max-w-sm text-muted-foreground transition-colors group-hover:text-white/80">
                           {project.description}
-                        </span>
-                        <span className="mt-auto pt-6 text-sm font-bold underline decoration-1 underline-offset-4">
+                        </Text>
+                        <Text className="mt-auto pt-6 underline decoration-1 underline-offset-4">
                           Open {project.name}
-                        </span>
-                      </span>
-                    </a>
+                        </Text>
+                      </div>
+                    </TextLink>
                   </li>
                 ))}
-              </ul>
+              </List>
             </nav>
           </div>
         </section>
@@ -139,45 +150,45 @@ export default async function HomePage() {
         <section aria-labelledby="projects-title" className="border-b border-border">
           <div className="mx-auto grid max-w-7xl lg:grid-cols-[minmax(18rem,0.7fr)_minmax(0,1.3fr)]">
             <div className="border-b border-border px-4 py-12 sm:px-6 lg:border-r lg:border-b-0 lg:px-8 lg:py-20">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              <Overline className="block text-primary">
                 What you can do
-              </p>
-              <h2
-                className="mt-5 max-w-md text-4xl leading-[0.95] font-black tracking-[-0.055em] sm:text-5xl"
+              </Overline>
+              <H2
+                className="mt-5 max-w-md"
                 id="projects-title"
               >
                 Start with the task in front of you.
-              </h2>
+              </H2>
             </div>
 
             <div className="grid sm:grid-cols-3">
               <article className="border-b border-border p-6 sm:border-r sm:border-b-0 lg:p-8">
-                <p aria-hidden="true" className="text-sm font-black text-primary">01</p>
-                <h3 className="mt-10 text-xl font-black tracking-tight">
+                <P aria-hidden="true" className="text-primary">01</P>
+                <H3 className="mt-10">
                   Create the document
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                </H3>
+                <Muted className="mt-3 text-muted-foreground">
                   Build invoices, receipts, expense reports, tax estimates, and
                   contractor records in Paperwork.
-                </p>
+                </Muted>
               </article>
               <article className="border-b border-border p-6 sm:border-r sm:border-b-0 lg:p-8">
-                <p aria-hidden="true" className="text-sm font-black text-primary">02</p>
-                <h3 className="mt-10 text-xl font-black tracking-tight">
+                <P aria-hidden="true" className="text-primary">02</P>
+                <H3 className="mt-10">
                   Process the media
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                </H3>
+                <Muted className="mt-3 text-muted-foreground">
                   Convert, organize, edit, and compress images and PDFs in Media Tools.
-                </p>
+                </Muted>
               </article>
               <article className="p-6 lg:p-8">
-                <p aria-hidden="true" className="text-sm font-black text-primary">03</p>
-                <h3 className="mt-10 text-xl font-black tracking-tight">
+                <P aria-hidden="true" className="text-primary">03</P>
+                <H3 className="mt-10">
                   Handle the data
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                </H3>
+                <Muted className="mt-3 text-muted-foreground">
                   Format, convert, inspect, and generate developer data in Devtools.
-                </p>
+                </Muted>
               </article>
             </div>
           </div>

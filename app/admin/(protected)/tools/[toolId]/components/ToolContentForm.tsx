@@ -1,6 +1,14 @@
 "use client";
 
+import { useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
+
 import {
+  Caption,
+  H3,
+  Muted,
+  Overline,
+  P,
+  Text,
   AlertBanner,
   Button,
   Input,
@@ -188,15 +196,15 @@ function HiddenCatalog({ stored }: { stored: StoredContentView }) {
 
 function InheritedPreview({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-10 items-center gap-2.5 rounded-lg bg-muted px-3 text-[11px] text-muted-foreground">
+    <div className="flex min-h-10 items-center gap-2.5 rounded-lg bg-muted px-3 text-muted-foreground">
       <span className="grid size-6 shrink-0 place-items-center rounded-md bg-card text-foreground">
         <Braces aria-hidden="true" className="size-3.5" />
       </span>
       <span className="min-w-0">
-        <span className="block font-caption text-[9px] font-semibold uppercase tracking-[0.04em]">
+        <Overline className="block">
           Inherited from definition.ts
-        </span>
-        <span className="block truncate text-foreground">{children || "None"}</span>
+        </Overline>
+        <Text className="block truncate text-foreground">{children || "None"}</Text>
       </span>
     </div>
   );
@@ -215,11 +223,11 @@ function FieldHeader({
 }) {
   return (
     <div className="flex h-8 items-center justify-between gap-3">
-      <span className="text-sm font-medium text-foreground">{label}</span>
+      <Text className="text-foreground">{label}</Text>
       <span className="flex items-center gap-2">
-        {count ? <span className="font-mono text-[10px] text-muted-foreground">{count}</span> : null}
+        {count ? <Caption className="text-muted-foreground">{count}</Caption> : null}
         <Button
-          className="h-7 px-2 text-[11px]"
+          className="h-7 px-2"
           disabled={!overridden}
           onClick={onRevert}
           size="xs"
@@ -258,7 +266,7 @@ function KeywordTagInput({
   return (
     <div className="flex min-h-11 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-background px-2 py-1.5 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/25">
       {values.map((keyword) => (
-        <span className="inline-flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-semibold text-primary" key={keyword}>
+        <Caption className="inline-flex h-7 items-center gap-1 rounded-full bg-accent px-2.5 text-primary" key={keyword}>
           {keyword}
           <button
             aria-label={`Remove ${keyword}`}
@@ -268,11 +276,11 @@ function KeywordTagInput({
           >
             <X aria-hidden="true" className="size-3" />
           </button>
-        </span>
+        </Caption>
       ))}
       <input
         aria-label="Add keyword"
-        className="h-7 min-w-24 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
+        className="h-7 min-w-24 flex-1 bg-transparent px-1 outline-none placeholder:text-muted-foreground"
         disabled={values.length >= 24}
         onBlur={commitDraft}
         onChange={(event) => setDraft(event.target.value)}
@@ -311,12 +319,12 @@ function CatalogForm({
 
       <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Catalog &amp; SEO</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <H3 >Catalog &amp; SEO</H3>
+          <Muted className="mt-1 text-muted-foreground">
             Empty fields inherit their shipped values. Overrides remain draft until published.
-          </p>
+          </Muted>
         </div>
-        <Button disabled={pending} type="submit">{pending ? "Saving…" : "Save changes"}</Button>
+        <Button loading={pending} type="submit">{pending ? "Saving…" : "Save changes"}</Button>
       </div>
 
       {state.status !== "idle" ? (
@@ -423,7 +431,7 @@ function TextListEditor({
 }) {
   return (
     <div>
-      <p className="mb-4 text-sm text-muted-foreground">{description}</p>
+      <Muted className="mb-4 text-muted-foreground">{description}</Muted>
       <OrderableList
         ariaLabel={`${label} entries`}
         className="divide-y divide-border border-y border-border"
@@ -436,9 +444,9 @@ function TextListEditor({
           return (
             <div className={`flex items-start gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
               <DragHandle label={`${label} ${index + 1}`} state={dragState} />
-              <span className="w-7 shrink-0 pt-2.5 font-mono text-[10px] font-semibold text-muted-foreground">
+              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">
                 {String(index + 1).padStart(2, "0")}
-              </span>
+              </Caption>
               <Textarea
                 aria-label={`${label} ${index + 1}`}
                 className="min-h-11 flex-1 resize-y"
@@ -460,7 +468,7 @@ function TextListEditor({
 function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (items: FaqItem[]) => void }) {
   return (
     <div>
-      <p className="mb-4 text-sm text-muted-foreground">Each entry requires a question and answer. Drag entries to control public order.</p>
+      <Muted className="mb-4 text-muted-foreground">Each entry requires a question and answer. Drag entries to control public order.</Muted>
       <OrderableList
         ariaLabel="FAQ entries"
         className="divide-y divide-border border-y border-border"
@@ -473,7 +481,7 @@ function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (
           return (
             <div className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
               <DragHandle label={`FAQ ${index + 1}`} state={dragState} />
-              <span className="w-7 shrink-0 pt-2.5 font-mono text-[10px] font-semibold text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
               <div className="grid min-w-0 flex-1 gap-2 md:grid-cols-[minmax(12rem,0.8fr)_minmax(16rem,1.2fr)]">
                 <Input aria-label={`FAQ ${index + 1} question`} onChange={(event) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, q: event.target.value } : candidate))} placeholder="Question" value={item.q} />
                 <Textarea aria-label={`FAQ ${index + 1} answer`} className="min-h-20 resize-y" onChange={(event) => onChange(items.map((candidate) => candidate.id === item.id ? { ...candidate, a: event.target.value } : candidate))} placeholder="Answer" value={item.a} />
@@ -491,7 +499,7 @@ function FaqEditor({ items, onChange }: { items: readonly FaqItem[]; onChange: (
 function ExamplesEditor({ items, onChange }: { items: readonly ExampleItem[]; onChange: (items: ExampleItem[]) => void }) {
   return (
     <div>
-      <p className="mb-4 text-sm text-muted-foreground">Provide a label and primary sample. Secondary input is optional for two-input tools.</p>
+      <Muted className="mb-4 text-muted-foreground">Provide a label and primary sample. Secondary input is optional for two-input tools.</Muted>
       <OrderableList
         ariaLabel="Example entries"
         className="divide-y divide-border border-y border-border"
@@ -505,12 +513,12 @@ function ExamplesEditor({ items, onChange }: { items: readonly ExampleItem[]; on
           return (
             <div className={`flex items-start gap-2 py-3 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
               <DragHandle label={`example ${index + 1}`} state={dragState} />
-              <span className="w-7 shrink-0 pt-2.5 font-mono text-[10px] font-semibold text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+              <Caption className="w-7 shrink-0 pt-2.5 text-muted-foreground">{String(index + 1).padStart(2, "0")}</Caption>
               <div className="grid min-w-0 flex-1 gap-2">
                 <Input aria-label={`Example ${index + 1} label`} onChange={(event) => update({ label: event.target.value })} placeholder="Example label" value={item.label} />
                 <div className="grid gap-2 md:grid-cols-2">
-                  <Textarea aria-label={`Example ${index + 1} primary sample`} className="min-h-24 font-mono text-xs" onChange={(event) => update({ text: event.target.value })} placeholder="Primary sample" value={item.text} />
-                  <Textarea aria-label={`Example ${index + 1} secondary sample`} className="min-h-24 font-mono text-xs" onChange={(event) => update({ secondary: event.target.value })} placeholder="Secondary sample (optional)" value={item.secondary} />
+                  <Textarea code aria-label={`Example ${index + 1} primary sample`} className="min-h-24" onChange={(event) => update({ text: event.target.value })} placeholder="Primary sample" value={item.text} />
+                  <Textarea code aria-label={`Example ${index + 1} secondary sample`} className="min-h-24" onChange={(event) => update({ secondary: event.target.value })} placeholder="Secondary sample (optional)" value={item.secondary} />
                 </div>
               </div>
               <RemoveButton label={`example ${index + 1}`} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
@@ -532,7 +540,7 @@ function RelatedToolsEditor({
   onChange: (items: TextItem[]) => void;
   tools: ToolContentFormProps["relatedTools"];
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useAdminQueryState<string>("relatedQuery", "");
   const selectedIds = new Set(items.map((item) => item.value));
   const matches = tools.filter((tool) =>
     !selectedIds.has(tool.id) && `${tool.name} ${tool.id}`.toLowerCase().includes(query.toLowerCase()),
@@ -540,16 +548,16 @@ function RelatedToolsEditor({
 
   return (
     <div>
-      <p className="mb-4 text-sm text-muted-foreground">Link stable tool IDs and order the recommendations visitors see next.</p>
+      <Muted className="mb-4 text-muted-foreground">Link stable tool IDs and order the recommendations visitors see next.</Muted>
       <div className="relative mb-3">
         <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input aria-label="Search tools" className="pl-9" onChange={(event) => setQuery(event.target.value)} placeholder="Search by name or stable ID" value={query} />
+        <Input aria-label="Search tools" className="pl-9" onChange={(event) => setQuery(event.target.value, true)} placeholder="Search by name or stable ID" value={query} />
       </div>
       {query ? (
         <div className="mb-4 flex flex-wrap gap-2">
           {matches.length ? matches.map((tool) => (
             <Button key={tool.id} onClick={() => { onChange([...items, { id: itemId("related"), value: tool.id }]); setQuery(""); }} size="xs" type="button" variant="secondary"><Plus aria-hidden="true" />{tool.name}</Button>
-          )) : <span className="text-xs text-muted-foreground">No unlinked tools match.</span>}
+          )) : <Caption className="text-muted-foreground">No unlinked tools match.</Caption>}
         </div>
       ) : null}
       <OrderableList
@@ -565,8 +573,8 @@ function RelatedToolsEditor({
             <div className={`flex items-center gap-2 py-2 ${dragState.isDragging ? "bg-accent shadow-sm" : "bg-background"}`}>
               <DragHandle label={tool?.name ?? item.value} state={dragState} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{tool?.name ?? "Unknown tool"}</p>
-                <p className="truncate font-mono text-[10px] text-muted-foreground">{item.value}</p>
+                <P className="truncate">{tool?.name ?? "Unknown tool"}</P>
+                <Caption className="block truncate text-muted-foreground">{item.value}</Caption>
               </div>
               <RemoveButton label={tool?.name ?? item.value} onClick={() => onChange(items.filter((candidate) => candidate.id !== item.id))} />
             </div>
@@ -582,7 +590,9 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
   const inheritedDoc = contentRecord(inherited.contentDoc);
   const initialDoc = contentRecord(stored.contentDoc ?? inherited.contentDoc);
   const [overrideDoc, setOverrideDoc] = useState(asRecord(stored.contentDoc) !== null);
-  const [activeSection, setActiveSection] = useState<DocumentSection>("howToUse");
+  const [activeSection, setActiveSection] = useAdminQueryState<DocumentSection>(
+    "documentSection", "howToUse", DOCUMENT_SECTIONS.map((section) => section.key),
+  );
   const [howToUse, setHowToUse] = useState<TextItem[]>(initialDoc.howToUse.map((value) => ({ id: itemId("how"), value })));
   const [limitations, setLimitations] = useState<TextItem[]>(initialDoc.limitations.map((value) => ({ id: itemId("limitation"), value })));
   const [faq, setFaq] = useState<FaqItem[]>(initialDoc.faq.map((item) => ({ id: itemId("faq"), ...item })));
@@ -622,12 +632,12 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
 
       <div className="flex flex-col gap-2 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Content document</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Edit the supporting content shown below the public tool workspace.</p>
+          <H3 >Content document</H3>
+          <Muted className="mt-1 text-muted-foreground">Edit the supporting content shown below the public tool workspace.</Muted>
         </div>
         <div className="flex gap-2">
           <Button onClick={restoreFromCode} size="sm" type="button" variant="secondary"><RotateCcw aria-hidden="true" />Use code document</Button>
-          <Button disabled={pending} onClick={() => setOverrideDoc(true)} type="submit">{pending ? "Saving…" : "Save document"}</Button>
+          <Button loading={pending} onClick={() => setOverrideDoc(true)} size="sm" type="submit">{pending ? "Saving…" : "Save document"}</Button>
         </div>
       </div>
 
@@ -638,21 +648,21 @@ function ContentDocumentForm({ inherited, relatedTools, stored, toolId }: Omit<T
           {DOCUMENT_SECTIONS.map((section) => (
             <button
               aria-current={activeSection === section.key ? "page" : undefined}
-              className={`flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-lg px-3 text-left text-sm transition-colors ${activeSection === section.key ? "bg-accent font-semibold text-primary" : "text-foreground hover:bg-muted"}`}
+              className={`flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-lg px-3 text-left transition-colors ${activeSection === section.key ? "bg-accent text-primary" : "text-foreground hover:bg-muted"}`}
               key={section.key}
               onClick={() => setActiveSection(section.key)}
               type="button"
             >
-              {section.label}
-              <span className="font-mono text-[10px] text-muted-foreground">{sectionCounts[section.key]}</span>
+              <Caption>{section.label}</Caption>
+              <Caption className="text-muted-foreground">{sectionCounts[section.key]}</Caption>
             </button>
           ))}
         </nav>
 
         <section className="min-w-0">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h3 className="font-heading text-lg font-semibold">{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</h3>
-            <span className="text-xs text-muted-foreground">Drag to reorder · changes save as one document</span>
+            <H3 >{DOCUMENT_SECTIONS.find((section) => section.key === activeSection)?.label}</H3>
+            <Caption className="text-muted-foreground">Drag to reorder · changes save as one document</Caption>
           </div>
           {activeSection === "howToUse" ? <TextListEditor addLabel="Add step" description="Write concise ordered steps that take a first-time visitor from input to result." items={howToUse} label="Step" onChange={(items) => { setHowToUse(items); setOverrideDoc(true); }} /> : null}
           {activeSection === "limitations" ? <TextListEditor addLabel="Add limitation" description="State boundaries plainly so visitors understand what the tool does not validate or guarantee." items={limitations} label="Limitation" onChange={(items) => { setLimitations(items); setOverrideDoc(true); }} /> : null}

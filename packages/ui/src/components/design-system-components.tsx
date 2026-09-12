@@ -10,6 +10,7 @@ import { Badge } from "#components/badge"
 import { Card, CardDescription, CardHeader, CardTitle } from "#components/card"
 import { Toaster } from "#components/sonner"
 import { Tabs, TabsList, TabsTrigger } from "#components/tabs"
+import { Caption } from "#components/typography"
 import { cn } from "#lib/utils"
 
 const LEGACY_TOOLBAR_BUTTON_SIZE_CLASSES = new Set([
@@ -58,7 +59,7 @@ function SegmentedControl({
           <TabsTrigger
             className={
               size === "inline"
-                ? "h-8 px-2.5 py-0 text-[11px] before:absolute before:inset-x-0 before:-inset-y-1.5"
+                ? "h-8 px-2.5 py-0 before:absolute before:inset-x-0 before:-inset-y-1.5"
                 : undefined
             }
             disabled={item.disabled}
@@ -113,9 +114,9 @@ function WorkbenchShell({
       data-variant={variant}
       className={cn(
         "flex h-[calc(100dvh-4.5rem)] min-h-0 w-full flex-col overflow-hidden rounded-xl border border-input bg-card",
-        "[&_[data-slot=button]]:h-8 [&_[data-slot=button]]:min-h-8 [&_[data-slot=button]]:gap-1.5 [&_[data-slot=button]]:rounded-lg [&_[data-slot=button]]:px-2.5 [&_[data-slot=button]]:text-[11px] [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
-        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]]:px-2.5 [&_[data-slot=input]]:text-[11px]",
-        "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]]:text-[11px] [&_[data-slot=select-trigger]>svg]:size-3.5",
+        "[&_[data-slot=button]:not([data-variant=card-action])]:h-8 [&_[data-slot=button]:not([data-variant=card-action])]:min-h-8 [&_[data-slot=button]:not([data-variant=card-action])]:gap-1.5 [&_[data-slot=button]:not([data-variant=card-action])]:rounded-lg [&_[data-slot=button]:not([data-variant=card-action])]:px-2.5 [&_[data-slot=button][data-size^=icon]]:size-8 [&_[data-slot=button][data-size^=icon]]:px-0 [&_[data-slot=button]_svg:not([class*=size-])]:size-3.5",
+        "[&_[data-slot=input]]:h-8 [&_[data-slot=input]]:min-h-8 [&_[data-slot=input]]:px-2.5",
+        "[&_[data-slot=select-trigger]]:h-8 [&_[data-slot=select-trigger]]:min-h-8 [&_[data-slot=select-trigger]]:px-2.5 [&_[data-slot=select-trigger]>svg]:size-3.5",
         "[&_[data-slot=workbench-status]_[role=status]>span.text-success]:text-foreground",
         variant === "media" ? "shadow-sm" : variant === "conversion" ? "shadow-md" : "shadow-lg",
         className
@@ -154,9 +155,9 @@ function WorkbenchShell({
         >
           {status}
           {statusMeta !== undefined && statusMeta !== null ? (
-            <span className="ml-auto shrink-0 text-right font-mono text-[11px] text-muted-foreground max-[32rem]:hidden">
+            <Caption className="ml-auto shrink-0 text-right text-muted-foreground max-[32rem]:hidden">
               {statusMeta}
-            </span>
+            </Caption>
           ) : null}
         </div>
       ) : null}

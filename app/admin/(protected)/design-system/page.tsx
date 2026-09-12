@@ -1,4 +1,5 @@
 "use client";
+import { H1, H2, H3, H4, H5, H6, Display, P, Text, Lead, Large, Small, Muted, Caption, Overline, Metric, Strong, Blockquote, List, OrderedList, InlineCode, CodeBlock, TextLink } from "@smarttools/ui/components/typography";
 
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
@@ -17,6 +18,7 @@ import {
   Badge,
   BrandLockup,
   Button,
+  ToolActionButton,
   Card,
   CardAction,
   CardContent,
@@ -55,9 +57,12 @@ import {
   HowItWorks,
   IconTile,
   InlineGuidance,
+  InlineTextEditor,
   Input,
   Label,
   MetricCard,
+  MediaPreview,
+  MediaOutputCard,
   PageHero,
   PdfViewer,
   ProcessingStatus,
@@ -235,9 +240,9 @@ function Specimen({
 }) {
   return (
     <div className={className}>
-      <p className="mb-3 font-caption text-caption font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+      <Muted className="mb-3 text-muted-foreground">
         {label}
-      </p>
+      </Muted>
       {children}
     </div>
   );
@@ -246,7 +251,10 @@ function Specimen({
 export default function DesignSystemPage() {
   const [documents, setDocuments] = useState(initialDocuments);
   const [handbookPage, setHandbookPage] = useState(9);
+  const [mediaPreviewOpen, setMediaPreviewOpen] = useState(false);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState(4);
+  const [inlineTitle, setInlineTitle] = useState("Viewer");
+  const [inlineDescription, setInlineDescription] = useState("Can view content without making changes.");
   const handbookSection = handbookSectionAtPage(handbookPage);
 
   return (
@@ -280,38 +288,47 @@ export default function DesignSystemPage() {
                 >
                   <div className={`h-20 ${swatch.className}`} />
                   <div className="flex items-center justify-between gap-3 px-4 py-3">
-                    <span className="text-sm font-semibold">{swatch.label}</span>
-                    <code className="font-mono text-caption text-muted-foreground">
+                    <Caption className="">{swatch.label}</Caption>
+                    <InlineCode className="text-muted-foreground">
                       {swatch.value}
-                    </code>
+                    </InlineCode>
                   </div>
                 </div>
               ))}
             </div>
             <Separator />
             <div className="grid gap-8 lg:grid-cols-3">
-              <Specimen label="Heading · Inter">
-                <p className="font-heading text-3xl font-semibold tracking-tight">
-                  Make work feel lighter.
-                </p>
-              </Specimen>
-              <Specimen label="Body · Geist">
-                <p className="max-w-sm font-sans text-sm leading-6 text-muted-foreground">
-                  Calm, readable interface copy for tools people need to trust.
-                </p>
-              </Specimen>
-              <Specimen label="Caption · Funnel Sans">
-                <p className="font-caption text-caption font-semibold uppercase tracking-[0.05em] text-primary">
-                  Privacy first
-                </p>
-              </Specimen>
+              <Specimen className="lg:col-span-3" label="Display · Inter · 48px / 700"><Display>Receipts, done right.</Display></Specimen>
+              <Specimen label="H1 · Inter · 32px / 600"><H1>Page heading</H1></Specimen>
+              <Specimen label="H2 · Inter · 24px / 600"><H2>Section heading</H2></Specimen>
+              <Specimen label="H3 · Inter · 20px / 600"><H3>Panel heading</H3></Specimen>
+              <Specimen label="H4 · Inter · 18px / 600"><H4>Subsection heading</H4></Specimen>
+              <Specimen label="H5 · Inter · 16px / 600"><H5>Nested heading</H5></Specimen>
+              <Specimen label="H6 · Inter · 15px / 600"><H6>Deeply nested heading</H6></Specimen>
+              <Specimen label="P · Geist · 15px"><P>Body content wraps naturally without fixed heights.</P></Specimen>
+              <Specimen label="Text · Geist · 15px"><Text>Inline body text.</Text></Specimen>
+              <Specimen label="Lead · Geist · 18px"><Lead>Introductory copy that explains the page.</Lead></Specimen>
+              <Specimen label="Large · Geist · 18px / 600"><Large>Prominent supporting text</Large></Specimen>
+              <Specimen label="Small · Funnel Sans · 13px / 500"><Small>Small supporting text</Small></Specimen>
+              <Specimen label="Muted · Geist · 13px"><Muted>Secondary descriptions and helper copy.</Muted></Specimen>
+              <Specimen label="Caption · Funnel Sans · 13px"><Caption>6 tools · Updated today</Caption></Specimen>
+              <Specimen label="Overline · Funnel Sans · 11px / 600"><Overline>Documents</Overline></Specimen>
+              <Specimen label="Metric · Inter · 32px / 600"><Metric>1,024</Metric></Specimen>
+              <Specimen label="Strong · inherited size / 600"><P>Review the <Strong>final result</Strong> before exporting.</P></Specimen>
+              <Specimen label="Blockquote"><Blockquote>Keep related content together.</Blockquote></Specimen>
+              <Specimen label="List"><List><li>Add your input</li><li>Review the result</li></List></Specimen>
+              <Specimen label="OrderedList"><OrderedList><li>Choose a tool</li><li>Export your result</li></OrderedList></Specimen>
+              <Specimen label="InlineCode · Geist Mono · 12px"><P>Use <InlineCode>JSON.stringify()</InlineCode> to serialize data.</P></Specimen>
+              <Specimen label="CodeBlock · Geist Mono · 12px"><CodeBlock>{'{\n  "ready": true\n}'}</CodeBlock></Specimen>
+              <Specimen label="TextLink · inherited size"><TextLink href="#typography-guidelines">Typography guidelines</TextLink></Specimen>
             </div>
+            <Muted id="typography-guidelines">Use named components without font overrides. H1–H6 follow the document hierarchy; fields and controls own their labels. Layout classes stay with the layout.</Muted>
             <Separator />
             <Specimen label="App container">
               <div className="rounded-xl bg-muted py-4">
                 <AppContainer className="max-w-none">
-                  <div className="rounded-lg border border-dashed border-primary/40 bg-card px-4 py-3 text-center font-caption text-xs text-muted-foreground">
-                    Responsive content boundary
+                  <div className="rounded-lg border border-dashed border-primary/40 bg-card px-4 py-3 text-center text-muted-foreground">
+                    <Caption>Responsive content boundary</Caption>
                   </div>
                 </AppContainer>
               </div>
@@ -326,6 +343,19 @@ export default function DesignSystemPage() {
             title="Actions and badges"
           />
           <SectionCard>
+            <Specimen label="Tool actions — shared by every tool">
+              <Muted className="text-muted-foreground">Use ToolActionButton for paste, upload, copy, and download. Keep artifact labels and feedback specific; use iconOnly for compact result toolbars.</Muted>
+              <div className="flex flex-wrap items-center gap-2">
+                <ToolActionButton action="paste" />
+                <ToolActionButton action="upload" />
+                <ToolActionButton action="copy" />
+                <ToolActionButton action="copy" disabled />
+                <ToolActionButton action="copy" iconOnly aria-label="Copy result" />
+                <ToolActionButton action="download" iconOnly aria-label="Download result" />
+                <ToolActionButton action="download">Download PDF</ToolActionButton>
+              </div>
+            </Specimen>
+            <Separator />
             <Specimen label="Button variants">
               <div className="flex flex-wrap items-center gap-3">
                 <Button>
@@ -343,6 +373,7 @@ export default function DesignSystemPage() {
                 <Button variant="danger-subtle">Danger subtle</Button>
                 <Button variant="link">Link action</Button>
                 <Button disabled>Disabled</Button>
+                <Button loading>Loading</Button>
               </div>
             </Specimen>
             <Separator />
@@ -409,6 +440,38 @@ export default function DesignSystemPage() {
             title="Form controls"
           />
           <div className="grid gap-6 xl:grid-cols-2">
+            <SectionCard>
+              <SectionHeading
+                className="mb-0"
+                description="Double-click text or use the edit button. Focus and press Enter to edit with a keyboard."
+                title="Inline editing"
+              />
+              <H2>
+                <InlineTextEditor
+                  label="Example role name"
+                  maxLength={160}
+                  onChange={setInlineTitle}
+                  required
+                  value={inlineTitle}
+                />
+              </H2>
+              <Muted>
+                <InlineTextEditor
+                  label="Example role description"
+                  maxLength={2000}
+                  multiline
+                  onChange={setInlineDescription}
+                  required
+                  value={inlineDescription}
+                />
+              </Muted>
+              <Caption>Enter finishes editing. Shift+Enter adds a new line in descriptions. Escape cancels. Clicking outside keeps your draft.</Caption>
+              <Specimen label="Disabled">
+                <Muted>
+                  <InlineTextEditor disabled label="Locked role name" onChange={setInlineTitle} value="Administrator" />
+                </Muted>
+              </Specimen>
+            </SectionCard>
             <SectionCard>
               <SectionHeading
                 className="mb-0"
@@ -652,19 +715,19 @@ export default function DesignSystemPage() {
                   <TabsTrigger value="preview">Preview</TabsTrigger>
                 </TabsList>
                 <TabsContent
-                  className="rounded-lg bg-muted p-5 text-sm text-muted-foreground"
+                  className="rounded-lg bg-muted p-5 text-muted-foreground"
                   value="edit"
                 >
                   Edit fields and document settings here.
                 </TabsContent>
                 <TabsContent
-                  className="rounded-lg bg-muted p-5 text-sm text-muted-foreground"
+                  className="rounded-lg bg-muted p-5 text-muted-foreground"
                   value="items"
                 >
                   Manage line items and totals here.
                 </TabsContent>
                 <TabsContent
-                  className="rounded-lg bg-muted p-5 text-sm text-muted-foreground"
+                  className="rounded-lg bg-muted p-5 text-muted-foreground"
                   value="preview"
                 >
                   Review the final document here.
@@ -718,17 +781,17 @@ export default function DesignSystemPage() {
             <Specimen label="Chapter navigation">
               <div className="grid gap-8 rounded-xl border border-border bg-muted/60 p-5 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,1fr)] lg:items-center">
                 <div className="max-w-md">
-                  <p className="font-heading text-lg font-semibold">
+                  <P className="">
                     Jump through a long-running workflow
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  </P>
+                  <Muted className="mt-2 text-muted-foreground">
                     Hover or tap a tick to preview its chapter. On touch, tap
                     it again to choose. With a keyboard, use the arrow keys,
                     Home, or End to move, then press Enter or Space to choose.
-                  </p>
-                  <p className="mt-4 font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary">
+                  </Muted>
+                  <P className="mt-4 text-primary">
                     Current · {workflowChapters[selectedChapterIndex].title}
-                  </p>
+                  </P>
                 </div>
                 <div className="flex min-h-64 items-center justify-start overflow-visible rounded-xl border border-border bg-card py-8 pr-4 pl-3 sm:justify-center sm:px-4">
                   <ChapterScrubber
@@ -757,20 +820,20 @@ export default function DesignSystemPage() {
                   className="flex h-full min-h-[26rem] flex-col gap-3 px-9 py-7"
                   key={handbookSection.id}
                 >
-                  <p className="font-caption text-[9px] font-semibold uppercase tracking-[0.06em] text-primary">
+                  <P className="text-primary">
                     {String(handbookPage).padStart(2, "0")} /{" "}
                     {handbookSection.title}
-                  </p>
-                  <h3 className="font-heading text-[22px] font-semibold text-foreground">
+                  </P>
+                  <H3 className="text-foreground">
                     {handbookSection.id === "review"
                       ? "Review documents with confidence"
                       : handbookSection.title}
-                  </h3>
+                  </H3>
                   <span className="h-0.5 w-15 bg-primary" />
-                  <p className="max-w-xl text-[11px] leading-[1.5] text-muted-foreground">
+                  <Muted className="max-w-xl text-muted-foreground">
                     Keep decisions moving with focused review queues, clear
                     ownership, and an audit-ready history.
-                  </p>
+                  </Muted>
                   {[
                     ["Assign reviewers", "Route each document to the right person."],
                     ["Resolve feedback", "Track comments without losing context."],
@@ -779,17 +842,57 @@ export default function DesignSystemPage() {
                     <div className="flex items-center gap-2.5" key={title}>
                       <span className="size-1.5 shrink-0 rounded-full bg-primary" />
                       <div>
-                        <p className="text-[11px] font-semibold text-foreground">
+                        <P className="text-foreground">
                           {title}
-                        </p>
-                        <p className="text-[9px] text-muted-foreground">
+                        </P>
+                        <Muted className="text-muted-foreground">
                           {description}
-                        </p>
+                        </Muted>
                       </div>
                     </div>
                   ))}
                 </article>
               </PdfViewer>
+            </Specimen>
+            <Separator />
+            <Specimen label="Full-screen media preview">
+              <Button variant="secondary" onClick={() => setMediaPreviewOpen(true)}>
+                Open full-screen preview
+              </Button>
+              <div className="max-w-xs">
+                <MediaOutputCard
+                  name="preview-example.txt"
+                  metadata="Text"
+                  onPreview={() => setMediaPreviewOpen(true)}
+                  onDownload={() => {
+                    const link = document.createElement("a");
+                    link.href = "data:text/plain;charset=utf-8,Caller-owned%20content";
+                    link.download = "preview-example.txt";
+                    link.click();
+                  }}
+                >
+                  <span className="p-6 text-sm text-muted-foreground">Caller-owned content</span>
+                </MediaOutputCard>
+              </div>
+              <MediaPreview
+                open={mediaPreviewOpen}
+                onOpenChange={setMediaPreviewOpen}
+                title="Preview example"
+                description="Media-agnostic shell · document content passed as children"
+                status="Preview only · Your file is unchanged"
+              >
+                <article className="m-auto w-full max-w-2xl shrink-0 bg-card p-8 text-foreground sm:p-12">
+                  <H2>Caller-owned content</H2>
+                  <P className="mt-4">
+                    This document is passed as children. Images, video, audio,
+                    PDF viewers, and other previews use the same full-screen shell.
+                  </P>
+                  <Muted className="mt-4">
+                    The caller provides rendering and any playback, navigation,
+                    or zoom controls. Exit preview to return to the component library.
+                  </Muted>
+                </article>
+              </MediaPreview>
             </Specimen>
           </SectionCard>
         </section>
@@ -844,11 +947,11 @@ export default function DesignSystemPage() {
                 description="Use the button to inspect the live toast."
                 title="Toast"
               />
-              <div className="flex w-fit items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] text-sm font-medium text-white shadow-[0_8px_24px_#00000026]">
+              <div className="flex w-fit items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] text-white shadow-[0_8px_24px_#00000026]">
                 <span className="grid size-5 place-items-center rounded-full bg-success text-white">
                   <Check className="size-3" />
                 </span>
-                Receipt saved
+                <Strong>Receipt saved</Strong>
               </div>
               <AlertBanner
                 action={
@@ -907,10 +1010,10 @@ export default function DesignSystemPage() {
                 </CardAction>
               </CardHeader>
               <CardContent>
-                <p className="font-heading text-4xl font-semibold tracking-tight">1,284</p>
-                <p className="mt-1 font-caption text-xs font-semibold text-success">
+                <P className="">1,284</P>
+                <P className="mt-1 text-success">
                   +12% this month
-                </p>
+                </P>
               </CardContent>
               <CardFooter className="border-t">
                 <Button size="sm" variant="secondary">
@@ -966,7 +1069,7 @@ export default function DesignSystemPage() {
                   </TableHeader>
                   <TableBody>
                     <TableRow>
-                      <TableCell className="font-medium">Jordan Chen</TableCell>
+                      <TableCell className="">Jordan Chen</TableCell>
                       <TableCell>Administrator</TableCell>
                       <TableCell>
                         <StatusBadge variant="success">Active</StatusBadge>
@@ -974,7 +1077,7 @@ export default function DesignSystemPage() {
                       <TableCell className="text-right">184</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell className="font-medium">Avery Patel</TableCell>
+                      <TableCell className="">Avery Patel</TableCell>
                       <TableCell>Editor</TableCell>
                       <TableCell>
                         <StatusBadge variant="warning">Invited</StatusBadge>
@@ -1022,7 +1125,7 @@ export default function DesignSystemPage() {
                       <GripVertical />
                     </Button>
                     <FileText className="size-4 text-primary" />
-                    <span className="text-sm font-semibold">{item.label}</span>
+                    <Caption className="">{item.label}</Caption>
                   </div>
                 )}
               />
@@ -1049,15 +1152,15 @@ export default function DesignSystemPage() {
                 <TableBody>
                   {DESIGN_SYSTEM_COMPONENTS.map((component) => (
                     <TableRow key={component.designId}>
-                      <TableCell className="font-medium">
+                      <TableCell className="">
                         {component.designName}
                       </TableCell>
                       <TableCell>
-                        <code className="font-mono text-xs text-primary">
+                        <InlineCode className="text-primary">
                           {component.implementation}
-                        </code>
+                        </InlineCode>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                      <TableCell className="text-right text-muted-foreground">
                         {component.designId}
                       </TableCell>
                     </TableRow>
@@ -1210,9 +1313,9 @@ export default function DesignSystemPage() {
                   description="The standard elevated content surface."
                   title="Section card"
                 />
-                <p className="text-sm leading-6 text-muted-foreground">
+                <Muted className="text-muted-foreground">
                   Use this for related settings, forms, and supporting information.
-                </p>
+                </Muted>
                 <Button className="w-fit" size="sm">
                   Save changes
                 </Button>

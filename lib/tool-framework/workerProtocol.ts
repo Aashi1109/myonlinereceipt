@@ -18,7 +18,7 @@
 // Extension-qualified so this module loads under plain `node --test`, which is
 // how its job-state reducer is covered. The type-only imports below are erased.
 import { sanitizeFileName } from "./media/validation.ts";
-import { PDF_THUMBNAIL_CACHE_SIZE } from "./limits.ts";
+import { PDF_PREVIEW_CACHE_PIXELS, PDF_PREVIEW_MAX_PIXELS, PDF_PREVIEW_MAX_WIDTH, PDF_THUMBNAIL_CACHE_SIZE } from "./limits.ts";
 import type { ToolResult } from "./result";
 import type {
   ToolPagePreview,
@@ -89,6 +89,7 @@ export type ToolWorkerInspect = {
   readonly type: "inspect";
   readonly jobId: string;
   readonly key: string;
+  readonly source?: "output";
   readonly files: readonly ToolRunFile[];
   readonly thumbnailWidth: number;
 };
@@ -97,6 +98,7 @@ export type ToolWorkerThumbnailRequest = {
   readonly type: "inspect-thumbnails";
   readonly jobId: string;
   readonly pageNumbers: readonly number[];
+  readonly renderWidth?: number;
 };
 
 export type ToolWorkerInspectionClose = {
@@ -151,7 +153,8 @@ export type ToolPageThumbnail = ToolPagePreview & {
   readonly width: number;
   readonly height: number;
   readonly buffer: ArrayBuffer;
-  readonly mime: "image/jpeg";
+  readonly mime: "image/jpeg" | "image/png";
+  readonly renderWidth?: number;
 };
 
 export type ToolWorkerThumbnails = {
@@ -247,6 +250,7 @@ export const INSPECT_THUMBNAIL_WIDTH = 180;
 export type ToolInspectRequestInput = {
   readonly key: string;
   readonly file: ToolRunFile;
+  readonly source?: "output";
   readonly thumbnailWidth?: number;
 };
 
@@ -263,6 +267,7 @@ export function createToolInspectRequest(
     type: "inspect",
     jobId: input.jobId.trim(),
     key: input.key.trim(),
+    ...(input.source === undefined ? {} : { source: input.source }),
     files: [input.file],
     thumbnailWidth,
   };
@@ -271,6 +276,7 @@ export function createToolInspectRequest(
 export type ToolThumbnailRequestInput = {
   readonly jobId: string;
   readonly pageNumbers: readonly number[];
+  readonly renderWidth?: number;
 };
 
 export function createToolThumbnailRequest(
@@ -278,6 +284,9 @@ export function createToolThumbnailRequest(
 ): ToolWorkerThumbnailRequest {
   const jobId = input.jobId.trim();
   if (!jobId) throw new TypeError("Worker job ID is required.");
+  if (input.renderWidth !== undefined && !isPreviewWidth(input.renderWidth)) {
+    throw new RangeError(`Preview width must be an integer from 1 to ${PDF_PREVIEW_MAX_WIDTH}.`);
+  }
   if (
     input.pageNumbers.some(
       (pageNumber) => !Number.isInteger(pageNumber) || pageNumber < 1,
@@ -294,7 +303,7 @@ export function createToolThumbnailRequest(
       `At most ${PDF_THUMBNAIL_CACHE_SIZE} thumbnail pages may be requested at once.`,
     );
   }
-  return { type: "inspect-thumbnails", jobId, pageNumbers };
+  return { type: "inspect-thumbnails", jobId, pageNumbers, ...(input.renderWidth === undefined ? {} : { renderWidth: input.renderWidth }) };
 }
 
 export function createToolInspectionCloseRequest(
@@ -317,6 +326,7 @@ export function isToolWorkerMessage(
   if (value.type === "inspect-close") return true;
   if (value.type === "inspect-thumbnails") {
     return (
+      (value.renderWidth === undefined || isPreviewWidth(value.renderWidth)) &&
       Array.isArray(value.pageNumbers) &&
       value.pageNumbers.length > 0 &&
       value.pageNumbers.length <= PDF_THUMBNAIL_CACHE_SIZE &&
@@ -329,6 +339,7 @@ export function isToolWorkerMessage(
   if (value.type === "inspect") {
     return (
       isNonEmptyString(value.key) &&
+      (value.source === undefined || value.source === "output") &&
       Array.isArray(value.files) &&
       value.files.length === 1 &&
       value.files.every(isToolRunFile) &&
@@ -419,7 +430,11 @@ export function reduceWorkerJobState(
     return { ...state, previews: mergePageThumbnails(state.previews, message.previews) };
   }
   if (message.type === "inspection-closed") return state;
-  if (state.status !== "running") return state;
+  // Inspection completes geometry first; its live session can still fail
+  // while rendering requested pages. Conversion results remain terminal.
+  const inspectionFailure = message.type === "failure" &&
+    state.status === "completed" && state.pageCount > 0 && state.result === null;
+  if (state.status !== "running" && !inspectionFailure) return state;
   if (message.type === "progress") {
     const { completed, total, stage } = message;
     return { ...state, progress: { completed, total, stage } };
@@ -477,7 +492,16 @@ function mergePageThumbnails(
     .map((preview) => preview.pageNumber)
     .filter((pageNumber) => !incomingByPage.has(pageNumber));
   bufferedOrder.push(...incoming.map((preview) => preview.pageNumber));
-  const retained = new Set(bufferedOrder.slice(-PDF_THUMBNAIL_CACHE_SIZE));
+  const byPage = new Map(pages.map((page) => [page.pageNumber, page]));
+  const retained = new Set<number>();
+  let pixels = 0;
+  for (const pageNumber of bufferedOrder.slice(-PDF_THUMBNAIL_CACHE_SIZE).reverse()) {
+    const page = incomingByPage.get(pageNumber) ?? byPage.get(pageNumber);
+    const size = Number(readOwn(page, "width")) * Number(readOwn(page, "height"));
+    if (pixels + size > PDF_PREVIEW_CACHE_PIXELS) break;
+    pixels += size;
+    retained.add(pageNumber);
+  }
 
   return pages.map((preview) => {
     const next = incomingByPage.get(preview.pageNumber) ?? preview;
@@ -528,13 +552,21 @@ function isPagePreview(value: unknown): value is ToolPagePreview {
 }
 
 function isPageThumbnail(value: unknown): value is ToolPageThumbnail {
+  const width = readOwn(value, "width");
+  const height = readOwn(value, "height");
   return (
     isPagePreview(value) &&
     readOwn(value, "buffer") instanceof ArrayBuffer &&
-    readOwn(value, "mime") === "image/jpeg" &&
-    typeof readOwn(value, "width") === "number" &&
-    typeof readOwn(value, "height") === "number"
+    (readOwn(value, "mime") === "image/jpeg" || readOwn(value, "mime") === "image/png") &&
+    (readOwn(value, "renderWidth") === undefined || isPreviewWidth(readOwn(value, "renderWidth"))) &&
+    typeof width === "number" && Number.isInteger(width) && width > 0 &&
+    typeof height === "number" && Number.isInteger(height) && height > 0 &&
+    width * height <= PDF_PREVIEW_MAX_PIXELS
   );
+}
+
+function isPreviewWidth(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= PDF_PREVIEW_MAX_WIDTH;
 }
 
 function readOwn(value: unknown, key: string): unknown {

@@ -1,9 +1,11 @@
+import { DOCUMENT_TYPES } from "@smarttools/invoice-templates";
 import {
-  Button,
+  Caption,
+  H1,
+  Muted,
+  Overline,
+  Text,
   EmptyState,
-  Field,
-  Input,
-  Select,
   StatusBadge,
   Table,
   TableBody,
@@ -16,6 +18,7 @@ import {
 } from "@smarttools/ui";
 import { Ellipsis, FilePenLine, Plus, Upload } from "lucide-react";
 import Link from "next/link";
+import { AdminFilters } from "../components/AdminFilters";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listTemplates } from "../../../../lib/admin/data";
 const updatedAtFormatter = new Intl.DateTimeFormat("en", {
@@ -23,19 +26,31 @@ const updatedAtFormatter = new Intl.DateTimeFormat("en", {
   month: "short",
   year: "numeric",
 });
+
+function filterValue(value: string | string[] | undefined, allowedValues?: readonly string[]) {
+  const first = Array.isArray(value) ? value[0] : value;
+  return first && (!allowedValues || allowedValues.includes(first)) ? first : "";
+}
+
 export default async function TemplatesPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    mode?: string;
-    query?: string;
-    status?: string;
-    type?: string;
+    mode?: string | string[];
+    query?: string | string[];
+    status?: string | string[];
+    type?: string | string[];
   }>;
 }) {
   await requirePagePermission("templates", "view");
-  const [templates, filters] = await Promise.all([listTemplates(), searchParams]);
-  const query = filters.query?.trim().toLowerCase() ?? "";
+  const [templates, params] = await Promise.all([listTemplates(), searchParams]);
+  const filters = {
+    query: filterValue(params.query),
+    type: filterValue(params.type, DOCUMENT_TYPES) || "all",
+    status: filterValue(params.status, ["published", "draft", "archived"]) || "all",
+    mode: filterValue(params.mode, ["standard", "advanced"]) || "all",
+  };
+  const query = filters.query.trim().toLowerCase();
   const visibleTemplates = templates.filter((template) => {
     const isAdvanced = template.layoutFamily === "advanced";
     return (
@@ -54,15 +69,15 @@ export default async function TemplatesPage({
     <div className="mx-auto w-full max-w-[84rem] pb-8">
       <header className="mb-5 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-caption text-xs font-semibold uppercase tracking-[0.06em] text-primary">
+          <Overline className="block text-primary">
             Template operations
-          </p>
-          <h1 className="mt-2 font-heading text-[26px] font-semibold tracking-tight text-foreground">
+          </Overline>
+          <H1 className="mt-2 text-foreground">
             Templates
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          </H1>
+          <Muted className="mt-1 text-muted-foreground">
             Manage reusable document layouts across every document type.
-          </p>
+          </Muted>
         </div>
         <div className="flex flex-wrap gap-2.5">
           <Link
@@ -82,45 +97,34 @@ export default async function TemplatesPage({
         </div>
       </header>
 
-      <form className="mb-5 grid gap-3 rounded-xl border border-border bg-card p-4 shadow-sm md:grid-cols-[minmax(16rem,1fr)_13rem_12rem_13rem_auto] md:items-end">
-        <Field htmlFor="template-query" label="Search templates">
-          <Input
-            defaultValue={filters.query}
-            name="query"
-            placeholder="Name or slug"
-          />
-        </Field>
-        <Field htmlFor="template-type" label="Document type">
-          <Select defaultValue={filters.type ?? "all"} name="type">
-            <option value="all">All document types</option>
-            <option value="invoice">Invoice</option>
-            <option value="receipt">Receipt</option>
-            <option value="expense-report">Expense report</option>
-            <option value="mileage-log">Mileage log</option>
-            <option value="quarterly-tax-estimator">Tax estimator</option>
-            <option value="w9-request">W-9 request</option>
-            <option value="1099-nec-tracker">1099-NEC tracker</option>
-          </Select>
-        </Field>
-        <Field htmlFor="template-status" label="Status">
-          <Select defaultValue={filters.status ?? "all"} name="status">
-            <option value="all">All statuses</option>
-            <option value="published">Published</option>
-            <option value="draft">Draft</option>
-            <option value="archived">Archived</option>
-          </Select>
-        </Field>
-        <Field htmlFor="template-mode" label="Editor">
-          <Select defaultValue={filters.mode ?? "all"} name="mode">
-            <option value="all">Standard + advanced</option>
-            <option value="standard">Standard</option>
-            <option value="advanced">Advanced</option>
-          </Select>
-        </Field>
-        <Button className="rounded-lg" type="submit" variant="secondary">
-          Apply
-        </Button>
-      </form>
+      <div className="mb-5">
+        <AdminFilters
+          search={{ key: "query", label: "Search templates", placeholder: "Name or slug" }}
+          selects={[
+            { key: "type", label: "Document type", options: [
+              { value: "all", label: "All document types" },
+              { value: "invoice", label: "Invoice" },
+              { value: "receipt", label: "Receipt" },
+              { value: "expense-report", label: "Expense report" },
+              { value: "mileage-log", label: "Mileage log" },
+              { value: "quarterly-tax-estimator", label: "Tax estimator" },
+              { value: "w9-request", label: "W-9 request" },
+              { value: "1099-nec-tracker", label: "1099-NEC tracker" },
+            ] },
+            { key: "status", label: "Status", options: [
+              { value: "all", label: "All statuses" },
+              { value: "published", label: "Published" },
+              { value: "draft", label: "Draft" },
+              { value: "archived", label: "Archived" },
+            ] },
+            { key: "mode", label: "Editor", options: [
+              { value: "all", label: "Standard + advanced" },
+              { value: "standard", label: "Standard" },
+              { value: "advanced", label: "Advanced" },
+            ] },
+          ]}
+        />
+      </div>
 
       {visibleTemplates.length ? (
         <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-label="Template catalog">
@@ -143,25 +147,25 @@ export default async function TemplatesPage({
                   <TableRow className="h-[68px]" key={template.id}>
                     <TableCell className="px-[18px]">
                       <Link className="group block" href={`/admin/templates/${template.id}/manage`}>
-                        <span className="block font-heading text-[13px] font-semibold text-foreground group-hover:text-primary">
+                        <Text className="block text-foreground group-hover:text-primary">
                           {template.name}
-                        </span>
-                        <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground">
+                        </Text>
+                        <Caption className="mt-0.5 block text-muted-foreground">
                           /{template.slug}
-                        </span>
+                        </Caption>
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex rounded-full border border-border bg-muted px-2.5 py-1 font-caption text-xs capitalize text-foreground">
+                      <Caption className="inline-flex rounded-full border border-border bg-muted px-2.5 py-1 text-foreground">
                         {template.documentType.replaceAll("-", " ")}
-                      </span>
+                      </Caption>
                     </TableCell>
-                    <TableCell className="text-xs font-semibold capitalize">
+                    <TableCell >
                       {isAdvanced ? "Advanced" : "Standard"}
                     </TableCell>
                     <TableCell>
                       <StatusBadge
-                        className="min-h-6 px-2.5 text-[11px] capitalize"
+                        className="min-h-6 px-2.5"
                         variant={
                           template.status === "published"
                             ? "success"
@@ -174,7 +178,7 @@ export default async function TemplatesPage({
                       </StatusBadge>
                     </TableCell>
                     <TableCell>
-                      <time className="font-caption text-xs text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
+                      <time className="text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
                         {updatedAtFormatter.format(template.updatedAt)}
                       </time>
                     </TableCell>
@@ -193,7 +197,7 @@ export default async function TemplatesPage({
             </TableBody>
             <TableFooter>
               <TableRow className="h-12 hover:bg-transparent">
-                <TableCell className="px-[18px] font-caption text-[11px] text-muted-foreground" colSpan={6}>
+                <TableCell className="px-[18px] text-muted-foreground" colSpan={6}>
                   {visibleTemplates.length} of {templates.length} templates
                 </TableCell>
               </TableRow>
@@ -213,7 +217,7 @@ export default async function TemplatesPage({
       )}
 
       <div className="mt-4 flex justify-end">
-        <Link className="inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline" href="/admin/templates/new/advanced">
+        <Link className="inline-flex items-center gap-2 text-primary hover:underline" href="/admin/templates/new/advanced">
           <FilePenLine aria-hidden="true" className="size-4" />
           Create an advanced template
         </Link>

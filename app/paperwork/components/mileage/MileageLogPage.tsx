@@ -8,8 +8,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
+  Caption,
+  H3,
+  Metric,
+  P,
+  Text,
   AlertBanner,
   Button,
+  ToolActionButton,
   Card,
   Input,
   Label,
@@ -19,7 +25,7 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-  ToolPageHeader
+  ToolPageHeader,
 } from "@smarttools/ui";
 import {
   FileText,
@@ -34,7 +40,6 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Download,
   Percent,
   CheckCircle,
   HelpCircle,
@@ -327,7 +332,7 @@ export default function MileageLogPage({
   };
 
   return (
-    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="mileage-tracker-wrapper">
+    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="mileage-tracker-wrapper">
 
       <ToolPageHeader
         actions={(
@@ -366,39 +371,39 @@ export default function MileageLogPage({
         <MetricCard
           className="rounded-2xl border-slate-200/85 bg-white"
           label="Total Driven Miles"
-          value={<span className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-slate-900">{stats.totalMiles}</span>
-            <span className="text-[10px] font-bold text-slate-500 font-mono">miles</span>
-          </span>}
+          value={<Text className="flex items-baseline gap-1.5">
+            <Metric className="text-slate-900">{stats.totalMiles}</Metric>
+            <Caption className="text-slate-500">miles</Caption>
+          </Text>}
         />
 
         <MetricCard
           className="rounded-2xl border-slate-200/85 bg-white"
           label="Estimated Deduction"
-          value={<span className="flex items-baseline gap-1">
-            <span className="text-2xl font-black text-emerald-600">${stats.totalDue.toFixed(2)}</span>
-            <span className="text-[11px] font-mono font-bold text-slate-400">write-off</span>
-          </span>}
+          value={<Text className="flex items-baseline gap-1">
+            <Metric className="text-emerald-600">${stats.totalDue.toFixed(2)}</Metric>
+            <Caption className="text-slate-400">write-off</Caption>
+          </Text>}
         />
 
         <MetricCard
           className="rounded-2xl border-slate-200/85 bg-white"
           label="Average Trip Length"
-          value={<span className="flex items-baseline gap-1">
-            <span className="text-2xl font-black text-slate-900">{stats.avgMiles}</span>
-            <span className="text-[10px] font-bold text-slate-500 font-mono">mi/trip</span>
-          </span>}
+          value={<Text className="flex items-baseline gap-1">
+            <Metric className="text-slate-900">{stats.avgMiles}</Metric>
+            <Caption className="text-slate-500">mi/trip</Caption>
+          </Text>}
         />
 
         <MetricCard
           className="rounded-2xl border-slate-200/85 bg-white"
           label="Fuel Economy Rating"
-          value={<span className="flex items-baseline gap-1">
-            <span className="text-2xl font-black text-blue-600">
+          value={<Text className="flex items-baseline gap-1">
+            <Metric className="text-blue-600">
               {stats.fuelEconomy !== "N/A" ? `${stats.fuelEconomy}` : "N/A"}
-            </span>
-            {stats.fuelEconomy !== "N/A" && <span className="text-[10px] font-bold text-slate-500 font-mono">MPG</span>}
-          </span>}
+            </Metric>
+            {stats.fuelEconomy !== "N/A" && <Caption className="text-slate-500">MPG</Caption>}
+          </Text>}
         />
       </div>
 
@@ -410,10 +415,10 @@ export default function MileageLogPage({
         value={activeTab}
       >
         <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
-          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="edit">
+          <TabsTrigger className="whitespace-normal py-1.5" value="edit">
             1. Edit Driving Logs
           </TabsTrigger>
-          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="preview">
+          <TabsTrigger className="whitespace-normal py-1.5" value="preview">
             2. Printable Records View
           </TabsTrigger>
         </TabsList>
@@ -429,14 +434,13 @@ export default function MileageLogPage({
 
             {/* Rates & Vehicle info */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 1. Vehicle Parameters
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-tax-year">Tax Filing Year</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="mileage-tax-year">Tax Filing Year</Label>
                   <Select
-                    className="font-bold"
                     id="mileage-tax-year"
                     value={data.taxYear}
                     onChange={(e) => setData({ ...data, taxYear: Number(e.target.value) })}
@@ -447,9 +451,8 @@ export default function MileageLogPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-rate-mode">Rate mode</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="mileage-rate-mode">Rate mode</Label>
                   <Select
-                    className="font-bold"
                     id="mileage-rate-mode"
                     value={data.rateMode}
                     onChange={(e) => setData({ ...data, rateMode: e.target.value as MileageRateMode })}
@@ -459,12 +462,11 @@ export default function MileageLogPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-deduction-rate">Custom rate ($/mile)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="mileage-deduction-rate">Custom rate ($/mile)</Label>
                   <Input
                     type="number"
                     min="0"
                     step="0.001"
-                    className="font-black"
                     disabled={data.rateMode !== "custom"}
                     id="mileage-deduction-rate"
                     value={data.customRate}
@@ -472,10 +474,9 @@ export default function MileageLogPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="mileage-vehicle-model">Vehicle Description Model</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="mileage-vehicle-model">Vehicle Description Model</Label>
                   <Input
                     type="text"
-                    className="font-semibold"
                     id="mileage-vehicle-model"
                     value={data.vehicleModel}
                     onChange={(e) => setData({ ...data, vehicleModel: e.target.value })}
@@ -487,9 +488,9 @@ export default function MileageLogPage({
             {/* Trip items input list */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest font-sans">
+                <H3 className="text-slate-500">
                   2. Driving Mileage Entries
-                </h3>
+                </H3>
                 <Button
                   type="button"
                   onClick={handleAddTrip}
@@ -517,7 +518,7 @@ export default function MileageLogPage({
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`mileage-trip-${trip.id}-date`}>Date *</Label>
+                        <Label className="block text-slate-400 mb-1" htmlFor={`mileage-trip-${trip.id}-date`}>Date *</Label>
                         <Input
                           id={`mileage-trip-${trip.id}-date`}
                           type="date"
@@ -526,22 +527,20 @@ export default function MileageLogPage({
                         />
                       </div>
                       <div className="col-span-2">
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase mb-1" htmlFor={`mileage-trip-${trip.id}-purpose`}>Purpose *</Label>
+                        <Label className="block text-slate-400 mb-1" htmlFor={`mileage-trip-${trip.id}-purpose`}>Purpose *</Label>
                         <Input
                           type="text"
                           placeholder="e.g. Broad Street lab drop-off"
-                          className="font-semibold"
                           id={`mileage-trip-${trip.id}-purpose`}
                           value={trip.purpose}
                           onChange={(e) => handleTripChange(trip.id, "purpose", e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-500 uppercase mb-1" htmlFor={`mileage-trip-${trip.id}-miles`}>Miles Driven *</Label>
+                        <Label className="block text-slate-500 mb-1" htmlFor={`mileage-trip-${trip.id}-miles`}>Miles Driven *</Label>
                         <Input
                           type="number"
                           placeholder="e.g. 50"
-                          className="font-black"
                           id={`mileage-trip-${trip.id}-miles`}
                           value={trip.miles || ""}
                           onChange={(e) => handleTripChange(trip.id, "miles", e.target.value)}
@@ -549,7 +548,7 @@ export default function MileageLogPage({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1 text-[10px] font-medium text-slate-500">
+                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-1 text-slate-500">
                       <div>
                         <Input
                           aria-label={`Trip ${idx + 1} start location`}
@@ -595,7 +594,7 @@ export default function MileageLogPage({
                           aria-label={`Trip ${idx + 1} starting odometer`}
                           type="number"
                           placeholder="Start Odo"
-                          className="text-center font-mono font-bold"
+                          className="text-center"
                           value={trip.startOdometer || ""}
                           onChange={(e) => handleTripChange(trip.id, "startOdometer", e.target.value)}
                         />
@@ -603,7 +602,7 @@ export default function MileageLogPage({
                           aria-label={`Trip ${idx + 1} ending odometer`}
                           type="number"
                           placeholder="End Odo"
-                          className="text-center font-mono font-bold"
+                          className="text-center"
                           value={trip.endOdometer || ""}
                           onChange={(e) => handleTripChange(trip.id, "endOdometer", e.target.value)}
                         />
@@ -616,10 +615,10 @@ export default function MileageLogPage({
 
             {/* Gasoline Fuel Receipts log */}
             <div>
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4 font-sans">
-                <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
+                <H3 className="text-slate-500">
                   3. Fuel Purchase Tracker (For MPG / Expenses)
-                </h3>
+                </H3>
                 <Button
                   type="button"
                   onClick={handleAddFuel}
@@ -632,9 +631,9 @@ export default function MileageLogPage({
               </div>
 
               {data.fuelRecords.length === 0 ? (
-                <div className="text-center py-6 border border-dashed rounded-xl text-slate-400 text-xs font-semibold">
+                <div className="text-center py-6 border border-dashed rounded-xl text-slate-400"><Text>
                   No fuel receipt records logged. Enter gas logs to compute active vehicle MPG!
-                </div>
+                </Text></div>
               ) : (
                 <div className="space-y-3">
                   {data.fuelRecords.map((fuel) => (
@@ -652,7 +651,7 @@ export default function MileageLogPage({
 
                       <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`mileage-fuel-${fuel.id}-date`}>Refuel Date</Label>
+                          <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-date`}>Refuel Date</Label>
                           <Input
                             id={`mileage-fuel-${fuel.id}-date`}
                             type="date"
@@ -661,45 +660,42 @@ export default function MileageLogPage({
                           />
                         </div>
                         <div className="col-span-2 md:col-span-1">
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`mileage-fuel-${fuel.id}-merchant`}>Merchant</Label>
+                          <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-merchant`}>Merchant</Label>
                           <Input
                             type="text"
                             placeholder="Shell, Exxon..."
-                            className="font-semibold"
                             id={`mileage-fuel-${fuel.id}-merchant`}
                             value={fuel.merchant}
                             onChange={(e) => handleFuelChange(fuel.id, "merchant", e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`mileage-fuel-${fuel.id}-gallons`}>Gallons</Label>
+                          <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-gallons`}>Gallons</Label>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="font-bold"
                             id={`mileage-fuel-${fuel.id}-gallons`}
                             value={fuel.gallons || ""}
                             onChange={(e) => handleFuelChange(fuel.id, "gallons", e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`mileage-fuel-${fuel.id}-cost`}>Cost ($)</Label>
+                          <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-cost`}>Cost ($)</Label>
                           <Input
                             type="number"
                             placeholder="0.00"
-                            className="font-black"
                             id={`mileage-fuel-${fuel.id}-cost`}
                             value={fuel.cost || ""}
                             onChange={(e) => handleFuelChange(fuel.id, "cost", e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`mileage-fuel-${fuel.id}-odometer`}>Odometer</Label>
+                          <Label className="block text-slate-400" htmlFor={`mileage-fuel-${fuel.id}-odometer`}>Odometer</Label>
                           <Input
                             type="number"
                             placeholder="e.g. 19050"
-                            className="text-center font-mono font-bold"
+                            className="text-center"
                             id={`mileage-fuel-${fuel.id}-odometer`}
                             value={fuel.odometer || ""}
                             onChange={(e) => handleFuelChange(fuel.id, "odometer", e.target.value)}
@@ -715,24 +711,24 @@ export default function MileageLogPage({
           </Card>
 
           <AlertBanner title="IRS Mileage Log Mandates" variant="success">
-            <p>
+            <P>
               Taxpayers must maintain written records detailing trip dates, business miles drivings, starting coordinates, and professional transaction purposes.
               Keep this exported file in your audit folders.
-            </p>
+            </P>
           </AlertBanner>
 
         </div>
 
         {/* PRINT ACTIONABLE SHEETS COLUMN */}
-        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 leading-relaxed ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
+        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
 
           <Card className="space-y-3 p-4 print:hidden">
-            <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold border-b border-slate-100 pb-2 font-sans">
-              <span>MILEAGE SHEET DRIVING REPORT</span>
+            <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
+              <Text>MILEAGE SHEET DRIVING REPORT</Text>
               <StatusBadge variant="info">Ready to Print</StatusBadge>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={handlePrint}
                 className="w-full"
@@ -742,15 +738,13 @@ export default function MileageLogPage({
                 <Printer className="size-4" />
                 <span>Save to PDF</span>
               </Button>
-              <Button
+              <ToolActionButton
+                action="download"
                 onClick={handleExportCSV}
-                className="w-full"
                 type="button"
-                variant="secondary"
               >
-                <Download className="size-4" />
                 <span>Export CSV Sheet</span>
-              </Button>
+              </ToolActionButton>
             </div>
           </Card>
 

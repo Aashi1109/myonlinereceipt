@@ -1,3 +1,5 @@
+
+import { Display, H2, Muted, Overline } from "@smarttools/ui";
 import type { Metadata } from "next";
 import PublicInfoChrome from "@/components/smarttools/PublicInfoChrome";
 
@@ -18,15 +20,15 @@ export default function PrivacyPage() {
     <PublicInfoChrome>
       <article className="mx-auto w-full max-w-[760px] px-6 py-16 lg:py-[72px]">
         <header>
-          <p className="font-caption text-xs font-semibold tracking-[0.05em] text-primary uppercase">Legal · Updated May 2025</p>
-          <h1 className="mt-2 font-heading text-[40px] leading-tight font-semibold tracking-[-0.04rem]">Privacy Policy</h1>
-          <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">A plain-language summary of how SmartTools handles your information across Paperwork, DevTools, Media, and account features.</p>
+          <Overline className="block text-primary">Legal · Updated May 2025</Overline>
+          <Display className="mt-2">Privacy Policy</Display>
+          <Muted className="mt-3 text-muted-foreground">A plain-language summary of how SmartTools handles your information across Paperwork, DevTools, Media, and account features.</Muted>
         </header>
         <div className="mt-8 flex flex-col gap-8">
           {sections.map((section) => (
             <section className="flex flex-col gap-2" key={section.title}>
-              <h2 className="font-heading text-[19px] font-semibold">{section.title}</h2>
-              <p className="text-[15px] leading-[1.6] text-muted-foreground">{section.body}</p>
+              <H2 >{section.title}</H2>
+              <Muted className="text-muted-foreground">{section.body}</Muted>
             </section>
           ))}
         </div>

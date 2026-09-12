@@ -1,11 +1,15 @@
 "use client";
 
 import {
-  Button,
+  Overline,
+  H3,
+  Muted,
+  Caption,
+  Strong,
   SegmentedControl,
   ToolOptionsPanel,
 } from "@smarttools/ui";
-import { ArrowDownToLine, FileSpreadsheet, Loader2 } from "lucide-react";
+import { ArrowDownToLine, FileSpreadsheet } from "lucide-react";
 import {
   type DragEvent,
   type ReactNode,
@@ -17,7 +21,7 @@ import {
 
 import { FileProcessorWorkspace } from "@/components/FileProcessorWorkspace";
 import { textInputFileIssue } from "@/components/FileInput";
-import { ResultSurface } from "@/components/ResultSurface";
+import { ResultSurface, type ResultSurfaceProps } from "@/components/ResultSurface";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { SplitStack } from "@/components/Stacks";
 import { WorkspaceInputSurface } from "@/components/WorkspaceInput";
@@ -51,6 +55,7 @@ export interface WorkspaceToolbarActions {
   readonly exampleLabel?: string;
   readonly exampleVariant?: "link" | "outline";
   readonly onExample?: () => void;
+  readonly primaryActionLabel?: string;
   readonly statusMeta?: ReactNode;
 }
 
@@ -181,25 +186,6 @@ function InputResultWorkspace({
   );
 }
 
-function PrimaryAction({ action }: { action: NonNullable<WorkspacePrimaryAction> }) {
-  const canceling = action.running && action.onCancel;
-  return (
-    <Button
-      aria-busy={action.running || undefined}
-      className="w-full"
-      disabled={canceling ? false : action.disabled}
-      onClick={canceling ? action.onCancel : action.onRun}
-      size="default"
-      type="button"
-    >
-      {action.running && !canceling ? (
-        <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-      ) : null}
-      {canceling ? "Cancel" : action.label}
-    </Button>
-  );
-}
-
 function TextFileDropTarget({
   children,
   props,
@@ -295,32 +281,32 @@ function TextFileDropTarget({
       {children}
       {dropIssue ? (
         <div
-          className="absolute top-3 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-2 text-xs font-medium text-destructive shadow-sm"
+          className="absolute top-3 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-destructive/35 bg-destructive/10 px-4 py-2 text-destructive shadow-sm"
           role="alert"
         >
-          {dropIssue}
+          <Caption>{dropIssue}</Caption>
         </div>
       ) : null}
       {dragActive ? (
         <div className="pointer-events-none absolute inset-0 z-40 grid place-items-center overflow-hidden rounded-xl border-2 border-primary bg-accent/95">
-          <div className="absolute top-4 left-4 rounded-full bg-primary px-3 py-1.5 font-caption text-[10px] font-bold tracking-[0.05em] text-primary-foreground">
+          <Overline className="absolute top-4 left-4 rounded-full bg-primary px-3 py-1.5 text-primary-foreground">
             DROP MODE ACTIVE
-          </div>
+          </Overline>
           <div className="grid max-w-xl justify-items-center gap-4 px-8 text-center">
             <span className="grid size-16 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/20">
               <ArrowDownToLine aria-hidden="true" className="size-7" />
             </span>
             <div>
-              <h3 className="text-2xl font-semibold tracking-tight">Release to replace the current {inputName.toLowerCase()}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <H3>Release to replace the current {inputName.toLowerCase()}</H3>
+              <Muted className="mt-2 text-muted-foreground">
                 Drop anywhere in this workbench. The file stays on this device and replaces the current input.
-              </p>
+              </Muted>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 text-xs font-semibold shadow-sm">
+            <Caption className="inline-flex items-center gap-2 rounded-full border border-primary bg-card px-4 py-2 shadow-sm"><Strong className="contents">
               <FileSpreadsheet aria-hidden="true" className="size-4 text-primary" />
               {acceptedDescription}
-            </span>
-            <p className="font-caption text-[10px] font-semibold text-success">Release now · nothing is uploaded</p>
+            </Strong></Caption>
+            <Muted className="text-success"><Strong>Release now · nothing is uploaded</Strong></Muted>
           </div>
         </div>
       ) : null}
@@ -328,7 +314,7 @@ function TextFileDropTarget({
   );
 }
 
-export function ToolWorkspace(props: WorkspaceProps) {
+export function ToolWorkspace(props: WorkspaceProps & Pick<ResultSurfaceProps, "initialJsonView">) {
   if (props.spec.input.kind === "files") {
     return <FileProcessorWorkspace {...props} />;
   }
@@ -346,6 +332,7 @@ export function ToolWorkspace(props: WorkspaceProps) {
   const result = (
     <ResultSurface
       error={props.error}
+      initialJsonView={props.initialJsonView}
       result={props.result}
       running={props.running}
       spec={props.spec}
@@ -387,7 +374,7 @@ export function ToolWorkspace(props: WorkspaceProps) {
     </div>
   ) : primaryContent;
 
-  if (fields.length === 0 || (!hasSideSettings && !props.primaryAction)) {
+  if (!hasSideSettings) {
     return <TextFileDropTarget props={props}>{mainContent}</TextFileDropTarget>;
   }
 
@@ -397,33 +384,26 @@ export function ToolWorkspace(props: WorkspaceProps) {
       collapseLabel="settings panel"
       collapseSide="secondary"
       collapsible={hasSideSettings && !settingsOnly}
-      defaultCollapsed={!settingsOnly && props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
-      defaultSize={69}
-      minSize={52}
+      defaultCollapsed={!settingsOnly ? "secondary" : undefined}
+      defaultSize={75}
+      minSize={75}
     >
       {mainContent}
       <ToolOptionsPanel
-        action={hasSideSettings && props.primaryAction ? <PrimaryAction action={props.primaryAction} /> : undefined}
         className="h-full overflow-y-auto bg-card p-[18px]"
-        title={hasSideSettings ? props.spec.optionsPanel?.title ?? "SETTINGS" : props.primaryAction ? "Action" : "Guidance"}
+        title={props.spec.optionsPanel?.title ?? "SETTINGS"}
         variant="plain"
       >
-        {hasSideSettings ? (
-          <>
-            <SettingsPanel
-              disabled={props.disabled}
-              layout={props.spec.optionsPanel?.layout}
-              onChange={props.onSettingChange}
-              pane={settingsOnly ? undefined : "side"}
-              spec={props.spec.settings}
-              values={props.settings}
-            />
-            {props.spec.optionsPanel?.note ? (
-              <p className="text-xs text-muted-foreground">{props.spec.optionsPanel.note}</p>
-            ) : null}
-          </>
-        ) : props.primaryAction ? (
-          <PrimaryAction action={props.primaryAction} />
+        <SettingsPanel
+          disabled={props.disabled}
+          layout={props.spec.optionsPanel?.layout}
+          onChange={props.onSettingChange}
+          pane={settingsOnly ? undefined : "side"}
+          spec={props.spec.settings}
+          values={props.settings}
+        />
+        {props.spec.optionsPanel?.note ? (
+          <Muted className="text-muted-foreground">{props.spec.optionsPanel.note}</Muted>
         ) : null}
       </ToolOptionsPanel>
     </SplitStack>

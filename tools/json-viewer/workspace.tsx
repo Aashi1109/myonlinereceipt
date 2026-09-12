@@ -1,29 +1,29 @@
 "use client";
 
 import {
+  FieldLabel,
+  P,
+  Strong,
+  Muted,
+  Caption,
   Button,
-  Label,
+  ToolActionButton,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
   Toaster,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
   toast,
 } from "@smarttools/ui";
 import {
   AlignLeft,
   CircleCheckBig,
-  Copy,
   FileText,
   FileWarning,
   Loader2,
   Minimize2,
   Trash2,
-  Upload,
   WandSparkles,
 } from "lucide-react";
 import {
@@ -110,14 +110,16 @@ function GoToJsonError({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      size="xs"
+      variant="link"
       aria-label={`Go to JSON error at line ${location.line}, column ${location.column}`}
-      className={`font-sans text-[11px] font-semibold text-destructive underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none ${className}`}
+      className={`text-destructive ${className}`}
       onClick={onClick}
       type="button"
     >
       Go to line {location.line}, column {location.column}
-    </button>
+    </Button>
   );
 }
 
@@ -223,16 +225,13 @@ function JsonSourceEditor({
                 ref={fileInputRef}
                 type="file"
               />
-              <Button
+              <ToolActionButton action="upload"
                 disabled={props.disabled}
                 onClick={() => fileInputRef.current?.click()}
-                size="xs"
                 type="button"
-                variant="ghost"
               >
-                <Upload aria-hidden="true" />
-          {selectedFile ? "Replace" : "Upload"}
-              </Button>
+                {selectedFile ? "Replace" : "Upload"}
+              </ToolActionButton>
               {selectedFile ? (
                 <Button
                   aria-label={`Remove ${selectedFile.name}`}
@@ -251,7 +250,7 @@ function JsonSourceEditor({
               ) : null}
             </>
           ) : null}
-          <Button
+          <ToolActionButton action="copy"
             aria-label={largeFile ? "Copy JSON preview" : "Copy JSON input"}
             disabled={props.input.text.length === 0}
             onClick={async () => {
@@ -262,13 +261,10 @@ function JsonSourceEditor({
                 onNotice("Copy failed. Select the input and copy it manually.", "warning");
               }
             }}
-            size="xs"
             type="button"
-            variant="ghost"
           >
-            <Copy aria-hidden="true" />
             {largeFile ? "Copy preview" : "Copy"}
-          </Button>
+          </ToolActionButton>
         </div>
       )}
       className="h-full"
@@ -282,7 +278,7 @@ function JsonSourceEditor({
       purpose="editor"
       title="JSON input"
     >
-      <Label className="sr-only" htmlFor={editorId}>{inputSpec.label}</Label>
+      <FieldLabel className="sr-only" htmlFor={editorId}>{inputSpec.label}</FieldLabel>
       <SourceTextarea
         className="min-h-0 flex-1"
         disabled={props.disabled}
@@ -324,11 +320,11 @@ function JsonResultPlaceholder({
       role="status"
     >
       <div className="max-w-sm">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        <P className="text-foreground"><Strong>{title}</Strong></P>
+        <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         {error && errorLocation ? (
           <GoToJsonError
-            className="mt-3 text-xs"
+            className="mt-3"
             location={errorLocation}
             onClick={onGoToError}
           />
@@ -374,7 +370,7 @@ function JsonResultPane({
 
   return (
     <div className="relative h-full min-h-0">
-      <div aria-disabled={!ready || undefined} className="h-full" inert={!ready}>
+      <fieldset aria-disabled={!ready || undefined} className="m-0 h-full min-w-0 border-0 p-0" disabled={!ready} inert={!ready}>
         <JsonResultRenderer
           artifactValue={output}
           className="h-full [&_header>div:last-child>button]:!text-muted-foreground"
@@ -404,7 +400,7 @@ function JsonResultPane({
           value={tree?.value ?? null}
           view={view}
         />
-      </div>
+      </fieldset>
       {!ready ? (
         <JsonResultPlaceholder
           error={error}
@@ -785,9 +781,9 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
                   className="relative w-[168px] gap-1.5 after:absolute after:inset-x-0 after:-inset-y-1.5 after:content-['']"
                   size="xs"
                 >
-                  <span className="text-[8px] font-extrabold tracking-[0.06em] text-muted-foreground">
+                  <Caption className="text-muted-foreground"><Strong>
                     REPAIR
-                  </span>
+                  </Strong></Caption>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -886,71 +882,32 @@ export default function JsonViewerWorkspace(props: WorkspaceProps) {
               ) : props.error ? (
                 <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
                   <div className="max-w-md">
-                    <p className="text-sm font-semibold text-destructive">JSON validation failed</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{props.error}</p>
+                    <P className="text-destructive"><Strong>JSON validation failed</Strong></P>
+                    <Muted className="mt-1 text-muted-foreground">{props.error}</Muted>
                     {errorLocation && errorIsInPreview ? (
                       <GoToJsonError
-                        className="mt-3 text-xs"
+                        className="mt-3"
                         location={errorLocation}
                         onClick={goToError}
                       />
                     ) : errorLocation ? (
-                      <p className="mt-3 text-xs font-medium text-destructive">
+                      <Muted className="mt-3 text-destructive">
                         The reported location is beyond the loaded preview.
-                      </p>
+                      </Muted>
                     ) : null}
                   </div>
                 </div>
               ) : (
                 <div className="grid min-h-0 flex-1 place-items-center p-6 text-center">
                   <div className="max-w-sm">
-                    <p className="text-sm font-semibold">
+                    <P><Strong>
                       {props.running ? "Processing the complete JSON file" : "Ready to process"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    </Strong></P>
+                    <Muted className="mt-1 text-muted-foreground">
                       {props.running
                         ? "The file stays local while the worker reads it incrementally."
                         : "Validate every byte, or generate a formatted or minified download without loading the full file into the editor."}
-                    </p>
-                    {props.running && props.primaryAction?.onCancel ? (
-                      <Button
-                        className="mt-4"
-                        onClick={props.primaryAction.onCancel}
-                        type="button"
-                        variant="outline"
-                      >
-                        Cancel
-                      </Button>
-                    ) : props.primaryAction ? (
-                      <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Button
-                        disabled={props.primaryAction.disabled}
-                        onClick={() => requestLargeAction("validate")}
-                        type="button"
-                      >
-                        <CircleCheckBig aria-hidden="true" />
-                        Validate
-                      </Button>
-                      <Button
-                        disabled={props.primaryAction.disabled}
-                        onClick={() => requestLargeAction("format")}
-                        type="button"
-                        variant="outline"
-                      >
-                        <AlignLeft aria-hidden="true" />
-                        Beautify
-                      </Button>
-                      <Button
-                        disabled={props.primaryAction.disabled}
-                        onClick={() => requestLargeAction("minify")}
-                        type="button"
-                        variant="outline"
-                      >
-                        <Minimize2 aria-hidden="true" />
-                        Minify
-                      </Button>
-                      </div>
-                    ) : null}
+                    </Muted>
                   </div>
                 </div>
               )}

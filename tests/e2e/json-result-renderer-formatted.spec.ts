@@ -36,22 +36,22 @@ test("JSON Viewer Tree metadata and find work across result views", async ({ pag
   });
 
   await expect(renderer.getByRole("searchbox")).toHaveCount(1);
-  await expect(renderer.getByText("0 / 0", { exact: true })).toHaveCount(0);
+  await expect(renderer.getByText("0/0", { exact: true })).toHaveCount(0);
   await expect(previous).toHaveCount(0);
   await expect(next).toHaveCount(0);
   await search.fill("name");
-  await expect(renderer.getByText("1 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("1/2", { exact: true })).toBeVisible();
   await expect(renderer.locator("[data-json-search-current=true]")).toHaveCount(1);
 
   await next.click();
-  await expect(renderer.getByText("2 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("2/2", { exact: true })).toBeVisible();
   await previous.click();
-  await expect(renderer.getByText("1 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("1/2", { exact: true })).toBeVisible();
 
   await renderer.getByRole("tab", { name: "Formatted" }).click();
   await expect(search).toHaveValue("name");
   await expect(renderer.getByRole("searchbox")).toHaveCount(1);
-  await expect(renderer.getByText("1 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("1/2", { exact: true })).toBeVisible();
   await expect(renderer.locator("[data-formatted-match=true]")).toHaveCount(2);
 
   const previousBox = await previous.boundingBox();
@@ -61,20 +61,20 @@ test("JSON Viewer Tree metadata and find work across result views", async ({ pag
   expect(nextBox!.x - (previousBox!.x + previousBox!.width)).toBe(0);
 
   await search.fill("missing");
-  await expect(renderer.getByText("0 / 0", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("0/0", { exact: true })).toBeVisible();
   await expect(previous).toBeDisabled();
   await expect(next).toBeDisabled();
 
   await search.fill("name");
   await next.click();
-  await expect(renderer.getByText("2 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("2/2", { exact: true })).toBeVisible();
 
   await page.setViewportSize({ width: 500, height: 900 });
   const responsiveSearch = renderer.getByRole("searchbox", {
     name: "Search JSON result",
   });
   await expect(responsiveSearch).toHaveValue("name");
-  await expect(renderer.getByText("2 / 2", { exact: true })).toBeVisible();
+  await expect(renderer.getByText("2/2", { exact: true })).toBeVisible();
   const responsiveNext = renderer.getByRole("button", {
     name: "Next JSON search match",
   });

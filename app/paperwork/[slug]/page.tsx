@@ -43,7 +43,7 @@ export default async function ToolPage({
     <App
       account={{
         returnTo: `/paperwork/${slug}`,
-        user: session ? { name: session.user.name } : null,
+        user: session?.user ?? null,
       }}
       componentKey={tool.componentKey}
       templates={templates}

@@ -21,13 +21,13 @@ export function CategoryFilter({
 
   return (
     <Label
-      className="inline-flex items-center gap-2 text-sm font-bold text-foreground"
+      className="inline-flex items-center gap-2 text-foreground"
       htmlFor="devtools-category-filter"
     >
       Tools
       <Select
         aria-label="Filter tools by category"
-        className="h-10 w-56 bg-card text-sm font-semibold"
+        className="h-10 w-56 bg-card"
         defaultValue={value}
         id="devtools-category-filter"
         onChange={(event) => {

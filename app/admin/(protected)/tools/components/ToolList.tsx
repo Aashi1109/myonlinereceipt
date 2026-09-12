@@ -1,5 +1,7 @@
 "use client";
 
+import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
+
 import type { ToolApp } from "@smarttools/tool-catalog";
 import type { AdminTool } from "../../../../../lib/tool-framework/manifest";
 import {
@@ -7,6 +9,12 @@ import {
   type OrderableItemState,
 } from "@smarttools/ui/components/OrderableList";
 import {
+  H3,
+  Caption,
+  Lead,
+  Muted,
+  Overline,
+  Text,
   Button,
   Field,
   IconTile,
@@ -26,18 +34,20 @@ import {
   Braces,
   BriefcaseBusiness,
   ChevronDown,
-  Ellipsis,
+  ExternalLink,
   Eye,
   EyeOff,
   GripVertical,
   History,
   LayoutGrid,
+  Pencil,
   RotateCcw,
   Search,
   TriangleAlert,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ToolIcon } from "../../../../../components/ToolIcon";
 import type { ToolIconRow } from "../../../../../lib/tool-framework/icons";
@@ -81,7 +91,7 @@ const GROUPS: readonly {
 ];
 
 type AppFilter = "all" | ToolApp;
-type VisibilityFilter = "all" | "visible" | "hidden" | "setup" | "archived";
+type VisibilityFilter = "all" | "visible" | "hidden" | "draft" | "setup" | "archived";
 
 function sortByOrder(tools: readonly AdminTool[]) {
   return [...tools].sort((left, right) => left.order - right.order);
@@ -94,6 +104,7 @@ function isVisible(tool: AdminTool) {
 function matchesVisibility(tool: AdminTool, filter: VisibilityFilter) {
   if (filter === "visible") return isVisible(tool);
   if (filter === "hidden") return Boolean(tool.slug && !tool.enabled && !tool.archived);
+  if (filter === "draft") return tool.hasDraftContent && !tool.archived;
   if (filter === "setup") return !tool.slug && !tool.archived;
   if (filter === "archived") return tool.archived;
   return true;
@@ -198,11 +209,11 @@ function ToolConfiguration({
           />
         </Field>
         <div className="flex flex-wrap items-center gap-2 lg:col-span-2">
-          <Button type="submit">Save configuration</Button>
+          <SubmitButton formAction={updateToolAction} type="submit">Save configuration</SubmitButton>
           <Button onClick={onClose} type="button" variant="secondary">
             Cancel
           </Button>
-          <Button
+          <SubmitButton
             className="sm:ml-auto"
             formAction={archiveToolAction}
             formNoValidate
@@ -210,7 +221,7 @@ function ToolConfiguration({
             variant="danger-subtle"
           >
             Archive tool
-          </Button>
+          </SubmitButton>
         </div>
       </form>
     </div>
@@ -237,15 +248,15 @@ function ToolDescription({ description }: { description: string }) {
   }, [description]);
 
   const content = (
-    <span
-      className={`mt-0.5 block truncate text-[11px] text-muted-foreground ${
+    <Caption
+      className={`mt-0.5 block truncate text-muted-foreground ${
         isTruncated ? "cursor-help outline-none focus-visible:ring-2 focus-visible:ring-ring" : ""
       }`}
       ref={descriptionRef}
       tabIndex={isTruncated ? 0 : undefined}
     >
       {description}
-    </span>
+    </Caption>
   );
 
   if (!isTruncated) return content;
@@ -253,7 +264,7 @@ function ToolDescription({ description }: { description: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent className="max-w-sm font-normal leading-[1.45]" side="bottom">
+      <TooltipContent className="max-w-sm" side="bottom">
         {description}
       </TooltipContent>
     </Tooltip>
@@ -306,9 +317,9 @@ function ToolRow({
             )}
           </IconTile>
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-heading text-[13px] font-semibold text-foreground">
+            <Text className="block truncate text-foreground">
               {tool.name}
-            </span>
+            </Text>
             <ToolDescription description={tool.description} />
           </span>
         </div>
@@ -319,9 +330,9 @@ function ToolRow({
             <form action={archiveToolAction}>
               <input name="toolId" type="hidden" value={tool.id} />
               <input name="archived" type="hidden" value="false" />
-              <Button size="sm" type="submit" variant="secondary">
+              <SubmitButton size="sm" type="submit" variant="secondary">
                 Restore
-              </Button>
+              </SubmitButton>
             </form>
           ) : isSetupRequired ? (
             <Button
@@ -334,22 +345,34 @@ function ToolRow({
             </Button>
           ) : (
             <>
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/admin/tools/${encodeURIComponent(tool.id)}`}>
-                  Content &amp; icon
-                </Link>
-              </Button>
-              <Button
-                aria-expanded={isConfiguring}
-                aria-label={`Configure ${tool.name}`}
-                onClick={() => setIsConfiguring((open) => !open)}
-                size="icon-sm"
-                title={`Configure ${tool.name}`}
-                type="button"
-                variant="ghost"
-              >
-                <Ellipsis aria-hidden="true" className="size-4" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild size="icon-sm" variant="ghost">
+                    <Link
+                      aria-label={`Open ${tool.name} in a new tab`}
+                      href={`/${tool.app}/${tool.slug}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <ExternalLink aria-hidden="true" className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Open {tool.name} in a new tab</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button asChild size="icon-sm" variant="ghost">
+                    <Link
+                      aria-label={`Edit ${tool.name}`}
+                      href={`/admin/tools/${encodeURIComponent(tool.id)}`}
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit {tool.name}</TooltipContent>
+              </Tooltip>
             </>
           )}
         </div>
@@ -425,16 +448,16 @@ function ToolGroup({
   return (
     <section aria-labelledby={`${app}-tools-heading`} className="border-b border-border last:border-b-0">
       <div className="flex min-h-9 items-center gap-2 border-b border-border bg-muted px-4">
-        <h2
-          className="font-caption text-[10px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
+        <Overline
+          className="text-muted-foreground"
           id={`${app}-tools-heading`}
         >
           {title}
-        </h2>
-        <span className="font-mono text-[10px] text-muted-foreground">{items.length}</span>
-        <span aria-live="polite" className="ml-auto text-[11px] text-muted-foreground" role="status">
+        </Overline>
+        <Caption className="text-muted-foreground">{items.length}</Caption>
+        <Caption aria-live="polite" className="ml-auto text-muted-foreground" role="status">
           {message}
-        </span>
+        </Caption>
       </div>
       {categoryGroups.map(([category, categoryItems]) => {
         const collapsed = collapsedCategories.has(category);
@@ -452,8 +475,8 @@ function ToolGroup({
                   aria-hidden="true"
                   className={`size-3.5 text-muted-foreground transition-transform ${collapsed ? "-rotate-90" : ""}`}
                 />
-                <span className="font-heading text-xs font-semibold text-foreground">{category}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">{categoryItems.length}</span>
+                <Caption className="text-foreground">{category}</Caption>
+                <Caption className="text-muted-foreground">{categoryItems.length}</Caption>
               </button>
             ) : null}
             {!collapsed ? (
@@ -496,15 +519,15 @@ function RailItem({
   return (
     <button
       aria-pressed={active}
-      className={`flex h-9 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
-        active ? "bg-accent font-semibold text-primary" : "text-foreground hover:bg-card"
+      className={`flex h-9 w-full items-center gap-2 rounded-md px-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+        active ? "bg-accent text-primary" : "text-foreground hover:bg-card"
       }`}
       onClick={onClick}
       type="button"
     >
       <Icon aria-hidden="true" className="size-4 shrink-0" />
-      <span className="truncate">{label}</span>
-      <span className="ml-auto font-mono text-[11px] text-current opacity-70">{count}</span>
+      <Text className="truncate">{label}</Text>
+      <Caption className="ml-auto text-current opacity-70">{count}</Caption>
     </button>
   );
 }
@@ -516,10 +539,12 @@ export interface ToolListProps {
 
 export function ToolList({ icons, tools }: ToolListProps) {
   const searchRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-  const [appFilter, setAppFilter] = useState<AppFilter>("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [visibility, setVisibility] = useState<VisibilityFilter>("all");
+  const [query, setQuery] = useAdminQueryState<string>("q", "");
+  const [selectedApp] = useAdminQueryState<AppFilter>("app", "all", ["all", ...GROUPS.map((group) => group.app)]);
+  const [visibility] = useAdminQueryState<VisibilityFilter>(
+    "visibility", "all", ["all", "visible", "hidden", "draft", "setup", "archived"],
+  );
+  const appFilter = visibility === "all" ? selectedApp : "all";
 
   useEffect(() => {
     function focusSearch(event: KeyboardEvent) {
@@ -544,6 +569,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
       all: tools.length,
       archived: tools.filter((tool) => tool.archived).length,
       hidden: tools.filter((tool) => matchesVisibility(tool, "hidden")).length,
+      draft: tools.filter((tool) => matchesVisibility(tool, "draft")).length,
       setup: tools.filter((tool) => matchesVisibility(tool, "setup")).length,
       visible: tools.filter(isVisible).length,
     }),
@@ -559,6 +585,10 @@ export function ToolList({ icons, tools }: ToolListProps) {
         .filter((category): category is string => Boolean(category)),
     )];
   }, [appFilter, tools]);
+
+  const [categoryFilter, setCategoryFilter] = useAdminQueryState(
+    "category", "all", ["all", ...availableCategories],
+  );
 
   const filteredTools = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -589,15 +619,15 @@ export function ToolList({ icons, tools }: ToolListProps) {
       : (GROUPS.find((group) => group.app === appFilter)?.title ?? "Tools");
 
   function selectApp(nextApp: AppFilter) {
-    setAppFilter(nextApp);
-    setCategoryFilter("all");
+    updateAdminQuery({ app: nextApp === "all" ? null : nextApp, category: null, visibility: null });
+  }
+
+  function setVisibility(nextVisibility: VisibilityFilter) {
+    updateAdminQuery({ visibility: nextVisibility === "all" ? null : nextVisibility, app: null, category: null });
   }
 
   function resetFilters() {
-    setQuery("");
-    setAppFilter("all");
-    setCategoryFilter("all");
-    setVisibility("all");
+    updateAdminQuery({ q: null, app: null, category: null, visibility: null });
   }
 
   return (
@@ -611,7 +641,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
             <Input
               className="pl-10"
               id="tool-search"
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => setQuery(event.target.value, true)}
               placeholder="Search by name, route, or capability…"
               ref={searchRef}
               value={query}
@@ -639,6 +669,7 @@ export function ToolList({ icons, tools }: ToolListProps) {
             <option value="all">Any status</option>
             <option value="visible">Visible</option>
             <option value="hidden">Hidden</option>
+            <option value="draft">Drafts</option>
             <option value="setup">Setup required</option>
             <option value="archived">Archived</option>
           </Select>
@@ -651,18 +682,18 @@ export function ToolList({ icons, tools }: ToolListProps) {
 
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[13.75rem_minmax(0,1fr)]">
         <aside className="border-b border-border bg-muted p-4 lg:h-full lg:border-r lg:border-b-0" aria-label="Catalog views">
-          <p className="mb-2 font-caption text-[10px] font-semibold tracking-[0.07em] text-muted-foreground uppercase">
+          <Overline className="block mb-2 text-muted-foreground">
             Browse catalog
-          </p>
+          </Overline>
           <div className="mb-3 rounded-lg bg-surface-ink p-3 text-on-ink">
-            <p className="font-heading text-lg font-semibold">{tools.length} tools</p>
-            <p className="mt-1 font-caption text-[11px] text-on-ink-muted">
+            <Lead >{tools.length} tools</Lead>
+            <Caption className="block mt-1 text-on-ink-muted">
               {counts.visible} visible · {counts.hidden} hidden
-            </p>
+            </Caption>
           </div>
           <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
             <RailItem
-              active={appFilter === "all"}
+              active={appFilter === "all" && visibility === "all"}
               count={tools.length}
               icon={LayoutGrid}
               label="All tools"
@@ -680,9 +711,9 @@ export function ToolList({ icons, tools }: ToolListProps) {
             ))}
           </div>
           <div className="my-3 h-px bg-border" />
-          <p className="mb-1 font-caption text-[10px] font-semibold tracking-[0.07em] text-muted-foreground uppercase">
+          <Overline className="block mb-1 text-muted-foreground">
             Quick views
-          </p>
+          </Overline>
           <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-1">
             <RailItem
               active={visibility === "visible"}
@@ -697,6 +728,13 @@ export function ToolList({ icons, tools }: ToolListProps) {
               icon={EyeOff}
               label="Hidden"
               onClick={() => setVisibility(visibility === "hidden" ? "all" : "hidden")}
+            />
+            <RailItem
+              active={visibility === "draft"}
+              count={counts.draft}
+              icon={Pencil}
+              label="Drafts"
+              onClick={() => setVisibility(visibility === "draft" ? "all" : "draft")}
             />
             <RailItem
               active={visibility === "setup"}
@@ -718,8 +756,8 @@ export function ToolList({ icons, tools }: ToolListProps) {
         <div className="flex min-h-0 min-w-0 flex-col">
           <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-4">
             <div className="flex min-w-0 items-baseline gap-2">
-              <h2 className="truncate font-heading text-sm font-semibold">{resultsTitle}</h2>
-              <span className="shrink-0 text-xs text-muted-foreground">{filteredTools.length} matches</span>
+              <H3 className="truncate">{resultsTitle}</H3>
+              <Caption className="shrink-0 text-muted-foreground">{filteredTools.length} matches</Caption>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               {availableCategories.length ? (
@@ -736,9 +774,9 @@ export function ToolList({ icons, tools }: ToolListProps) {
                   ))}
                 </Select>
               ) : null}
-              <span className="hidden font-caption text-[11px] text-muted-foreground xl:inline">
+              <Caption className="hidden text-muted-foreground xl:inline">
                 {canReorder ? "Drag to set catalog order" : "Clear filters to reorder"}
-              </span>
+              </Caption>
             </div>
           </div>
 
@@ -761,8 +799,8 @@ export function ToolList({ icons, tools }: ToolListProps) {
               <div className="grid min-h-full place-items-center px-6 py-12 text-center">
                 <div>
                   <Search aria-hidden="true" className="mx-auto size-7 text-muted-foreground" />
-                  <h2 className="mt-3 font-heading text-base font-semibold">No matching tools</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Try a different search or clear the active filters.</p>
+                  <H3 className="mt-3">No matching tools</H3>
+                  <Muted className="mt-1 text-muted-foreground">Try a different search or clear the active filters.</Muted>
                   <Button className="mt-4" onClick={resetFilters} type="button" variant="secondary">
                     Clear filters
                   </Button>
@@ -771,9 +809,9 @@ export function ToolList({ icons, tools }: ToolListProps) {
             )}
           </div>
 
-          <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t border-border px-4 font-caption text-[11px] text-muted-foreground">
-            <span>Press / to search</span>
-            <span>{filteredTools.length} of {tools.length} tools</span>
+          <div className="flex min-h-10 shrink-0 items-center justify-between gap-3 border-t border-border px-4 text-muted-foreground">
+            <Caption>Press / to search</Caption>
+            <Caption>{filteredTools.length} of {tools.length} tools</Caption>
           </div>
         </div>
       </div>

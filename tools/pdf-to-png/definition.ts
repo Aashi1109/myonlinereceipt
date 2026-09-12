@@ -72,7 +72,7 @@ export default {
       "Add a single PDF. It is parsed and rendered in your browser — the document is never uploaded.",
       "Choose which pages to export. Leave it on all, or enter ranges such as 1-3,5,8 to pull out just the pages you need.",
       "Pick a resolution: 150 DPI for screens and previews, 300 DPI when the page will be printed or cropped into.",
-      "Choose white or a transparent background, run the conversion, and download. One page gives you a single PNG; several pages are bundled into a ZIP.",
+      "Choose white or a transparent background, then run the conversion. Preview and download each PNG, or download the ZIP when exporting several pages.",
     ],
     limitations: [
       "Each page becomes a flat image. Text is no longer selectable or searchable, and vector artwork becomes pixels at the chosen DPI.",
@@ -88,7 +88,7 @@ export default {
       },
       {
         q: "Why did I get a ZIP instead of images?",
-        a: "Any run that produces more than one page is packaged as a ZIP so the download stays a single file. Convert one page at a time if you want a bare PNG.",
+        a: "Runs with more than one page include a ZIP for downloading all images together. You can also preview and download each PNG individually in the output gallery.",
       },
       {
         q: "PNG or JPG for my pages?",

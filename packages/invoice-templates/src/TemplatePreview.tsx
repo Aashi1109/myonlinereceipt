@@ -68,6 +68,20 @@ export function InvoiceTemplatePreview({
   const currency = (amount: number) =>
     formatInvoicePreviewCurrency(amount, data.invoice.currency || "USD");
   const mutedStyle: CSSProperties = { color: theme.mutedTextColor };
+  const sectionLabelStyle: CSSProperties = {
+    ...mutedStyle,
+    fontSize: "0.72em",
+    fontWeight: 800,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+  };
+  const detailTextStyle: CSSProperties = {
+    ...mutedStyle,
+    fontSize: "0.86em",
+    lineHeight: 1.45,
+    overflowWrap: "anywhere",
+  };
+  const detailHeadingStyle: CSSProperties = { display: "block", fontSize: "0.82em" };
   const panelStyle: CSSProperties = {
     backgroundColor: theme.backgroundColor,
     border: `1px solid ${theme.borderColor}`,
@@ -235,12 +249,12 @@ export function InvoiceTemplatePreview({
 
   const businessDetails = visibility.showBusinessBlock && businessBlock.position !== "header" ? (
     <div style={{ minWidth: 0 }}>
-      <div style={{ ...mutedStyle, fontSize: "0.72em", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+      <div style={sectionLabelStyle}>
         {labels.from}
       </div>
       {businessBlock.showBusinessName ? <strong>{data.business.name}</strong> : null}
       {!thumbnail ? (
-        <div style={{ ...mutedStyle, fontSize: "0.86em", lineHeight: 1.45, overflowWrap: "anywhere" }}>
+        <div style={detailTextStyle}>
           {businessBlock.showAddress && data.business.addressLine1 ? <div>{addressLine([data.business.addressLine1, data.business.addressLine2])}</div> : null}
           {businessBlock.showAddress ? <div>{addressLine([data.business.city, data.business.state, data.business.zipCode])}</div> : null}
           {businessBlock.showEmail ? <div>{data.business.email}</div> : null}
@@ -266,13 +280,13 @@ export function InvoiceTemplatePreview({
             : 0,
       }}
     >
-      <div style={{ ...mutedStyle, fontSize: "0.72em", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+      <div style={sectionLabelStyle}>
         {clientBlock.title || labels.billTo}
       </div>
       {clientBlock.showClientName ? <strong style={{ display: "block", overflowWrap: "anywhere" }}>{data.client.name}</strong> : null}
       {clientBlock.showCompany && data.client.company ? <div>{data.client.company}</div> : null}
       {!thumbnail ? (
-        <div style={{ ...mutedStyle, fontSize: "0.86em", lineHeight: 1.45, overflowWrap: "anywhere" }}>
+        <div style={detailTextStyle}>
           {clientBlock.showAddress && data.client.addressLine1 ? <div>{addressLine([data.client.addressLine1, data.client.addressLine2])}</div> : null}
           {clientBlock.showAddress ? <div>{addressLine([data.client.city, data.client.state, data.client.zipCode])}</div> : null}
           {clientBlock.showEmail ? <div>{data.client.email}</div> : null}
@@ -284,7 +298,7 @@ export function InvoiceTemplatePreview({
 
   const invoiceMeta = visibility.showMetaBlock && metaBlock.position !== "right-column" ? (
     <div style={{ ...(metaBlock.position === "table" ? panelStyle : {}), minWidth: 0, padding: metaBlock.position === "table" ? (thumbnail ? 6 : 12) : 0 }}>
-      <div style={{ ...mutedStyle, fontSize: "0.72em", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+      <div style={sectionLabelStyle}>
         Invoice details
       </div>
       <div style={{ display: "grid", fontSize: "0.86em", gap: 3, gridTemplateColumns: metaBlock.position === "table" ? "1fr 1fr" : "1fr", marginTop: 4 }}>
@@ -419,7 +433,7 @@ export function InvoiceTemplatePreview({
         padding: paymentBlock.style === "plain" ? 0 : thumbnail ? 6 : 12,
       }}
     >
-      <strong style={{ display: "block", fontSize: "0.82em", marginBottom: 4 }}>{paymentBlock.title || labels.paymentInstructions}</strong>
+      <strong style={{ ...detailHeadingStyle, marginBottom: 4 }}>{paymentBlock.title || labels.paymentInstructions}</strong>
       <div style={{ ...mutedStyle, fontSize: "0.84em", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>
         {thumbnail ? data.payment.instructions.slice(0, 76) : data.payment.instructions}
         {thumbnail && data.payment.instructions.length > 76 ? "…" : ""}
@@ -451,7 +465,7 @@ export function InvoiceTemplatePreview({
             padding: notesBlock.style === "plain" ? 0 : thumbnail ? 6 : 10,
           }}
         >
-          <strong style={{ display: "block", fontSize: "0.82em" }}>{notesBlock.title || labels.notes}</strong>
+          <strong style={detailHeadingStyle}>{notesBlock.title || labels.notes}</strong>
           <div style={{ ...mutedStyle, fontSize: "0.82em", overflowWrap: "anywhere" }}>{thumbnail ? data.notes.notes.slice(0, 70) : data.notes.notes}</div>
         </div>
       ) : null}
@@ -464,7 +478,7 @@ export function InvoiceTemplatePreview({
             padding: notesBlock.style === "plain" ? 0 : thumbnail ? 6 : 10,
           }}
         >
-          <strong style={{ display: "block", fontSize: "0.82em" }}>{labels.terms}</strong>
+          <strong style={detailHeadingStyle}>{labels.terms}</strong>
           <div style={{ ...mutedStyle, fontSize: "0.82em", overflowWrap: "anywhere" }}>{thumbnail ? data.notes.terms.slice(0, 70) : data.notes.terms}</div>
         </div>
       ) : null}

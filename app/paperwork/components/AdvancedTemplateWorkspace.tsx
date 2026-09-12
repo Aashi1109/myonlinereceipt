@@ -10,7 +10,12 @@ import {
   getDocumentDefinition,
 } from "@smarttools/invoice-templates";
 import {
+  Caption,
+  H3,
+  Muted,
+  P,
   Button,
+  ToolActionButton,
   Card,
   Checkbox,
   CheckboxControl,
@@ -22,7 +27,6 @@ import {
 } from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import {
-  Download,
   GripVertical,
   Plus,
   Printer,
@@ -618,7 +622,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                     `${adapter.documentType}:${entry.key}.${column.key}`,
                   );
                   return (
-                    <div className="grid gap-1 text-xs font-bold" key={column.key}>
+                    <div className="grid gap-1" key={column.key}>
                       <Label htmlFor={id}>{column.label}</Label>
                       {column.control === "select" ? (
                         <Select
@@ -707,7 +711,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
   return (
     <Card className="grid gap-6 p-5 print:hidden">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="grid min-w-64 gap-1 text-sm font-extrabold">
+        <div className="grid min-w-64 gap-1">
           <Label htmlFor="advanced-published-template">Published template</Label>
           <Select
             id="advanced-published-template"
@@ -748,21 +752,20 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             <Printer aria-hidden="true" size={15} />
             Print PDF
           </Button>
-          <Button
+          <ToolActionButton
+            action="download"
             disabled={isGenerating}
             onClick={() => void generate("download")}
-            size="sm"
             type="button"
           >
-            <Download aria-hidden="true" size={15} />
             Download PDF
-          </Button>
+          </ToolActionButton>
         </div>
       </div>
       {errors._document ? (
-        <p className="text-sm font-bold text-destructive" role="alert">
+        <P className="text-destructive" role="alert">
           {errors._document}
-        </p>
+        </P>
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,0.8fr)]">
@@ -773,7 +776,7 @@ export default function AdvancedTemplateWorkspace<TDraft>({
             return (
               <section className="grid gap-4" key={section.id}>
                 <div className="flex items-center gap-2 border-b border-border pb-2">
-                  <h3 className="text-sm font-black">{section.label}</h3>
+                  <H3>{section.label}</H3>
                   <StatusBadge>{entries.length} fields</StatusBadge>
                 </div>
                 {entries.map((entry) => {
@@ -797,14 +800,14 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                       {repeaterColumns?.length ? (
                         <>
                           <div>
-                            <p className="text-sm font-extrabold">
+                            <P>
                               {entry.label}
                               {entry.required ? " *" : ""}
-                            </p>
+                            </P>
                             {entry.helpText ? (
-                              <p className="text-xs text-muted-foreground">
+                              <Muted className="text-muted-foreground">
                                 {entry.helpText}
-                              </p>
+                              </Muted>
                             ) : null}
                           </div>
                           {renderRepeater(
@@ -817,14 +820,14 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                         <div className="grid gap-1.5">
                           {renderControl(scalarEntry, readEntry(entry))}
                           {entry.helpText ? (
-                            <span className="text-xs text-muted-foreground">
+                            <Caption className="text-muted-foreground">
                               {entry.helpText}
-                            </span>
+                            </Caption>
                           ) : null}
                         </div>
                       ) : (
                         <Label
-                          className="grid gap-1.5 text-sm font-extrabold"
+                          className="grid gap-1.5"
                           htmlFor={`advanced-field-${entry.key.replaceAll(".", "-")}`}
                         >
                           <span>
@@ -833,19 +836,19 @@ export default function AdvancedTemplateWorkspace<TDraft>({
                           </span>
                           {renderControl(scalarEntry, readEntry(entry))}
                           {entry.helpText ? (
-                            <span className="text-xs font-normal text-muted-foreground">
+                            <Caption className="text-muted-foreground">
                               {entry.helpText}
-                            </span>
+                            </Caption>
                           ) : null}
                         </Label>
                       )}
                       {errors[entry.key] ? (
-                        <p
-                          className="text-xs font-bold text-destructive"
+                        <P
+                          className="text-destructive"
                           role="alert"
                         >
                           {errors[entry.key]}
-                        </p>
+                        </P>
                       ) : null}
                     </div>
                   );

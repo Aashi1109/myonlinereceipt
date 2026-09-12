@@ -4,6 +4,13 @@ import { Mail, ShieldCheck } from "lucide-react";
 import { useId, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
+  Caption,
+  Label,
+  H1,
+  P,
+  Strong,
+  Text,
+  TextLink,
   AlertBanner,
   Button,
   Card,
@@ -42,8 +49,8 @@ function AuthNotice({
     <div className="auth-notice">
       <span aria-hidden="true">{icon}</span>
       <div>
-        <strong>{title}</strong>
-        <p>{children}</p>
+        <Strong>{title}</Strong>
+        <P>{children}</P>
       </div>
     </div>
   );
@@ -202,16 +209,16 @@ export function AuthPanel({
       role="region"
     >
       <div className="auth-heading">
-        <h1 id={`${panelId}-title`}>
+        <H1 id={`${panelId}-title`}>
           {isSignUp ? "Create your account" : isForgot ? "Reset password" : "Sign in"}
-        </h1>
-        <p>
+        </H1>
+        <P>
           {isSignUp
             ? "Save your paperwork and access it from any device."
             : isForgot
               ? "Enter your email and we’ll send a link to reset your password."
               : "Welcome back. Sign in to save and sync your history."}
-        </p>
+        </P>
       </div>
 
       <AuthNotice
@@ -238,7 +245,7 @@ export function AuthPanel({
           }
           title="Verification needed"
         >
-          Check <span className="break-all font-semibold">{verificationEmail}</span>.
+          Check <Text className="break-all">{verificationEmail}</Text>.
         </AlertBanner>
       ) : null}
 
@@ -282,11 +289,11 @@ export function AuthPanel({
 
           <div className="auth-divider">
             <Separator />
-            <span>or</span>
+            <Text>or</Text>
             <Separator />
           </div>
 
-          <form onSubmit={submitCredentials}>
+          <form method="post" onSubmit={submitCredentials}>
             <FieldSet className="grid min-w-0 gap-[18px] border-0 p-0" disabled={pending}>
               <FieldLegend className="sr-only">
                 {isSignUp ? "Create account with email" : "Sign in with email"}
@@ -332,27 +339,27 @@ export function AuthPanel({
               </Field>
 
               {isSignUp ? (
-                <label className="auth-terms-row">
+                <Label className="auth-terms-row">
                   <CheckboxControl
                     aria-label="Agree to the Terms of Service and Privacy Policy"
                     checked={termsAccepted}
                     disabled={pending}
                     onCheckedChange={(checked) => setTermsAccepted(checked === true)}
                   />
-                  <span>
-                    I agree to the <a href="/paperwork/terms">Terms of Service</a> and{" "}
-                    <a href="/privacy">Privacy Policy</a>.
-                  </span>
-                </label>
+                  <Text>
+                    I agree to the <TextLink href="/paperwork/terms">Terms of Service</TextLink> and{" "}
+                    <TextLink href="/privacy">Privacy Policy</TextLink>.
+                  </Text>
+                </Label>
               ) : (
                 <div className="auth-options-row">
-                  <label>
+                  <Label>
                     <CheckboxControl aria-label="Remember me" defaultChecked />
-                    <span>Remember me</span>
-                  </label>
-                  <button onClick={() => chooseMode("forgot")} type="button">
+                    <Text>Remember me</Text>
+                  </Label>
+                  <button onClick={() => chooseMode("forgot")} type="button"><Caption>
                     Forgot password?
-                  </button>
+                  </Caption></button>
                 </div>
               )}
 
@@ -365,14 +372,14 @@ export function AuthPanel({
       )}
 
       <div className="auth-card-footer-link">
-        <span>
+        <Text>
           {isSignUp ? "Already have an account?" : isForgot ? "Remembered it?" : "New here?"}
-        </span>
+        </Text>
         <button
           onClick={() => chooseMode(isSignUp || isForgot ? "sign-in" : "sign-up")}
           type="button"
         >
-          {isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}
+          <Caption>{isSignUp ? "Sign in" : isForgot ? "Back to sign in" : "Create an account"}</Caption>
         </button>
       </div>
     </Card>

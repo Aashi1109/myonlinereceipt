@@ -14,7 +14,11 @@
  * through a declared field. Pages without bytes remain as loading placeholders.
  */
 
-import { Button } from "@smarttools/ui";
+import {
+  Strong,
+  Caption,
+  Button,
+} from "@smarttools/ui";
 import { OrderableList } from "@smarttools/ui/components/OrderableList";
 import { GripVertical } from "lucide-react";
 import {
@@ -39,6 +43,7 @@ export interface PdfPageImage {
   readonly pageNumber: number;
   readonly pageWidth: number;
   readonly url?: string;
+  readonly renderWidth?: number;
 }
 
 const NO_IMAGES: readonly PdfPageImage[] = [];
@@ -158,6 +163,7 @@ export function usePdfPageImages(
     pageNumber: preview.pageNumber,
     pageWidth: preview.pageWidth,
     url: cacheRef.current.get(preview.pageNumber)?.url,
+    renderWidth: read(preview, "renderWidth") as number | undefined,
   }));
 }
 
@@ -259,13 +265,13 @@ export function PageThumbnail({ page }: { page: PdfPageImage }): ReactElement {
   ) : (
     <div
       aria-label={`Loading preview for page ${page.pageNumber}`}
-      className={`${THUMBNAIL_CLASSES} grid min-h-28 place-items-center text-xs text-muted-foreground`}
+      className={`${THUMBNAIL_CLASSES} grid min-h-28 place-items-center text-muted-foreground`}
       ref={(node) => {
         targetRef.current = node;
       }}
       style={{ aspectRatio: `${page.pageWidth} / ${page.pageHeight}` }}
     >
-      Loading preview
+      <Caption>Loading preview</Caption>
     </div>
   );
 }
@@ -325,9 +331,9 @@ export function PdfPagesSurface({
                 <GripVertical aria-hidden="true" className="size-4" />
               </Button>
               <PageThumbnail page={page} />
-              <p className="mt-2 text-center text-xs font-bold">
+              <Caption className="mt-2 block text-center"><Strong>
                 Page {page.pageNumber}
-              </p>
+              </Strong></Caption>
             </div>
           )}
         />
@@ -349,17 +355,17 @@ export function PdfPagesSurface({
                     type="button"
                   >
                     <PageThumbnail page={page} />
-                    <span className="mt-2 block text-xs font-bold">
+                    <Caption className="mt-2 block"><Strong>
                       Page {page.pageNumber}
                       {isSelected ? " · Selected" : ""}
-                    </span>
+                    </Strong></Caption>
                   </button>
                 ) : (
                   <>
                     <PageThumbnail page={page} />
-                    <p className="mt-2 text-center text-xs font-bold">
+                    <Caption className="mt-2 block text-center"><Strong>
                       Page {page.pageNumber}
-                    </p>
+                    </Strong></Caption>
                   </>
                 )}
               </li>

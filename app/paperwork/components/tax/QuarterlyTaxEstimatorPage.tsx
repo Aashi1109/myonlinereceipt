@@ -8,6 +8,13 @@
 import React, { useState, useEffect } from "react";
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
+  FieldDescription,
+  Metric,
+  Caption,
+  H3,
+  Overline,
+  P,
+  Text,
   AlertBanner,
   Button,
   Card,
@@ -15,7 +22,7 @@ import {
   Label,
   Select,
   StatusBadge,
-  ToolPageHeader
+  ToolPageHeader,
 } from "@smarttools/ui";
 import {
   FileText,
@@ -133,7 +140,7 @@ export default function QuarterlyTaxEstimatorPage({
   };
 
   return (
-    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="tax-estimator-wrapper">
+    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="tax-estimator-wrapper">
 
       <ToolPageHeader
         actions={hasImportedExpenses ? (
@@ -168,14 +175,14 @@ export default function QuarterlyTaxEstimatorPage({
         {/* INPUT PARAMETERS CARD COLUMN */}
         <div className="lg:col-span-6 space-y-6 print:hidden">
           <Card className="space-y-5">
-            <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2">
+            <H3 className="text-slate-500 border-b border-slate-100 pb-2">
               1. Contractor Operating Figures
-            </h3>
+            </H3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-year">Tax year</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="tax-year">Tax year</Label>
                   <Select
                     id="tax-year"
                     value={draft.taxYear}
@@ -185,9 +192,8 @@ export default function QuarterlyTaxEstimatorPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-filing-status">Filing status</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="tax-filing-status">Filing status</Label>
                   <Select
-                    className="font-bold"
                     id="tax-filing-status"
                     value={draft.filingStatus}
                     onChange={(event) => setDraft({ ...draft, filingStatus: event.target.value as FilingStatus })}
@@ -200,25 +206,24 @@ export default function QuarterlyTaxEstimatorPage({
               </div>
 
               <div>
-                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-gross-revenue">
+                <Label className="block text-slate-400 mb-1" htmlFor="tax-gross-revenue">
                   Estimated Gross Contractor Income ($) *
                 </Label>
                 <Input
                   aria-describedby="tax-gross-revenue-description"
                   type="number"
                   step="500"
-                  className="font-black"
                   id="tax-gross-revenue"
                   value={draft.grossRevenue}
                   onChange={(event) => setDraft({ ...draft, grossRevenue: Math.max(0, Number(event.target.value)) })}
                 />
-                <span className="text-[10px] text-slate-400 block mt-1 font-semibold leading-relaxed" id="tax-gross-revenue-description">
+                <FieldDescription className="text-slate-400 block mt-1" id="tax-gross-revenue-description">
                   Total annual 1099 payouts you expect before deductions.
-                </span>
+                </FieldDescription>
               </div>
 
               <div className="relative">
-                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-business-expenses">
+                <Label className="block text-slate-400 mb-1" htmlFor="tax-business-expenses">
                   Business Deductible Expenses ($)
                 </Label>
                 <div className="flex gap-2">
@@ -226,7 +231,7 @@ export default function QuarterlyTaxEstimatorPage({
                     aria-describedby="tax-business-expenses-description"
                     type="number"
                     step="100"
-                    className="grow font-bold"
+                    className="grow"
                     id="tax-business-expenses"
                     value={draft.businessExpenses}
                     onChange={(event) => {
@@ -235,29 +240,27 @@ export default function QuarterlyTaxEstimatorPage({
                     }}
                   />
                 </div>
-                <span className="text-[10px] text-slate-400 block mt-1 font-semibold" id="tax-business-expenses-description">
+                <FieldDescription className="text-slate-400 block mt-1" id="tax-business-expenses-description">
                   Operating expense totals, date-based mileage deductions, and gear.
-                </span>
+                </FieldDescription>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-w2-wages">Existing W-2 wages ($)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="tax-w2-wages">Existing W-2 wages ($)</Label>
                   <Input
                     type="number"
                     min="0"
-                    className="font-bold"
                     id="tax-w2-wages"
                     value={draft.w2Wages}
                     onChange={(event) => setDraft({ ...draft, w2Wages: Math.max(0, Number(event.target.value)) })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-state-rate">State Tax rate (%)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="tax-state-rate">State Tax rate (%)</Label>
                   <Input
                     type="number"
                     step="0.1"
-                    className="font-bold"
                     id="tax-state-rate"
                     value={draft.stateTaxRate}
                     onChange={(event) => setDraft({ ...draft, stateTaxRate: Math.max(0, Number(event.target.value)) })}
@@ -266,11 +269,10 @@ export default function QuarterlyTaxEstimatorPage({
               </div>
 
               <div>
-                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="tax-other-income">Other income ($)</Label>
+                <Label className="block text-slate-400 mb-1" htmlFor="tax-other-income">Other income ($)</Label>
                 <Input
                   type="number"
                   step="500"
-                  className="font-bold"
                   id="tax-other-income"
                   value={draft.otherIncome}
                   onChange={(event) => setDraft({ ...draft, otherIncome: Math.max(0, Number(event.target.value)) })}
@@ -288,7 +290,7 @@ export default function QuarterlyTaxEstimatorPage({
                   ["priorYearAdjustedGrossIncome", "Prior-year AGI"],
                 ] as const).map(([field, label]) => (
                   <div key={field}>
-                    <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor={`tax-${field}`}>{label} ($)</Label>
+                    <Label className="block text-slate-400 mb-1" htmlFor={`tax-${field}`}>{label} ($)</Label>
                     <Input
                       type="number"
                       min="0"
@@ -303,9 +305,9 @@ export default function QuarterlyTaxEstimatorPage({
           </Card>
 
           <AlertBanner title="Estimated Tax Safe Harbor Rules">
-            <p>
+            <P>
               The federal schedule compares 90% of current-year liability with the applicable prior-year safe harbor, then subtracts withholding and payments already made.
-            </p>
+            </P>
           </AlertBanner>
         </div>
 
@@ -315,14 +317,14 @@ export default function QuarterlyTaxEstimatorPage({
             <>
               <Card className="space-y-6 print:hidden">
                 <div className="text-center pb-4 border-b">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-mono">Suggested federal Q1/Q2/Q3/Q4 payment</span>
-                  <div className="text-3xl font-black text-slate-900 mt-1">
-                    ${results.quarterlyPayment.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                    <span className="text-xs font-bold text-slate-400 block font-mono uppercase mt-1">Four Scheduled Installments</span>
+                  <Overline className="text-slate-400">Suggested federal Q1/Q2/Q3/Q4 payment</Overline>
+                  <div className="text-slate-900 mt-1">
+                    <Metric>${results.quarterlyPayment.toLocaleString("en-US", { maximumFractionDigits: 0 })}</Metric>
+                    <Overline className="text-slate-400 block mt-1">Four Scheduled Installments</Overline>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs font-semibold leading-snug">
+                <div className="grid grid-cols-2 gap-4">
                   {[
                     ["Estimated net profit", results.netSelfEmploymentProfit],
                     ["Self-employment tax", results.selfEmploymentTax],
@@ -332,23 +334,23 @@ export default function QuarterlyTaxEstimatorPage({
                     ["Required annual federal payment", results.requiredAnnualPayment],
                   ].map(([label, value]) => (
                     <div key={String(label)}>
-                      <span className="text-[11px] font-black text-slate-400 uppercase block">{label}</span>
-                      <span className="text-sm font-black text-slate-900">${Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+                      <Overline className="text-slate-400 block">{label}</Overline>
+                      <Text className="text-slate-900">${Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 })}</Text>
                     </div>
                   ))}
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase pb-1 font-mono">
-                    <span>Federal progressive estimate</span>
-                    <span className="text-blue-600">Effective rate: {effectiveTaxRate.toFixed(1)}%</span>
+                  <div className="flex justify-between text-slate-400 pb-1">
+                    <Text>Federal progressive estimate</Text>
+                    <Text className="text-blue-600">Effective rate: {effectiveTaxRate.toFixed(1)}%</Text>
                   </div>
                   <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                     <div className="bg-indigo-600 h-full" style={{ width: `${Math.min(100, effectiveTaxRate)}%` }} />
                   </div>
-                  <span className="block text-[11px] text-slate-400 mt-1.5 font-semibold leading-relaxed">
+                  <Caption className="block text-slate-400 mt-1.5">
                     Calculation pack {results.calculationVersion}. State tax stays separate from the federal installment schedule.
-                  </span>
+                  </Caption>
                 </div>
 
                 <Button onClick={handlePrint} className="w-full" type="button" variant="strong">

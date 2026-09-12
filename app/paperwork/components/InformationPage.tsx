@@ -32,7 +32,7 @@ export default async function InformationPage({
         actions={
           <AccountNavigation
             returnTo="/paperwork"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         href="/paperwork"
@@ -52,7 +52,7 @@ export default async function InformationPage({
             eyebrow={eyebrow}
             title={title}
           />
-          <Card className="max-w-3xl space-y-7 p-6 text-sm leading-7 sm:p-8 sm:text-base">
+          <Card className="max-w-3xl space-y-7 p-6 sm:p-8">
             {children}
           </Card>
         </AppContainer>

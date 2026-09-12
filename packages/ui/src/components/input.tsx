@@ -22,15 +22,15 @@ const inputVariants = cva(
 )
 
 type InputProps = Omit<React.ComponentProps<"input">, "size"> &
-  VariantProps<typeof inputVariants>
+  VariantProps<typeof inputVariants> & { code?: boolean }
 
-function Input({ className, size = "default", type, ...props }: InputProps) {
+function Input({ className, code = false, size = "default", type, ...props }: InputProps) {
   return (
     <input
       type={type}
       data-slot="input"
       data-size={size}
-      className={cn(inputVariants({ size }), "group-data-[variant=auth]/field:px-3.5", className)}
+      className={cn(inputVariants({ size }), code && "font-mono", "group-data-[variant=auth]/field:px-3.5", className)}
       {...props}
     />
   )

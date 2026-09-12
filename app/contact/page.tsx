@@ -1,3 +1,5 @@
+
+import { Display, Muted, Overline, Strong, Text, TextLink } from "@smarttools/ui";
 import type { Metadata } from "next";
 import { Clock3, LifeBuoy, Mail } from "lucide-react";
 import PublicInfoChrome from "@/components/smarttools/PublicInfoChrome";
@@ -22,9 +24,9 @@ export default function ContactPage() {
       <div className="mx-auto grid w-full max-w-[1440px] gap-12 px-6 py-16 lg:grid-cols-[440px_minmax(0,1fr)] lg:gap-[72px] lg:px-[150px] lg:py-20">
         <section className="flex flex-col gap-6">
           <header>
-            <p className="font-caption text-xs font-semibold tracking-[0.05em] text-primary uppercase">Contact</p>
-            <h1 className="mt-2 font-heading text-[40px] leading-[1.08] font-semibold tracking-[-0.04rem]">We’d love to hear from you.</h1>
-            <p className="mt-3 text-sm leading-[1.5] text-muted-foreground">Questions, feedback, or a bug to report? Send a note and we’ll reply within one business day.</p>
+            <Overline className="block text-primary">Contact</Overline>
+            <Display className="mt-2">We’d love to hear from you.</Display>
+            <Muted className="mt-3 text-muted-foreground">Questions, feedback, or a bug to report? Send a note and we’ll reply within one business day.</Muted>
           </header>
 
           <div className="flex flex-col gap-3.5">
@@ -33,13 +35,13 @@ export default function ContactPage() {
               const content = (
                 <>
                   <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-accent text-primary"><Icon aria-hidden="true" className="size-[22px]" /></span>
-                  <span><strong className="block font-heading text-sm font-semibold">{title}</strong><span className="mt-0.5 block text-[13px] text-muted-foreground">{detail}</span></span>
+                  <span><Strong className="block">{title}</Strong><Text className="mt-0.5 block text-muted-foreground">{detail}</Text></span>
                 </>
               );
 
               const destination = title === "Email us" && supportEmail ? `mailto:${supportEmail}` : href;
               return destination ? (
-                <a className="flex items-center gap-3.5 rounded-lg bg-muted p-4 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring" href={destination} key={title}>{content}</a>
+                <TextLink className="no-underline text-foreground flex items-center gap-3.5 rounded-lg bg-muted p-4 outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring" href={destination} key={title}>{content}</TextLink>
               ) : (
                 <div className="flex items-center gap-3.5 rounded-lg bg-muted p-4" key={title}>{content}</div>
               );

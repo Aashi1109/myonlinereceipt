@@ -11,6 +11,7 @@ import {
   invoiceTemplatesTable,
   or,
   rolesTable,
+  sql,
   userRolesTable,
 } from "@smarttools/database";
 
@@ -55,6 +56,24 @@ export async function listUsers(search = "") {
   }
   return [...users.values()];
 }
+
+export async function listRoleUsers(roleId: string, assigned: boolean, search = "", offset = 0) {
+  const query = search.trim().replace(/[\\%_]/g, "\\$&");
+  const membership = sql`exists (select 1 from ${userRolesTable} where ${userRolesTable.userId} = ${authUser.id} and ${userRolesTable.roleId} = ${roleId})`;
+  const filter = and(
+    assigned ? membership : sql`not ${membership}`,
+    query ? or(ilike(authUser.name, `%${query}%`), ilike(authUser.email, `%${query}%`)) : undefined,
+  );
+  const users = await db.select({
+    id: authUser.id, name: authUser.name, email: authUser.email,
+    image: authUser.image, status: authUser.status,
+  }).from(authUser).where(filter).orderBy(authUser.name, authUser.id).limit(25).offset(offset);
+  const [total] = await db.select({ value: count() }).from(authUser).where(filter);
+  return { users, total: total.value, hasMore: offset + users.length < total.value };
+}
+
+export type RoleUser = Awaited<ReturnType<typeof listRoleUsers>>["users"][number];
+export type RoleUsersPage = Awaited<ReturnType<typeof listRoleUsers>>;
 
 export async function listRoles() {
   return db

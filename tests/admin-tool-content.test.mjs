@@ -202,7 +202,7 @@ test("every tool content mutation checks its exact permission", async () => {
 
 test("a category outside the registry is rejected on write", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), TOOL_ROW, TOOL_ROSTER],
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, TOOL_ROSTER],
     async (state) => {
       await assert.rejects(
         () =>
@@ -219,7 +219,7 @@ test("a category outside the registry is rejected on write", async () => {
 
 test("blank text and empty lists clear the override instead of storing empties", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), TOOL_ROW, TOOL_ROSTER],
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, TOOL_ROSTER],
     async (state) => {
       await updateToolContent("actor", TOOL_ID, {
         category: "   ",
@@ -253,7 +253,7 @@ test("blank text and empty lists clear the override instead of storing empties",
 
 test("a stored content document is written at the version the resolver reads", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), TOOL_ROW, TOOL_ROSTER],
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, TOOL_ROSTER],
     async (state) => {
       await updateToolContent("actor", TOOL_ID, {
         ...EMPTY_EDIT,
@@ -300,7 +300,7 @@ test("a stored content document is written at the version the resolver reads", a
 
 test("related tools must be tool ids, never slugs", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), TOOL_ROW, TOOL_ROSTER],
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW, TOOL_ROSTER],
     async (state) => {
       await assert.rejects(
         () =>
@@ -322,7 +322,7 @@ test("related tools must be tool ids, never slugs", async () => {
 
 test("publishing sets published_at and unpublishing clears it", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { toggle: true } }), TOOL_ROW, [{ toolId: TOOL_ID }]],
+    [permissionRows({ tools: { view: true, toggle: true } }), TOOL_ROW, [{ toolId: TOOL_ID }]],
     async (state) => {
       await setToolContentPublished("actor", TOOL_ID, true);
       assert.ok(state.updates[0].values.publishedAt instanceof Date);
@@ -331,7 +331,7 @@ test("publishing sets published_at and unpublishing clears it", async () => {
   );
 
   await withFakeDatabase(
-    [permissionRows({ tools: { toggle: true } }), TOOL_ROW, [{ toolId: TOOL_ID }]],
+    [permissionRows({ tools: { view: true, toggle: true } }), TOOL_ROW, [{ toolId: TOOL_ID }]],
     async (state) => {
       await setToolContentPublished("actor", TOOL_ID, false);
       assert.equal(state.updates[0].values.publishedAt, null);
@@ -341,7 +341,7 @@ test("publishing sets published_at and unpublishing clears it", async () => {
 
 test("content that was never saved cannot be published", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { toggle: true } }), TOOL_ROW, []],
+    [permissionRows({ tools: { view: true, toggle: true } }), TOOL_ROW, []],
     async (state) => {
       await assert.rejects(
         () => setToolContentPublished("actor", TOOL_ID, true),
@@ -421,7 +421,7 @@ test("SVG is rejected by MIME type and by its leading bytes", async () => {
 
 test("removing an icon deletes the row and falls back to the identicon", async () => {
   await withFakeDatabase(
-    [permissionRows({ tools: { edit: true } }), TOOL_ROW],
+    [permissionRows({ tools: { view: true, edit: true } }), TOOL_ROW],
     async (state) => {
       await removeToolIcon("actor", TOOL_ID);
       assert.equal(state.deletes[0].table, toolIconsTable);

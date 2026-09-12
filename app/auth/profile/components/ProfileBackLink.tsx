@@ -1,6 +1,7 @@
 "use client";
 
-import { Button } from "@smarttools/ui";
+import {
+  TextLink, Button } from "@smarttools/ui";
 import type { MouseEvent } from "react";
 import { shouldUseBrowserBack } from "../../_lib/security";
 

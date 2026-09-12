@@ -2,6 +2,13 @@
 
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import {
+  InlineCode,
+  Overline,
+  Caption,
+  Strong,
+  Muted,
+  List,
+  H2,
   AccountNavigation,
   AlertDialog,
   AlertDialogAction,
@@ -92,11 +99,11 @@ function ConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         {changes.length > 0 ? (
-          <ul className="max-h-32 space-y-1 overflow-auto rounded-md bg-muted p-3 font-mono text-xs">
+          <List className="max-h-32 space-y-1 overflow-auto rounded-md bg-muted p-3">
             {changes.map((change) => (
-              <li key={change}>{change}</li>
+              <li key={change}><InlineCode>{change}</InlineCode></li>
             ))}
-          </ul>
+          </List>
         ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>
@@ -216,11 +223,11 @@ function WorkbenchFrame<
             data-testid="tool-status-line"
             role="status"
           >
-            <span
-              className={`inline-flex min-w-0 items-center gap-2 text-xs font-semibold ${
+            <Caption
+              className={`inline-flex min-w-0 items-center gap-2 ${
                 runtime.lifecycle === "completed" ? "text-success" : ""
               }`}
-            >
+            ><Strong className="contents">
               {runtime.lifecycle === "completed" ? (
                 <CheckCircle2
                   aria-hidden="true"
@@ -236,7 +243,7 @@ function WorkbenchFrame<
               <span className="truncate">{status}</span>
               {runtime.canUndo && !runtime.pendingConfirmation ? (
                 <Button
-                  className="relative h-7 px-2 text-[11px] after:absolute after:-inset-x-1 after:-inset-y-2"
+                  className="relative h-7 px-2 after:absolute after:-inset-x-1 after:-inset-y-2"
                   onClick={runtime.undo}
                   size="sm"
                   type="button"
@@ -246,7 +253,7 @@ function WorkbenchFrame<
                   Undo
                 </Button>
               ) : null}
-            </span>
+            </Strong></Caption>
           </footer>
         }
         statusMeta={
@@ -257,13 +264,13 @@ function WorkbenchFrame<
         toolbar={
           <IconTile
             aria-hidden="true"
-            className="size-[34px]"
+            className="size-[34px] bg-transparent text-foreground"
             tone={workbenchMarkText ? workbenchMark?.tone : undefined}
           >
             {workbenchIcon ?? (workbenchMarkText ? (
-              <span className="font-mono text-[13px] font-bold leading-none">
+              <Caption><Strong>
                 {workbenchMarkText}
-              </span>
+              </Strong></Caption>
             ) : (
               <Wrench />
             ))}
@@ -272,7 +279,7 @@ function WorkbenchFrame<
         toolbarActions={
           <div
             aria-label={`${title} actions`}
-            className="flex min-w-0 items-center gap-2 [&_button]:min-w-0 [&_button[data-size=default]]:!h-11 [&_button[data-size=default]]:!gap-2 [&_button[data-size=default]]:!px-4 [&_button[data-size=default]]:!text-[15px] [&_button[data-size=default]_svg]:!size-[18px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
+            className="flex min-w-0 items-center gap-2 [&_button]:min-w-0 [&_button[data-size=default]]:!h-11 [&_button[data-size=default]]:!gap-2 [&_button[data-size=default]]:!px-4 [&_button[data-size=default]_svg]:!size-[18px] [&_button[data-variant=default]:enabled]:!bg-primary [&_button[data-variant=default]:enabled]:!text-primary-foreground [&_button[data-variant=default]:enabled:hover]:!bg-primary/90 max-[56rem]:w-full max-[56rem]:flex-wrap max-[56rem]:justify-end max-[24rem]:[&_button]:max-w-full max-[24rem]:[&_button]:overflow-hidden max-[24rem]:[&_button_svg]:hidden"
             data-testid="tool-action-toolbar"
             role="toolbar"
           >
@@ -306,12 +313,9 @@ function WorkbenchFrame<
         className="mt-4 border-t border-border pt-4"
         data-testid="tool-support"
       >
-        <p
-          className="font-caption text-[11px] font-extrabold tracking-[0.08em] text-primary uppercase"
-          id="before-you-continue-heading"
-        >
+        <Overline className="text-primary" id="before-you-continue-heading">
           Before you continue
-        </p>
+        </Overline>
         <div
           className={`mt-3 grid gap-3 max-[52rem]:grid-cols-1 ${supportItems.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
         >
@@ -322,18 +326,18 @@ function WorkbenchFrame<
                 className="rounded-lg border border-border bg-muted/55 px-4 py-3"
                 key={item.eyebrow}
               >
-                <p className="flex items-center gap-2 font-caption text-[11px] font-extrabold tracking-[0.06em] uppercase">
+                <Overline className="flex items-center gap-2">
                   <Icon
                     aria-hidden="true"
                     className={`size-4 ${item.eyebrow === "Limitations" ? "text-amber-700" : "text-primary"}`}
                   />
                   {item.eyebrow}
-                </p>
-                <ul className="mt-1.5 list-disc space-y-1 pl-4 text-sm leading-5 text-muted-foreground">
+                </Overline>
+                <List className="mt-1.5 list-disc space-y-1 pl-4 text-muted-foreground">
                   {item.items.map((text, index) => (
                     <li key={`${item.eyebrow}-${index}`}>{text}</li>
                   ))}
-                </ul>
+                </List>
               </article>
             );
           })}
@@ -341,14 +345,14 @@ function WorkbenchFrame<
 
         <div className="mt-4 flex min-h-20 items-center justify-between gap-6 py-3 max-[52rem]:items-start max-[52rem]:flex-col">
           <div>
-            <p className="flex items-center gap-2 font-caption text-[11px] font-extrabold tracking-[0.06em] uppercase">
+            <Overline className="flex items-center gap-2">
               <ArrowLeftRight aria-hidden="true" className="size-4 text-primary" />
               Related tools
-            </p>
-            <h2 className="mt-1 text-sm font-bold">Continue with a related tool</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            </Overline>
+            <H2 className="mt-1">Continue with a related tool</H2>
+            <Muted className="mt-1 text-muted-foreground">
               Continue with a focused tool that matches your next step.
-            </p>
+            </Muted>
           </div>
           <nav
             aria-label={`Related ${category} tools`}

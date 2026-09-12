@@ -859,3 +859,24 @@ test("invoice workflow exposes protected actions and supporting content", async 
     await expect(page.locator("#mobile-invoice-actions")).toBeVisible();
   }
 });
+
+test("header menus include every document tool and valid category filters", async ({ request }) => {
+  const { TOOL_CATEGORIES } = await import("../../lib/tool-framework/categories");
+  const response = await request.get("http://localhost:3000/api/tools/ecosystem");
+  expect(response.ok()).toBe(true);
+  const { groups } = await response.json();
+  const documents = groups.find((group: { id: string }) => group.id === "documents");
+  expect(documents.tools.length).toBe(documents.count);
+  expect(new Set(documents.tools.map((tool: { href: string }) => tool.href)).size).toBe(documents.count);
+  for (const id of ["developer", "media"]) {
+    const group = groups.find((item: { id: string }) => item.id === id);
+    expect(group.categories.length).toBeGreaterThan(0);
+    for (const category of group.categories) {
+      const key = new URL(category.href, "http://localhost:3000").searchParams.get("category");
+      expect(Object.keys(TOOL_CATEGORIES)).toContain(key);
+      const definition = TOOL_CATEGORIES[key as keyof typeof TOOL_CATEGORIES];
+      expect(definition.label).toBe(category.label);
+      expect(definition.app).toBe(id === "developer" ? "devtools" : "media");
+    }
+  }
+});

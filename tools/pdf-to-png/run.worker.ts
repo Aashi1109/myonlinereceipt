@@ -5,7 +5,8 @@
  * `pdf.worker.ts:137-138,157` picked the extension, MIME, and quality from the
  * operation name so one handler could serve both `pdf-to-jpg` and `pdf-to-png`.
  * This tool states all three itself: PNG is lossless, so the encode quality is
- * fixed at 1. Multiple pages are streamed into one ZIP as they are encoded.
+ * fixed at 1. Generated pages are stored individually for preview/download,
+ * then streamed from storage into one ZIP.
  */
 
 import { validatePdfInput } from "../../lib/tool-framework/media/pdfDocument.ts";
@@ -49,6 +50,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
         batchState.current ??= await createArtifactBatchWriter(ctx, {
           archiveName: createPageArchiveFilename(input.name),
           count: total,
+          retainEntries: true,
         });
         ctx.progress({ completed: index, total, stage: "Encoding page" });
         const buffer = await encodeCanvas(page.canvas, "png", 1);
@@ -68,7 +70,9 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
   if (!batch) throw new ToolError("empty-range", "Choose at least one PDF page.");
   let files: Awaited<ReturnType<ArtifactBatchWriter["finish"]>>;
   try {
+    ctx.progress({ completed: 0, total: 1, stage: "Packaging images" });
     files = await batch.finish();
+    ctx.progress({ completed: 1, total: 1, stage: "Images ready" });
   } catch (error) {
     await batch.abort(error);
     throw error;
@@ -78,7 +82,7 @@ export const run: ToolRun<Settings> = async (ctx): Promise<ToolResult> => {
     render: "files",
     files,
     inputBytes: input.size,
-    outputBytes: files.reduce((sum, output) => sum + output.size, 0),
+    outputBytes: files[0].size,
   };
 };
 

@@ -19,8 +19,6 @@
   --surface-ink: #111214;
   --on-ink: #ffffff;
   --on-ink-muted: #a7adb5;
-
-  font-family: var(--font-geist, Geist), ui-sans-serif, system-ui, sans-serif;
 }
 
 .auth-navbar {
@@ -110,23 +108,12 @@
   gap: 2px;
 }
 
-.auth-brand-copy strong {
-  font-family: var(--font-inter, Inter), ui-sans-serif, system-ui, sans-serif;
-  font-size: 18px;
-  font-weight: 750;
-  line-height: 1.15;
-  letter-spacing: -0.3px;
-}
-
 .auth-brand-copy strong span {
   color: var(--primary);
 }
 
 .auth-brand-copy small {
   color: var(--muted-foreground);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -151,7 +138,6 @@
   border-radius: 999px;
   background: var(--muted);
   color: var(--muted-foreground);
-  font-size: 13px;
   transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
@@ -175,7 +161,6 @@
   outline: 0;
   background: transparent;
   color: var(--foreground);
-  font-size: 13px;
 }
 
 .auth-search input::placeholder {
@@ -192,9 +177,6 @@
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--card);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 600;
 }
 
 .auth-search-clear {
@@ -252,11 +234,6 @@
   margin: 0;
   padding: 9px 12px 7px;
   color: var(--muted-foreground);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
 }
 
 .auth-search-result {
@@ -305,24 +282,22 @@
 
 .auth-search-result strong {
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .auth-search-result small {
   color: var(--muted-foreground);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 10px;
 }
 
 .auth-search-empty,
+.auth-search-error,
 .auth-search-loading {
   min-height: 178px;
 }
 
-.auth-search-empty {
+.auth-search-empty,
+.auth-search-error {
   display: flex;
   padding: 24px;
   align-items: center;
@@ -332,31 +307,30 @@
   text-align: center;
 }
 
-.auth-search-empty > svg {
+.auth-search-empty > svg,
+.auth-search-error > svg {
   width: 24px;
   height: 24px;
   color: var(--muted-foreground);
 }
 
-.auth-search-empty strong {
-  font-family: var(--font-inter, Inter), ui-sans-serif, system-ui, sans-serif;
-  font-size: 13px;
+.auth-search-error > svg {
+  color: var(--destructive);
 }
 
-.auth-search-empty span {
+.auth-search-empty span,
+.auth-search-error span {
   color: var(--muted-foreground);
-  font-size: 11px;
 }
 
-.auth-search-empty button {
+.auth-search-empty button,
+.auth-search-error button {
   margin-top: 4px;
   padding: 6px 11px;
   border: 0;
   border-radius: 999px;
   background: var(--accent);
   color: var(--primary);
-  font-size: 11px;
-  font-weight: 650;
   cursor: pointer;
 }
 
@@ -416,9 +390,6 @@
   border-radius: 999px;
   background: transparent;
   color: var(--muted-foreground);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 550;
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
@@ -435,7 +406,6 @@
 .auth-category-nav button[aria-expanded="true"] {
   background: var(--accent);
   color: var(--primary);
-  font-weight: 650;
 }
 
 .auth-category-nav svg {
@@ -460,9 +430,6 @@
   justify-content: flex-start;
   border-radius: 6px;
   color: var(--foreground);
-  font-family: var(--font-geist, Geist), ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 550;
 }
 
 .auth-category-popover a:hover,
@@ -499,8 +466,6 @@
   gap: 6px;
   padding: 0 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -565,18 +530,11 @@
 
 .auth-heading h1 {
   margin: 0;
-  font-family: var(--font-inter, Inter), ui-sans-serif, system-ui, sans-serif;
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.4px;
 }
 
 .auth-heading p {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 .auth-notice {
@@ -598,17 +556,11 @@
 
 .auth-notice strong {
   display: block;
-  font-family: var(--font-inter, Inter), ui-sans-serif, system-ui, sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.35;
 }
 
 .auth-notice p {
   margin: 3px 0 0;
   color: var(--muted-foreground);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .auth-divider {
@@ -616,8 +568,6 @@
   align-items: center;
   gap: 12px;
   color: var(--muted-foreground);
-  font-family: var(--font-funnel-sans, "Funnel Sans"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
 }
 
 .auth-divider [data-slot="separator"] {
@@ -635,7 +585,6 @@
 .auth-options-row {
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
 }
 
 .auth-options-row label {
@@ -678,8 +627,6 @@
   border: 0;
   background: transparent;
   color: var(--primary);
-  font: inherit;
-  font-weight: 600;
   cursor: pointer;
 }
 
@@ -702,8 +649,6 @@
   align-items: flex-start;
   gap: 10px;
   color: var(--muted-foreground);
-  font-size: 13px;
-  line-height: 1.4;
 }
 
 .auth-terms-row [data-slot="checkbox"] {
@@ -712,14 +657,12 @@
 
 .auth-terms-row a {
   color: var(--foreground);
-  font-weight: 500;
 }
 
 .auth-card-footer-link {
   justify-content: center;
   gap: 5px;
   color: var(--muted-foreground);
-  font-size: 13px;
 }
 
 @media (max-width: 1180px) {
@@ -753,10 +696,6 @@
     margin-right: -8px;
   }
 
-  .auth-brand-copy strong {
-    font-size: 17px;
-  }
-
   .auth-category-nav,
   .auth-navbar-actions {
     display: none;
@@ -779,9 +718,5 @@
 
   .auth-card {
     padding: 20px;
-  }
-
-  .auth-heading h1 {
-    font-size: 24px;
   }
 }

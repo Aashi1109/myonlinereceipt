@@ -1,7 +1,13 @@
 "use client";
 
-import { Button, Label, ToolOptionsPanel } from "@smarttools/ui";
-import { ArrowRight, Loader2 } from "lucide-react";
+import {
+  Strong,
+  FieldLabel,
+  CodeBlock,
+  Muted,
+  ToolOptionsPanel,
+} from "@smarttools/ui";
+import { ArrowRight } from "lucide-react";
 import { Fragment, useEffect, useId, useMemo } from "react";
 
 import { ResultSurface } from "@/components/ResultSurface";
@@ -36,22 +42,22 @@ function PreviewText({ preview }: { preview: ReplacementPreview }) {
 
     return (
       <span className="inline-flex items-baseline gap-1" key={index}>
-        <span
-          className="rounded-sm bg-destructive/10 px-1 font-semibold text-foreground line-through decoration-destructive/70"
+        <Strong
+          className="rounded-sm bg-destructive/10 px-1 text-foreground line-through decoration-destructive/70"
           data-preview-role="found"
         >
           {part.found || "empty match"}
-        </span>
+        </Strong>
         <ArrowRight
           aria-hidden="true"
           className="relative top-0.5 inline size-3 shrink-0 text-muted-foreground"
         />
-        <span
-          className="rounded-sm bg-success/10 px-1 font-semibold text-foreground"
+        <Strong
+          className="rounded-sm bg-success/10 px-1 text-foreground"
           data-preview-role="replacement"
         >
           {part.replacement || "delete"}
-        </span>
+        </Strong>
       </span>
     );
   });
@@ -64,13 +70,13 @@ function AppliedResultText({ preview }: { preview: ReplacementPreview }) {
     }
     if (part.kind === "unpreviewed") return null;
     return (
-      <span
-        className="rounded-sm bg-success/10 px-1 font-semibold text-foreground"
+      <Strong
+        className="rounded-sm bg-success/10 px-1 text-foreground"
         data-preview-role="applied-replacement"
         key={index}
       >
         {part.replacement || ""}
-      </span>
+      </Strong>
     );
   });
 }
@@ -120,11 +126,17 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
     return () => props.onValidationChange?.(null);
   }, [props.onValidationChange, validationReason]);
 
-  if (inputSpec.kind !== "text") return null;
-
   const actionLabel = preview.count > 0
     ? `Apply ${preview.count} ${preview.count === 1 ? "replacement" : "replacements"}`
     : "Apply replacements";
+
+  useEffect(() => {
+    props.onToolbarActionsChange?.({ primaryActionLabel: actionLabel });
+    return () => props.onToolbarActionsChange?.(null);
+  }, [actionLabel, props.onToolbarActionsChange]);
+
+  if (inputSpec.kind !== "text") return null;
+
   const highlightedResult = props.result?.render === "text" && !preview.truncated;
 
   return (
@@ -133,8 +145,8 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
       collapseLabel="find and replace settings"
       collapseSide="secondary"
       collapsible
-      defaultSize={69}
-      minSize={52}
+      defaultSize={75}
+      minSize={75}
     >
       <div className="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(14rem,1fr)] gap-5 overflow-y-auto border-r border-border p-5 max-[64rem]:min-h-[44rem] max-[64rem]:border-r-0 max-[64rem]:border-b">
         <WorkspaceSurface
@@ -150,7 +162,7 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           title="Source text"
           variant="card"
         >
-          <Label className="sr-only" htmlFor={inputId}>{inputSpec.label}</Label>
+          <FieldLabel className="sr-only" htmlFor={inputId}>{inputSpec.label}</FieldLabel>
           <SourceTextarea
             className="min-h-0 flex-1"
             disabled={props.disabled}
@@ -173,7 +185,6 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
                 canCopy={Boolean(props.spec.capabilities?.copy)}
                 canDownload={Boolean(props.spec.capabilities?.download)}
                 result={props.result}
-                variant="link"
               />
             )}
             className="h-full"
@@ -184,9 +195,9 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
             variant="card"
           >
             <div className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted/45 p-4">
-              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-6 text-foreground">
+              <CodeBlock className="whitespace-pre-wrap break-words text-foreground">
                 <AppliedResultText preview={preview} />
-              </pre>
+              </CodeBlock>
             </div>
           </WorkspaceSurface>
         ) : (
@@ -202,20 +213,6 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
       </div>
 
       <ToolOptionsPanel
-        action={props.primaryAction ? (
-          <Button
-            aria-busy={props.primaryAction.running || undefined}
-            className="w-full"
-            disabled={props.primaryAction.disabled || validationReason !== null || preview.count === 0}
-            onClick={props.primaryAction.onRun}
-            type="button"
-          >
-            {props.primaryAction.running ? (
-              <Loader2 aria-hidden="true" className="animate-spin" />
-            ) : null}
-            {actionLabel}
-          </Button>
-        ) : undefined}
         className="h-full overflow-y-auto bg-card p-[18px]"
         title="FIND & REPLACE"
         variant="plain"
@@ -227,20 +224,20 @@ export default function FindAndReplaceWorkspace(props: WorkspaceProps) {
           spec={props.spec.settings}
           values={props.settings}
         />
-        <p className="text-xs leading-5 text-muted-foreground">
+        <Muted className="text-muted-foreground">
           In the source, a red background marks text that will be removed; a green background marks what will replace it. Applied replacements stay highlighted in the result.
-        </p>
+        </Muted>
         {validationReason ? (
-          <p
-            className={`text-xs font-medium ${preview.invalidPattern || !find ? "text-destructive" : "text-muted-foreground"}`}
+          <Muted
+            className={`${preview.invalidPattern || !find ? "text-destructive" : "text-muted-foreground"}`}
             role={preview.invalidPattern || !find ? "alert" : "status"}
           >
             {validationReason}
-          </p>
+          </Muted>
         ) : preview.truncated ? (
-          <p className="text-xs font-medium text-muted-foreground" role="status">
+          <Muted className="text-muted-foreground" role="status">
             {preview.count - preview.previewedCount} additional matches will still be replaced; they are grouped in the source to keep the editor responsive.
-          </p>
+          </Muted>
         ) : null}
       </ToolOptionsPanel>
     </SplitStack>

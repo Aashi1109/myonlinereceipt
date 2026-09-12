@@ -135,7 +135,42 @@ Five families, all loaded via `next/font/google` in `app/layout.tsx` (`display: 
 | `font-script` | `--font-script` | Caveat | Expressive endorsement only |
 | `font-mono` | `--font-mono` | Geist Mono | Code, workbench status bar |
 
-**Scale:** the only custom step is `--text-caption: 0.6875rem` / line-height `1rem` (`text-caption`). Everything else uses Tailwind's default scale. Use `text-caption` for compact non-essential metadata — do not hand-roll `text-[11px]`.
+**Named typography:** import `H1`–`H6`, `Display`, `P`, `Text`, `Lead`, `Large`, `Small`, `Muted`, `Caption`, `Overline`, `Metric`, `Strong`, `Blockquote`, `List`, `OrderedList`, `InlineCode`, `CodeBlock`, and `TextLink` from `@smarttools/ui`. Definitions live in `src/components/typography.tsx`; every component has a fixed semantic element, native attributes/ref, and no `as` or `variant` prop.
+
+| Components | Size / line height | Font / weight |
+| --- | --- | --- |
+| Display | 48px / 1.1 | Inter / 700 |
+| H1 | 32px / 1.2 | Inter / 600 |
+| H2 | 24px / 1.25 | Inter / 600 |
+| H3 | 20px / 1.3 | Inter / 600 |
+| H4 | 18px / 1.4 | Inter / 600 |
+| H5 | 16px / 1.5 | Inter / 600 |
+| H6 | 15px / 1.5 | Inter / 600 |
+| P, Text | 15px / 1.5 | Geist / 400 |
+| Lead, Large | 18px / 1.5 | Geist / 400, 600 |
+| Small, Caption | 13px / 1.35 | Funnel Sans / 500, 400 |
+| Muted | 13px / 1.35 | Geist / 400 |
+| Overline | 11px / 16px | Funnel Sans / 600, uppercase |
+| Metric | 32px / 1.2 | Inter / 600, tabular numerals |
+| Strong | Inherited size and line height | Inherited family / 600 |
+| InlineCode, CodeBlock | 12px / 1.55 | Geist Mono |
+| TextLink | Inherited size and line height | Geist |
+
+`Blockquote`, `List`, and `OrderedList` use the body recipe and native quote/list semantics. `CodeBlock` renders `pre > code`. No text component fixes its element height or adds page-level margins.
+
+```tsx
+<H1>Tool catalog</H1>
+<Muted>Find, group, and publish tools.</Muted>
+<H2>Documents</H2>
+<H3>Tool settings</H3>
+<Caption>6 tools</Caption>
+```
+
+Consumers use these components without font-size, font-family, font-weight, line-height, tracking or casing overrides. Layout, wrapping, alignment and contextual state colors remain with the owner. Do not change heading levels merely to obtain a smaller font. Keep phrasing content inside paragraphs (`Text`, `Caption`, `Strong`, `InlineCode`); `P`, `Lead`, `Muted`, and `Large` are block content.
+
+Existing fields, buttons, inputs, selects, tables, navigation and state components own their typography internally. Use `Input code` or `Textarea code` for code content rather than caller font classes. `typographyStyles` is for component internals and imperative editor integrations; ordinary pages use the named components. Layered editors share the code recipe across source, gutter and syntax overlay. Document templates, printed previews and React-PDF use their existing configurable output typography, independently from app chrome.
+
+The class-merging helper recognizes all semantic size tokens so adding a text color cannot silently remove a font size. `/admin/design-system` demonstrates the complete named set.
 
 ### 3.4 Radius
 
@@ -211,7 +246,7 @@ So headings and focus rings are correct without any class. Do not re-declare the
 
 | Component | Source | Variants |
 | --- | --- | --- |
-| `Button` | `button.tsx` | `variant: default \| strong \| destructive \| outline \| secondary \| ghost \| input-icon \| danger-subtle \| link`<br>`size: default \| xs \| sm \| md \| lg \| icon \| icon-xs \| icon-sm \| icon-md \| icon-lg`<br>`asChild` |
+| `Button` | `button.tsx` | `variant: default \| strong \| destructive \| outline \| secondary \| ghost \| input-icon \| danger-subtle \| link`<br>`size: default \| xs \| sm \| md \| lg \| icon \| icon-xs \| icon-sm \| icon-md \| icon-lg`<br>`asChild`; `disabled` preserves colors at 50% opacity; `loading` disables activation and shows a circular spinner with `aria-busy` |
 | `ButtonGroup` | `button-group.tsx` | `orientation: horizontal \| vertical` |
 | `CompactAction` | `patterns.tsx` | pre-bound `Button size="sm" variant="outline"` at 32px |
 | `RemoveFileAction` | `patterns.tsx` | pre-bound icon button, `aria-label="Remove file"` |
@@ -225,14 +260,17 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | `FieldRoot` + parts | `field.tsx` | `variant: default \| auth`, `orientation: vertical \| horizontal \| responsive` |
 | `Input` | `input.tsx` | `size: xs \| sm \| default \| md \| lg` (native `size` omitted) |
 | `Textarea` | `textarea.tsx` | — (`min-h-[88px]`, `field-sizing-content`) |
+| `InlineTextEditor` | `InlineTextEditor.tsx` | controlled `value`, `onChange`, accessible `label`; `multiline`, `required`, `maxLength`, `disabled`; inherits parent typography in display and editing states |
 | `Select` + parts | `select.tsx` | `SelectTrigger size: xs \| sm \| default \| md \| lg`; auto-bridges native `<option>` children |
 | `RadioGroup` / `RadioGroupItem` | `radio-group.tsx` | `size: xs \| sm \| default \| md \| lg` |
-| `Checkbox` (composition) | `index.tsx` | req `label`; wraps `CheckboxControl` in a `<label>` |
+| `Checkbox` (composition) | `index.tsx` | req `label`; wraps `CheckboxControl` in a `<label>`; optional `tooltip` uses shared Tooltip parts under a group-level `TooltipProvider`, with a focusable wrapper when disabled |
 | `CheckboxControl` | `checkbox.tsx` | fixed `size-5`; checked / indeterminate |
 | `Switch` | `switch.tsx` | `size: xs \| sm \| default \| lg` |
 | `Label` | `label.tsx` | — |
 
 `Field` clones its child to inject `id`, `aria-describedby`, `aria-errormessage`, `aria-invalid`. **Use `Field` rather than pairing `Label` + `Input` by hand** — that is where the a11y wiring lives.
+
+Place `InlineTextEditor` inside the appropriate typography component, such as `H2` or `Muted`. Double-click the text, activate its edit button, or focus it and press Enter to edit. Enter finishes both single-line and multiline editing; Shift+Enter inserts a new line in multiline fields. Blur keeps the draft and Escape restores the value from before editing. The parent owns saving and toast feedback; finishing an edit does not persist it. The form controls showcase includes editable title, description, and disabled examples.
 
 ### Feedback
 
@@ -254,6 +292,7 @@ So headings and focus rings are correct without any class. Do not re-declare the
 | Component | Source | Variants |
 | --- | --- | --- |
 | `Card` + parts | `card.tsx` | — |
+| `Accordion` + `AccordionItem`, `AccordionTrigger`, `AccordionContent` | `accordion.tsx` | shadcn/Radix pattern; `type: single \| multiple`; use `multiple` for independent settings groups. Keep form values controlled when collapsed content unmounts. Place account actions beside their description, never inside the trigger. |
 | `SectionCard` | `index.tsx` | — |
 | `DangerZone` | `index.tsx` | — |
 | `CatalogCard` / `ToolCard` | `index.tsx` | req `action`, `description`, `title` |
@@ -289,9 +328,68 @@ Stateful, own external dependency. Treat as leaf components; do not clone.
 
 | Component | Source | Notes |
 | --- | --- | --- |
-| `ChapterScrubber` | `ChapterScrubber.tsx` | `motion/react` dock-wave; `density: compact \| default`, `side: left \| right` |
+| `ChapterScrubber` | `ChapterScrubber.tsx` | `motion/react` dock-wave; `density: compact \| default`, `side: left \| right`; hover previews stay open across the gap and select the chapter on click or Enter/Space; Escape dismisses |
 | `OrderableList<Item>` | `OrderableList.tsx` | `@dnd-kit`; `layout: grid \| vertical`; full drag announcements + keyboard sensor |
-| `PdfViewer` | `PdfViewer.tsx` | composes `ChapterScrubber` + `Button`; zoom clamped 50–200, step 10 |
+| `PdfViewer` | `PdfViewer.tsx` | composes `ChapterScrubber` + `Button`; outline starts collapsed, fits content up to 35% of viewer width, and uses a Morphicons hamburger-to-X toggle with a synchronized 280ms outline/PDF width transition with stable outline content (respects reduced motion); Show outline focuses search, Escape closes and restores toggle focus; 100% zoom fills available page width, zoom clamped 50–200, step 10; optional `pages` enables continuous scrolling with page/outline sync; optional `onExpand` opens a caller-owned full-screen preview |
+| `MediaPreview` | `MediaPreview.tsx` | `Is1Pt`; controlled full-screen Radix dialog; media-agnostic `children`, optional header `actions` before Exit preview, `controls`, `status`, `hint` slots; Escape/exit, focus trap and return focus |
+
+### Generated media output cards
+
+`MediaOutputCard` combines a contained preview, filename/size row, and a joined
+Preview/Download footer inside one bordered card. Its `children` supplies the
+preview; `onPreview`, `onDownload`, `downloading`, and `error` are caller-owned.
+The `card-action` Button variant provides the integrated, square-edged controls.
+
+`components/MediaOutputGallery.tsx` consumes stored image artifacts in the Media
+result panel. Only its grid scrolls; the archive download and result facts remain
+outside that scroll area. Thumbnails load near the viewport and release their
+object URLs offscreen. Per-file downloads use the actual generated bytes, not
+thumbnail captures. Preview uses `MediaPreview` with a translucent blurred backdrop,
+a scrollable square thumbnail rail, and view-only fit/zoom/pan controls. Rail labels
+remain accessible without adding visible filenames or an Images toggle.
+
+PDF-to-JPG retains individual generated artifacts alongside the archive using
+`retainEntries` on its batch writer. Other batch users still return only their
+archive by default. Output byte totals describe the primary downloadable archive,
+not the extra browser storage occupied by individual preview/download artifacts.
+
+### Full-screen preview usage
+
+```tsx
+import { MediaPreview } from "@smarttools/ui";
+
+<MediaPreview
+  open={previewOpen}
+  onOpenChange={setPreviewOpen}
+  title={file.name}
+  description={fileDetails}
+  controls={previewControls}
+  status="Preview only"
+>
+  {previewContent}
+</MediaPreview>
+```
+
+`MediaPreview` is a viewport-filling modal, not the browser Fullscreen API and
+not a media renderer. `children` may contain images, video, audio, a PDF viewer,
+or another task surface. No MIME detection, source loading, zoom transforms,
+playback controls, or file actions are inferred. The optional footer disappears
+when `controls`, `status`, and `hint` are omitted. Supply only controls the child
+actually implements; download actions remain in the underlying Media result panel.
+
+The content area is scrollable. The caller controls child geometry (`m-auto` for
+centered content with safe overflow, `w-full h-full min-h-0` for a full-size viewer,
+or `max-w-full max-h-full object-contain` for an image). Lift any state that must
+survive closing into the caller: dialog children unmount on exit. Caller-owned
+loading/error states also belong in `children`.
+
+Radix supplies modal focus containment, background scroll locking, and Escape.
+Exit restores focus to the opening control when it still exists. Embedded
+cross-origin frames and native PDF viewers may consume Escape inside their own
+browsing context; the visible Exit preview button remains available. The wrapper
+does not inspect their content or bypass their keyboard behavior.
+
+Live example: `/admin/design-system`, Full-screen media preview specimen.
 
 ---
 
@@ -431,6 +529,7 @@ pnpm test:e2e   # playwright; needs DATABASE_URL, boots pnpm dev
 | Token + geometry lock | `tests/design-system-alignment.test.mjs` | 12 exact token declarations in `theme.css`; exact hover/active hexes and size classes in `button`, `checkbox`, `input`, `select`, `radio-group`, `switch`, `tabs`; all 5 control sizes present on the showcase page; 17 named exports in `patterns.tsx`; manifest = 60 unique ids incl. a hardcoded list; `ToolPageShell` composition rules |
 | Theme wiring | `tests/frontend-config.test.mjs` | `exports["./theme.css"]`; `@source "."` + `@theme {` present; `globals.css` import order; exactly one `tailwindcss` import repo-wide |
 | Class merging | `tests/ui-class-merging.test.mjs` | `index.tsx` uses `cn`, not string joins |
+| Full-screen preview | `tests/e2e/media-preview.spec.ts` | Caller content, focus containment, Escape/exit, reopening and focus restoration on `/admin/design-system` |
 | Runtime behaviour | `tests/e2e/design-system-scrubber.spec.ts` | `ChapterScrubber` Gaussian falloff maths, active tick colour `rgb(26,26,26)`, preview geometry, on `/admin/design-system` |
 
 These are **source-text assertions**, not rendering tests. They pin token *definitions*; they cannot stop a hardcoded hex being written in an app file. That gap is covered by review, not tooling.

@@ -1,4 +1,10 @@
-import { Card, EmptyState, ToolPageHeader, buttonVariants } from "@smarttools/ui";
+import {
+  H3,
+  Caption,
+  Metric,
+  Strong,
+  Text,
+  TextLink, Card, EmptyState, ToolPageHeader, buttonVariants } from "@smarttools/ui";
 import {
   Activity,
   BadgePlus,
@@ -72,12 +78,12 @@ export default async function HomePage() {
       <section aria-label="Administration metrics" className="grid gap-4 md:grid-cols-3">
         {metrics.map(({ detail, icon: Icon, label, tone, value }) => (
           <Card className="gap-1.5 p-5 shadow-none" key={label}>
-            <span className="font-caption text-[13px] text-muted-foreground">{label}</span>
-            <strong className="font-heading text-[30px] leading-tight font-bold tracking-[-0.03125rem] text-foreground">{value.toLocaleString()}</strong>
-            <span className={`inline-flex items-center gap-1 font-caption text-xs font-semibold ${tone}`}>
+            <Text className="text-muted-foreground">{label}</Text>
+            <Metric className="text-foreground">{value.toLocaleString()}</Metric>
+            <Caption className={`inline-flex items-center gap-1 ${tone}`}>
               <Icon aria-hidden="true" className="size-3.5" />
               {detail}
-            </span>
+            </Caption>
           </Card>
         ))}
       </section>
@@ -85,8 +91,8 @@ export default async function HomePage() {
       <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card" aria-labelledby="recent-access-heading">
           <div className="flex items-center justify-between border-b border-border px-5 py-[18px]">
-            <h2 className="font-heading text-base font-semibold" id="recent-access-heading">Recent access changes</h2>
-            <a className="text-[13px] font-semibold text-primary hover:underline" href="/admin/audit">View all →</a>
+            <H3  id="recent-access-heading">Recent access changes</H3>
+            <TextLink className="text-primary hover:underline" href="/admin/audit">View all →</TextLink>
           </div>
           {recentEvents.length ? (
             <div className="divide-y divide-border">
@@ -98,10 +104,10 @@ export default async function HomePage() {
                       <Icon aria-hidden="true" className="size-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <strong className="block truncate font-heading text-[13px] font-semibold">{label}</strong>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">{eventDetail(event)}</span>
+                      <Strong className="block truncate">{label}</Strong>
+                      <Caption className="mt-0.5 block truncate text-muted-foreground">{eventDetail(event)}</Caption>
                     </span>
-                    <time className="shrink-0 font-caption text-[11px] text-muted-foreground" dateTime={event.createdAt.toISOString()}>{relativeTime(event.createdAt)}</time>
+                    <time className="shrink-0 text-muted-foreground" dateTime={event.createdAt.toISOString()}>{relativeTime(event.createdAt)}</time>
                   </div>
                 );
               })}
@@ -109,29 +115,29 @@ export default async function HomePage() {
           ) : (
             <EmptyState className="m-5 border-0 bg-muted p-6" description="Privileged access changes will appear here." icon={<Inbox aria-hidden="true" />} title="No access changes yet" />
           )}
-          <div className="mt-auto flex items-center gap-2 bg-muted px-5 py-3 font-caption text-[11px] text-muted-foreground">
-            <Inbox aria-hidden="true" className="size-4" />
+          <div className="mt-auto flex items-center gap-2 bg-muted px-5 py-3 text-muted-foreground">
+            <Inbox aria-hidden="true" className="size-4" /><Text>
             Activity is sourced from the privileged audit log.
-          </div>
+          </Text></div>
         </section>
 
         <aside className="flex flex-col gap-4 rounded-xl bg-surface-ink p-[22px] text-on-ink">
           <div>
-            <h2 className="font-heading text-[17px] font-semibold">Quick actions</h2>
-            <p className="mt-2 text-[13px] leading-[1.45] text-on-ink-muted">Common access-management tasks for administrators.</p>
+            <H3 >Quick actions</H3>
+            <Caption className="block mt-2 text-on-ink-muted">Common access-management tasks for administrators.</Caption>
           </div>
           <nav aria-label="Quick actions" className="grid gap-2">
             {quickActions.map(({ href, icon: Icon, label }) => (
-              <a className="flex items-center gap-2.5 rounded-lg bg-white/[0.07] px-[13px] py-3 text-[13px] font-semibold text-on-ink outline-none transition-colors hover:bg-white/[0.12] focus-visible:ring-2 focus-visible:ring-ring" href={href} key={href}>
+              <TextLink className="flex items-center gap-2.5 rounded-lg bg-white/[0.07] px-[13px] py-3 text-on-ink outline-none transition-colors hover:bg-white/[0.12] focus-visible:ring-2 focus-visible:ring-ring" href={href} key={href}>
                 <Icon aria-hidden="true" className="size-[17px]" />
                 {label}
-              </a>
+              </TextLink>
             ))}
           </nav>
-          <div className="mt-auto flex items-center gap-2 font-caption text-[10px] text-on-ink-muted">
-            <History aria-hidden="true" className="size-3.5" />
+          <div className="mt-auto flex items-center gap-2 text-on-ink-muted">
+            <History aria-hidden="true" className="size-3.5" /><Text>
             All privileged changes are recorded.
-          </div>
+          </Text></div>
         </aside>
       </div>
     </div>

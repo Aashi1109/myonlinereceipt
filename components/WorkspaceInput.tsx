@@ -1,15 +1,19 @@
 "use client";
 
 import {
+  typographyStyles,
+  FieldLabel,
+  Muted,
   Alert,
   AlertDescription,
   AlertTitle,
   Button,
+  ToolActionButton,
   Input,
-  Label,
 } from "@smarttools/ui";
+import { cn } from "@smarttools/ui/lib/utils";
 import { Eye, EyeOff } from "lucide";
-import { ClipboardPaste, FileText, Trash2, Upload } from "lucide-react";
+import { FileText, Trash2, Upload } from "lucide-react";
 import { MorphIcon } from "morphicons/react";
 import {
   type ReactNode,
@@ -153,7 +157,7 @@ export function SourceTextarea({
       {showLineNumbers ? (
         <div aria-hidden="true" className="w-[15px] min-w-max shrink-0 overflow-hidden text-right">
           <pre
-            className="m-0 select-none py-[18px] font-mono text-xs leading-[1.55] text-muted-foreground will-change-transform"
+            className={`${typographyStyles.codeBlock} m-0 select-none py-[18px] text-muted-foreground will-change-transform`}
             ref={gutterRef}
           >
             {lineNumbers}
@@ -164,7 +168,7 @@ export function SourceTextarea({
         {showHighlight ? (
           <pre
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 font-mono text-xs leading-[1.55] text-foreground will-change-transform"
+            className={cn(typographyStyles.codeBlock, "pointer-events-none absolute inset-x-0 top-0 z-0 m-0 min-h-full whitespace-pre-wrap break-all py-[18px] pr-4 text-foreground will-change-transform")}
             ref={highlightRef}
           >
             {highlightedValue}
@@ -175,7 +179,7 @@ export function SourceTextarea({
           aria-invalid={ariaInvalid}
           autoCapitalize="off"
           autoCorrect="off"
-          className={`relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 font-mono text-xs leading-[1.55] outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${showHighlight ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "overflow-x-auto" : "overflow-x-hidden"}`}
+          className={cn(typographyStyles.codeBlock, `relative z-10 h-full min-h-0 w-full min-w-0 resize-none overflow-y-auto border-0 bg-transparent py-[18px] pr-4 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60 ${showHighlight ? "whitespace-pre-wrap break-all text-transparent caret-foreground" : "text-foreground"} ${resolvedWrap === "off" ? "whitespace-pre overflow-x-auto" : "whitespace-pre-wrap overflow-x-hidden"}`)}
           disabled={disabled}
           id={id}
           maxLength={maxLength}
@@ -258,21 +262,17 @@ export function WorkspaceInputSurface({
     }
   };
   const pasteAction = (label: string, maxLength?: number) => pasteSupported ? (
-    <Button
+    <ToolActionButton action="paste"
       aria-busy={pastePending || undefined}
       aria-label={pasteFailed ? `Paste into ${label} failed. Try again` : `Paste into ${label}`}
       aria-live="polite"
-      className={variant === "card" ? "h-auto px-1 py-0 text-xs" : undefined}
       disabled={disabled || pastePending}
       onClick={() => void pastePrimaryInput(maxLength)}
-      size={variant === "card" ? undefined : "xs"}
       title={`Paste into ${label}`}
       type="button"
-      variant={variant === "card" ? "link" : "outline"}
     >
-      {variant === "card" ? null : <ClipboardPaste aria-hidden="true" />}
       {pastePending ? "Pasting…" : pasteFailed ? "Paste failed" : "Paste"}
-    </Button>
+    </ToolActionButton>
   ) : null;
   switch (inputSpec.kind) {
     case "text": {
@@ -321,17 +321,13 @@ export function WorkspaceInputSurface({
             tabIndex={-1}
             type="file"
           />
-          <Button
-            className={variant === "card" ? "h-auto px-1 py-0 text-xs" : undefined}
+          <ToolActionButton action="upload"
             disabled={disabled}
             onClick={() => fileInputRef.current?.click()}
-            size={variant === "card" ? undefined : "xs"}
             type="button"
-            variant={variant === "card" ? "link" : "outline"}
           >
-            {variant === "card" ? null : <Upload aria-hidden="true" />}
             {selectedFile ? "Replace" : "Upload"}
-          </Button>
+          </ToolActionButton>
           {selectedFile ? (
             <Button
               aria-label={`Remove ${selectedFile.name}`}
@@ -365,7 +361,7 @@ export function WorkspaceInputSurface({
           variant={variant}
         >
           <div className="grid min-h-0 flex-1 gap-1.5">
-            <Label className="sr-only" htmlFor={`${idPrefix}-primary`}>{inputSpec.label}</Label>
+            <FieldLabel className="sr-only" htmlFor={`${idPrefix}-primary`}>{inputSpec.label}</FieldLabel>
             <SourceTextarea
               className="min-h-48 flex-1"
               disabled={disabled}
@@ -380,13 +376,13 @@ export function WorkspaceInputSurface({
             />
           </div>
           {largeFile ? (
-            <p className="px-4 pb-3 text-xs text-muted-foreground">
+            <Muted className="px-4 pb-3 text-muted-foreground">
               Showing the first 256 KiB. The complete file stays read-only and is processed locally when you run the tool.
-            </p>
+            </Muted>
           ) : null}
           {inputSpec.secondary ? (
             <div className="grid gap-1.5">
-              <Label htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</Label>
+              <FieldLabel htmlFor={`${idPrefix}-secondary`}>{inputSpec.secondary.label}</FieldLabel>
               <SourceTextarea
                 className="min-h-28"
                 disabled={disabled}
@@ -399,7 +395,7 @@ export function WorkspaceInputSurface({
               />
             </div>
           ) : null}
-          {inputIssue ? <p className="px-4 pb-3 text-xs text-destructive" role="alert">{inputIssue}</p> : null}
+          {inputIssue ? <Muted className="px-4 pb-3 text-destructive" role="alert">{inputIssue}</Muted> : null}
         </WorkspaceSurface>
       );
     }
@@ -445,15 +441,15 @@ export function WorkspaceInputSurface({
                 key={field.channel}
               >
                 <div className={cardFields ? "flex min-h-10 items-center justify-between gap-3 px-4 pt-2" : undefined}>
-                  <Label
+                  <FieldLabel
                     className={cardFields
-                      ? "font-caption text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase"
+                      ? "text-muted-foreground"
                       : variant === "card" ? "sr-only"
                       : fieldCodeShaped ? "px-4" : undefined}
                     htmlFor={fieldId}
                   >
                     {field.label}{field.required && !cardFields ? " (required)" : ""}
-                  </Label>
+                  </FieldLabel>
                   {cardFields && index === 0 ? pasteAction(field.label, field.maxLength) : null}
                 </div>
                 <div className={`flex min-h-0 gap-2 ${cardFields ? "h-full items-stretch" : "items-start"} ${cardFields && !field.multiline ? "px-4 pb-4" : ""}`}>
@@ -487,7 +483,7 @@ export function WorkspaceInputSurface({
                     </div>
                   ) : field.secret ? (
                     <PasswordInput
-                      className="font-mono"
+                      code
                       disabled={disabled}
                       id={fieldId}
                       maxLength={field.maxLength}
@@ -498,7 +494,8 @@ export function WorkspaceInputSurface({
                     />
                   ) : (
                     <Input
-                      className="flex-1 font-mono"
+                      className="flex-1"
+                      code
                       disabled={disabled}
                       id={fieldId}
                       maxLength={field.maxLength}

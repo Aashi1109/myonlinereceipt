@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { config } from "dotenv";
 import postgres from "postgres";
+
+for (const file of [".env.local", ".env"]) {
+  config({ path: new URL(`../../../${file}`, import.meta.url), override: false, quiet: true });
+}
 
 const email = process.argv[2]?.trim().toLowerCase();
 const databaseUrl = process.env.DATABASE_URL;
@@ -39,4 +44,3 @@ try {
 } finally {
   await sql.end();
 }
-

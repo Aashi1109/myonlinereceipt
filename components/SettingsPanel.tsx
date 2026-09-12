@@ -1,9 +1,13 @@
 "use client";
 
 import {
+  FieldDescription,
+  FieldLegend,
+  Caption,
+  FieldLabel,
+  Text,
   Button,
   Input,
-  Label,
   RadioGroup,
   RadioGroupItem,
   Select,
@@ -46,14 +50,14 @@ interface FieldFrameProps {
 function FieldFrame({ children, help, id, label }: FieldFrameProps) {
   return (
     <div className="grid gap-1.5">
-      <Label className="font-caption text-[11px] font-semibold uppercase tracking-[0.025rem] text-muted-foreground" htmlFor={id}>
+      <FieldLabel className="text-muted-foreground" htmlFor={id}>
         {label}
-      </Label>
+      </FieldLabel>
       {children}
       {help ? (
-        <p className="text-xs leading-5 text-muted-foreground" id={`${id}-help`}>
+        <FieldDescription className="text-muted-foreground" id={`${id}-help`}>
           {help}
-        </p>
+        </FieldDescription>
       ) : null}
     </div>
   );
@@ -178,9 +182,9 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           }
         />
         {field.suffix ? (
-          <span className="shrink-0 text-sm text-muted-foreground">
+          <Text className="shrink-0 text-muted-foreground">
             {field.suffix}
-          </span>
+          </Text>
         ) : null}
       </div>
     </FieldFrame>
@@ -201,8 +205,8 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
             type="range"
             value={value}
           />
-          <output className="min-w-12 text-right font-mono text-xs" htmlFor={context.id}>
-            {value}{field.suffix}
+          <output className="min-w-12 text-right" htmlFor={context.id}>
+            <Caption>{value}{field.suffix}</Caption>
           </output>
         </div>
       </FieldFrame>
@@ -211,13 +215,13 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
   toggle: (field, context) => (
     <div className="flex items-center justify-between gap-4">
       <div className="min-w-0">
-        <Label className="font-sans text-sm font-semibold text-foreground" htmlFor={context.id}>
+        <FieldLabel className="text-foreground" htmlFor={context.id}>
           {field.label}
-        </Label>
+        </FieldLabel>
         {field.help ? (
-          <p className="mt-0.5 text-xs leading-5 text-muted-foreground" id={`${context.id}-help`}>
+          <FieldDescription className="mt-0.5 text-muted-foreground" id={`${context.id}-help`}>
             {field.help}
-          </p>
+          </FieldDescription>
         ) : null}
       </div>
       <Switch
@@ -248,7 +252,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
   ),
   preset: (field, context) => (
     <fieldset className="grid gap-2">
-      <legend className="font-caption text-xs font-medium text-muted-foreground">{field.label}</legend>
+      <FieldLegend>{field.label}</FieldLegend>
       <RadioGroup
         aria-describedby={field.help ? `${context.id}-help` : undefined}
         disabled={context.disabled}
@@ -260,15 +264,15 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
           return (
             <div className="flex items-start gap-3 rounded-lg border border-border p-3" key={choice.value}>
               <RadioGroupItem id={choiceId} value={choice.value} />
-              <Label className="grid cursor-pointer gap-0.5" htmlFor={choiceId}>
+              <FieldLabel className="grid cursor-pointer gap-0.5" htmlFor={choiceId}>
                 <span>{choice.label}</span>
-                {choice.detail ? <span className="font-normal text-muted-foreground">{choice.detail}</span> : null}
-              </Label>
+                {choice.detail ? <Caption className="text-muted-foreground">{choice.detail}</Caption> : null}
+              </FieldLabel>
             </div>
           );
         })}
       </RadioGroup>
-      {field.help ? <p className="text-xs leading-5 text-muted-foreground" id={`${context.id}-help`}>{field.help}</p> : null}
+      {field.help ? <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>{field.help}</FieldDescription> : null}
     </fieldset>
   ),
   color: (field, context) => {
@@ -286,7 +290,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
             value={value === "transparent" ? "#000000" : value}
           />
           <div className="min-w-0 flex-1">
-            <Label className="sr-only" htmlFor={`${context.id}-value`}>{field.label} value</Label>
+            <FieldLabel className="sr-only" htmlFor={`${context.id}-value`}>{field.label} value</FieldLabel>
             <Input
               disabled={context.disabled}
               id={`${context.id}-value`}
@@ -319,7 +323,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
     const value = stringValue(context.value, field.default);
     return (
       <fieldset className="grid gap-2">
-        <legend className="font-caption text-xs font-medium text-muted-foreground">{field.label}</legend>
+        <FieldLegend>{field.label}</FieldLegend>
         <div aria-describedby={field.help ? `${context.id}-help` : undefined} aria-label={field.label} className="grid w-fit grid-cols-3 gap-1" role="radiogroup">
           {POSITIONS.map((position, index) => (
             <Button
@@ -339,7 +343,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
             </Button>
           ))}
         </div>
-        {field.help ? <p className="text-xs leading-5 text-muted-foreground" id={`${context.id}-help`}>{field.help}</p> : null}
+        {field.help ? <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>{field.help}</FieldDescription> : null}
       </fieldset>
     );
   },
@@ -368,18 +372,18 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
     const rows = rowsValue(context.value, field.default);
     return (
       <fieldset aria-describedby={field.help ? `${context.id}-help` : undefined} className="grid gap-3">
-        <legend className="font-caption text-xs font-medium text-muted-foreground">{field.label}</legend>
+        <FieldLegend>{field.label}</FieldLegend>
         {rows.map((row, index) => {
           const keyId = `${context.id}-${index}-key`;
           const valueId = `${context.id}-${index}-value`;
           return (
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2" key={`${context.id}-${index}`}>
               <div className="grid gap-1.5">
-                <Label htmlFor={keyId}>{field.keyLabel}</Label>
+                <FieldLabel htmlFor={keyId}>{field.keyLabel}</FieldLabel>
                 <Input disabled={context.disabled} id={keyId} onChange={(event) => context.onChange(rows.map((entry, rowIndex) => rowIndex === index ? { ...entry, key: event.currentTarget.value } : entry))} value={row.key} />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor={valueId}>{field.valueLabel}</Label>
+                <FieldLabel htmlFor={valueId}>{field.valueLabel}</FieldLabel>
                 <Input disabled={context.disabled} id={valueId} onChange={(event) => context.onChange(rows.map((entry, rowIndex) => rowIndex === index ? { ...entry, value: event.currentTarget.value } : entry))} value={row.value} />
               </div>
               <Button aria-label={`Remove row ${index + 1}`} disabled={context.disabled} onClick={() => context.onChange(rows.filter((_, rowIndex) => rowIndex !== index))} size="icon" type="button" variant="ghost">
@@ -391,7 +395,7 @@ const FIELD_RENDERERS: FieldRendererRegistry = {
         <Button className="w-fit" disabled={context.disabled} onClick={() => context.onChange([...rows, { key: "", value: "" }])} type="button" variant="outline">
           <Plus aria-hidden="true" /> Add row
         </Button>
-        {field.help ? <p className="text-xs leading-5 text-muted-foreground" id={`${context.id}-help`}>{field.help}</p> : null}
+        {field.help ? <FieldDescription className="text-muted-foreground" id={`${context.id}-help`}>{field.help}</FieldDescription> : null}
       </fieldset>
     );
   },

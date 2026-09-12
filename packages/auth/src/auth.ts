@@ -175,18 +175,6 @@ export const auth = betterAuth({
         }),
       },
     },
-    session: {
-      create: {
-        before: async (session) => {
-          const [user] = await db
-            .select({ status: authUser.status })
-            .from(authUser)
-            .where(eq(authUser.id, session.userId))
-            .limit(1);
-          return user?.status === "active";
-        },
-      },
-    },
   },
   advanced: {
     useSecureCookies: process.env.NODE_ENV === "production",

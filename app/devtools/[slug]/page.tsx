@@ -30,7 +30,7 @@ export default async function DevtoolsToolPage({
     <ToolPage
       account={{
         returnTo: tool.href,
-        user: session ? { name: session.user.name } : null,
+        user: session?.user ?? null,
       }}
       category={TOOL_CATEGORIES[tool.category].label}
       definitionKey={tool.definitionKey}

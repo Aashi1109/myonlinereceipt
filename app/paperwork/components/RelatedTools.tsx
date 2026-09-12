@@ -4,7 +4,17 @@
  */
 
 import type { ResolvedTool } from "@smarttools/tool-catalog";
-import { Button, CatalogCard, StatusBadge } from "@smarttools/ui";
+import {
+  Caption,
+  H2,
+  List,
+  Muted,
+  P,
+  Text,
+  Button,
+  CatalogCard,
+  StatusBadge,
+} from "@smarttools/ui";
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -64,11 +74,11 @@ export default function RelatedTools({
         className="relative overflow-hidden rounded-3xl bg-foreground p-8 text-background shadow-lg md:p-10"
         id="monetization-banner"
       >
-        <span
+        <Text
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-background/10"
         />
-        <span
+        <Text
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-24 left-1/3 size-96 rounded-full bg-background/5"
         />
@@ -78,21 +88,21 @@ export default function RelatedTools({
             <Zap aria-hidden="true" className="size-3" />
             Excellent upgrade options
           </StatusBadge>
-          <h2 className="text-2xl font-extrabold tracking-tight md:text-3xl">
+          <H2>
             Streamline Your Business with SmartTools Paperwork Pro
-          </h2>
-          <p className="text-sm leading-6 text-background/70 md:text-base">
+          </H2>
+          <P className="text-background/70">
             Draft free invoices as long as you want. When your independent freelance practice or contractor operations expand, unlock advanced time-saving features:
-          </p>
+          </P>
 
-          <ul className="grid gap-3 pt-2 text-sm text-background/80 md:grid-cols-2">
+          <List className="grid gap-3 pt-2 text-background/80 md:grid-cols-2">
             {valueAero.map((item) => (
               <li className="flex items-start gap-2" key={item}>
                 <CheckCircle2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-background/60" />
-                <span>{item}</span>
+                <Text>{item}</Text>
               </li>
             ))}
-          </ul>
+          </List>
 
           <div className="flex flex-wrap items-center gap-4 pt-4">
             <Button
@@ -102,21 +112,21 @@ export default function RelatedTools({
             >
               Learn More &amp; Join Waiting List
             </Button>
-            <span className="text-xs text-background/60">
+            <Caption className="text-background/60">
               No credit card required • Early Bird Access
-            </span>
+            </Caption>
           </div>
         </div>
       </section>
 
       <section className="space-y-6" id="related-tools-block">
         <div className="mx-auto max-w-xl space-y-2 text-center">
-          <h2 className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">
+          <H2 className="text-foreground">
             Comprehensive Paperwork Toolkit
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </H2>
+          <Muted className="text-muted-foreground">
             Simplify administrative workflows with professional single-click small business generators.
-          </p>
+          </Muted>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

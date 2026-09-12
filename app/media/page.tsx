@@ -9,6 +9,14 @@ import {
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getToolIcons, type ToolIconRow } from "@smarttools/database";
 import {
+  Caption,
+  Display,
+  H2,
+  Lead,
+  Metric,
+  Muted,
+  Strong,
+  TextLink,
   AccountNavigation,
   AppContainer,
   Badge,
@@ -92,7 +100,7 @@ export default async function HomePage({
         actions={
           <AccountNavigation
             returnTo="/media"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         href="/media"
@@ -103,17 +111,17 @@ export default async function HomePage({
         <section className="bg-primary text-primary-foreground">
           <AppContainer className="py-16 text-center sm:py-24">
             <Badge
-              className="border-white/25 bg-white/10 px-3 font-extrabold tracking-[0.14em] text-primary-foreground uppercase"
+              className="border-white/25 bg-white/10 px-3 text-primary-foreground"
               variant="outline"
             >
               Private image and PDF tools
             </Badge>
-            <h1 className="mx-auto mt-5 max-w-4xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            <Display className="mx-auto mt-5 max-w-4xl">
               Edit media without sending it anywhere.
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-primary-foreground/80 sm:text-lg">
+            </Display>
+            <Lead className="mx-auto mt-5 max-w-2xl text-primary-foreground/80">
               Convert, organize, and compress files in dedicated browser workers. Your files stay on this device.
-            </p>
+            </Lead>
 
             <form
               className="mx-auto mt-8 flex w-full max-w-2xl gap-2 rounded-2xl bg-card p-2 shadow-lg"
@@ -150,8 +158,8 @@ export default async function HomePage({
               ["0", "File uploads"],
             ].map(([value, label]) => (
               <div className="px-4 py-3 text-center" key={label}>
-                <strong className="block text-2xl font-black text-primary">{value}</strong>
-                <span className="mt-1 block text-xs font-bold text-muted-foreground">{label}</span>
+                <Metric className="block text-primary">{value}</Metric>
+                <Caption className="mt-1 block text-muted-foreground">{label}</Caption>
               </div>
             ))}
           </AppContainer>
@@ -209,8 +217,8 @@ export default async function HomePage({
               {categoriesForApp("media").map((key) => {
                 const count = tools.filter((tool) => tool.category === key).length;
                 return (
-                  <a
-                    className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  <TextLink
+                    className="no-underline text-foreground group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     href={`/media?category=${encodeURIComponent(key)}`}
                     key={key}
                   >
@@ -218,15 +226,15 @@ export default async function HomePage({
                       <LayoutGrid aria-hidden="true" className="size-5" />
                     </IconTile>
                     <span className="min-w-0">
-                      <strong className="block text-sm font-extrabold group-hover:text-primary">
+                      <Strong className="block group-hover:text-primary">
                         {TOOL_CATEGORIES[key].label}
-                      </strong>
-                      <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      </Strong>
+                      <Caption className="mt-1 block text-muted-foreground">
                         {TOOL_CATEGORIES[key].description}
-                      </span>
-                      <span className="mt-2 block text-xs font-bold text-primary">{count} enabled</span>
+                      </Caption>
+                      <Caption className="mt-2 block text-primary">{count} enabled</Caption>
                     </span>
-                  </a>
+                  </TextLink>
                 );
               })}
             </div>
@@ -254,8 +262,8 @@ export default async function HomePage({
             ].map(({ description, icon: Icon, title }) => (
               <Card className="gap-0 rounded-2xl shadow-none" key={title} role="article">
                 <Icon aria-hidden="true" className="size-6 text-primary" />
-                <h2 className="mt-4 text-lg font-black">{title}</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+                <H2 className="mt-4">{title}</H2>
+                <Muted className="mt-2 text-muted-foreground">{description}</Muted>
               </Card>
             ))}
           </AppContainer>

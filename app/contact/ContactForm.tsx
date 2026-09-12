@@ -3,6 +3,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import {
+  H2,
+  Muted,
+  Text,
   AlertBanner,
   Button,
   Card,
@@ -55,13 +58,13 @@ export default function ContactForm({
   if (state === "success") {
     return (
       <Card className="w-full items-center gap-4 px-8 py-12 text-center">
-        <div className="grid size-11 place-items-center rounded-lg bg-success-soft text-xl font-bold text-success">
+        <div className="grid size-11 place-items-center rounded-lg bg-success-soft text-success"><Text>
           ✓
-        </div>
-        <h2 className="font-heading text-[19px] font-semibold">Message ready</h2>
-        <p className="max-w-md text-sm leading-6 text-muted-foreground">
+        </Text></div>
+        <H2 >Message ready</H2>
+        <Muted className="max-w-md text-muted-foreground">
           Your email app should be open with the message filled in. Send it there and we’ll reply within one business day.
-        </p>
+        </Muted>
         <Button onClick={() => setState("idle")} type="button" variant="ghost">
           Write another message
         </Button>

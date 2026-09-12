@@ -86,7 +86,7 @@ export default {
       },
       {
         q: "Does formatting change my data?",
-        a: "Only whitespace, with one caveat: very large integers and long decimals are re-serialised through JavaScript numbers and may lose precision.",
+        a: "Only whitespace changes. Numbers are preserved exactly, including large integers and long decimals. When a tree preview would change a number, the result is shown as exact JSON code instead.",
       },
       {
         q: "Can I go the other way and minify?",

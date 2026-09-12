@@ -38,7 +38,7 @@ export type ToolRunHandle = {
   /** Starts a page inspection, replacing any job already running. */
   readonly inspect: (request: ToolInspectRequestInput) => string;
   /** Requests raster bytes for pages in or near the page-picker viewport. */
-  readonly requestThumbnails: (pageNumbers: readonly number[]) => void;
+  readonly requestThumbnails: (pageNumbers: readonly number[], renderWidth?: number) => void;
   /** Closes the open inspection document while retaining its page geometry. */
   readonly closeInspection: () => void;
   readonly cancel: () => void;
@@ -186,7 +186,7 @@ export function useToolRun(): ToolRunHandle {
     [dispatch],
   );
 
-  const requestThumbnails = useCallback((pageNumbers: readonly number[]) => {
+  const requestThumbnails = useCallback((pageNumbers: readonly number[], renderWidth?: number) => {
     const session = inspectionRef.current;
     const worker = workerRef.current;
     const current = stateRef.current;
@@ -205,7 +205,8 @@ export function useToolRun(): ToolRunHandle {
       current.previews
         .filter((preview) => {
           const buffer = (preview as { readonly buffer?: unknown }).buffer;
-          return buffer instanceof ArrayBuffer;
+          const renderedWidth = (preview as { readonly renderWidth?: number }).renderWidth ?? 0;
+          return buffer instanceof ArrayBuffer && (renderWidth === undefined || renderedWidth >= renderWidth);
         })
         .map((preview) => preview.pageNumber),
     );
@@ -222,7 +223,7 @@ export function useToolRun(): ToolRunHandle {
     if (requested.length === 0) return;
     for (const pageNumber of requested) session.inFlight.add(pageNumber);
     worker.postMessage(
-      createToolThumbnailRequest({ jobId: session.jobId, pageNumbers: requested }),
+      createToolThumbnailRequest({ jobId: session.jobId, pageNumbers: requested, renderWidth }),
     );
   }, []);
 

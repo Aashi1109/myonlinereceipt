@@ -1,16 +1,18 @@
 "use client";
 
 import {
+  Muted,
   Alert,
   AlertDescription,
   AlertTitle,
   Button,
+  ToolActionButton,
   DownloadResult,
   EmptyState,
   ProcessingStatus,
   ToolOptionsPanel,
 } from "@smarttools/ui";
-import { FileText, Loader2, Upload, X } from "lucide-react";
+import { Download, FileText, Upload, X } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -20,13 +22,13 @@ import {
   type ReactNode,
 } from "react";
 
-import { FileOrderSurface } from "@/components/FileOrderSurface";
 import {
   validateFileSelection,
   workspaceFileId,
 } from "@/components/FileInput";
 import { SplitStack, Stack } from "@/components/Stacks";
 import { ResultView } from "@/components/ResultView";
+import { MediaOutputGallery } from "@/components/MediaOutputGallery";
 import { PdfInspectionProvider } from "@/components/PdfPagesSurface";
 import {
   FileIntakeSurface,
@@ -63,6 +65,21 @@ function formatFileSize(bytes: number): string {
   return `${value.toFixed(1).replace(/\.0$/, "")} ${units[unit - 1]}`;
 }
 
+function FileThumbnail({ file }: { file: File }): ReactElement {
+  const [url, setUrl] = useState<string>();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!file.type.startsWith("image/")) return;
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    setFailed(false);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file]);
+  return url && !failed ? (
+    <img alt="" className="size-10 rounded-lg object-contain" decoding="async" loading="lazy" onError={() => setFailed(true)} src={url} />
+  ) : <FileText aria-hidden="true" />;
+}
+
 async function downloadStoredFile(
   artifact: Extract<NonNullable<WorkspaceProps["result"]>, { render: "files" }>["files"][number],
 ): Promise<void> {
@@ -96,14 +113,15 @@ function StoredFileResult({ file }: { readonly file: StoredOutputFile }): ReactE
   };
 
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <DownloadResult
         action={(
-          <Button disabled={downloading} onClick={() => void download()} type="button">
-            {downloadFailed ? "Retry download" : downloading ? "Preparing…" : "Download file"}
+          <Button className="max-sm:w-full" disabled={downloading} onClick={() => void download()} size="xs" type="button">
+            <Download aria-hidden="true" />
+            {downloadFailed ? "Retry download" : downloading ? "Preparing…" : file.mime === "application/zip" ? "Download ZIP" : "Download file"}
           </Button>
         )}
-        className="[&_p]:truncate"
+        className="min-w-0 flex-wrap [&_p]:truncate [&>div:nth-child(2)]:basis-40"
         metadata={`${file.name} · ${formatFileSize(file.size)}`}
         title="Your file is ready"
       />
@@ -285,6 +303,8 @@ export interface FileProcessorWorkspaceProps extends WorkspaceProps {
   detail?: (state: FileProcessorDetail) => ReactNode;
   /** Shows the reorderable file list, for tools where file order is input. */
   orderFiles?: boolean;
+  /** Tool-owned preview shown above the completed output's download actions. */
+  resultPreview?: ReactNode;
 }
 
 export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
@@ -304,6 +324,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     props.running ?? false,
   );
   const [inputIssue, setInputIssue] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [wasCancelled, setWasCancelled] = useState(false);
   useSettingsHooks(props, hooks, previews);
   const fields = Object.values(props.spec.settings.fields);
@@ -314,7 +335,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     props.spec.input.kind === "files" ? props.spec.input : null;
   const hasEmptyFileQueue =
     fileInputSpec !== null && props.input.files.length === 0;
-  const hasDetailSurface = Boolean(props.orderFiles || props.detail);
+  const hasDetailSurface = Boolean(props.detail) && !hasEmptyFileQueue;
   const workspaceStateKey = JSON.stringify([
     props.input.files.map((file) => workspaceFileId(file)),
     props.input.secondary,
@@ -365,22 +386,8 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
 
   const settingsSurface = (
     <ToolOptionsPanel
-      action={props.primaryAction ? (
-        <Button
-          aria-busy={props.primaryAction.running || undefined}
-          className="w-full"
-          disabled={props.primaryAction.running && props.primaryAction.onCancel ? false : props.primaryAction.disabled}
-          onClick={props.primaryAction.running && props.primaryAction.onCancel ? props.primaryAction.onCancel : props.primaryAction.onRun}
-          type="button"
-        >
-          {props.primaryAction.running && !props.primaryAction.onCancel ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : null}
-          {props.primaryAction.running && props.primaryAction.onCancel ? "Cancel" : props.primaryAction.label}
-        </Button>
-      ) : undefined}
       className="h-full overflow-y-auto bg-card p-[22px]"
-      title={hasSideSettings ? "Options" : props.primaryAction ? "Action" : "Guidance"}
+      title="Options"
       variant="plain"
     >
       {hasSideSettings ? (
@@ -394,70 +401,77 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       ) : null}
     </ToolOptionsPanel>
   );
+  const addFiles = (files: File[]) => {
+    if (!fileInputSpec || props.disabled) return;
+    const selection = validateFileSelection(props.input.files, files, fileInputSpec);
+    setInputIssue(selection.issue);
+    props.onInputChange({ ...props.input, files: selection.files });
+  };
   const inputSurface = fileInputSpec ? (
     <Stack
-      className={hasDetailSurface ? "shrink-0" : "h-full overflow-y-auto"}
+      className={hasDetailSurface ? "max-h-60 min-h-32 shrink-0" : "h-full min-h-0"}
+      onDragOver={(event) => {
+        if (!hasEmptyFileQueue && !props.disabled && Array.from(event.dataTransfer.types).includes("Files")) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDrop={(event) => {
+        if (hasEmptyFileQueue || props.disabled || !event.dataTransfer.files.length) return;
+        event.preventDefault();
+        addFiles(Array.from(event.dataTransfer.files));
+      }}
     >
-      <FileIntakeSurface
-        accept={fileInputSpec.accept}
-        className={`min-h-44 border-b border-border ${
-          hasDetailSurface
-            ? "h-44 shrink-0 [&_[data-slot=file-upload-zone]]:gap-1 [&_[data-slot=file-upload-zone]]:p-3"
-            : hasSettings
-              ? "flex-1"
-              : "shrink-0"
-        }`}
-        disabled={props.disabled}
-        intakeDescription={fileInputSpec.dropzoneDescription}
-        intakeIcon={<Upload aria-hidden="true" />}
-        intakeTitle={fileInputSpec.label}
-        maxFiles={Number.MAX_SAFE_INTEGER}
-        multiple={fileInputSpec.multiple}
-        onFiles={(files) => {
-          const selection = validateFileSelection(
-            props.input.files,
-            files,
-            fileInputSpec,
-          );
-          setInputIssue(selection.issue);
-          props.onInputChange({ ...props.input, files: selection.files });
-        }}
-        title="Input files"
-      />
-      {inputIssue ? (
-        <Alert className="m-3" variant="destructive">
-          <AlertTitle>Some files were not added</AlertTitle>
-          <AlertDescription>{inputIssue}</AlertDescription>
-        </Alert>
-      ) : null}
       {hasEmptyFileQueue ? (
-        <WorkspaceSurface
-          className="h-[46px] min-h-[46px] shrink-0"
-          purpose="source"
-          title="Selected files"
+        <FileIntakeSurface
+          accept={fileInputSpec.accept}
+          className="min-h-64 flex-1"
+          disabled={props.disabled}
+          intakeDescription={fileInputSpec.dropzoneDescription}
+          intakeIcon={<Upload aria-hidden="true" />}
+          intakeTitle={fileInputSpec.label}
+          maxFiles={Number.MAX_SAFE_INTEGER}
+          multiple={fileInputSpec.multiple}
+          onFiles={addFiles}
+          title="Input files"
         />
       ) : (
         <FileQueueSurface
-          className={
-            hasDetailSurface ? "max-h-44 shrink-0" : "min-h-44 flex-1"
-          }
-          getIcon={() => <FileText aria-hidden="true" />}
+          actions={(
+            <>
+              <input
+                accept={fileInputSpec.accept}
+                className="sr-only"
+                disabled={props.disabled}
+                multiple={fileInputSpec.multiple}
+                onChange={(event) => {
+                  if (event.currentTarget.files) addFiles(Array.from(event.currentTarget.files));
+                  event.currentTarget.value = "";
+                }}
+                ref={fileInputRef}
+                tabIndex={-1}
+                type="file"
+              />
+              <ToolActionButton action="upload" disabled={props.disabled} onClick={() => fileInputRef.current?.click()}>
+                {fileInputSpec.multiple ? "Upload" : "Replace"}
+              </ToolActionButton>
+            </>
+          )}
+          className="min-h-0 flex-1"
+          description={props.orderFiles ? "Drag to reorder. Files are processed from top to bottom." : undefined}
+          disabled={props.disabled}
+          getIcon={(file) => <FileThumbnail file={file} />}
           getId={workspaceFileId}
           getMetadata={(file) => formatFileSize(file.size)}
           getName={(file) => file.name}
           items={props.input.files}
+          onReorder={props.orderFiles ? (files) => props.onInputChange({ ...props.input, files }) : undefined}
           renderAction={(file) => (
             <Button
               aria-label={`Remove ${file.name}`}
               disabled={props.disabled}
-              onClick={() =>
-                props.onInputChange({
-                  ...props.input,
-                  files: props.input.files.filter((entry) => entry !== file),
-                })
-              }
+              onClick={() => props.onInputChange({ ...props.input, files: props.input.files.filter((entry) => entry !== file) })}
               size="icon"
-              type="button"
               variant="outline"
             >
               <X aria-hidden="true" />
@@ -466,59 +480,53 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           title="Selected files"
         />
       )}
+      {inputIssue ? (
+        <Alert className="m-3" variant="destructive">
+          <AlertTitle>Some files were not added</AlertTitle>
+          <AlertDescription>{inputIssue}</AlertDescription>
+        </Alert>
+      ) : null}
     </Stack>
   ) : (
-    <WorkspaceInputSurface
-      disabled={props.disabled}
-      input={props.input}
-      inputSpec={props.spec.input}
-      onInputChange={props.onInputChange}
-    />
+    <WorkspaceInputSurface disabled={props.disabled} input={props.input} inputSpec={props.spec.input} onInputChange={props.onInputChange} />
   );
-  const detailSurface =
-    hasDetailSurface ? (
-      <Stack className="min-h-[46px] flex-1 [&>*]:h-full [&>section>div]:overflow-y-auto [&>section>header_p]:overflow-visible [&>section>header_p]:text-clip [&>section>header_p]:whitespace-normal [&_[data-surface-state]]:min-h-0">
-        {props.orderFiles ? (
-          <FileOrderSurface
-            disabled={props.disabled}
-            input={props.input}
-            onInputChange={props.onInputChange}
-          />
-        ) : null}
-        <PdfInspectionProvider requestThumbnails={requestThumbnails}>
-          {props.detail?.({
-            disabled: props.disabled ?? false,
-            inspecting,
-            previews,
-          })}
-        </PdfInspectionProvider>
-      </Stack>
-    ) : null;
-  const inputContent = detailSurface ? (
+  const inputContent = hasDetailSurface ? (
     <Stack className="h-full overflow-y-auto max-[1025px]:h-[28rem]">
       {inputSurface}
-      {detailSurface}
+      <Stack className="min-h-[46px] flex-1 [&>*]:h-full [&>section>div]:overflow-y-auto [&>section>header_p]:overflow-visible [&>section>header_p]:text-clip [&>section>header_p]:whitespace-normal [&_[data-surface-state]]:min-h-0">
+        <PdfInspectionProvider requestThumbnails={requestThumbnails}>
+          {props.detail?.({ disabled: props.disabled ?? false, inspecting, previews })}
+        </PdfInspectionProvider>
+      </Stack>
     </Stack>
-  ) : (
-    inputSurface
-  );
+  ) : inputSurface;
   const validationAlert = reason && !hasEmptyFileQueue ? (
     <Alert className="m-3" variant="destructive">
       <AlertTitle>This tool cannot run yet</AlertTitle>
       <AlertDescription>{reason}</AlertDescription>
     </Alert>
   ) : null;
+  const outputImages = useMemo(() => props.result?.render === "files"
+    ? props.result.files.filter((file) => /^image\/(jpeg|png|webp|gif|avif|bmp)$/.test(file.mime))
+    : [], [props.result]);
+  const hasImageGallery = !props.running && !props.resultPreview && outputImages.length > 0;
+  const resultPreview = !props.running && props.result
+    ? props.resultPreview ?? (hasImageGallery
+      ? <MediaOutputGallery key={outputImages.map((file) => file.id).join(":")} files={outputImages} />
+      : null)
+    : null;
   const resultSurface = (
     <WorkspaceSurface
       className="h-full"
-      contentClassName="gap-4 p-4"
+      contentClassName={hasImageGallery ? "min-h-0 overflow-hidden gap-0" : `overflow-y-auto [&>*]:shrink-0 ${resultPreview ? "gap-0" : "gap-4 p-4"} ${props.running || (props.result?.render === "files" && !resultPreview) ? "[&>:first-child]:mt-auto" : !props.result ? "justify-center" : ""}`}
       purpose="result"
       state={props.error ? "error" : "ready"}
       stateDescription={props.error}
       stateTitle="Unable to create the result"
-      scroll="content"
+      scroll="none"
       title="Processed output"
     >
+      {resultPreview}
       {props.running ? (
         <ProcessingStatus
           aria-label={
@@ -551,13 +559,13 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
           }
         />
       ) : props.result?.render === "files" ? (
-        <div className="grid gap-3">
-          {props.result.files.map((file) => (
+        <div className={`grid min-w-0 shrink-0 gap-3 ${resultPreview ? "border-t border-border p-4" : ""}`}>
+          {props.result.files.filter((file) => !hasImageGallery || !outputImages.includes(file)).map((file) => (
             <StoredFileResult file={file} key={`${file.name}-${file.size}`} />
           ))}
           {props.result.inputBytes !== undefined ||
           props.result.outputBytes !== undefined ? (
-            <p className="text-xs text-muted-foreground">
+            <Muted className="text-muted-foreground">
               {props.result.inputBytes !== undefined
                 ? `Input: ${formatFileSize(props.result.inputBytes)}`
                 : null}
@@ -568,7 +576,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
               {props.result.outputBytes !== undefined
                 ? `Output: ${formatFileSize(props.result.outputBytes)}`
                 : null}
-            </p>
+            </Muted>
           ) : null}
         </div>
       ) : props.result ? (
@@ -594,14 +602,13 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     </WorkspaceSurface>
   );
   const resultContent = (
-    <Stack className="h-full">
-      {!hasSettings ? validationAlert : null}
+    <Stack className={hasImageGallery ? "h-full max-[1025px]:h-[26rem]" : "h-full"}>
+      {validationAlert}
       {resultSurface}
     </Stack>
   );
   const settingsContent = (
     <Stack className="h-full">
-      {validationAlert}
       <Stack className="min-h-0 flex-1 [&>*]:h-full">{settingsSurface}</Stack>
     </Stack>
   );
@@ -633,7 +640,7 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
     </div>
   ) : primaryContent;
 
-  if (!hasSettings) return mainContent;
+  if (!hasSideSettings) return mainContent;
 
   return (
     <SplitStack
@@ -641,9 +648,9 @@ export function FileProcessorWorkspace(props: FileProcessorWorkspaceProps) {
       collapseLabel="settings panel"
       collapseSide="secondary"
       collapsible={hasSideSettings}
-      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed ? "secondary" : undefined}
-      defaultSize={70}
-      minSize={52}
+      defaultCollapsed={props.spec.optionsPanel?.defaultCollapsed === false ? undefined : "secondary"}
+      defaultSize={75}
+      minSize={75}
     >
       {mainContent}
       {settingsContent}

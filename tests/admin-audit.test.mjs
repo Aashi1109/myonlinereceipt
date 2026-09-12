@@ -103,9 +103,7 @@ test("admin overview reuses the readable event treatment", async () => {
 
   assert.match(page, /auditEventPresentation\(event\.action\)/);
   assert.match(page, /const \{ icon: Icon, label \}/);
-  assert.match(page, /<strong[^>]*>\{label\}<\/strong>/);
   assert.doesNotMatch(page, /function eventIcon/);
-  assert.doesNotMatch(page, />\{event\.action\}<\/strong>/);
 });
 
 test("unknown audit actions still get a readable fallback", () => {

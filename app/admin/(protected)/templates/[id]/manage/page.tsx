@@ -1,5 +1,10 @@
+import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import {
-  Button,
+  H3,
+  Caption,
+  H1,
+  P,
+  Text,
   Field,
   Input,
   Select,
@@ -63,9 +68,9 @@ export default async function ManageTemplatePage({
           </Link>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate font-heading text-lg font-semibold text-foreground">{template.name}</h1>
+              <H1 className="truncate text-foreground">{template.name}</H1>
               <StatusBadge
-                className="min-h-6 px-2.5 text-[11px] capitalize"
+                className="min-h-6 px-2.5"
                 variant={
                   template.status === "published"
                     ? "success"
@@ -77,9 +82,9 @@ export default async function ManageTemplatePage({
                 {template.status}
               </StatusBadge>
             </div>
-            <p className="mt-1 font-caption text-[11px] text-muted-foreground">
+            <Caption className="block mt-1 text-muted-foreground">
               {template.documentType.replaceAll("-", " ")} · {isAdvanced ? "Advanced" : "Standard"} editor · /{template.slug}
-            </p>
+            </Caption>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -97,19 +102,19 @@ export default async function ManageTemplatePage({
       <div className="mx-auto grid w-full max-w-6xl items-start gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_350px]">
         <main className="grid gap-5">
           <nav className="flex gap-1 border-b border-border" aria-label="Template sections">
-            <span className="border-b-2 border-primary px-3.5 py-2.5 text-sm font-semibold text-foreground">Details</span>
-            <span className="px-3.5 py-2.5 text-sm text-muted-foreground">Versions</span>
-            <span className="px-3.5 py-2.5 text-sm text-muted-foreground">Usage</span>
+            <Text className="border-b-2 border-primary px-3.5 py-2.5 text-foreground">Details</Text>
+            <Text className="px-3.5 py-2.5 text-muted-foreground">Versions</Text>
+            <Text className="px-3.5 py-2.5 text-muted-foreground">Usage</Text>
           </nav>
 
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm" aria-labelledby="template-information-title">
             <div className="border-b border-border p-5">
-              <h2 id="template-information-title" className="font-heading text-base font-semibold text-foreground">
+              <H3 id="template-information-title" className="text-foreground">
                 Template information
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
+              </H3>
+              <Caption className="block mt-1 text-muted-foreground">
                 Metadata used in the admin catalog and template picker.
-              </p>
+              </Caption>
             </div>
             <form action={updateTemplateMetadataAction} className="grid gap-5 p-5">
               <input name="templateId" type="hidden" value={template.id} />
@@ -118,7 +123,7 @@ export default async function ManageTemplatePage({
                   <Input defaultValue={template.name} name="name" required />
                 </Field>
                 <Field description="Permanent" htmlFor="template-slug" label="Slug">
-                  <Input className="bg-muted font-mono text-muted-foreground" readOnly value={template.slug} />
+                  <Input className="bg-muted text-muted-foreground" readOnly value={template.slug} />
                 </Field>
               </div>
               <Field htmlFor="template-description" label="Description" required>
@@ -126,7 +131,7 @@ export default async function ManageTemplatePage({
               </Field>
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field htmlFor="template-document-type" label="Document type">
-                  <Input className="bg-muted capitalize text-muted-foreground" readOnly value={template.documentType.replaceAll("-", " ")} />
+                  <Input className="bg-muted text-muted-foreground" readOnly value={template.documentType.replaceAll("-", " ")} />
                 </Field>
                 <Field htmlFor="template-category" label="Category">
                   <Select defaultValue={template.category} name="category">
@@ -137,23 +142,23 @@ export default async function ManageTemplatePage({
                 </Field>
               </div>
               <div className="flex justify-end border-t border-border pt-5">
-                <Button type="submit">Save changes</Button>
+                <SubmitButton type="submit">Save changes</SubmitButton>
               </div>
             </form>
           </section>
 
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="recent-activity-title">
-            <h2 id="recent-activity-title" className="font-heading text-sm font-semibold text-foreground">Recent activity</h2>
-            <div className="mt-4 grid gap-3 text-sm">
+            <H3 id="recent-activity-title" className="text-foreground">Recent activity</H3>
+            <div className="mt-4 grid gap-3">
               <div className="flex items-center justify-between gap-4">
-                <span>Template updated</span>
-                <time className="font-caption text-[11px] text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
+                <Text>Template updated</Text>
+                <time className="text-muted-foreground" dateTime={template.updatedAt.toISOString()}>
                   {dateFormatter.format(template.updatedAt)}
                 </time>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span>Draft created</span>
-                <time className="font-caption text-[11px] text-muted-foreground" dateTime={template.createdAt.toISOString()}>
+                <Text>Draft created</Text>
+                <time className="text-muted-foreground" dateTime={template.createdAt.toISOString()}>
                   {dateFormatter.format(template.createdAt)}
                 </time>
               </div>
@@ -163,33 +168,33 @@ export default async function ManageTemplatePage({
 
         <aside className="grid gap-4 lg:sticky lg:top-0">
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="lifecycle-title">
-            <h2 id="lifecycle-title" className="font-heading text-base font-semibold text-foreground">Lifecycle</h2>
+            <H3 id="lifecycle-title" className="text-foreground">Lifecycle</H3>
             <div className="mt-5 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold capitalize text-foreground">{template.status}</p>
-                <p className="mt-1 font-caption text-[10px] text-muted-foreground">
+                <P className="text-foreground">{template.status}</P>
+                <Caption className="block mt-1 text-muted-foreground">
                   {template.status === "published" ? "Available in the document picker" : "Not available in the document picker"}
-                </p>
+                </Caption>
               </div>
               <StatusBadge variant={template.status === "published" ? "success" : template.status === "archived" ? "archived" : "warning"}>
                 v{template.version}
               </StatusBadge>
             </div>
             <div className="mt-5 rounded-lg bg-primary/10 p-4">
-              <p className="font-mono text-2xl font-semibold text-primary">v{template.version}</p>
-              <p className="mt-1 font-caption text-[11px] text-muted-foreground">current template version</p>
+              <P className="text-primary">v{template.version}</P>
+              <Caption className="block mt-1 text-muted-foreground">current template version</Caption>
             </div>
             <div className="mt-5 grid gap-2">
               {template.status === "draft" ? (
                 <form action={publishTemplateAction}>
                   <input name="templateId" type="hidden" value={template.id} />
-                  <Button className="w-full" type="submit">Publish template</Button>
+                  <SubmitButton className="w-full" type="submit">Publish template</SubmitButton>
                 </form>
               ) : null}
               {template.status === "published" && !template.isDefault ? (
                 <form action={defaultTemplateAction}>
                   <input name="templateId" type="hidden" value={template.id} />
-                  <Button className="w-full" type="submit" variant="secondary">Set as default</Button>
+                  <SubmitButton className="w-full" type="submit" variant="secondary">Set as default</SubmitButton>
                 </form>
               ) : null}
             </div>
@@ -198,7 +203,7 @@ export default async function ManageTemplatePage({
           <section className="rounded-xl border border-border bg-card p-5 shadow-sm" aria-labelledby="duplicate-title">
             <div className="flex items-center gap-2">
               <Copy aria-hidden="true" className="size-4 text-primary" />
-              <h2 id="duplicate-title" className="font-heading text-sm font-semibold text-foreground">Duplicate template</h2>
+              <H3 id="duplicate-title" className="text-foreground">Duplicate template</H3>
             </div>
             <form action={duplicateTemplateAction} className="mt-4 grid gap-3">
               <input name="templateId" type="hidden" value={template.id} />
@@ -206,21 +211,21 @@ export default async function ManageTemplatePage({
                 <Input defaultValue={`${template.name} Copy`} name="name" required />
               </Field>
               <Field htmlFor="duplicate-slug" label="Unique slug" required>
-                <Input className="font-mono" defaultValue={`${template.slug}-copy`} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
+                <Input  defaultValue={`${template.slug}-copy`} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required />
               </Field>
-              <Button className="w-full" type="submit" variant="secondary">Duplicate template</Button>
+              <SubmitButton className="w-full" type="submit" variant="secondary">Duplicate template</SubmitButton>
             </form>
           </section>
 
           {template.status !== "archived" ? (
             <section className="rounded-xl border border-destructive bg-card p-5" aria-labelledby="archive-title">
-              <h2 id="archive-title" className="font-heading text-sm font-semibold text-destructive">Archive template</h2>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              <H3 id="archive-title" className="text-destructive">Archive template</H3>
+              <Caption className="block mt-2 text-muted-foreground">
                 Existing documents are unaffected. Archived templates cannot create new documents.
-              </p>
+              </Caption>
               <form action={archiveTemplateAction} className="mt-4">
                 <input name="templateId" type="hidden" value={template.id} />
-                <Button type="submit" variant="destructive">Archive template</Button>
+                <SubmitButton type="submit" variant="destructive">Archive template</SubmitButton>
               </form>
             </section>
           ) : null}

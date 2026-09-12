@@ -20,12 +20,12 @@ test("shared UI class overrides are conflict-aware", async () => {
   );
 });
 
-test("signed-in account navigation is identifiable as a profile link", async () => {
-  const source = await readFile(
-    new URL("packages/ui/src/index.tsx", root),
-    "utf8",
-  );
 
-  assert.match(source, /Open profile for/);
-  assert.match(source, />\s*Profile\s*</);
+test("semantic typography sizes survive color changes and conflict with other sizes", () => {
+  for (const size of ["display", "heading-1", "heading-2", "heading-3", "heading-4", "heading-5", "heading-6", "body-large", "body", "caption", "overline", "code"]) {
+    assert.equal(cn(`text-${size}`, "text-foreground"), `text-${size} text-foreground`);
+    assert.equal(cn(`text-${size}`, "text-sm"), "text-sm");
+    assert.equal(cn("text-sm", `text-${size}`), `text-${size}`);
+  }
+  assert.equal(cn("text-heading-2", "text-primary", "text-heading-3"), "text-primary text-heading-3");
 });

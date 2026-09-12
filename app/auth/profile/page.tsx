@@ -1,6 +1,10 @@
 import { SmartToolsFooter } from "@/components/smarttools/SmartToolsFooter";
 import { auth } from "@smarttools/auth";
+import { isAdminUser } from "@smarttools/auth/session";
 import {
+  H1,
+  Muted,
+  Overline,
   AccountNavigation,
   AppContainer,
   ProductHeader,
@@ -37,13 +41,15 @@ export default async function ProfilePage({
     );
   }
 
+  const isAdmin = await isAdminUser(session.user.id);
+
   return (
     <div className="auth-shell min-h-screen bg-background text-foreground">
       <ProductHeader
         actions={
           <AccountNavigation
             returnTo={returnTo}
-            user={{ name: session.user.name }}
+            user={{ name: session.user.name, isAdmin }}
           />
         }
         className="auth-header sticky top-0 z-50"
@@ -55,13 +61,13 @@ export default async function ProfilePage({
           <div className="-ml-3">
             <ProfileBackLink fallbackHref={returnTo} />
           </div>
-          <p className="mt-6 text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+          <Overline className="block mt-6 text-primary">
             Account settings
-          </p>
+          </Overline>
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-foreground">
+            <H1 className="text-foreground">
               Your SmartTools account
-            </h1>
+            </H1>
             <StatusBadge
               variant={session.user.emailVerified ? "success" : "warning"}
             >
@@ -70,9 +76,9 @@ export default async function ProfilePage({
                 : "Verification pending"}
             </StatusBadge>
           </div>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          <Muted className="mt-2 max-w-2xl text-muted-foreground">
             Update your profile, sign-in methods, and account security.
-          </p>
+          </Muted>
         </header>
         <ProfileManager
           currentSessionId={session.session.id}

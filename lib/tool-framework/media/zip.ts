@@ -3,6 +3,7 @@
  * output is a set rather than a single download.
  */
 
+import { readArtifact } from "../artifacts.ts";
 import type {
   ArtifactSource,
   ArtifactWriteInput,
@@ -23,6 +24,8 @@ type ArtifactBatchOptions = {
   readonly archiveName: string;
   readonly count: number;
   readonly forceArchive?: boolean;
+  /** Keep full-resolution files for per-file preview/download as well as the ZIP. */
+  readonly retainEntries?: boolean;
 };
 
 type AddArtifact = (input: ArtifactWriteInput) => Promise<void>;
@@ -75,6 +78,31 @@ export async function createArtifactBatchWriter(
         return [output];
       },
       async abort() {},
+    };
+  }
+
+  if (options.retainEntries) {
+    const entries: StoredToolArtifact[] = [];
+    let archive: StreamingZip | undefined;
+    return {
+      async add(input) {
+        ctx.signal.throwIfAborted();
+        if (entries.length >= options.count) throw new RangeError("Artifact batch produced too many files.");
+        entries.push(await ctx.writeArtifact(input));
+      },
+      async finish() {
+        ctx.signal.throwIfAborted();
+        if (entries.length !== options.count) throw new RangeError("Artifact batch did not produce every file.");
+        // The artifact writer serializes writes. Finish individual files before
+        // opening the ZIP stream, then read back one file at a time.
+        archive = await createStreamingZip(ctx, options.archiveName);
+        for (const entry of entries) {
+          ctx.signal.throwIfAborted();
+          await archive.add(entry.name, (await readArtifact(entry)).stream());
+        }
+        return [await archive.finish(), ...entries];
+      },
+      async abort(reason) { await archive?.abort(reason); },
     };
   }
 

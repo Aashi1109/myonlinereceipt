@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
+import {
+  H1,
+  Muted,
+  Overline,
+  P,
+  TextLink, AlertBanner, Button, Card, Field, Input } from "@smarttools/ui";
 import { authClient } from "../_lib/authClient";
 import { getSafeAuthError, isValidPassword } from "../_lib/security";
 
@@ -49,15 +54,15 @@ export function ResetPasswordForm({
   if (!token) {
     return (
       <Card className="auth-card w-full max-w-[440px] gap-[18px]">
-        <p className="font-caption text-xs font-semibold tracking-[0.05em] text-primary uppercase">
+        <Overline className="block text-primary">
           Invalid link
-        </p>
-        <h1 className="font-heading text-[26px] font-semibold tracking-[-0.025rem]">
+        </Overline>
+        <H1 >
           Request a new reset email.
-        </h1>
-        <p className="text-sm leading-6 text-muted-foreground">
+        </H1>
+        <Muted className="text-muted-foreground">
           This reset link is missing, invalid, or has expired.
-        </p>
+        </Muted>
         <Button asChild className="w-full">
           <a href="/auth?mode=forgot">Return to account recovery</a>
         </Button>
@@ -68,15 +73,15 @@ export function ResetPasswordForm({
   if (complete) {
     return (
       <Card className="auth-card w-full max-w-[440px] gap-[18px]">
-        <p className="font-caption text-xs font-semibold tracking-[0.05em] text-success uppercase">
+        <Overline className="block text-success">
           Password updated
-        </p>
-        <h1 className="font-heading text-[26px] font-semibold tracking-[-0.025rem]">
+        </Overline>
+        <H1 >
           Your new password is ready.
-        </h1>
-        <p className="text-sm leading-6 text-muted-foreground">
+        </H1>
+        <Muted className="text-muted-foreground">
           Sign in again. Other sessions were revoked when the reset completed.
-        </p>
+        </Muted>
         <Button asChild className="w-full">
           <a href={`/auth?returnTo=${encodeURIComponent(returnTo)}`}>
             Continue to sign in
@@ -89,8 +94,8 @@ export function ResetPasswordForm({
   return (
     <Card className="auth-card w-full max-w-[440px] gap-[18px]">
       <div className="auth-heading">
-        <h1>Choose a new password</h1>
-        <p>Use 12–128 characters. Resetting revokes your existing sessions.</p>
+        <H1>Choose a new password</H1>
+        <P>Use 12–128 characters. Resetting revokes your existing sessions.</P>
       </div>
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
       <form className="grid gap-[18px]" onSubmit={submit}>

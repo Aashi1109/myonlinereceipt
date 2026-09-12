@@ -182,6 +182,34 @@ export function mergeRoleAccess(
   return merged;
 }
 
+export function getMissingPermissionPrerequisite(
+  access: Access,
+  resource: string,
+  action: string,
+): { resource: string; action: string } | null {
+  if (resource === "admin") return null;
+  if (access.admin?.enter !== true) return { resource: "admin", action: "enter" };
+  if (action !== "view" && access[resource]?.view !== true) {
+    return { resource, action: "view" };
+  }
+  return null;
+}
+
+export function assertAccessPrerequisites(access: unknown): asserts access is Access {
+  assertValidAccess(access);
+  for (const [resource, actions] of Object.entries(access)) {
+    for (const [action, granted] of Object.entries(actions)) {
+      if (!granted) continue;
+      const prerequisite = getMissingPermissionPrerequisite(access, resource, action);
+      if (prerequisite) {
+        throw new Error(
+          `Permission ${resource}.${action} requires ${prerequisite.resource}.${prerequisite.action}.`,
+        );
+      }
+    }
+  }
+}
+
 export function hasPermission(
   access: Access,
   resource: string,
@@ -191,7 +219,8 @@ export function hasPermission(
   return (
     Object.hasOwn(catalog, resource) &&
     Object.hasOwn(catalog[resource].actions, action) &&
-    access[resource]?.[action] === true
+    access[resource]?.[action] === true &&
+    getMissingPermissionPrerequisite(access, resource, action) === null
   );
 }
 

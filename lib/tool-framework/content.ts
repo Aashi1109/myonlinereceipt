@@ -22,6 +22,14 @@ import type { ToolContentRow } from "@smarttools/database";
 
 export type { ToolContentRow };
 
+export function hasDraftToolContent(row: ToolContentRow | null): boolean {
+  if (!row || row.publishedAt !== null) return false;
+  // Seed rows contain no overrides; unpublished alone does not mean draft.
+  return [row.category, row.seoTitle, row.seoDescription].some((value) => Boolean(value?.trim()))
+    || Boolean(row.keywords?.some((keyword) => keyword.trim()))
+    || row.contentDoc != null;
+}
+
 /** The only `contentDoc` / `docVersion` shape this code understands. */
 export const TOOL_CONTENT_DOC_VERSION = 1;
 

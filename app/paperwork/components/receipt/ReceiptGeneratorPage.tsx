@@ -11,8 +11,15 @@ import type {
   DocumentTemplate,
 } from "@smarttools/invoice-templates";
 import {
+  FieldError,
+  H3,
+  H4,
+  Overline,
+  P,
+  Text,
   AlertBanner,
   Button,
+  ToolActionButton,
   Card,
   CheckboxControl,
   IconTile,
@@ -30,11 +37,9 @@ import {
   FileText,
   Clock,
   Printer,
-  FileDown,
   RefreshCw,
   Plus,
   Trash2,
-  Copy,
   Check,
   Sparkles,
   ArrowRight,
@@ -297,7 +302,7 @@ export default function ReceiptGeneratorPage({
   };
 
   return (
-    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="receipt-generator-wrapper">
+    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="receipt-generator-wrapper">
 
       {/* 1. Header Banner */}
       <ToolPageHeader
@@ -338,7 +343,7 @@ export default function ReceiptGeneratorPage({
       {advancedTemplates.length ? (
         <Card className="mb-6 grid gap-2 p-4 print:hidden">
           <Label
-            className="text-xs font-black uppercase tracking-wider text-muted-foreground"
+            className="text-muted-foreground"
             htmlFor="receipt-template-mode"
           >
             Receipt template
@@ -379,12 +384,12 @@ export default function ReceiptGeneratorPage({
               <IconTile className="rounded-full border border-blue-100 bg-blue-50 text-blue-600" size="sm">
                 <RefreshCw className="w-5 h-5 animate-spin-reverse" />
               </IconTile>
-              <h4 className="font-extrabold text-slate-900 text-lg">Import Active Invoice Draft?</h4>
+              <H4 className="text-slate-900">Import Active Invoice Draft?</H4>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+            <P className="text-slate-600">
               This action transfers your business details, client details, line items, and totals from the active invoice draft into your receipt maker. Any existing unsaved receipt data will be updated.
-            </p>
-            <div className="flex justify-end gap-2 pt-2 text-xs font-semibold">
+            </P>
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 onClick={() => setShowImportConfirm(false)}
                 size="sm"
@@ -413,10 +418,10 @@ export default function ReceiptGeneratorPage({
         value={activeTab}
       >
         <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
-          <TabsTrigger className="whitespace-normal py-2 text-xs" value="edit">
+          <TabsTrigger className="whitespace-normal py-2" value="edit">
             1. Edit Fields
           </TabsTrigger>
-          <TabsTrigger className="whitespace-normal py-2 text-xs" value="preview">
+          <TabsTrigger className="whitespace-normal py-2" value="preview">
             2. Live Design Preview
           </TabsTrigger>
         </TabsList>
@@ -432,19 +437,19 @@ export default function ReceiptGeneratorPage({
 
             {/* Business (Seller) Segment */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 1. Seller / Provider Info
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-name">Company / Seller Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-name">Company / Seller Name *</Label>
                   <Input
                     aria-errormessage={errors["business.name"] ? "receipt-seller-name-error" : undefined}
                     type="text"
                     required
                     placeholder="e.g. Blue Ridge Web Studio"
                     aria-invalid={Boolean(errors["business.name"])}
-                    className={`text-xs font-semibold ${errors["business.name"] ? "bg-destructive/5" : ""}`}
+                    className={` ${errors["business.name"] ? "bg-destructive/5" : ""}`}
                     id="receipt-seller-name"
                     value={data.business.name}
                     onChange={(e) => {
@@ -453,26 +458,25 @@ export default function ReceiptGeneratorPage({
                     }}
                   />
                   {errors["business.name"] && (
-                    <p className="mt-1 text-[10px] font-bold text-destructive" id="receipt-seller-name-error" role="alert">{errors["business.name"]}</p>
+                    <FieldError className="mt-1 text-destructive" id="receipt-seller-name-error" role="alert">{errors["business.name"]}</FieldError>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-tax-id">Tax ID / EIN (Optional)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-tax-id">Tax ID / EIN (Optional)</Label>
                   <Input
                     type="text"
                     placeholder="e.g. 12-3456789"
-                    className="text-xs font-semibold"
                     id="receipt-seller-tax-id"
                     value={data.business.taxId || ""}
                     onChange={(e) => setData({ ...data, business: { ...data.business, taxId: e.target.value } })}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-address">Address Location</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-address">Address Location</Label>
                   <Input
                     type="text"
                     placeholder="e.g. 404 Ridge Point Lane"
-                    className="mb-2 text-xs font-semibold"
+                    className="mb-2"
                     id="receipt-seller-address"
                     value={data.business.addressLine1}
                     onChange={(e) => setData({ ...data, business: { ...data.business, addressLine1: e.target.value } })}
@@ -482,7 +486,6 @@ export default function ReceiptGeneratorPage({
                       aria-label="Seller city"
                       type="text"
                       placeholder="City"
-                      className="text-xs font-semibold"
                       value={data.business.city}
                       onChange={(e) => setData({ ...data, business: { ...data.business, city: e.target.value } })}
                     />
@@ -490,7 +493,6 @@ export default function ReceiptGeneratorPage({
                       aria-label="Seller state"
                       type="text"
                       placeholder="State"
-                      className="text-xs font-semibold"
                       value={data.business.state}
                       onChange={(e) => setData({ ...data, business: { ...data.business, state: e.target.value } })}
                     />
@@ -498,29 +500,26 @@ export default function ReceiptGeneratorPage({
                       aria-label="Seller ZIP code"
                       type="text"
                       placeholder="Zip Code"
-                      className="text-xs font-semibold"
                       value={data.business.zipCode}
                       onChange={(e) => setData({ ...data, business: { ...data.business, zipCode: e.target.value } })}
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-email">Sender Email</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-email">Sender Email</Label>
                   <Input
                     type="email"
                     placeholder="e.g. info@domain.com"
-                    className="text-xs font-semibold"
                     id="receipt-seller-email"
                     value={data.business.email}
                     onChange={(e) => setData({ ...data, business: { ...data.business, email: e.target.value } })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-seller-phone">Support Phone</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-seller-phone">Support Phone</Label>
                   <Input
                     type="text"
                     placeholder="+1 (555) 000-0000"
-                    className="text-xs font-semibold"
                     id="receipt-seller-phone"
                     value={data.business.phone}
                     onChange={(e) => setData({ ...data, business: { ...data.business, phone: e.target.value } })}
@@ -531,19 +530,19 @@ export default function ReceiptGeneratorPage({
 
             {/* Customer (Payer) Segment */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 2. Payer / Client Info
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-name">Client Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-name">Client Name *</Label>
                   <Input
                     aria-errormessage={errors["customer.name"] ? "receipt-client-name-error" : undefined}
                     type="text"
                     required
                     placeholder="e.g. Sarah Jenkins"
                     aria-invalid={Boolean(errors["customer.name"])}
-                    className={`text-xs font-semibold ${errors["customer.name"] ? "bg-destructive/5" : ""}`}
+                    className={` ${errors["customer.name"] ? "bg-destructive/5" : ""}`}
                     id="receipt-client-name"
                     value={data.customer.name}
                     onChange={(e) => {
@@ -552,26 +551,25 @@ export default function ReceiptGeneratorPage({
                     }}
                   />
                   {errors["customer.name"] && (
-                    <p className="mt-1 text-[10px] font-bold text-destructive" id="receipt-client-name-error" role="alert">{errors["customer.name"]}</p>
+                    <FieldError className="mt-1 text-destructive" id="receipt-client-name-error" role="alert">{errors["customer.name"]}</FieldError>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-company">Company / Association</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-company">Company / Association</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Acme Corp"
-                    className="text-xs font-semibold"
                     id="receipt-client-company"
                     value={data.customer.company}
                     onChange={(e) => setData({ ...data, customer: { ...data.customer, company: e.target.value } })}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-client-address">Billing Street Address</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-client-address">Billing Street Address</Label>
                   <Input
                     type="text"
                     placeholder="822 Broad Street"
-                    className="mb-2 text-xs font-semibold"
+                    className="mb-2"
                     id="receipt-client-address"
                     value={data.customer.addressLine1}
                     onChange={(e) => setData({ ...data, customer: { ...data.customer, addressLine1: e.target.value } })}
@@ -581,7 +579,6 @@ export default function ReceiptGeneratorPage({
                       aria-label="Client city"
                       type="text"
                       placeholder="City"
-                      className="text-xs font-semibold"
                       value={data.customer.city}
                       onChange={(e) => setData({ ...data, customer: { ...data.customer, city: e.target.value } })}
                     />
@@ -589,7 +586,6 @@ export default function ReceiptGeneratorPage({
                       aria-label="Client state"
                       type="text"
                       placeholder="State"
-                      className="text-xs font-semibold"
                       value={data.customer.state}
                       onChange={(e) => setData({ ...data, customer: { ...data.customer, state: e.target.value } })}
                     />
@@ -597,7 +593,6 @@ export default function ReceiptGeneratorPage({
                       aria-label="Client ZIP code"
                       type="text"
                       placeholder="Zip Code"
-                      className="text-xs font-semibold"
                       value={data.customer.zipCode}
                       onChange={(e) => setData({ ...data, customer: { ...data.customer, zipCode: e.target.value } })}
                     />
@@ -608,34 +603,31 @@ export default function ReceiptGeneratorPage({
 
             {/* Receipt Details Segment */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 3. Receipt Coordinates
-              </h3>
+              </H3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-number">Receipt Number *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-number">Receipt Number *</Label>
                   <Input
                     type="text"
-                    className="text-xs font-bold"
                     id="receipt-number"
                     value={data.receiptNumber}
                     onChange={(e) => setData({ ...data, receiptNumber: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-date">Receipt Date *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-date">Receipt Date *</Label>
                   <Input
                     type="date"
-                    className="text-xs font-semibold"
                     id="receipt-date"
                     value={data.receiptDate}
                     onChange={(e) => setData({ ...data, receiptDate: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-category">Receipt Category</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-category">Receipt Category</Label>
                   <Select
-                    className="text-xs font-bold"
                     id="receipt-category"
                     value={data.receiptType}
                     onChange={(e) => setData({ ...data, receiptType: e.target.value as any })}
@@ -649,31 +641,28 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-related-invoice">Related Invoice #</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-related-invoice">Related Invoice #</Label>
                   <Input
                     type="text"
                     placeholder="e.g. INV-2026-001"
-                    className="text-xs font-semibold"
                     id="receipt-related-invoice"
                     value={data.relatedInvoiceNumber}
                     onChange={(e) => setData({ ...data, relatedInvoiceNumber: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-transaction-id">Transaction/Ref ID</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-transaction-id">Transaction/Ref ID</Label>
                   <Input
                     type="text"
                     placeholder="e.g. TXN-99812A"
-                    className="text-xs font-semibold"
                     id="receipt-transaction-id"
                     value={data.transactionId}
                     onChange={(e) => setData({ ...data, transactionId: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-status">Payment Status</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-status">Payment Status</Label>
                   <Select
-                    className="text-xs font-bold"
                     id="receipt-payment-status"
                     value={data.paymentStatus}
                     onChange={(e) => setData({ ...data, paymentStatus: e.target.value as any })}
@@ -689,9 +678,9 @@ export default function ReceiptGeneratorPage({
             {/* Line Items Grid Rows */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+                <H3 className="text-slate-500">
                   4. Items &amp; Services Paid
-                </h3>
+                </H3>
                 <Button
                   onClick={handleAddItem}
                   size="sm"
@@ -706,11 +695,10 @@ export default function ReceiptGeneratorPage({
                 {data.lineItems.map((item, idx) => (
                   <div key={item.id} className="flex flex-col md:flex-row gap-3 p-3 bg-slate-50 border border-slate-200/60 rounded-xl relative">
                     <div className="grow">
-                      <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>Description *</Label>
+                      <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-description`}>Description *</Label>
                       <Input
                         type="text"
                         placeholder="e.g. Strategic Development Consultation"
-                        className="text-xs font-medium"
                         id={`receipt-item-${item.id}-description`}
                         value={item.description}
                         onChange={(e) => handleItemChange(item.id, "description", e.target.value)}
@@ -718,29 +706,28 @@ export default function ReceiptGeneratorPage({
                     </div>
                     <div className="grid grid-cols-3 gap-2 w-full md:w-auto shrink-0 md:max-w-xs">
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>Qty</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-quantity`}>Qty</Label>
                         <Input
                           type="number"
                           min="1"
-                          className="text-center text-xs font-bold"
+                          className="text-center"
                           id={`receipt-item-${item.id}-quantity`}
                           value={item.quantity}
                           onChange={(e) => handleItemChange(item.id, "quantity", e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>Rate ($)</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`receipt-item-${item.id}-rate`}>Rate ($)</Label>
                         <Input
                           type="number"
                           placeholder="0.00"
-                          className="text-xs font-bold"
                           id={`receipt-item-${item.id}-rate`}
                           value={item.unitPrice}
                           onChange={(e) => handleItemChange(item.id, "unitPrice", e.target.value)}
                         />
                       </div>
                       <div className="flex flex-col items-center justify-center pt-2">
-                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Tax</span>
+                        <Overline className="text-slate-400 mb-0.5">Tax</Overline>
                         <CheckboxControl
                           aria-label={`Taxable receipt item ${idx + 1}`}
                           className="size-4 rounded border-input accent-primary"
@@ -768,14 +755,13 @@ export default function ReceiptGeneratorPage({
 
             {/* Calculations & payment settings */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 5. Total Adjustments &amp; Paid Route
-              </h3>
+              </H3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-type">Discount Type</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-type">Discount Type</Label>
                   <Select
-                    className="text-xs font-bold"
                     id="receipt-discount-type"
                     value={data.discountType}
                     onChange={(e) => setData({ ...data, discountType: e.target.value as any, discountValue: 0 })}
@@ -787,12 +773,11 @@ export default function ReceiptGeneratorPage({
                 </div>
                 {data.discountType !== "none" && (
                   <div>
-                    <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-discount-value">
+                    <Label className="block text-slate-400 mb-1" htmlFor="receipt-discount-value">
                       {data.discountType === "percent" ? "Percentage Off (%)" : "Amount Deducted ($)"}
                     </Label>
                     <Input
                       type="number"
-                      className="text-xs font-bold"
                       id="receipt-discount-value"
                       value={data.discountValue}
                       onChange={(e) => setData({ ...data, discountValue: Math.max(0, Number(e.target.value)) })}
@@ -800,22 +785,20 @@ export default function ReceiptGeneratorPage({
                   </div>
                 )}
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-rate">Sales Tax rate (%)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-rate">Sales Tax rate (%)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     placeholder="0.00"
-                    className="text-xs font-bold"
                     id="receipt-tax-rate"
                     value={data.salesTaxRate}
                     onChange={(e) => setData({ ...data, salesTaxRate: Math.max(0, Number(e.target.value)) })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tax-label">sales tax Label</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tax-label">sales tax Label</Label>
                   <Input
                     type="text"
-                    className="text-xs font-semibold"
                     id="receipt-tax-label"
                     value={data.salesTaxLabel}
                     onChange={(e) => setData({ ...data, salesTaxLabel: e.target.value })}
@@ -825,31 +808,28 @@ export default function ReceiptGeneratorPage({
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-tip">Tip / Gratuity ($)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-tip">Tip / Gratuity ($)</Label>
                   <Input
                     type="number"
                     placeholder="0.00"
-                    className="text-xs font-bold"
                     id="receipt-tip"
                     value={data.tip}
                     onChange={(e) => setData({ ...data, tip: Math.max(0, Number(e.target.value)) })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-additional-fee">Additional Fee ($)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-additional-fee">Additional Fee ($)</Label>
                   <Input
                     type="number"
                     placeholder="0.00"
-                    className="text-xs font-bold"
                     id="receipt-additional-fee"
                     value={data.additionalFee}
                     onChange={(e) => setData({ ...data, additionalFee: Math.max(0, Number(e.target.value)) })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-payment-method">Payment Method</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-payment-method">Payment Method</Label>
                   <Select
-                    className="text-xs font-bold"
                     id="receipt-payment-method"
                     value={data.paymentMethod}
                     onChange={(e) => setData({ ...data, paymentMethod: e.target.value })}
@@ -865,11 +845,10 @@ export default function ReceiptGeneratorPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-received-by">Received By</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-received-by">Received By</Label>
                   <Input
                     type="text"
                     placeholder="Staff/Agent Name"
-                    className="text-xs font-semibold"
                     id="receipt-received-by"
                     value={data.receivedBy}
                     onChange={(e) => setData({ ...data, receivedBy: e.target.value })}
@@ -880,15 +859,15 @@ export default function ReceiptGeneratorPage({
 
             {/* Custom Notes terms */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 6. Custom Footnotes
-              </h3>
+              </H3>
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-notes">Memo / Internal Notes</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-notes">Memo / Internal Notes</Label>
                   <Textarea
                     rows={2}
-                    className="min-h-20 text-xs font-medium"
+                    className="min-h-20"
                     id="receipt-notes"
                     placeholder="Details about project sign-offs, milestones compliance or policy notes."
                     value={data.notes}
@@ -896,10 +875,9 @@ export default function ReceiptGeneratorPage({
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="receipt-thank-you">Thank-You Sign-off Message</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="receipt-thank-you">Thank-You Sign-off Message</Label>
                   <Input
                     type="text"
-                    className="text-xs font-semibold"
                     id="receipt-thank-you"
                     value={data.thankYouMessage}
                     onChange={(e) => setData({ ...data, thankYouMessage: e.target.value })}
@@ -919,18 +897,18 @@ export default function ReceiptGeneratorPage({
         </div>
 
         {/* Live design theme selector + Visual render block */}
-        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 leading-relaxed ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
+        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
 
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
-            <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold border-b border-slate-100 pb-2">
-              <span>RECEIPT VISUAL LAYOUT</span>
+            <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
+              <Text>RECEIPT VISUAL LAYOUT</Text>
               <StatusBadge variant="success">
                 {selectedAdvancedTemplate?.name ?? "Built-in layout"}
               </StatusBadge>
             </div>
 
             {/* Design preset layout options */}
-            <div className="grid grid-cols-5 gap-1 pt-1 text-[10px] font-bold">
+            <div className="grid grid-cols-5 gap-1 pt-1">
               {[
                 { key: "classic", label: "Classic" },
                 { key: "modern", label: "Modern" },
@@ -945,7 +923,7 @@ export default function ReceiptGeneratorPage({
                     setSelectedAdvancedTemplateId("");
                     setPdfError("");
                   }}
-                  className="h-auto rounded-lg py-1.5 uppercase"
+                  className="h-auto rounded-lg py-1.5"
                   size="sm"
                   type="button"
                   variant={selectedTheme === themeOpt.key ? "strong" : "secondary"}
@@ -958,7 +936,7 @@ export default function ReceiptGeneratorPage({
             {advancedTemplates.length ? (
               <div>
                 <Label
-                  className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500"
+                  className="mb-1 block text-slate-500"
                   htmlFor="receipt-published-template"
                 >
                   Published custom template
@@ -982,17 +960,13 @@ export default function ReceiptGeneratorPage({
             ) : null}
 
             <div className="grid grid-cols-2 gap-2 pt-2">
-              <Button
-                className="w-full"
+              <ToolActionButton
+                action="download"
                 disabled={pdfAction}
+                icon={selectedAdvancedTemplate ? undefined : <Printer />}
                 onClick={() => void handlePrint()}
                 type="button"
               >
-                {selectedAdvancedTemplate ? (
-                  <FileDown className="w-4 h-4" />
-                ) : (
-                  <Printer className="w-4 h-4" />
-                )}
                 <span>
                   {pdfAction
                     ? "Generating…"
@@ -1000,27 +974,26 @@ export default function ReceiptGeneratorPage({
                       ? "Download PDF"
                       : "Print / Save PDF"}
                 </span>
-              </Button>
-              <Button
-                className="w-full"
+              </ToolActionButton>
+              <ToolActionButton
+                action="copy"
+                icon={copied ? <Check /> : undefined}
                 onClick={handleCopySummary}
                 type="button"
-                variant="secondary"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-600 animate-pulse" /> : <Copy className="w-4 h-4" />}
                 <span>{copied ? "Copied!" : "Copy Summary"}</span>
-              </Button>
+              </ToolActionButton>
             </div>
             {pdfError ? (
-              <p className="text-xs font-bold text-destructive" role="alert">
+              <P className="text-destructive" role="alert">
                 {pdfError}
-              </p>
+              </P>
             ) : null}
-            <p className="text-[10px] text-slate-500 font-medium text-center">
+            <P className="text-slate-500 text-center">
               {selectedAdvancedTemplate
                 ? "The downloaded PDF uses your published custom layout and current receipt data."
                 : "Print outputs generate vector-scalable standard Letter size paper versions immediately."}
-            </p>
+            </P>
           </Card>
 
           {/* Letter layout block preview */}
@@ -1248,35 +1221,35 @@ export default function ReceiptGeneratorPage({
 
       {/* 5. Frequently Asked Questions (FAQ) Section - SEO Content */}
       <div className="mt-16 border-t border-slate-200/80 pt-12 space-y-6 max-w-4xl mx-auto print:hidden" id="receipt-seo-section">
-        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight text-center font-sans">
+        <H3 className="text-slate-900 text-center">
           Frequently Answered Inquiries (FAQ)
-        </h3>
+        </H3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed font-semibold">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600">
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Are standard receipts created here totally free?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Are standard receipts created here totally free?</H4>
+            <P>
               Yes, absolutely! Unlike cloud suites, SmartTools Paperwork does not request payment details or impose draft limits.
               You can issue PDF documents free forever.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Can I convert a paid invoice directly into a receipt?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Can I convert a paid invoice directly into a receipt?</H4>
+            <P>
               Certainly! Using our smart local data bridge, click "Import Invoice Draft" to pull previous project line items and seller setups instantly.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Is my customer's privacy preserved securely?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Is my customer's privacy preserved securely?</H4>
+            <P>
               100% yes. Your inputs never float to backup cloud vaults. Everything processes offline in your sandbox browser.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Under what conditions should I use this receipt tool?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Under what conditions should I use this receipt tool?</H4>
+            <P>
               Only for genuine settled transactions from your own contracting business block. Keep legal compliance folders secure.
-            </p>
+            </P>
           </div>
         </div>
       </div>

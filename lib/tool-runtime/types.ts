@@ -157,7 +157,7 @@ export type ToolDefinition = {
 export type ToolPageComponentProps = {
   account: {
     returnTo: string;
-    user: { name: string } | null;
+    user: { name: string; isAdmin?: boolean } | null;
   };
   category: string;
   definitionKey: string;

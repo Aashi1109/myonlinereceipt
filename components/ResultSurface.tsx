@@ -1,12 +1,12 @@
 "use client";
 
 import { Upload } from "lucide-react";
-import { StatusBadge } from "@smarttools/ui";
 
 import {
   getResultCount,
   ResultActions,
   ResultView,
+  type ResultViewProps,
 } from "@/components/ResultView";
 import { WorkspaceSurface } from "@/components/Surfaces";
 import type { ToolResult } from "@/lib/tool-framework/result";
@@ -14,6 +14,7 @@ import type { ToolSpec } from "@/lib/tool-framework/spec";
 
 export interface ResultSurfaceProps {
   error?: string;
+  initialJsonView?: ResultViewProps["initialJsonView"];
   result: ToolResult | null;
   running?: boolean;
   spec: ToolSpec;
@@ -23,6 +24,7 @@ export interface ResultSurfaceProps {
 
 export function ResultSurface({
   error,
+  initialJsonView,
   result,
   running = false,
   spec,
@@ -41,14 +43,7 @@ export function ResultSurface({
     cardJson || (result?.render !== "json-tree" && (spec.capabilities?.copy || spec.capabilities?.download)),
   );
   const jsonHeader = result?.render === "json-tree" && !cardJson ? (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className="truncate font-caption text-xs font-extrabold tracking-[0.06em] uppercase">
-        {title}
-      </span>
-      <StatusBadge className="shrink-0" variant="success">
-        {resultStatus}
-      </StatusBadge>
-    </div>
+    <span className="sr-only">{title}</span>
   ) : undefined;
   return (
     <WorkspaceSurface
@@ -57,7 +52,6 @@ export function ResultSurface({
           canCopy={cardJson || Boolean(spec.capabilities?.copy)}
           canDownload={cardJson || Boolean(spec.capabilities?.download)}
           result={result}
-          variant={variant === "card" ? "link" : "outline"}
         />
       ) : undefined}
       className="h-full"
@@ -75,7 +69,7 @@ export function ResultSurface({
       title={title}
       variant={variant}
     >
-      {result ? <ResultView hideJsonHeader={cardJson} jsonHeader={jsonHeader} result={result} /> : null}
+      {result ? <ResultView hideJsonHeader={cardJson} initialJsonView={initialJsonView} jsonHeader={jsonHeader} result={result} /> : null}
     </WorkspaceSurface>
   );
 }

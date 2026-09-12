@@ -143,9 +143,8 @@ async function runJob(message: ToolWorkerRequest): Promise<void> {
 }
 
 /**
- * Renders page previews for a document. Whether a tool wants them is declared
- * by its own spec (`input.inspect`) and by nothing else — this file resolves a
- * folder as a module path and never compares one against a literal.
+ * Renders page previews for a document. Input inspection follows the tool's
+ * spec; generated PDF output is validated by the PDF renderer itself.
  *
  * `pdfRender` is imported dynamically and only here: it owns `pdfjs-dist`, so
  * keeping it behind this branch keeps the vendor chunk off every other job.
@@ -167,19 +166,21 @@ async function inspectJob(message: ToolWorkerInspect): Promise<void> {
     );
     const spec = readSpec(specModule);
     signal.throwIfAborted();
-    if (
-      spec.input.kind !== "files" ||
-      spec.input.inspect !== true ||
-      spec.input.engine !== "pdf"
-    ) {
-      throw new ToolError(
-        "inspection-unsupported",
-        "This tool does not use page previews.",
-      );
+    if (message.source !== "output") {
+      if (
+        spec.input.kind !== "files" ||
+        spec.input.inspect !== true ||
+        spec.input.engine !== "pdf"
+      ) {
+        throw new ToolError(
+          "inspection-unsupported",
+          "This tool does not use page previews.",
+        );
+      }
+      // Input previews apply the same trust boundaries as the run path.
+      await assertRunnableFiles(spec, message.files, signal);
+      assertRunnableText(spec, { text: undefined, secondary: undefined });
     }
-    // The same trust boundaries the run path applies, in the same order.
-    await assertRunnableFiles(spec, message.files, signal);
-    assertRunnableText(spec, { text: undefined, secondary: undefined });
     const file = message.files[0];
     if (!file) throw new ToolError("no-files", "Choose at least one file.");
     const { openPdfInspectionSession } = await import("./media/pdfRender");
@@ -210,7 +211,7 @@ async function thumbnailJob(message: ToolWorkerThumbnailRequest): Promise<void> 
   const current = inspection;
   if (!current || current.jobId !== message.jobId) return;
   try {
-    const previews = await current.session.renderThumbnails(message.pageNumbers);
+    const previews = await current.session.renderThumbnails(message.pageNumbers, message.renderWidth);
     if (inspection !== current || current.controller.signal.aborted) return;
     scope.postMessage(
       { type: "thumbnails", jobId: message.jobId, previews },

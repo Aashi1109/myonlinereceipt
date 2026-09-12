@@ -183,6 +183,7 @@ function SplitStack({
   const [collapsed, setCollapsed] = useState<SplitCollapseSide | null>(
     collapsible ? defaultCollapsed ?? null : null,
   );
+  const [animateCollapse, setAnimateCollapse] = useState(false);
   const narrow = useNarrowWorkbench();
   const stacked = orientation === "horizontal" && narrow;
 
@@ -203,10 +204,15 @@ function SplitStack({
 
   function toggleCollapsedPane() {
     if (!collapsible) return;
+    if (stacked) {
+      setCollapsed((current) => current ? null : collapseSide);
+      return;
+    }
     const panel =
       collapseSide === "primary" ? primaryPanelRef : secondaryPanelRef;
+    setAnimateCollapse(true);
     if (panel.current?.isCollapsed()) {
-      panel.current.expand();
+      panel.current.resize(`${collapseSide === "primary" ? size : 100 - size}%`);
       setCollapsed(null);
     } else {
       panel.current?.collapse();
@@ -234,10 +240,6 @@ function SplitStack({
             ? ChevronUp
             : ChevronDown;
 
-  useEffect(() => {
-    if (stacked) setCollapsed(null);
-  }, [stacked]);
-
   if (stacked) {
     return (
       <div
@@ -245,20 +247,42 @@ function SplitStack({
           "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto",
           className,
         )}
+        data-collapsed={collapsed ?? undefined}
         data-orientation={orientation}
         data-stack="split"
         style={style}
         {...props}
       >
+        {collapsible ? (
+          <div className="flex shrink-0 justify-end border-b border-border p-2">
+            <Button
+              aria-controls={collapseSide === "primary" ? primaryPaneId : secondaryPaneId}
+              aria-expanded={collapsed !== collapseSide}
+              onClick={toggleCollapsedPane}
+              size="xs"
+              type="button"
+              variant="outline"
+            >
+              <MorphIcon icon={SlidersHorizontal} reducedMotion="user" />
+              {collapsedPanelLabel}
+            </Button>
+          </div>
+        ) : null}
         <div
-          className="min-w-0 shrink-0 overflow-visible"
+          className={cn(
+            "min-w-0 shrink-0 overflow-visible",
+            collapsed === "primary" ? "hidden" : collapsed === "secondary" ? "min-h-0 flex-1" : undefined,
+          )}
           data-split-pane="primary"
           id={primaryPaneId}
         >
           {panes[0]}
         </div>
         <div
-          className="min-w-0 shrink-0 overflow-visible"
+          className={cn(
+            "min-w-0 shrink-0 overflow-visible",
+            collapsed === "secondary" ? "hidden" : collapsed === "primary" ? "min-h-0 flex-1" : undefined,
+          )}
           data-split-pane="secondary"
           id={secondaryPaneId}
         >
@@ -309,12 +333,23 @@ function SplitStack({
       <ResizablePanelGroup
         className={cn(
           "h-full min-h-0 min-w-0",
+          animateCollapse && "motion-safe:[&>[data-panel]]:transition-[flex-grow] motion-safe:[&>[data-panel]]:duration-200 motion-safe:[&>[data-panel]]:ease-out",
           orientation === "horizontal"
             ? "max-[64rem]:!flex-col max-[64rem]:overflow-y-auto max-[64rem]:[&>[data-slot=resizable-handle]]:!hidden"
             : undefined,
         )}
         disabled={!resizable}
         id={storageKey ?? splitId}
+        onPointerDownCapture={() => setAnimateCollapse(false)}
+        onKeyDownCapture={() => setAnimateCollapse(false)}
+        onLayoutChange={(layout) => {
+          const nextSize = layout[primaryPaneId];
+          if (!Number.isFinite(nextSize)) return;
+          if (nextSize > 0 && nextSize < 100) setSize(nextSize);
+          if (collapsible) {
+            setCollapsed(layout[collapseSide === "primary" ? primaryPaneId : secondaryPaneId] === 0 ? collapseSide : null);
+          }
+        }}
         onLayoutChanged={(layout, meta) => {
           const nextSize = layout[primaryPaneId];
           if (
@@ -324,7 +359,6 @@ function SplitStack({
           ) {
             return;
           }
-          setSize(nextSize);
           if (!meta.isUserInteraction) return;
           onSizeChange?.(nextSize);
           if (!storageKey) return;
@@ -353,14 +387,6 @@ function SplitStack({
               : `${maxSize}%`
           }
           minSize={`${minSize}%`}
-          onResize={(panelSize) => {
-            if (panelSize.asPercentage > 0) {
-              setSize(panelSize.asPercentage);
-              if (collapseSide === "primary") setCollapsed(null);
-            } else if (collapseSide === "primary") {
-              setCollapsed("primary");
-            }
-          }}
           panelRef={primaryPanelRef}
         >
           {panes[0]}
@@ -390,16 +416,6 @@ function SplitStack({
               : `${100 - minSize}%`
           }
           minSize={`${100 - maxSize}%`}
-          onResize={(panelSize) => {
-            if (
-              collapseSide === "secondary" &&
-              panelSize.asPercentage <= 0
-            ) {
-              setCollapsed("secondary");
-            } else if (collapseSide === "secondary") {
-              setCollapsed(null);
-            }
-          }}
           panelRef={secondaryPanelRef}
         >
           {panes[1]}
@@ -417,7 +433,14 @@ function SplitStack({
                 }
                 aria-label={collapsedPanelLabel}
                 aria-expanded={collapsed !== collapseSide}
-                className="absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm"
+                className={cn(
+                  "absolute z-30 !size-8 -translate-x-1/2 -translate-y-1/2 shadow-sm",
+                  animateCollapse && "motion-safe:transition-[left,top,translate] motion-safe:duration-200 motion-safe:ease-out",
+                  collapseSide === "secondary" && orientation === "horizontal" && [
+                    "rounded-r-none",
+                    !collapsed && collapseControlPosition !== "bottom" && "-translate-x-full",
+                  ],
+                )}
                 onClick={toggleCollapsedPane}
                 size="icon-xs"
                 style={collapseControlStyle}

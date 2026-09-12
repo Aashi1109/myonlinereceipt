@@ -20,6 +20,10 @@ import {
   User,
 } from "lucide-react";
 import {
+  Caption,
+  Overline,
+  Muted,
+  Text,
   AlertBanner,
   Button,
   CheckboxControl,
@@ -27,7 +31,9 @@ import {
   Input,
   Label,
   SectionCard,
-  SectionHeading,
+  CardHeader,
+  CardAction,
+  H3,
   Select,
   Textarea,
 } from "@smarttools/ui";
@@ -245,14 +251,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
     <div className="space-y-8" id="invoice-editor-form">
       {/* 1. SELLER BUSINESS BLOCK */}
       <SectionCard id="biz-editor-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <Building aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Your Business (Seller)
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="space-y-4">
           {/* Logo uploader row */}
@@ -268,7 +272,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                 <Button
                   type="button"
                   onClick={removeLogo}
-                  className="absolute inset-0 h-full w-full rounded-none bg-destructive/90 text-xs font-bold text-destructive-foreground opacity-0 transition-opacity hover:bg-destructive/90 group-hover:opacity-100 focus-visible:opacity-100"
+                  className="absolute inset-0 h-full w-full rounded-none bg-destructive/90 text-destructive-foreground opacity-0 transition-opacity hover:bg-destructive/90 group-hover:opacity-100 focus-visible:opacity-100"
                   variant="destructive"
                 >
                   Delete Logo
@@ -277,7 +281,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
             ) : (
               <Label className="group flex h-16 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-input bg-background transition-colors hover:border-primary">
                 <Upload aria-hidden="true" className="size-5 text-muted-foreground group-hover:text-primary" />
-                <span className="mt-1 text-xs font-semibold text-muted-foreground">Add Logo</span>
+                <Caption className="mt-1 text-muted-foreground">Add Logo</Caption>
                 <input
                   type="file"
                   accept="image/*"
@@ -287,10 +291,10 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               </Label>
             )}
             <div className="space-y-1 text-center sm:text-left">
-              <span className="text-xs font-bold text-foreground">Company Logo Accent</span>
-              <p className="max-w-sm text-xs leading-5 text-muted-foreground">
+              <Caption className="text-foreground">Company Logo Accent</Caption>
+              <Muted className="max-w-sm text-muted-foreground">
                 Optional. Recommended: horizontal layout (.png, .jpg), max file size 1.5MB. Renders client-side for absolute security.
-              </p>
+              </Muted>
             </div>
           </div>
 
@@ -366,9 +370,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               variant="ghost"
             >
               <span>{showOptionalBiz ? "Hide" : "Show"} optional business fields</span>
-              <span className="rounded-sm border border-border bg-muted px-1.5 font-mono text-xs text-muted-foreground">
+              <Caption className="rounded-sm border border-border bg-muted px-1.5 text-muted-foreground">
                 {showOptionalBiz ? "-" : "+"}
-              </span>
+              </Caption>
             </Button>
 
             {showOptionalBiz && (
@@ -449,14 +453,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 2. BILL TO CLIENT BLOCK */}
       <SectionCard id="client-editor-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <User aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Bill To (Client)
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -534,9 +536,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               variant="ghost"
             >
               <span>{showOptionalClient ? "Hide" : "Show"} optional client fields</span>
-              <span className="rounded-sm border border-border bg-muted px-1.5 font-mono text-xs text-muted-foreground">
+              <Caption className="rounded-sm border border-border bg-muted px-1.5 text-muted-foreground">
                 {showOptionalClient ? "-" : "+"}
-              </span>
+              </Caption>
             </Button>
 
             {showOptionalClient && (
@@ -593,14 +595,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 3. INVOICE META DETAILS BLOCK */}
       <SectionCard id="meta-editor-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <Calendar aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Invoice Metadata
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field
@@ -697,20 +697,16 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 4. LINE ITEMS INVOICED BLOCK */}
       <SectionCard id="items-editor-section">
-        <SectionHeading
-          action={
-            <Button onClick={addLineItem} size="sm" type="button" variant="secondary">
-              <Plus aria-hidden="true" className="size-4" />
-              Add row
-            </Button>
-          }
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <Layers aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Line Items Table
-            </span>
-          )}
-        />
+            </H3>
+          <CardAction><Button onClick={addLineItem} size="sm" type="button" variant="secondary">
+              <Plus aria-hidden="true" className="size-4" />
+              Add row
+            </Button></CardAction>
+        </CardHeader>
 
         {errors["lineItems"] && (
           <AlertBanner variant="error">
@@ -721,12 +717,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
         {/* Dynamic Items list */}
         <div className="space-y-4">
           {/* Header titles for large viewports */}
-          <div className="hidden grid-cols-12 gap-3 border-b border-border pb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground md:grid">
-            <div className="col-span-6">Description <span className="text-destructive">*</span></div>
-            <div className="col-span-2 text-center">Qty <span className="text-destructive">*</span></div>
-            <div className="col-span-2 text-center">Unit Price ($) <span className="text-destructive">*</span></div>
-            <div className="col-span-1 text-center">Tax</div>
-            <div className="col-span-1 text-right">Actions</div>
+          <div className="hidden grid-cols-12 gap-3 border-b border-border pb-2 text-muted-foreground md:grid">
+            <div className="col-span-6"><Overline>Description <span className="text-destructive">*</span></Overline></div>
+            <div className="col-span-2 text-center"><Overline>Qty <span className="text-destructive">*</span></Overline></div>
+            <div className="col-span-2 text-center"><Overline>Unit Price ($) <span className="text-destructive">*</span></Overline></div>
+            <div className="col-span-1 text-center"><Overline>Tax</Overline></div>
+            <div className="col-span-1 text-right"><Overline>Actions</Overline></div>
           </div>
 
           <div className="space-y-4 md:space-y-2">
@@ -746,14 +742,14 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   id={`form-line-item-${index}`}
                 >
                   {/* Item Description */}
-                  <div className="col-span-1 md:col-span-6 ">
-                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={descriptionId}>
+                  <div className="col-span-1 md:col-span-6">
+                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={descriptionId}>
                       Description <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].description`] ? `${descriptionId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].description`])}
-                      className="h-9 text-xs"
+                      className="h-9"
                       id={descriptionId}
                       type="text"
                       placeholder="e.g. Website maintenance / Performance testing"
@@ -761,21 +757,21 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       onChange={(e) => handleLineItemChange(item.id, "description", e.target.value)}
                     />
                     {errors[`lineItems[${index}].description`] && (
-                      <span className="mt-1 block text-xs font-bold text-destructive" id={`${descriptionId}-error`} role="alert">
+                      <Caption className="mt-1 block text-destructive" id={`${descriptionId}-error`} role="alert">
                         {errors[`lineItems[${index}].description`]}
-                      </span>
+                      </Caption>
                     )}
                   </div>
 
                   {/* Quantity */}
                   <div className="col-span-1 md:col-span-2">
-                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={quantityId}>
+                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={quantityId}>
                       Quantity <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].quantity`] ? `${quantityId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].quantity`])}
-                      className="h-9 text-center text-xs"
+                      className="h-9 text-center"
                       id={quantityId}
                       type="number"
                       min="0"
@@ -785,21 +781,21 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       onChange={(e) => handleLineItemChange(item.id, "quantity", e.target.value)}
                     />
                     {errors[`lineItems[${index}].quantity`] && (
-                      <span className="mt-1 block text-xs font-bold text-destructive" id={`${quantityId}-error`} role="alert">
+                      <Caption className="mt-1 block text-destructive" id={`${quantityId}-error`} role="alert">
                         {errors[`lineItems[${index}].quantity`]}
-                      </span>
+                      </Caption>
                     )}
                   </div>
 
                   {/* Unit price */}
                   <div className="col-span-1 md:col-span-2">
-                    <Label className="block pb-1 text-xs font-bold text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
+                    <Label className="block pb-1 text-muted-foreground md:sr-only" htmlFor={unitPriceId}>
                       Unit Price ($) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       aria-errormessage={errors[`lineItems[${index}].unitPrice`] ? `${unitPriceId}-error` : undefined}
                       aria-invalid={Boolean(errors[`lineItems[${index}].unitPrice`])}
-                      className="h-9 text-right text-xs"
+                      className="h-9 text-right"
                       id={unitPriceId}
                       type="number"
                       min="0"
@@ -809,15 +805,15 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       onChange={(e) => handleLineItemChange(item.id, "unitPrice", e.target.value)}
                     />
                     {errors[`lineItems[${index}].unitPrice`] && (
-                      <span className="mt-1 block text-xs font-bold text-destructive" id={`${unitPriceId}-error`} role="alert">
+                      <Caption className="mt-1 block text-destructive" id={`${unitPriceId}-error`} role="alert">
                         {errors[`lineItems[${index}].unitPrice`]}
-                      </span>
+                      </Caption>
                     )}
                   </div>
 
                   {/* Taxable boolean Checkbox */}
                   <div className="col-span-1 flex items-center justify-between border-t border-border py-1 md:col-span-1 md:justify-center md:border-0">
-                    <span className="block text-xs font-semibold text-muted-foreground md:hidden">Taxable:</span>
+                    <Caption className="block text-muted-foreground md:hidden">Taxable:</Caption>
                     <CheckboxControl
                       aria-label={`Taxable line item ${index + 1}`}
                       checked={item.taxable || false}
@@ -859,14 +855,12 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 5. DISCOUNTS TAX AND FEES DETAILS BLOCK */}
       <SectionCard id="discounts-tax-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <FileSpreadsheet aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Discounts, Taxes &amp; Fees
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Discount Trigger type */}
@@ -956,18 +950,16 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 6. PAYMENT INSTRUCTIONS METHODS ACCORDION */}
       <SectionCard id="payments-editor-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Payment Methods &amp; Instructions
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="space-y-4">
           <div>
-            <span className="mb-2 block text-sm font-bold text-foreground">Accepted Payment Options</span>
+            <Text className="mb-2 block text-foreground">Accepted Payment Options</Text>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
                 { id: "bank", label: "Bank Transfer" },
@@ -980,9 +972,9 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
               ].map((m) => {
                 const checked = (data.payment.methods || []).includes(m.id);
                 return (
-                  <label
+                  <Label
                     key={m.id}
-                    className={`flex min-h-10 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
+                    className={`flex min-h-10 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-2 outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ${
                       checked
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-border bg-background text-foreground hover:bg-accent"
@@ -995,7 +987,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                       className="sr-only"
                     />
                     <span>{m.label}</span>
-                  </label>
+                  </Label>
                 );
               })}
             </div>
@@ -1015,23 +1007,21 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
 
       {/* 7. GENERAL NOTES TERMS BLOCK WITH QUICK INSERT CHIPS */}
       <SectionCard id="notes-terms-section">
-        <SectionHeading
-          title={(
-            <span className="flex items-center gap-2">
+        <CardHeader className="gap-0">
+          <H3 className="flex items-center gap-2">
               <PlusCircle aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
               Terms, Notes &amp; Late Fees
-            </span>
-          )}
-        />
+            </H3>
+        </CardHeader>
 
         <div className="space-y-4">
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <Label className="text-sm font-bold text-foreground" htmlFor="notes-textarea">
+              <Label className="text-foreground" htmlFor="notes-textarea">
                 Notes / Scope of Work Details
               </Label>
               <div className="flex items-center gap-1">
-                <span className="text-xs font-semibold text-muted-foreground">Quick insert:</span>
+                <Caption className="text-muted-foreground">Quick insert:</Caption>
               </div>
             </div>
 
@@ -1042,7 +1032,7 @@ export default function InvoiceForm({ data, onChange, errors }: InvoiceFormProps
                   key={idx}
                   type="button"
                   onClick={() => handleInsertNote(note)}
-                  className="h-auto max-w-[150px] truncate rounded-full px-2 py-1 text-xs sm:max-w-none"
+                  className="h-auto max-w-[150px] truncate rounded-full px-2 py-1 sm:max-w-none"
                   size="sm"
                   title={note}
                   variant="secondary"

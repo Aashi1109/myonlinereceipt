@@ -984,6 +984,58 @@ test("page inspection requests keep one document and a positive thumbnail width"
   );
 });
 
+test("PDF inspection can target generated output and rejects unknown sources", () => {
+  const file = createToolRunFile(
+    "generated-pdf",
+    new File(["%PDF-1.7"], "images.pdf", { type: "application/pdf" }),
+  );
+  const request = createToolInspectRequest({
+    jobId: "output-preview",
+    key: "image-to-pdf",
+    file,
+    source: "output",
+  });
+  assert.equal(request.source, "output");
+  assert.equal(request.key, "image-to-pdf");
+  assert.equal(isToolWorkerMessage(request), true);
+  assert.equal(isToolWorkerMessage({ ...request, source: undefined }), true);
+  for (const source of ["other", null, false, 1]) {
+    assert.equal(isToolWorkerMessage({ ...request, source }), false);
+  }
+});
+
+test("display preview requests validate pixel width and accept lossless PNG responses", () => {
+  const input = { jobId: "preview", pageNumbers: [1], renderWidth: 2048 };
+  assert.equal(createToolThumbnailRequest(input).renderWidth, 2048);
+  assert.equal(isToolWorkerMessage({ type: "inspect-thumbnails", ...input }), true);
+  for (const renderWidth of [0, -1, 1.5, Infinity, 4097]) {
+    assert.throws(() => createToolThumbnailRequest({ ...input, renderWidth }), /Preview width/);
+    assert.equal(isToolWorkerMessage({ type: "inspect-thumbnails", ...input, renderWidth }), false);
+  }
+  assert.equal(isToolWorkerResponse({ type: "thumbnails", jobId: "preview", previews: [{
+    pageNumber: 1, pageWidth: 612, pageHeight: 792, width: 2048, height: 2650,
+    renderWidth: 2048, mime: "image/png", buffer: new ArrayBuffer(1),
+  }] }), true);
+});
+
+test("large PDF previews evict raster bytes by pixel budget while preserving all page geometry", () => {
+  let state = reduceWorkerJobState(beginWorkerJob(createToolJobState(), "preview"), {
+    type: "inspected", jobId: "preview", pageCount: 6,
+    previews: Array.from({ length: 6 }, (_, index) => ({ pageNumber: index + 1, pageWidth: 200, pageHeight: 400 })),
+  });
+  for (let pageNumber = 1; pageNumber <= 6; pageNumber++) {
+    state = reduceWorkerJobState(state, {
+      type: "thumbnails", jobId: "preview", previews: [{
+        pageNumber, pageWidth: 200, pageHeight: 400, width: 2000, height: 4000,
+        renderWidth: 2000, mime: "image/png", buffer: new ArrayBuffer(1),
+      }],
+    });
+  }
+  assert.equal(state.previews.length, 6);
+  assert.deepEqual(state.previews.filter((page) => page.buffer).map((page) => page.pageNumber), [3, 4, 5, 6]);
+  assert.equal("renderWidth" in state.previews[0], false, "Evicted pages must be eligible to render again.");
+});
+
 test("worker job state ignores stale responses and cannot complete after cancellation", () => {
   const idle = createToolJobState();
   const started = beginWorkerJob(idle, "job-1");
@@ -1047,6 +1099,30 @@ test("worker job state ignores stale responses and cannot complete after cancell
     }),
     idle,
   );
+});
+
+test("thumbnail failures surface after inspection while completed conversions stay frozen", () => {
+  const started = beginWorkerJob(createToolJobState(), "preview-job");
+  const inspected = reduceWorkerJobState(started, {
+    type: "inspected", jobId: "preview-job", pageCount: 1,
+    previews: [{ pageNumber: 1, pageWidth: 612, pageHeight: 792 }],
+  });
+  const failure = {
+    type: "failure", jobId: "preview-job", code: "render-failed",
+    message: "The page could not be rendered.", recovery: "Retry the preview.",
+  };
+  const failed = reduceWorkerJobState(inspected, failure);
+  assert.equal(failed.status, "failed");
+  assert.equal(failed.error.message, failure.message);
+  assert.equal(failed.error.recovery, failure.recovery);
+  assert.equal(reduceWorkerJobState(inspected, { ...failure, jobId: "old-job" }), inspected);
+  assert.equal(reduceWorkerJobState(failed, {
+    type: "thumbnails", jobId: "preview-job", previews: [],
+  }), failed);
+  const converted = reduceWorkerJobState(started, {
+    type: "success", jobId: "preview-job", result: { render: "files", files: [] },
+  });
+  assert.equal(reduceWorkerJobState(converted, failure), converted);
 });
 
 test("worker failures, cancellations, and successes produce frozen terminal state", () => {

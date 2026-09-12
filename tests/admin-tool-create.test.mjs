@@ -133,7 +133,7 @@ function accessWithout(resource, action) {
   return access;
 }
 
-const EDITOR = permissionRows({ tools: { edit: true } });
+const EDITOR = permissionRows({ tools: { view: true, edit: true } });
 
 function toolWrite(state) {
   return state.inserts.find(({ table }) => table === managedToolsTable);

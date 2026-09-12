@@ -1,10 +1,14 @@
 "use client";
+import {
+  Caption, P, Small, Strong, Text, TextLink } from "@smarttools/ui";
+
 
 import type { ToolApp } from "@smarttools/tool-catalog";
 import type { CatalogTool } from "@/lib/tool-framework/catalog";
 import { TOOL_CATEGORIES, type CategoryKey } from "@/lib/tool-framework/categories";
 import {
   Braces,
+  AlertTriangle,
   Calculator,
   ChevronDown,
   Code2,
@@ -91,29 +95,37 @@ export function AuthDiscoveryNavigation({
   const [searchOpen, setSearchOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<MenuName>(null);
   const [activeResult, setActiveResult] = useState(0);
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const stableQuery = useDeferredValue(query);
   const isSearching = query !== stableQuery;
 
-  const results = useMemo(() => {
+  const { results, searchError } = useMemo(() => {
     const normalized = stableQuery.trim().toLowerCase();
-    if (!normalized) return [];
+    if (!normalized) return { results: [], searchError: false };
 
-    return tools
-      .filter((tool) =>
-        [
-          tool.name,
-          tool.description,
-          TOOL_CATEGORIES[tool.category].label,
-          ...tool.keywords,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalized),
-      )
-      .slice(0, 6);
-  }, [stableQuery, tools]);
+    try {
+      return {
+        results: tools
+          .filter((tool) =>
+            [
+              tool.name,
+              tool.description,
+              TOOL_CATEGORIES[tool.category].label,
+              ...tool.keywords,
+            ]
+              .join(" ")
+              .toLowerCase()
+              .includes(normalized),
+          )
+          .slice(0, 6),
+        searchError: false,
+      };
+    } catch {
+      return { results: [], searchError: true };
+    }
+  }, [searchAttempt, stableQuery, tools]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -229,7 +241,7 @@ export function AuthDiscoveryNavigation({
               <X aria-hidden="true" />
             </button>
           ) : (
-            <kbd aria-label="Keyboard shortcut: slash">/</kbd>
+            <kbd aria-label="Keyboard shortcut: slash"><Caption>/</Caption></kbd>
           )}
         </div>
 
@@ -243,16 +255,23 @@ export function AuthDiscoveryNavigation({
                     <b />
                   </span>
                 ))}
-                <span className="sr-only">Searching tools</span>
+                <Text className="sr-only">Searching tools</Text>
+              </div>
+            ) : searchError ? (
+              <div aria-live="polite" className="auth-search-error" role="status">
+                <AlertTriangle aria-hidden="true" />
+                <Strong>Search is temporarily unavailable</Strong>
+                <Text>Try again, or clear your search and use a category.</Text>
+                <button onClick={() => setSearchAttempt((attempt) => attempt + 1)} type="button"><Caption>Try again</Caption></button>
               </div>
             ) : results.length > 0 ? (
               <>
-                <p className="auth-search-count">
+                <P className="auth-search-count">
                   {results.length} {results.length === 1 ? "result" : "results"} for “{stableQuery}”
-                </p>
+                </P>
                 <div aria-label="Tool search results" role="listbox">
                   {results.map((tool, index) => (
-                    <a
+                    <TextLink
                       aria-selected={index === activeResult}
                       className="auth-search-result"
                       href={tool.href}
@@ -262,19 +281,19 @@ export function AuthDiscoveryNavigation({
                     >
                       <ToolIcon app={tool.app} name={tool.name} />
                       <span>
-                        <strong>{tool.name}</strong>
-                        <small>{TOOL_CATEGORIES[tool.category].label}</small>
+                        <Strong>{tool.name}</Strong>
+                        <Small>{TOOL_CATEGORIES[tool.category].label}</Small>
                       </span>
-                    </a>
+                    </TextLink>
                   ))}
                 </div>
               </>
             ) : (
               <div aria-live="polite" className="auth-search-empty" role="status">
                 <SearchX aria-hidden="true" />
-                <strong>No tools match “{stableQuery}”</strong>
-                <span>Check spelling, try “invoice”, or clear the query.</span>
-                <button onClick={() => searchRef.current?.select()} type="button">Edit search</button>
+                <Strong>No tools match “{stableQuery}”</Strong>
+                <Text>Check spelling, try “invoice”, or clear the query.</Text>
+                <button onClick={() => searchRef.current?.select()} type="button"><Caption>Edit search</Caption></button>
               </div>
             )}
           </div>
@@ -282,7 +301,7 @@ export function AuthDiscoveryNavigation({
       </div>
 
       <nav aria-label="Tool categories" className="auth-category-nav">
-        <a aria-current={pathname === "/" ? "page" : undefined} href="/">All tools</a>
+        <TextLink aria-current={pathname === "/" ? "page" : undefined} href="/">All tools</TextLink>
         <span className="auth-category-menu">
           <button
             aria-expanded={openMenu === "documents"}
@@ -291,8 +310,8 @@ export function AuthDiscoveryNavigation({
             onClick={() => toggleMenu("documents")}
             onKeyDown={(event) => moveMenuFocus(event, "documents")}
             type="button"
-          >
-            Documents <ChevronDown aria-hidden="true" />
+          ><Caption>
+            Documents </Caption><ChevronDown aria-hidden="true" />
           </button>
           {openMenu === "documents" ? (
             <CategoryMenu menu="documents" onClose={() => setOpenMenu(null)} />
@@ -306,16 +325,16 @@ export function AuthDiscoveryNavigation({
             onClick={() => toggleMenu("developer")}
             onKeyDown={(event) => moveMenuFocus(event, "developer")}
             type="button"
-          >
-            Developer <ChevronDown aria-hidden="true" />
+          ><Caption>
+            Developer </Caption><ChevronDown aria-hidden="true" />
           </button>
           {openMenu === "developer" ? (
             <CategoryMenu menu="developer" onClose={() => setOpenMenu(null)} />
           ) : null}
         </span>
-        <a aria-current={businessActive ? "page" : undefined} href={projects.paperwork}>
+        <TextLink aria-current={businessActive ? "page" : undefined} href={projects.paperwork}>
           Business
-        </a>
+        </TextLink>
       </nav>
     </div>
   );
@@ -325,7 +344,7 @@ function CategoryMenu({ menu, onClose }: { menu: Exclude<MenuName, null>; onClos
   return (
     <div className="auth-category-popover" data-menu={menu} role="menu">
       {categoryMenus[menu].map(({ href, icon: Icon, label }) => (
-        <a
+        <TextLink
           href={href}
           key={href}
           onKeyDown={(event) => {
@@ -345,7 +364,7 @@ function CategoryMenu({ menu, onClose }: { menu: Exclude<MenuName, null>; onClos
         >
           <Icon aria-hidden="true" />
           {label}
-        </a>
+        </TextLink>
       ))}
     </div>
   );

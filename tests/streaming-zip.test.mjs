@@ -44,6 +44,25 @@ test("streams a byte-correct ZIP without retaining separate output artifacts", a
   assert.equal(new TextDecoder().decode(archive["second.txt"]), "second payload");
 });
 
+test("retains individually downloadable images alongside a byte-correct ZIP when requested", async () => {
+  const signal = new AbortController().signal;
+  const artifacts = createArtifactWriter("streaming-zip-retained", { signal });
+  const files = await writeArtifactBatch(
+    { signal, writeArtifact: artifacts.write },
+    { archiveName: "images.zip", count: 2, retainEntries: true },
+    async (write) => {
+      await write({ name: "page-1.jpg", mime: "image/jpeg", source: new Blob(["first"]).stream() });
+      await write({ name: "page-2.jpg", mime: "image/jpeg", source: new Uint8Array([1, 2, 3]) });
+    },
+  );
+  assert.deepEqual(files.map((file) => file.name), ["images.zip", "page-1.jpg", "page-2.jpg"]);
+  const archive = unzipSync(new Uint8Array(await (await readArtifact(files[0])).arrayBuffer()));
+  for (const file of files.slice(1)) {
+    assert.equal(file.mime, "image/jpeg");
+    assert.deepEqual(new Uint8Array(await (await readArtifact(file)).arrayBuffer()), archive[file.name]);
+  }
+});
+
 test("writes one output directly instead of wrapping it in a ZIP", async () => {
   const signal = new AbortController().signal;
   const artifacts = createArtifactWriter("streaming-zip-single", { signal });

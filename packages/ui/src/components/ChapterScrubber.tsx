@@ -125,7 +125,7 @@ export function ChapterScrubber({
 }: ChapterScrubberProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
-  const cardRef = React.useRef<HTMLDivElement>(null);
+  const cardRef = React.useRef<HTMLButtonElement>(null);
   const buttonsRef = React.useRef<Array<HTMLButtonElement | null>>([]);
   const baseId = React.useId();
 
@@ -435,6 +435,11 @@ export function ChapterScrubber({
     <div
       className={cn("relative", className)}
       data-slot="chapter-scrubber"
+      data-preview-escape-boundary={engaged ? "" : undefined}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerLeave}
       ref={containerRef}
       style={{ width: resolvedPeakLength }}
     >
@@ -445,10 +450,6 @@ export function ChapterScrubber({
         aria-label={label}
         aria-orientation="vertical"
         className="flex w-full flex-col"
-        onBlur={handleBlur}
-        onKeyDown={handleKeyDown}
-        onPointerCancel={handlePointerCancel}
-        onPointerLeave={handlePointerLeave}
         onPointerMove={handlePointerMove}
         ref={listRef}
         role="listbox"
@@ -519,14 +520,24 @@ export function ChapterScrubber({
       </div>
 
       {showPreviewCard && previewCardReady && chapters[activeIndex] ? (
-        <motion.div
-          aria-hidden="true"
+        <motion.button
+          aria-label={`Go to ${chapters[activeIndex].title}`}
           className={cn(
-            "pointer-events-none absolute z-10 rounded-xl border border-border bg-popover px-4 py-3.5 text-popover-foreground shadow-lg",
+            "absolute z-10 cursor-pointer rounded-xl border border-border bg-popover px-4 py-3.5 text-left text-popover-foreground shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             resolvedSide === "right" ? "origin-left" : "origin-right",
             previewCardClassName,
           )}
+          onClick={() => {
+            lastPointerTypeRef.current = null;
+            touchPreviewRef.current = null;
+            onSelect(chapters[activeIndex], activeIndex);
+          }}
+          onFocus={() => {
+            focusedRef.current = activeIndex;
+            engageAt(activeIndex, activeIndex);
+          }}
           ref={cardRef}
+          type="button"
           style={{
             opacity: strength,
             scale: cardScale,
@@ -538,6 +549,14 @@ export function ChapterScrubber({
               : { right: resolvedPeakLength + resolvedPreviewCardGap }),
           }}
         >
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0"
+            style={{
+              width: resolvedPreviewCardGap + 1,
+              [resolvedSide === "right" ? "right" : "left"]: "100%",
+            }}
+          />
           {renderPreview ? (
             renderPreview(chapters[activeIndex], activeIndex)
           ) : (
@@ -557,7 +576,7 @@ export function ChapterScrubber({
               ) : null}
             </>
           )}
-        </motion.div>
+        </motion.button>
       ) : null}
     </div>
   );

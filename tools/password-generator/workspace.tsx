@@ -16,13 +16,12 @@ export default function PasswordGeneratorWorkspace(props: WorkspaceProps) {
     );
   }, [hasCharacterSet, props.onValidationChange]);
 
-  return (
-    <ToolWorkspace
-      {...props}
-      primaryAction={props.primaryAction ? {
-        ...props.primaryAction,
-        label: `Generate ${count} ${count === 1 ? "password" : "passwords"}`,
-      } : null}
-    />
-  );
+  useEffect(() => {
+    props.onToolbarActionsChange?.({
+      primaryActionLabel: `Generate ${count} ${count === 1 ? "password" : "passwords"}`,
+    });
+    return () => props.onToolbarActionsChange?.(null);
+  }, [count, props.onToolbarActionsChange]);
+
+  return <ToolWorkspace {...props} />;
 }

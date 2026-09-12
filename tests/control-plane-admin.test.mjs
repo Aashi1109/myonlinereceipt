@@ -20,6 +20,7 @@ import {
 import {
   archiveInvoiceTemplate,
   assignUserRoles,
+  assignRoleToUsers,
   createAdvancedDocumentTemplate,
   createCustomRole,
   createInvoiceTemplate,
@@ -49,7 +50,9 @@ function permissionRows(access) {
       roleName: "Test role",
       roleDescription: "Test permissions.",
       roleAccess: {
-        ...access,
+        ...Object.fromEntries(Object.entries(access).map(([resource, actions]) => [
+          resource, resource === "admin" ? actions : { view: true, ...actions },
+        ])),
         admin: { enter: true, ...access.admin },
       },
       roleIsSystem: false,
@@ -150,6 +153,49 @@ async function withFakeDatabase(selectResults, callback) {
     db.transaction = originalTransaction;
   }
 }
+
+test("bulk role assignment adds only the requested role, preserves status and is idempotent", async () => {
+  const role = { id: "reviewer", isSystem: false, access: { admin: { enter: true }, tools: { view: true } } };
+  await withFakeDatabase([
+    permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS),
+    [{ id: "a", status: "suspended" }], [{ id: "b", status: "active" }],
+    [role], [{ roleId: "user" }, { roleId: "editor" }],
+    [{ roleId: "user" }, { roleId: "reviewer" }],
+  ], async (state) => {
+    await assignRoleToUsers("actor", "reviewer", ["b", "a", "a"]);
+    assert.deepEqual(state.inserts.filter((entry) => entry.table === userRolesTable).map((entry) => entry.values), [
+      { userId: "a", roleId: "reviewer" },
+    ]);
+    assert.equal(state.deletes.length, 0);
+    assert.equal(state.updates.length, 0);
+    assert.equal(state.inserts.filter((entry) => entry.table === auditEventsTable).length, 1);
+  });
+});
+
+test("bulk assignment rejects invalid selections, missing users and system roles", async () => {
+  await assert.rejects(() => assignRoleToUsers("actor", "reviewer", []), /Select/);
+  await assert.rejects(() => assignRoleToUsers("actor", "reviewer", Array(101).fill("a")), /100/);
+  await withFakeDatabase([permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS), []], async (state) => {
+    await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["missing"]), /not found/i);
+    assert.equal(state.inserts.length, 0);
+  });
+  await withFakeDatabase([
+    permissionRows(ADMIN_ACCESS), permissionRows(ADMIN_ACCESS), [{ id: "a", status: "active" }],
+    [{ id: "admin", isSystem: true, access: ADMIN_ACCESS }],
+  ], async (state) => {
+    await assert.rejects(() => assignRoleToUsers("actor", "admin", ["a"]), /custom role/i);
+    assert.equal(state.inserts.length, 0);
+  });
+});
+
+test("bulk role assignment requires role viewing and user assignment permissions", async () => {
+  for (const reads of [[permissionRows({})], [permissionRows(ADMIN_ACCESS), permissionRows({})]]) {
+    await withFakeDatabase(reads, async (state) => {
+      await assert.rejects(() => assignRoleToUsers("actor", "reviewer", ["a"]));
+      assert.equal(state.inserts.length, 0);
+    });
+  }
+});
 
 function accessWithout(resource, action) {
   const access = structuredClone(ADMIN_ACCESS);
@@ -634,7 +680,7 @@ test("registered features default disabled and preserve metadata when toggled", 
   );
 });
 
-test("suspension blocks the final admin and otherwise revokes sessions atomically", async () => {
+test("suspension protects the final admin and retains identity while auditing the status change", async () => {
   const target = {
     id: "target",
     name: "Target",
@@ -671,7 +717,7 @@ test("suspension blocks the final admin and otherwise revokes sessions atomicall
         state.updates.find(({ table }) => table === authUser).values.status,
         "suspended",
       );
-      assert.ok(state.deletes.some(({ table }) => table === authSession));
+      assert.equal(state.deletes.some(({ table }) => table === authSession), false);
       assert.equal(
         state.inserts.find(({ table }) => table === auditEventsTable).values
           .action,
@@ -694,7 +740,7 @@ test("role assignment keeps the default user role and protects the final admin",
       permissionRows({ users: { assignRoles: true } }),
       [target],
       [{ roleId: "user" }],
-      [{ id: "user" }, { id: "editor" }],
+      [{ id: "user", access: {} }, { id: "editor", access: { admin: { enter: true }, templates: { view: true, edit: true } } }],
     ],
     async (state) => {
       assert.deepEqual(
@@ -717,7 +763,7 @@ test("role assignment keeps the default user role and protects the final admin",
       permissionRows({ users: { assignRoles: true } }),
       [target],
       [{ roleId: "user" }, { roleId: "admin" }],
-      [{ id: "user" }],
+      [{ id: "user", access: {} }],
       [{ userId: "target", status: "active" }],
     ],
     async (state) => {
@@ -734,7 +780,7 @@ test("role assignment keeps the default user role and protects the final admin",
       permissionRows({ users: { assignRoles: true } }),
       [target],
       [{ roleId: "user" }],
-      [{ id: "user" }],
+      [{ id: "user", access: {} }],
     ],
     async (state) => {
       assert.deepEqual(
@@ -750,7 +796,7 @@ test("role assignment keeps the default user role and protects the final admin",
       permissionRows({ users: { assignRoles: true } }),
       [target],
       [{ roleId: "user" }],
-      [{ id: "user" }],
+      [{ id: "user", access: {} }],
     ],
     async (state) => {
       await assert.rejects(
@@ -766,7 +812,7 @@ test("role assignment keeps the default user role and protects the final admin",
       permissionRows({ users: { assignRoles: true } }),
       [target],
       [{ roleId: "user" }, { roleId: "editor" }],
-      [{ id: "user" }],
+      [{ id: "user", access: {} }],
     ],
     async (state) => {
       await assignUserRoles("actor", "target", ["user"]);
@@ -800,7 +846,64 @@ test("inactive actors and invalid user statuses fail before mutation", async () 
   );
 });
 
-test("custom roles start empty and assigned roles cannot be deleted", async () => {
+test("role assignment validates prerequisites across the combined selected roles before writing", async () => {
+  const target = { id: "target", name: "Target", email: "target@example.com", image: null, status: "active" };
+  const entry = { id: "entry", access: { admin: { enter: true } } };
+  const viewer = { id: "viewer", access: { tools: { view: true } } };
+  const editor = { id: "editor", access: { tools: { edit: true } } };
+  for (const [selected, error] of [
+    [[editor], /requires admin.enter/],
+    [[entry, editor], /requires tools.view/],
+    [[entry, viewer, editor], null],
+    [[], null],
+  ]) {
+    const requested = selected.map(({ id }) => id);
+    await withFakeDatabase([
+      permissionRows({ users: { assignRoles: true } }),
+      [target],
+      [{ roleId: "user" }],
+      [{ id: "user", access: {} }, ...selected],
+    ], async (state) => {
+      if (error) {
+        await assert.rejects(() => assignUserRoles("actor", target.id, requested), error);
+        assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+      } else {
+        assert.deepEqual(await assignUserRoles("actor", target.id, requested), ["user", ...requested]);
+        if (requested.length) {
+          assert.deepEqual(state.inserts.find(({ table }) => table === userRolesTable).values,
+            requested.map((roleId) => ({ userId: target.id, roleId })));
+          assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
+        } else {
+          assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+        }
+      }
+    });
+  }
+});
+
+test("role saves and direct mutations reject missing prerequisites before writing", async () => {
+  const role = { id: "editor", name: "Editor", description: "Edits tools.", access: {}, isSystem: false };
+  for (const access of [
+    { tools: { edit: true } },
+    { admin: { enter: true }, tools: { edit: true } },
+  ]) {
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
+      await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /requires/);
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
+  }
+  for (const access of [
+    { admin: { enter: false }, roles: { view: true, edit: true } },
+    { roles: { view: false, edit: true } },
+  ]) {
+    await withFakeDatabase([permissionRows(access)], async (state) => {
+      await assert.rejects(() => updateCustomRole("actor", role.id, { name: "New name" }), /Missing permission/);
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
+  }
+});
+
+test("custom roles start with admin entry only and assigned roles cannot be deleted", async () => {
   await withFakeDatabase(
     [permissionRows({ roles: { create: true } })],
     async (state) => {
@@ -809,7 +912,7 @@ test("custom roles start empty and assigned roles cannot be deleted", async () =
         description: "Edits invoice templates.",
       });
       const roleWrite = state.inserts.find(({ table }) => table === rolesTable);
-      assert.deepEqual(roleWrite.values.access, {});
+      assert.deepEqual(roleWrite.values.access, { admin: { enter: true } });
       assert.equal(roleWrite.values.isSystem, false);
       assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
     },
@@ -839,6 +942,42 @@ test("custom roles start empty and assigned roles cannot be deleted", async () =
   );
 });
 
+test("custom role saves retain admin entry while accepting only valid entity grants", async () => {
+  const role = { id: "editor", name: "Editor", description: "Edits tools.", access: { tools: { view: true, edit: true } }, isSystem: false };
+  for (const input of [
+    { access: {} },
+    { access: { admin: { enter: false } } },
+    { name: "Renamed" },
+    { access: { tools: { view: true } } },
+  ]) {
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
+      const saved = await updateCustomRole("actor", role.id, input);
+      assert.deepEqual(saved.access, {
+        ...(input.access ?? role.access),
+        admin: { enter: true },
+      });
+      assert.deepEqual(state.updates.find(({ table }) => table === rolesTable).values.access, saved.access);
+      assert.ok(state.inserts.find(({ table }) => table === auditEventsTable).values.metadata.changes.includes("access"));
+    });
+  }
+  for (const access of [null, [], { admin: null }, { admin: { enter: "yes" } }, { admin: { unknown: true } }]) {
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [role]], async (state) => {
+      await assert.rejects(() => updateCustomRole("actor", role.id, { access }), /object|boolean|Unknown permission/);
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
+  }
+  for (const protectedRole of [
+    { ...role, id: "admin", access: ADMIN_ACCESS },
+    { ...role, id: "user" },
+    { ...role, isSystem: true },
+  ]) {
+    await withFakeDatabase([permissionRows({ roles: { edit: true } }), [protectedRole]], async (state) => {
+      await assert.rejects(() => updateCustomRole("actor", protectedRole.id, { access: {} }), /System roles are protected/);
+      assert.deepEqual(state, { inserts: [], updates: [], deletes: [] });
+    });
+  }
+});
+
 test("custom role edits validate access and unassigned custom roles can be deleted", async () => {
   const role = {
     id: "editor",
@@ -852,11 +991,12 @@ test("custom role edits validate access and unassigned custom roles can be delet
     async (state) => {
       await updateCustomRole("actor", role.id, {
         description: "Edits and publishes templates.",
-        access: { templates: { edit: true, publish: true } },
+        access: { admin: { enter: true }, templates: { view: true, edit: true, publish: true } },
       });
       const write = state.updates.find(({ table }) => table === rolesTable);
       assert.deepEqual(write.values.access, {
-        templates: { edit: true, publish: true },
+        admin: { enter: true },
+        templates: { view: true, edit: true, publish: true },
       });
       assert.ok(state.inserts.some(({ table }) => table === auditEventsTable));
     },

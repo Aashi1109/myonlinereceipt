@@ -1,8 +1,15 @@
 "use client";
 
 import {
+  Strong,
+  InlineCode,
+  Caption,
+  CodeBlock,
+  Muted,
+  List,
+  Text,
   AlertBanner,
-  Button,
+  ToolActionButton,
   DownloadResult,
   EmptyState,
   MetricCard,
@@ -19,12 +26,11 @@ import {
   AlertTriangle,
   Check,
   Copy,
-  Download,
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { DiffView } from "@/components/DiffView";
-import { JsonResultRenderer } from "@/components/JsonResultRenderer";
+import { JsonResultRenderer, type JsonResultView } from "@/components/JsonResultRenderer";
 import { SandboxedHtmlPreview } from "@/components/SandboxedHtmlPreview";
 import { GeneratedList } from "@/components/Surfaces";
 import type {
@@ -39,11 +45,12 @@ import {
 
 export interface ResultViewProps {
   hideJsonHeader?: boolean;
+  initialJsonView?: JsonResultView;
   jsonHeader?: ReactNode;
   result: ToolResult;
 }
 
-type ResultRendererOptions = Pick<ResultViewProps, "hideJsonHeader" | "jsonHeader">;
+type ResultRendererOptions = Pick<ResultViewProps, "hideJsonHeader" | "initialJsonView" | "jsonHeader">;
 
 type ResultRendererRegistry = {
   [Kind in ToolRenderKind]: (
@@ -56,10 +63,10 @@ interface DownloadButtonProps {
   content?: BlobPart;
   disabled?: boolean;
   href?: string;
+  iconOnly?: boolean;
   label?: string;
   mime: string;
   name: string;
-  variant?: "link" | "outline";
 }
 
 interface CopyButtonProps {
@@ -67,7 +74,6 @@ interface CopyButtonProps {
   disabled?: boolean;
   iconOnly?: boolean;
   label?: string;
-  variant?: "link" | "outline";
 }
 
 function saveBlob(content: BlobPart, mime: string, name: string) {
@@ -93,32 +99,29 @@ function DownloadButton({
   disabled = false,
   href,
   label = "Download",
+  iconOnly = false,
   mime,
   name,
-  variant = "link",
 }: DownloadButtonProps) {
   return (
-    <Button
-      className={variant === "link" ? "h-auto px-1 py-0 text-xs" : undefined}
+    <ToolActionButton action="download" iconOnly={iconOnly}
       disabled={disabled}
       onClick={() => href ? saveUrl(href, name) : content !== undefined ? saveBlob(content, mime, name) : undefined}
       type="button"
-      variant={variant}
     >
-      {variant === "outline" ? <Download aria-hidden="true" /> : null}
       {label}
-    </Button>
+    </ToolActionButton>
   );
 }
 
 function ArtifactDownloadButton({
   artifact,
   label = "Download file",
-  variant = "outline",
+  iconOnly = false,
 }: {
   artifact: StoredToolArtifact;
+  iconOnly?: boolean;
   label?: string;
-  variant?: "link" | "outline";
 }) {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState("");
@@ -143,14 +146,13 @@ function ArtifactDownloadButton({
   };
   return (
     <div className="inline-flex flex-col items-start gap-1">
-      <Button disabled={pending} onClick={() => void download()} type="button" variant={variant}>
-        {variant === "outline" ? <Download aria-hidden="true" /> : null}
+      <ToolActionButton action="download" iconOnly={iconOnly} disabled={pending} onClick={() => void download()} type="button">
         {pending ? "Preparing…" : failure ? "Try download again" : label}
-      </Button>
+      </ToolActionButton>
       {failure ? (
-        <span className="text-xs font-medium text-destructive" role="alert">
+        <Caption className="text-destructive" role="alert">
           {failure}
-        </span>
+        </Caption>
       ) : null}
     </div>
   );
@@ -161,7 +163,6 @@ function CopyButton({
   disabled = false,
   iconOnly = false,
   label = "Copy",
-  variant = iconOnly ? "outline" : "link",
 }: CopyButtonProps) {
   const [feedback, setFeedback] = useState<{
     content: string;
@@ -206,23 +207,18 @@ function CopyButton({
       : Copy;
 
   return (
-    <Button
+    <ToolActionButton
+      action="copy"
       aria-label={iconOnly ? statusLabel : undefined}
-      className={iconOnly
-        ? "relative after:absolute after:-inset-[6px] [&_svg]:size-4"
-        : variant === "link"
-          ? "h-auto px-1 py-0 text-xs"
-          : undefined}
+      icon={<StatusIcon aria-hidden="true" />}
+      iconOnly={iconOnly}
       disabled={disabled}
       onClick={() => void copy()}
-      size={iconOnly ? "icon" : undefined}
       title={iconOnly ? statusLabel : undefined}
       type="button"
-      variant={variant}
     >
-      {iconOnly || variant === "outline" ? <StatusIcon aria-hidden="true" /> : null}
       <span aria-live="polite" className={iconOnly ? "sr-only" : undefined}>{statusLabel}</span>
-    </Button>
+    </ToolActionButton>
   );
 }
 
@@ -368,12 +364,10 @@ export function ResultActions({
   canCopy,
   canDownload,
   result,
-  variant = "outline",
 }: {
   canCopy: boolean;
   canDownload: boolean;
   result: ToolResult | null;
-  variant?: "link" | "outline";
 }) {
   const artifact = resultArtifact(result);
   const storedArtifact = firstStoredArtifact(result);
@@ -386,22 +380,22 @@ export function ResultActions({
         <CopyButton
           content={artifact?.copy ?? ""}
           disabled={artifact?.copy === undefined}
+          iconOnly
           label={artifact?.copyLabel ?? "Copy all"}
-          variant={variant}
         />
       ) : null}
       {canDownload ? (
         storedArtifact ? (
-          <ArtifactDownloadButton artifact={storedArtifact} variant={variant} />
+          <ArtifactDownloadButton artifact={storedArtifact} iconOnly />
         ) : (
           <DownloadButton
+            iconOnly
             content={download?.content}
             disabled={!download}
             href={download?.href}
             label={download?.label ?? (extension ? `Download ${extension}` : "Download")}
             mime={download?.mime ?? "application/octet-stream"}
             name={download?.name ?? "result"}
-            variant={variant}
           />
         )
       ) : null}
@@ -412,20 +406,22 @@ export function ResultActions({
 const RESULT_RENDERERS: ResultRendererRegistry = {
   text: (result) => (
     <RenderFrame>
-      <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-sm leading-6">{result.text}</pre>
+      <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{result.text}</CodeBlock>
     </RenderFrame>
   ),
   code: (result) => (
     <RenderFrame>
-      <pre className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all bg-muted/45 p-4 font-mono text-xs leading-6"><code data-language={result.language}>{result.code}</code></pre>
+      <CodeBlock className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-all bg-muted/45 p-4" data-language={result.language}>{result.code}</CodeBlock>
     </RenderFrame>
   ),
   "json-tree": (result, options) => {
     const json = result.text ?? JSON.stringify(result.value, null, 2)!;
     return (
       <JsonResultRenderer
+        key={options?.initialJsonView}
         className={`h-full ${options?.hideJsonHeader ? "!bg-transparent" : ""}`}
         defaultOpenDepth={1}
+        defaultView={options?.initialJsonView}
         downloadName={result.downloadName ?? "result.json"}
         formattedValue={json}
         header={options?.hideJsonHeader ? "hidden" : "visible"}
@@ -451,7 +447,7 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
               ))}
             </TableBody>
           </Table>
-          {result.truncated ? <p className="border-t border-border p-3 text-xs text-muted-foreground">Only part of the result is shown.</p> : null}
+          {result.truncated ? <Muted className="border-t border-border p-3 text-muted-foreground">Only part of the result is shown.</Muted> : null}
         </div>
       </RenderFrame>
     );
@@ -462,8 +458,8 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         <dl className="min-h-0 flex-1 divide-y divide-border overflow-auto">
           {result.entries.map((entry) => (
             <div className="grid grid-cols-[minmax(8rem,0.4fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3" key={`${entry.label}-${entry.value}`}>
-              <dt className="text-sm font-medium">{entry.label}</dt>
-              <dd className="break-words font-mono text-sm text-muted-foreground">{entry.value}</dd>
+              <dt><Text><Strong>{entry.label}</Strong></Text></dt>
+              <dd className="break-words text-muted-foreground"><InlineCode>{entry.value}</InlineCode></dd>
               <CopyButton content={entry.value} iconOnly label={`Copy ${entry.label}`} />
             </div>
           ))}
@@ -532,11 +528,11 @@ const RESULT_RENDERERS: ResultRendererRegistry = {
         );
       })}
       {result.inputBytes !== undefined || result.outputBytes !== undefined ? (
-        <p className="text-xs text-muted-foreground">
+        <Muted className="text-muted-foreground">
           {result.inputBytes !== undefined ? `Input: ${result.inputBytes.toLocaleString()} bytes` : null}
           {result.inputBytes !== undefined && result.outputBytes !== undefined ? " · " : null}
           {result.outputBytes !== undefined ? `Output: ${result.outputBytes.toLocaleString()} bytes` : null}
-        </p>
+        </Muted>
       ) : null}
     </div>
   ),
@@ -597,7 +593,7 @@ function CommonResultDetails({ result }: ResultViewProps) {
       ) : null}
       {result.issues?.length ? (
         <AlertBanner title="Issues" variant="warning">
-          <ul className="list-disc space-y-1 pl-4">
+          <List className="list-disc space-y-1 pl-4">
             {result.issues.map((issue, index) => (
               <li key={`${index}-${issue.message}`}>
                 {issue.target ? `${issue.target[0].toUpperCase()}${issue.target.slice(1)}: ` : null}
@@ -605,14 +601,14 @@ function CommonResultDetails({ result }: ResultViewProps) {
                 {issue.line !== undefined ? ` (line ${issue.line}${issue.column !== undefined ? `, column ${issue.column}` : ""})` : ""}
               </li>
             ))}
-          </ul>
+          </List>
         </AlertBanner>
       ) : null}
       {result.artifacts?.length ? (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">Downloads</span>
+          <Text>Downloads</Text>
           {result.artifacts.map((artifact) => artifact.storage === "inline" ? (
-            <DownloadButton content={artifact.content} label={artifact.name} key={artifact.name} mime={artifact.mimeType} name={artifact.name} variant="outline" />
+            <DownloadButton content={artifact.content} label={artifact.name} key={artifact.name} mime={artifact.mimeType} name={artifact.name} />
           ) : (
             <ArtifactDownloadButton artifact={artifact} key={artifact.id} label={artifact.name} />
           ))}
@@ -628,10 +624,10 @@ function CommonResultDetails({ result }: ResultViewProps) {
   );
 }
 
-export function ResultView({ hideJsonHeader, jsonHeader, result }: ResultViewProps) {
+export function ResultView({ hideJsonHeader, initialJsonView, jsonHeader, result }: ResultViewProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      {renderPrimary(result, { hideJsonHeader, jsonHeader })}
+      {renderPrimary(result, { hideJsonHeader, initialJsonView, jsonHeader })}
       <CommonResultDetails result={result} />
     </div>
   );

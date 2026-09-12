@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Card, SectionCard, SectionHeading } from "@smarttools/ui";
+import {
+  H3,
+  Muted,
+  P,
+  Text,
+  Card,
+  SectionCard,
+  SectionHeading,
+} from "@smarttools/ui";
 import { FileCheck, Receipt, ShieldCheck, Sparkles } from "lucide-react";
 
 export default function SEOContent() {
@@ -41,8 +49,8 @@ export default function SEOContent() {
                 <Icon aria-hidden="true" className="size-5" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-foreground">{value.title}</h3>
-                <p className="text-xs leading-5 text-muted-foreground">{value.description}</p>
+                <H3 className="text-foreground">{value.title}</H3>
+                <Muted className="text-muted-foreground">{value.description}</Muted>
               </div>
             </Card>
           );
@@ -51,29 +59,29 @@ export default function SEOContent() {
 
       <SectionCard className="bg-muted/40 shadow-none">
         <SectionHeading title="How to Generate Professional Business Invoices Online" />
-        <div className="grid gap-6 text-sm leading-6 text-muted-foreground md:grid-cols-3">
+        <div className="grid gap-6 text-muted-foreground md:grid-cols-3">
           <div className="space-y-2">
-            <h3 className="font-bold text-foreground">1. Key Contractor Records</h3>
-            <p>
+            <H3 className="text-foreground">1. Key Contractor Records</H3>
+            <P>
               Always include your full legal business name or contact alias, contact phone coordinates, physical location address (optional, but highly standard), and business EIN numbers if you prefer not to share private Social Security numbers.
-            </p>
+            </P>
           </div>
           <div className="space-y-2">
-            <h3 className="font-bold text-foreground">2. Itemized Deliverable Breakdowns</h3>
-            <p>
+            <H3 className="text-foreground">2. Itemized Deliverable Breakdowns</H3>
+            <P>
               Write highly detailed description entries for client-facing tasks (e.g. state 'WordPress Performance Optimization' instead of simply 'Web Services'). Specify quantities and flat rates so both parties know exactly what is being audited.
-            </p>
+            </P>
           </div>
           <div className="space-y-2">
-            <h3 className="font-bold text-foreground">3. Setting Pragmatic Due Terms</h3>
-            <p>
+            <H3 className="text-foreground">3. Setting Pragmatic Due Terms</H3>
+            <P>
               Select payment guidelines like Net 15 or Net 30, which trigger payment dates exactly 15 or 30 days starting from the baseline invoice date. Setting late fees helps secure faster processing times for smaller companies.
-            </p>
+            </P>
           </div>
         </div>
-        <p className="max-w-3xl border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
-          <span className="font-semibold text-foreground">Disclaimer:</span> This free toolkit is provided for general paperwork generation and scheduling support. It does not constitute Certified Public Accounting (CPA) auditing, financial consulting, tax preparation, or official legal counsel. You remain solely responsible for validating local state-level sales tax obligations or contractor declarations before transmitting formal agreements.
-        </p>
+        <Muted className="max-w-3xl border-t border-border pt-4 text-muted-foreground">
+          <Text className="text-foreground">Disclaimer:</Text> This free toolkit is provided for general paperwork generation and scheduling support. It does not constitute Certified Public Accounting (CPA) auditing, financial consulting, tax preparation, or official legal counsel. You remain solely responsible for validating local state-level sales tax obligations or contractor declarations before transmitting formal agreements.
+        </Muted>
       </SectionCard>
     </div>
   );

@@ -1,6 +1,14 @@
+import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
 import { DOCUMENT_DEFINITIONS } from "@smarttools/invoice-templates";
 import {
-  Button,
+  H3,
+  Label,
+  Caption,
+  H1,
+  H2,
+  Muted,
+  Overline,
+  Strong,
   Field,
   Input,
   Select,
@@ -48,45 +56,45 @@ export default async function NewAdvancedTemplatePage() {
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
         </Link>
-        <h1 className="font-heading text-base font-semibold text-foreground">
+        <H1 className="text-foreground">
           New advanced template
-        </h1>
-        <StatusBadge className="min-h-6 px-2.5 text-[10px]" variant="info">
+        </H1>
+        <StatusBadge className="min-h-6 px-2.5" variant="info">
           Opens in advanced designer
         </StatusBadge>
       </header>
 
       <form action={createAdvancedTemplateAction} className="mx-auto grid w-full max-w-6xl gap-6 p-5 sm:p-7">
         <div className="text-center">
-          <p className="font-caption text-xs font-semibold uppercase tracking-[0.05em] text-primary">
+          <Overline className="block text-primary">
             Advanced creation
-          </p>
-          <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground">
+          </Overline>
+          <H2 className="mt-2 text-foreground">
             Choose a starting point
-          </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          </H2>
+          <Muted className="mx-auto mt-2 max-w-2xl text-muted-foreground">
             We’ll create the template record first, then hand it off to the existing canvas designer.
-          </p>
+          </Muted>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3" aria-label="Advanced template starting points">
-          <label className="group relative cursor-pointer rounded-xl border-2 border-primary bg-primary/5 p-5 outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+          <Label className="group relative cursor-pointer rounded-xl border-2 border-primary bg-primary/5 p-5 outline-none transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
             <input className="sr-only" defaultChecked name="startingPoint" type="radio" value="blank" />
             <span className="flex items-start justify-between gap-3">
               <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground">
                 <Plus aria-hidden="true" className="size-5" />
               </span>
-              <span className="font-caption text-[10px] font-semibold uppercase tracking-[0.05em] text-primary">
+              <Overline className="text-primary">
                 Selected
-              </span>
+              </Overline>
             </span>
-            <strong className="mt-4 block font-heading text-base font-semibold text-foreground">
+            <Strong className="mt-4 block text-foreground">
               Blank canvas
-            </strong>
-            <span className="mt-1.5 block text-xs leading-5 text-muted-foreground">
+            </Strong>
+            <Caption className="mt-1.5 block text-muted-foreground">
               Start from a clean, correctly sized document with no placed elements.
-            </span>
-          </label>
+            </Caption>
+          </Label>
 
           <Link
             className="group rounded-xl border border-border bg-card p-5 outline-none transition-[border-color,transform] hover:-translate-y-0.5 hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -95,12 +103,12 @@ export default async function NewAdvancedTemplatePage() {
             <span className="grid size-10 place-items-center rounded-lg bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary">
               <Copy aria-hidden="true" className="size-5" />
             </span>
-            <strong className="mt-4 block font-heading text-base font-semibold text-foreground">
+            <Strong className="mt-4 block text-foreground">
               Clone a template
-            </strong>
-            <span className="mt-1.5 block text-xs leading-5 text-muted-foreground">
+            </Strong>
+            <Caption className="mt-1.5 block text-muted-foreground">
               Return to the library and duplicate an existing standard or advanced draft.
-            </span>
+            </Caption>
           </Link>
 
           <Link
@@ -110,29 +118,29 @@ export default async function NewAdvancedTemplatePage() {
             <span className="grid size-10 place-items-center rounded-lg bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary">
               <Upload aria-hidden="true" className="size-5" />
             </span>
-            <strong className="mt-4 block font-heading text-base font-semibold text-foreground">
+            <Strong className="mt-4 block text-foreground">
               Import JSON
-            </strong>
-            <span className="mt-1.5 block text-xs leading-5 text-muted-foreground">
+            </Strong>
+            <Caption className="mt-1.5 block text-muted-foreground">
               Use the library importer for an exported and schema-compatible template.
-            </span>
+            </Caption>
           </Link>
         </div>
 
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6" aria-labelledby="advanced-setup-title">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 id="advanced-setup-title" className="font-heading text-lg font-semibold text-foreground">
+              <H3 id="advanced-setup-title" className="text-foreground">
                 Quick setup
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              </H3>
+              <Muted className="mt-1 text-muted-foreground">
                 Define the draft identity and canvas before opening the designer.
-              </p>
+              </Muted>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 font-caption text-[10px] font-semibold text-muted-foreground">
+            <Caption className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-muted-foreground">
               <Braces aria-hidden="true" className="size-3.5 text-primary" />
               Schema-backed draft
-            </span>
+            </Caption>
           </div>
 
           <div className="mt-6 grid gap-5 md:grid-cols-2">
@@ -148,7 +156,7 @@ export default async function NewAdvancedTemplatePage() {
               <Input
                 autoCapitalize="none"
                 autoComplete="off"
-                className="font-mono"
+
                 name="slug"
                 pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
                 placeholder="modern-service-invoice"
@@ -187,16 +195,16 @@ export default async function NewAdvancedTemplatePage() {
         </section>
 
         <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <p className="mr-auto font-caption text-[11px] leading-5 text-muted-foreground">
+          <Caption className="block mr-auto text-muted-foreground">
             Next: add layers, bindings, and repeating regions
-          </p>
+          </Caption>
           <Link className={buttonVariants({ variant: "ghost" })} href="/admin/templates">
             Cancel
           </Link>
-          <Button type="submit">
+          <SubmitButton type="submit">
             <FilePenLine aria-hidden="true" className="size-4" />
             Create &amp; open designer
-          </Button>
+          </SubmitButton>
         </div>
       </form>
     </div>

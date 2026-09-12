@@ -1,14 +1,18 @@
 "use client";
 
 import {
+  Overline,
+  Muted,
+  FieldLabel,
+  CodeBlock,
+  List,
+  P,
   AlertBanner,
-  Button,
-  Label,
+  ToolActionButton,
   SegmentedControl,
   Select,
   ToolOptionsPanel,
 } from "@smarttools/ui";
-import { Copy, Download } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { SplitStack } from "@/components/Stacks";
@@ -84,14 +88,15 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
       collapseLabel="settings panel"
       collapseSide="secondary"
       collapsible
-      defaultSize={68}
-      minSize={52}
+      defaultCollapsed="secondary"
+      defaultSize={75}
+      minSize={75}
     >
       <div className="grid min-h-0 grid-rows-[minmax(12rem,0.55fr)_minmax(14rem,1fr)] gap-4 border-r border-border p-5 max-[54rem]:min-h-[44rem] max-[54rem]:border-r-0 max-[54rem]:border-b">
         <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${inputId}-label`}>
-          <Label className="font-caption text-xs font-semibold text-muted-foreground" htmlFor={inputId} id={`${inputId}-label`}>
+          <FieldLabel className="text-muted-foreground" htmlFor={inputId} id={`${inputId}-label`}>
             {inputSpec.label} <span aria-hidden="true">*</span>
-          </Label>
+          </FieldLabel>
           <SourceTextarea
             className="min-h-0 flex-1"
             disabled={props.disabled}
@@ -106,11 +111,11 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
 
         <section className="flex min-h-0 flex-col gap-2" aria-labelledby={`${languageId}-heading`}>
           <header className="flex min-h-8 shrink-0 flex-wrap items-center justify-between gap-2">
-            <h2 className="font-caption text-xs font-extrabold tracking-[0.06em] text-muted-foreground uppercase" id={`${languageId}-heading`}>
+            <Overline className="text-muted-foreground" id={`${languageId}-heading`}>
               Generated output
-            </h2>
+            </Overline>
             <div className="flex items-center gap-2">
-              <Label className="sr-only" htmlFor={languageId}>Output language</Label>
+              <FieldLabel className="sr-only" htmlFor={languageId}>Output language</FieldLabel>
               <Select
                 className="w-36"
                 disabled={props.disabled}
@@ -122,25 +127,40 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
               </Select>
-              <Button disabled={!output} onClick={() => void copyOutput()} size="xs" type="button" variant="outline">
-                <Copy aria-hidden="true" />
+              <ToolActionButton action="copy" disabled={!output} onClick={() => void copyOutput()} type="button">
                 {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy"}
-              </Button>
-              <Button disabled={!output} onClick={downloadOutput} size="icon-xs" title="Download generated output" type="button" variant="outline">
-                <Download aria-hidden="true" />
+              </ToolActionButton>
+              <ToolActionButton action="download" iconOnly disabled={!output} onClick={downloadOutput} title="Download generated output" type="button">
                 <span className="sr-only">Download generated output</span>
-              </Button>
+              </ToolActionButton>
             </div>
           </header>
           <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-input bg-muted/45">
             {output ? (
-              <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-mono text-xs leading-6">{output}</pre>
+              <CodeBlock className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4">{output}</CodeBlock>
             ) : (
-              <div className="grid flex-1 place-items-center p-6 text-center text-sm text-muted-foreground">
-                Generated Axios code appears here as you edit the cURL command.
+              <div className="grid flex-1 place-items-center p-6 text-center">
+                <Muted>Generated Axios code appears here as you edit the cURL command.</Muted>
               </div>
             )}
           </div>
+          {issues.length ? (
+            <AlertBanner title="Some cURL flags were not converted" variant="warning">
+              <List className="list-disc space-y-1 pl-4">
+                {issues.map((issue, index) => <li key={`${index}-${issue.message}`}>{issue.message}</li>)}
+              </List>
+            </AlertBanner>
+          ) : null}
+          {props.error ? (
+            <AlertBanner title="Unable to convert" variant="error">{props.error}</AlertBanner>
+          ) : verdict ? (
+            <AlertBanner
+              title={verdict.label}
+              variant={verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"}
+            >
+              {verdict.detail}
+            </AlertBanner>
+          ) : null}
         </section>
       </div>
 
@@ -150,9 +170,9 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
         variant="plain"
       >
         <div className="grid gap-1.5">
-          <Label className="font-caption text-[13px] font-medium text-muted-foreground" htmlFor={moduleId}>
+          <FieldLabel className="text-muted-foreground" htmlFor={moduleId}>
             Module format
-          </Label>
+          </FieldLabel>
           <Select
             disabled={props.disabled}
             id={moduleId}
@@ -173,24 +193,8 @@ export default function CurlToAxiosWorkspace(props: WorkspaceProps) {
         />
 
         <AlertBanner title="Unsupported flags are not converted" variant="warning">
-          <p>Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are ignored.</p>
-          {issues.length ? (
-            <ul className="mt-2 list-disc space-y-1 pl-4">
-              {issues.map((issue, index) => <li key={`${index}-${issue.message}`}>{issue.message}</li>)}
-            </ul>
-          ) : null}
+          <P>Forms, cookie jars, proxies, redirects, certificates, uploads, and unsupported shell syntax are ignored.</P>
         </AlertBanner>
-
-        {props.error ? (
-          <AlertBanner title="Unable to convert" variant="error">{props.error}</AlertBanner>
-        ) : verdict ? (
-          <AlertBanner
-            title={verdict.label}
-            variant={verdict.level === "ok" ? "success" : verdict.level === "warn" ? "warning" : "error"}
-          >
-            {verdict.detail}
-          </AlertBanner>
-        ) : null}
       </ToolOptionsPanel>
     </SplitStack>
   );

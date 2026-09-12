@@ -24,6 +24,7 @@ import { cache } from "react";
 
 import {
   db,
+  getToolContentRows,
   isDatabaseConfigured,
   managedToolsTable,
 } from "@smarttools/database";
@@ -35,6 +36,7 @@ import {
 
 import { definitionKeyOf, loadSpec } from "./catalog";
 import { TOOL_CATEGORIES } from "./categories";
+import { hasDraftToolContent } from "./content.ts";
 
 type ManagedToolRow = typeof managedToolsTable.$inferSelect;
 
@@ -48,6 +50,7 @@ interface ManifestRecord {
 export interface AdminTool extends ResolvedTool {
   /** False when no `tools/<componentKey>/definition.ts` ships for this row. */
   readonly hasDefinition: boolean;
+  readonly hasDraftContent: boolean;
 }
 
 const loadRows = cache(async (): Promise<readonly ManagedToolRow[]> => {
@@ -113,7 +116,14 @@ export const getToolManifest = cache(
  * `catalog.ts` drops any row whose `definition.ts` does not import.
  */
 export const getAdminTools = cache(async (): Promise<readonly AdminTool[]> => {
-  const [rows, records] = await Promise.all([loadRows(), loadRecords()]);
+  const [rows, records, contentRows] = await Promise.all([
+    loadRows(),
+    loadRecords(),
+    isDatabaseConfigured() ? getToolContentRows() : Promise.resolve([]),
+  ]);
+  const draftIds = new Set(
+    contentRows.filter(hasDraftToolContent).map((row) => row.toolId),
+  );
   const shippedById = new Map(
     records.map((record) => [record.entry.id, record.hasDefinition] as const),
   );
@@ -124,5 +134,6 @@ export const getAdminTools = cache(async (): Promise<readonly AdminTool[]> => {
   ).map((tool) => ({
     ...tool,
     hasDefinition: shippedById.get(tool.id) ?? false,
+    hasDraftContent: draftIds.has(tool.id),
   }));
 });

@@ -1,3 +1,7 @@
+import {
+  H2,
+  Muted,
+} from "@smarttools/ui";
 import type { Metadata } from "next";
 import InformationPage from "@/app/paperwork/components/InformationPage";
 
@@ -14,22 +18,22 @@ export default function TermsPage() {
       title="Practical terms for using Paperwork"
     >
       <section className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight">You control the final document</h2>
-        <p className="text-muted-foreground">
+        <H2>You control the final document</H2>
+        <Muted className="text-muted-foreground">
           Review names, dates, totals, tax settings, payment details, and exported files before sharing them. You are responsible for the information you enter and the documents you issue.
-        </p>
+        </Muted>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight">Not professional advice</h2>
-        <p className="text-muted-foreground">
+        <H2>Not professional advice</H2>
+        <Muted className="text-muted-foreground">
           Paperwork does not provide legal, accounting, payroll, or tax advice. Consult a qualified professional for obligations specific to your business or location.
-        </p>
+        </Muted>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight">Availability</h2>
-        <p className="text-muted-foreground">
+        <H2>Availability</H2>
+        <Muted className="text-muted-foreground">
           Features may change as the toolkit improves. Keep your own copies of documents and records that matter to your business.
-        </p>
+        </Muted>
       </section>
     </InformationPage>
   );

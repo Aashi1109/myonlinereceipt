@@ -13,7 +13,7 @@ function emailActionUrl(message) {
 }
 
 test(
-  "Better Auth signs up, verifies, recovers, starts Google OAuth, and blocks suspension",
+  "Better Auth signs up, verifies, recovers, starts Google OAuth, and identifies suspended accounts",
   { skip: enabled ? false : "set SMARTTOOLS_INTEGRATION=1 with a migrated disposable DATABASE_URL" },
   async (context) => {
     process.env.BETTER_AUTH_SECRET =
@@ -160,17 +160,15 @@ test(
         DELETE FROM auth_sessions WHERE user_id = ${storedUser.id}
       `;
     });
-    await assert.rejects(
-      () =>
-        auth.api.signInEmail({
-          body: { email, password: nextPassword },
-          headers,
-        }),
-      /session|sign|access|denied|failed/i,
-    );
+    const suspendedSignIn = await auth.api.signInEmail({
+      body: { email, password: nextPassword },
+      headers,
+    });
+    assert.ok(suspendedSignIn.token);
+    assert.equal(suspendedSignIn.user.status, "suspended");
     const [sessionCount] = await sqlClient`
       SELECT COUNT(*)::integer AS count FROM auth_sessions WHERE user_id = ${storedUser.id}
     `;
-    assert.equal(sessionCount.count, 0);
+    assert.equal(sessionCount.count, 1);
   },
 );

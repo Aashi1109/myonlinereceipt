@@ -8,8 +8,16 @@
 import React, { useState, useEffect } from "react";
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
+  FieldError,
+  Strong,
+  H3,
+  H4,
+  Overline,
+  P,
+  Text,
   AlertBanner,
   Button,
+  ToolActionButton,
   Card,
   Checkbox,
   Input,
@@ -34,7 +42,6 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  Download,
   Percent,
   CheckCircle,
   HelpCircle,
@@ -410,7 +417,7 @@ export default function ExpenseReportPage({
   };
 
   return (
-    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="expense-report-wrapper">
+    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="expense-report-wrapper">
 
       {/* 1. Page Header banner */}
       <ToolPageHeader
@@ -464,12 +471,12 @@ export default function ExpenseReportPage({
               <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
                 <MapPin className="w-5 h-5" />
               </div>
-              <h4 className="font-extrabold text-slate-900 text-lg">Import Mileage Log Entries?</h4>
+              <H4 className="text-slate-900">Import Mileage Log Entries?</H4>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+            <P className="text-slate-600">
               This routine reads your active Mileage Log draft values and safely appends them as mileage item rows inside this expense report board. No data will be overwritten.
-            </p>
-            <div className="flex justify-end gap-2 pt-2 text-xs font-semibold">
+            </P>
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 onClick={() => setShowImportConfirm(false)}
                 size="sm"
@@ -498,10 +505,10 @@ export default function ExpenseReportPage({
         value={activeTab}
       >
         <TabsList className="grid w-full grid-cols-2 border border-slate-200/50" variant="segmented">
-          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="edit">
+          <TabsTrigger className="whitespace-normal py-1.5" value="edit">
             1. Edit items
           </TabsTrigger>
-          <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="preview">
+          <TabsTrigger className="whitespace-normal py-1.5" value="preview">
             2. PDF / Print View
           </TabsTrigger>
         </TabsList>
@@ -517,56 +524,51 @@ export default function ExpenseReportPage({
 
             {/* Report Metadata segment */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 1. Report Configuration
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-title">Report Title / Purpose *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-report-title">Report Title / Purpose *</Label>
                   <Input
                     type="text"
                     required
-                    className="text-xs font-extrabold"
                     id="expense-report-title"
                     value={data.title}
                     onChange={(e) => setData({ ...data, title: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-number">Report Number *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-report-number">Report Number *</Label>
                   <Input
                     type="text"
-                    className="text-xs font-bold"
                     id="expense-report-number"
                     value={data.reportNumber}
                     onChange={(e) => setData({ ...data, reportNumber: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-report-date">Report issue Date *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-report-date">Report issue Date *</Label>
                   <Input
                     type="date"
-                    className="text-xs font-semibold"
                     id="expense-report-date"
                     value={data.reportDate}
                     onChange={(e) => setData({ ...data, reportDate: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-start">Period Start</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-period-start">Period Start</Label>
                   <Input
                     type="date"
-                    className="text-xs font-semibold"
                     id="expense-period-start"
                     value={data.startDate}
                     onChange={(e) => setData({ ...data, startDate: e.target.value })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-period-end">Period End</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-period-end">Period End</Label>
                   <Input
                     type="date"
-                    className="text-xs font-semibold"
                     id="expense-period-end"
                     value={data.endDate}
                     onChange={(e) => setData({ ...data, endDate: e.target.value })}
@@ -577,18 +579,18 @@ export default function ExpenseReportPage({
 
             {/* Submitter Info Grid */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 2. Submitter (Employee / Contractor)
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-name">Legal Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-submitter-name">Legal Name *</Label>
                   <Input
                     aria-errormessage={errors["submitter.name"] ? "expense-submitter-name-error" : undefined}
                     type="text"
                     placeholder="e.g. Alex Mercer"
                     aria-invalid={Boolean(errors["submitter.name"])}
-                    className={`text-xs font-semibold ${errors["submitter.name"] ? "bg-destructive/5" : ""}`}
+                    className={` ${errors["submitter.name"] ? "bg-destructive/5" : ""}`}
                     id="expense-submitter-name"
                     value={data.submitter.name}
                     onChange={(e) => {
@@ -597,26 +599,24 @@ export default function ExpenseReportPage({
                     }}
                   />
                   {errors["submitter.name"] && (
-                    <p className="mt-1 text-[10px] font-bold text-destructive" id="expense-submitter-name-error" role="alert">{errors["submitter.name"]}</p>
+                    <FieldError className="mt-1 text-destructive" id="expense-submitter-name-error" role="alert">{errors["submitter.name"]}</FieldError>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-submitter-email">Email Coordinates</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-submitter-email">Email Coordinates</Label>
                   <Input
                     type="email"
                     placeholder="alex@brand.com"
-                    className="text-xs font-semibold"
                     id="expense-submitter-email"
                     value={data.submitter.email}
                     onChange={(e) => setData({ ...data, submitter: { ...data.submitter, email: e.target.value } })}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-department">Corporate Department / Team</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-department">Corporate Department / Team</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Client Solutions Group"
-                    className="text-xs font-semibold"
                     id="expense-department"
                     value={data.department}
                     onChange={(e) => setData({ ...data, department: e.target.value })}
@@ -627,27 +627,25 @@ export default function ExpenseReportPage({
 
             {/* Parent Association or Target Client Coordinates */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 3. Reimbursement entity (Company / Client)
-              </h3>
+              </H3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-name">Company / client Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-client-name">Company / client Name *</Label>
                   <Input
                     type="text"
                     placeholder="e.g. Acme Retail Corp"
-                    className="text-xs font-semibold"
                     id="expense-client-name"
                     value={data.client.name}
                     onChange={(e) => setData({ ...data, client: { ...data.client, name: e.target.value } })}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-client-contact">Point of Contact</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="expense-client-contact">Point of Contact</Label>
                   <Input
                     type="text"
                     placeholder="Sarah Jenkins"
-                    className="text-xs font-semibold"
                     id="expense-client-contact"
                     value={data.client.contact}
                     onChange={(e) => setData({ ...data, client: { ...data.client, contact: e.target.value } })}
@@ -659,9 +657,9 @@ export default function ExpenseReportPage({
             {/* Expense Itemization table */}
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
-                <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+                <H3 className="text-slate-500">
                   4. Purchase Itemization
-                </h3>
+                </H3>
                 <Button
                   onClick={handleAddExpenseRow}
                   size="sm"
@@ -688,30 +686,27 @@ export default function ExpenseReportPage({
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-date`}>Date *</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-date`}>Date *</Label>
                         <Input
                           type="date"
-                          className="text-xs"
                           id={`expense-row-${row.id}-date`}
                           value={row.date}
                           onChange={(e) => handleExpenseRowChange(row.id, "date", e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-merchant`}>Merchant / Vendor *</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-merchant`}>Merchant / Vendor *</Label>
                         <Input
                           type="text"
                           placeholder="Amazon, Shell etc"
-                          className="text-xs font-semibold"
                           id={`expense-row-${row.id}-merchant`}
                           value={row.merchant}
                           onChange={(e) => handleExpenseRowChange(row.id, "merchant", e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-category`}>expense Category</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-category`}>expense Category</Label>
                         <Select
-                          className="text-xs font-bold"
                           id={`expense-row-${row.id}-category`}
                           value={row.category}
                           onChange={(e) => handleExpenseRowChange(row.id, "category", e.target.value)}
@@ -728,11 +723,10 @@ export default function ExpenseReportPage({
                         </Select>
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-500 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-amount`}>Purchase Amount ($) *</Label>
+                        <Label className="block text-slate-500 mb-0.5" htmlFor={`expense-row-${row.id}-amount`}>Purchase Amount ($) *</Label>
                         <Input
                           type="number"
                           placeholder="0.00"
-                          className="text-xs font-bold"
                           id={`expense-row-${row.id}-amount`}
                           value={row.amount}
                           onChange={(e) => handleExpenseRowChange(row.id, "amount", e.target.value)}
@@ -742,7 +736,7 @@ export default function ExpenseReportPage({
 
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>Tax ($)</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-tax`}>Tax ($)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -753,7 +747,7 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <Label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>Tip ($)</Label>
+                        <Label className="block text-slate-400 mb-0.5" htmlFor={`expense-row-${row.id}-tip`}>Tip ($)</Label>
                         <Input
                           type="number"
                           min="0"
@@ -764,9 +758,9 @@ export default function ExpenseReportPage({
                         />
                       </div>
                       <div>
-                        <span className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Line total</span>
-                        <output className="flex min-h-10 items-center font-mono text-sm font-black text-slate-900">
-                          ${getExpenseLineTotal(row).toFixed(2)}
+                        <Overline className="block text-slate-400 mb-0.5">Line total</Overline>
+                        <output className="flex min-h-10 items-center text-slate-900">
+                          <Strong>${getExpenseLineTotal(row).toFixed(2)}</Strong>
                         </output>
                       </div>
                     </div>
@@ -777,27 +771,26 @@ export default function ExpenseReportPage({
                           aria-label={`Expense ${index + 1} notes`}
                           type="text"
                           placeholder="Additional detailed notes..."
-                          className="text-xs"
                           value={row.description}
                           onChange={(e) => handleExpenseRowChange(row.id, "description", e.target.value)}
                         />
                       </div>
-                      <div className="md:col-span-6 flex flex-wrap gap-4 items-center justify-end text-[10px] font-bold text-slate-600">
+                      <div className="md:col-span-6 flex flex-wrap gap-4 items-center justify-end text-slate-600">
                         <Checkbox
                           checked={row.reimbursable}
-                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
                           label="Reimbursable"
                           onCheckedChange={(checked) => handleExpenseRowChange(row.id, "reimbursable", checked === true)}
                         />
                         <Checkbox
                           checked={row.billable}
-                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
                           label="Bill Client"
                           onCheckedChange={(checked) => handleExpenseRowChange(row.id, "billable", checked === true)}
                         />
                         <Checkbox
                           checked={row.receiptAttached}
-                          className="min-h-0 items-center gap-1.5 text-[10px] [&_[data-slot=checkbox]]:size-3.5"
+                          className="min-h-0 items-center gap-1.5 [&_[data-slot=checkbox]]:size-3.5"
                           label="Receipt File"
                           onCheckedChange={(checked) => handleExpenseRowChange(row.id, "receiptAttached", checked === true)}
                         />
@@ -805,17 +798,17 @@ export default function ExpenseReportPage({
                     </div>
 
                     {row.receiptAttached && (
-                      <div className="bg-white/80 border border-dashed border-slate-200 px-3 py-1.5 rounded-lg text-[10px] text-slate-500 font-mono flex items-center justify-between">
-                        <span className="flex items-center gap-1">
+                      <div className="bg-white/80 border border-dashed border-slate-200 px-3 py-1.5 rounded-lg text-slate-500 flex items-center justify-between">
+                        <Text className="flex items-center gap-1">
                           <Paperclip className="w-3 h-3 text-slate-400" />
-                          <span>Receipt reference: {row.receiptName || "purchase_receipt_reference.jpg"}</span>
-                        </span>
+                          <Text>Receipt reference: {row.receiptName || "purchase_receipt_reference.jpg"}</Text>
+                        </Text>
                         <Input
                           aria-label={`Receipt label for expense ${index + 1}`}
                           type="text"
                           required
                           placeholder="Edit label"
-                          className="h-8 max-w-32 text-[11px]"
+                          className="h-8 max-w-32"
                           value={row.receiptName || ""}
                           onChange={(e) => handleExpenseRowChange(row.id, "receiptName", e.target.value)}
                         />
@@ -830,10 +823,10 @@ export default function ExpenseReportPage({
             <div>
               <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-4">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+                  <H3 className="text-slate-500">
                     5. Driven Mileage Rows
-                  </h3>
-                  <StatusBadge className="font-mono" variant="neutral">
+                  </H3>
+                  <StatusBadge  variant="neutral">
                     Per-row rate
                   </StatusBadge>
                 </div>
@@ -848,9 +841,9 @@ export default function ExpenseReportPage({
               </div>
 
               {data.mileageRows.length === 0 ? (
-                <div className="text-center py-6 bg-slate-50 border border-dashed rounded-xl text-xs text-slate-400 font-medium">
+                <div className="text-center py-6 bg-slate-50 border border-dashed rounded-xl text-slate-400"><Text>
                   No mileage records registered. Reconcile trip logs using Phase 2 mileage sheet.
-                </div>
+                </Text></div>
               ) : (
                 <div className="space-y-3">
                   {data.mileageRows.map((mRow) => (
@@ -868,44 +861,40 @@ export default function ExpenseReportPage({
 
                       <div className="grow grid grid-cols-2 md:grid-cols-5 gap-2">
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-date`}>Date</Label>
+                          <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-date`}>Date</Label>
                           <Input
                             type="date"
-                            className="text-xs"
                             id={`expense-mileage-${mRow.id}-date`}
                             value={mRow.date}
                             onChange={(e) => handleMileageRowChange(mRow.id, "date", e.target.value)}
                           />
                         </div>
                         <div className="col-span-2">
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-purpose`}>Trip Purpose</Label>
+                          <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-purpose`}>Trip Purpose</Label>
                           <Input
                             type="text"
                             placeholder="e.g. Travel to CLT Airport terminal"
-                            className="text-xs font-medium"
                             id={`expense-mileage-${mRow.id}-purpose`}
                             value={mRow.purpose}
                             onChange={(e) => handleMileageRowChange(mRow.id, "purpose", e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-miles`}>Driven Miles</Label>
+                          <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-miles`}>Driven Miles</Label>
                           <Input
                             type="number"
                             min="0"
-                            className="text-xs font-black"
                             id={`expense-mileage-${mRow.id}-miles`}
                             value={mRow.miles}
                             onChange={(e) => handleMileageRowChange(mRow.id, "miles", e.target.value)}
                           />
                         </div>
                         <div>
-                          <Label className="block text-[11px] font-black text-slate-400 uppercase" htmlFor={`expense-mileage-${mRow.id}-rate`}>Rate / mile</Label>
+                          <Label className="block text-slate-400" htmlFor={`expense-mileage-${mRow.id}-rate`}>Rate / mile</Label>
                           <Input
                             type="number"
                             min="0"
                             step="0.001"
-                            className="text-xs font-black"
                             id={`expense-mileage-${mRow.id}-rate`}
                             value={mRow.rate}
                             onChange={(e) => handleMileageRowChange(mRow.id, "rate", e.target.value)}
@@ -920,15 +909,14 @@ export default function ExpenseReportPage({
 
             {/* Float Adjustment advance */}
             <div>
-              <h3 className="text-sm font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">
+              <H3 className="text-slate-500 border-b border-slate-100 pb-2 mb-4">
                 6. Corporate Advance Received
-              </h3>
+              </H3>
               <div className="max-w-xs">
-                <Label className="block text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1" htmlFor="expense-advance">Pre-Paid Advance ($)</Label>
+                <Label className="block text-slate-400 mb-1" htmlFor="expense-advance">Pre-Paid Advance ($)</Label>
                 <Input
                   type="number"
                   placeholder="0.00"
-                  className="text-xs font-bold"
                   id="expense-advance"
                   value={data.advanceReceived}
                   onChange={(e) => setData({ ...data, advanceReceived: Math.max(0, Number(e.target.value)) })}
@@ -947,11 +935,11 @@ export default function ExpenseReportPage({
         </div>
 
         {/* RIGHT COLUMN: PREVIEW ACTION TRIGGER BAR */}
-        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 leading-relaxed ${activeTab === "preview" ? "block font-sans" : "hidden md:block"}`}>
+        <div className={`lg:col-span-5 space-y-6 lg:sticky lg:top-20 ${activeTab === "preview" ? "block" : "hidden md:block"}`}>
 
           <Card className="space-y-3 rounded-2xl p-4 shadow-sm print:hidden">
-            <div className="flex items-center justify-between text-[11px] text-slate-500 font-bold border-b border-slate-100 pb-2">
-              <span>REPORT ACTIONS PANEL</span>
+            <div className="flex items-center justify-between text-slate-500 border-b border-slate-100 pb-2">
+              <Text>REPORT ACTIONS PANEL</Text>
               <StatusBadge variant="info">Ready to Print</StatusBadge>
             </div>
 
@@ -964,15 +952,13 @@ export default function ExpenseReportPage({
                 <Printer className="w-4 h-4" />
                 <span>Download PDF</span>
               </Button>
-              <Button
-                className="w-full"
+              <ToolActionButton
+                action="download"
                 onClick={handleExportCSV}
                 type="button"
-                variant="secondary"
               >
-                <Download className="w-4 h-4 text-slate-500" />
                 <span>Export CSV</span>
-              </Button>
+              </ToolActionButton>
             </div>
           </Card>
 
@@ -1170,34 +1156,34 @@ export default function ExpenseReportPage({
 
       {/* SEO Faq block */}
       <div className="mt-16 border-t border-slate-200/80 pt-12 max-w-4xl mx-auto space-y-6 print:hidden" id="expense-seo-faq">
-        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight text-center">
+        <H3 className="text-slate-900 text-center">
           Frequently Answered Corporate Questions
-        </h3>
+        </H3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600 leading-relaxed font-semibold">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-600">
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">How do I export my expenses summary for tax write-offs later?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">How do I export my expenses summary for tax write-offs later?</H4>
+            <P>
               Simply click the "Export CSV" option to serialize all itemization metrics into standard xls sheets, or copy summaries into tax planner cards.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">How does Pre-Paid Advance calculation behave?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">How does Pre-Paid Advance calculation behave?</H4>
+            <P>
               If your corporate office already wired cash for travel flights, keying the advance will deduct it clearly from final balances due.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Are receipts files uploaded onto any cloud database?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Are receipts files uploaded onto any cloud database?</H4>
+            <P>
               No, absolutely none. Your assets remain local under immediate browser memory.
-            </p>
+            </P>
           </div>
           <div className="space-y-1">
-            <h4 className="font-extrabold text-slate-900">Is this software compliant with IRS publication guidelines?</h4>
-            <p className="font-medium">
+            <H4 className="text-slate-900">Is this software compliant with IRS publication guidelines?</H4>
+            <P>
               It helps contractors itemize operational metrics clearly. Since it represents an organizer, always consult certified bookkeepers.
-            </p>
+            </P>
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 "use client";
+import { Caption, H3, Muted, P } from "#components/typography";
 
 import {
   ChevronDown,
@@ -7,7 +8,10 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+import { Menu, X } from "lucide";
 import * as React from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { MorphIcon } from "morphicons/react";
 
 import { Button } from "#components/button";
 import { ChapterScrubber } from "#components/ChapterScrubber";
@@ -22,15 +26,22 @@ export interface PdfOutlineItem {
 }
 
 export interface PdfViewerProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   currentPage: number;
   fileName: string;
+  onExpand?: () => void;
   onFitPage?: () => void;
   onPageChange: (page: number) => void;
   onZoomChange?: (zoom: number) => void;
   outline: PdfOutlineItem[];
   pageCount: number;
+  pages?: readonly {
+    pageNumber: number;
+    width: number;
+    height: number;
+    content: React.ReactNode;
+  }[];
   pagePreviewDelayMs?: number;
   pagePreviewDetail?: React.ReactNode;
   renderPagePreview?: (page: number) => React.ReactNode;
@@ -54,11 +65,13 @@ export function PdfViewer({
   className,
   currentPage,
   fileName,
+  onExpand,
   onFitPage,
   onPageChange,
   onZoomChange,
   outline,
   pageCount,
+  pages,
   pagePreviewDelayMs = 120,
   pagePreviewDetail = "A4 → Letter · fit content",
   renderPagePreview,
@@ -71,10 +84,19 @@ export function PdfViewer({
   const resolvedCurrentPage = normalizePage(currentPage, resolvedPageCount);
   const [internalZoom, setInternalZoom] = React.useState(100);
   const [query, setQuery] = React.useState("");
+  const [outlineOpen, setOutlineOpen] = React.useState(false);
+  const reduceMotion = useReducedMotion();
+  const outlineId = React.useId();
+  const outlineSearch = React.useRef<HTMLInputElement>(null);
+  const outlineToggle = React.useRef<HTMLButtonElement>(null);
+  const outlineAnimating = React.useRef(false);
   const [pageDraft, setPageDraft] = React.useState(
     String(resolvedCurrentPage),
   );
   const outlineButtons = React.useRef<Array<HTMLButtonElement | null>>([]);
+  const pageViewport = React.useRef<HTMLDivElement | null>(null);
+  const pageElements = React.useRef(new Map<number, HTMLDivElement>());
+  const scrollSelection = React.useRef<number | null>(null);
   const resolvedZoom = clamp(
     Number.isFinite(zoom) ? Math.round(zoom ?? 100) : internalZoom,
     MIN_ZOOM,
@@ -89,9 +111,52 @@ export function PdfViewer({
     [resolvedPageCount],
   );
 
+  React.useLayoutEffect(() => {
+    if (scrollSelection.current === resolvedCurrentPage) {
+      scrollSelection.current = null;
+      return;
+    }
+    scrollToPage(resolvedCurrentPage);
+  }, [resolvedCurrentPage, resolvedZoom, pages?.length, outlineOpen]);
+
+  function scrollToPage(page: number) {
+    const viewport = pageViewport.current;
+    const target = pageElements.current.get(page);
+    if (!viewport || !target) return;
+    viewport.scrollTop += target.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
+  }
+
+  function syncVisiblePage() {
+    if (outlineAnimating.current) return;
+    const viewport = pageViewport.current;
+    if (!viewport || !pages?.length) return;
+    const bounds = viewport.getBoundingClientRect();
+    let visible = pages[0];
+    let largestVisibleHeight = 0;
+    for (const page of pages) {
+      const element = pageElements.current.get(page.pageNumber);
+      if (!element) continue;
+      const rect = element.getBoundingClientRect();
+      if (rect.top >= bounds.bottom) break;
+      const visibleHeight = Math.min(rect.bottom, bounds.bottom) - Math.max(rect.top, bounds.top);
+      if (visibleHeight > largestVisibleHeight) {
+        largestVisibleHeight = visibleHeight;
+        visible = page;
+      }
+    }
+    if (largestVisibleHeight > 0 && visible.pageNumber !== resolvedCurrentPage) {
+      scrollSelection.current = visible.pageNumber;
+      onPageChange(visible.pageNumber);
+    }
+  }
+
   React.useEffect(() => {
     setPageDraft(String(resolvedCurrentPage));
   }, [resolvedCurrentPage]);
+
+  React.useEffect(() => {
+    if (outlineOpen) outlineSearch.current?.focus({ preventScroll: true });
+  }, [outlineOpen]);
 
   const visibleOutline = React.useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -112,6 +177,7 @@ export function PdfViewer({
   function selectPage(page: number) {
     const nextPage = normalizePage(page, resolvedPageCount);
     setPageDraft(String(nextPage));
+    scrollToPage(nextPage);
     onPageChange(nextPage);
   }
 
@@ -161,104 +227,141 @@ export function PdfViewer({
   return (
     <div
       className={cn(
-        "grid min-h-[32.5rem] overflow-hidden bg-card md:grid-cols-[15.625rem_minmax(0,1fr)]",
+        "relative flex min-h-[32.5rem] overflow-hidden bg-card [container-type:inline-size]",
+        pages && "min-h-0",
         className,
       )}
       data-slot="pdf-viewer"
     >
-      <aside className="flex min-h-0 flex-col gap-3.5 border-b border-border bg-muted p-4.5 md:border-r md:border-b-0">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="font-heading text-lg font-semibold text-foreground">
-            Outline
-          </h3>
-          <span className="shrink-0 rounded-full border border-border bg-card px-2.5 py-1 font-caption text-[10px] font-semibold text-muted-foreground">
-            {resolvedPageCount} {resolvedPageCount === 1 ? "page" : "pages"}
-          </span>
-        </div>
+      <motion.aside
+        initial={false}
+        animate={{ width: outlineOpen ? "auto" : 0 }}
+        transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.25, 1, 0.5, 1] }}
+        onAnimationStart={() => { outlineAnimating.current = true; }}
+        onUpdate={() => scrollToPage(resolvedCurrentPage)}
+        onAnimationComplete={() => {
+          scrollToPage(resolvedCurrentPage);
+          outlineAnimating.current = false;
+        }}
+        aria-hidden={!outlineOpen}
+        inert={!outlineOpen}
+        data-preview-escape-boundary=""
+        id={outlineId}
+        className="min-h-0 max-w-[35%] shrink-0 overflow-clip bg-muted"
+        onKeyDown={(event) => {
+          if (event.key !== "Escape") return;
+          event.preventDefault();
+          setOutlineOpen(false);
+          outlineToggle.current?.focus();
+        }}
+      >
+        <div className="flex h-full w-max max-w-[35cqw] flex-col gap-3.5 border-r border-border p-3 sm:p-4.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <H3 className="text-foreground">
+              Outline
+            </H3>
+            <Caption className="shrink-0 rounded-full border border-border bg-card px-2.5 py-1 text-muted-foreground">
+              {resolvedPageCount} {resolvedPageCount === 1 ? "page" : "pages"}
+            </Caption>
+          </div>
 
-        <label className="flex h-8 items-center gap-2 rounded-lg border border-border bg-card px-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-          <Search aria-hidden="true" className="size-3.5 text-muted-foreground" />
-          <span className="sr-only">Search document outline</span>
-          <input
-            aria-label="Search document outline"
-            className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Find a section"
-            type="search"
-            value={query}
-          />
-        </label>
+          <label className="flex h-8 items-center gap-2 rounded-lg border border-border bg-card px-2.5 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <Search aria-hidden="true" className="size-3.5 text-muted-foreground" />
+            <span className="sr-only">Search document outline</span>
+            <input
+              aria-label="Search document outline"
+              className="min-w-0 flex-1 bg-transparent text-[11px] text-foreground outline-none placeholder:text-muted-foreground"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Find a section"
+              ref={outlineSearch}
+              type="search"
+              value={query}
+            />
+          </label>
 
-        <div
-          aria-label="Document outline"
-          className="min-h-0 flex-1 overflow-y-auto"
-          onKeyDown={handleOutlineKeyDown}
-          role="listbox"
-        >
-          {visibleOutline.length > 0 ? (
-            visibleOutline.map((item, index) => {
-              const selected = item.id === currentSection?.id;
-              const depth = clamp(item.depth ?? 0, 0, 4);
+          <div
+            aria-label="Document outline"
+            className="min-h-0 flex-1 overflow-y-auto"
+            onKeyDown={handleOutlineKeyDown}
+            role="listbox"
+          >
+            {visibleOutline.length > 0 ? (
+              visibleOutline.map((item, index) => {
+                const selected = item.id === currentSection?.id;
+                const depth = clamp(item.depth ?? 0, 0, 4);
 
-              return (
-                <button
-                  aria-selected={selected}
-                  className={cn(
-                    "flex h-8 w-full items-center justify-between gap-2 rounded-lg pr-2.5 text-left text-[11px] outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring",
-                    selected
-                      ? "bg-accent font-semibold text-foreground"
-                      : "text-muted-foreground",
-                  )}
-                  key={item.id}
-                  onClick={() => selectPage(item.page)}
-                  ref={(element) => {
-                    outlineButtons.current[index] = element;
-                  }}
-                  role="option"
-                  style={{ paddingLeft: `${9 + depth * 13}px` }}
-                  type="button"
-                >
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {item.expanded !== undefined ? (
-                      <ChevronDown
-                        aria-hidden="true"
-                        className={cn(
-                          "size-3 shrink-0",
-                          !item.expanded && "-rotate-90",
-                        )}
-                      />
-                    ) : null}
-                    <span className="truncate">{item.title}</span>
-                  </span>
-                  <span
+                return (
+                  <button
+                    aria-selected={selected}
                     className={cn(
-                      "font-caption text-[10px] font-semibold",
-                      selected ? "text-primary" : "text-muted-foreground",
+                      "flex h-8 w-full items-center justify-between gap-2 rounded-lg pr-2.5 text-left text-[11px] outline-none transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring",
+                      selected
+                        ? "bg-accent font-semibold text-foreground"
+                        : "text-muted-foreground",
                     )}
+                    key={item.id}
+                    onClick={() => selectPage(item.page)}
+                    ref={(element) => {
+                      outlineButtons.current[index] = element;
+                    }}
+                    role="option"
+                    style={{ paddingLeft: `${9 + depth * 13}px` }}
+                    type="button"
                   >
-                    {item.page}
-                  </span>
-                </button>
-              );
-            })
-          ) : (
-            <p className="px-2 py-3 text-[11px] text-muted-foreground">
-              No matching sections.
-            </p>
-          )}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {item.expanded !== undefined ? (
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={cn(
+                            "size-3 shrink-0",
+                            !item.expanded && "-rotate-90",
+                          )}
+                        />
+                      ) : null}
+                      <span className="truncate">{item.title}</span>
+                    </span>
+                    <Caption
+                      className={cn(
+                        "",
+                        selected ? "text-primary" : "text-muted-foreground",
+                      )}
+                    >
+                      {item.page}
+                    </Caption>
+                  </button>
+                );
+              })
+            ) : (
+              <Muted className="px-2 py-3 text-muted-foreground">
+                No matching sections.
+              </Muted>
+            )}
+          </div>
         </div>
-      </aside>
+      </motion.aside>
 
-      <section className="flex min-h-0 min-w-0 flex-col gap-3 p-4 md:px-4.5">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 p-4 md:px-4.5">
         <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            aria-controls={outlineId}
+            aria-expanded={outlineOpen}
+            aria-label={outlineOpen ? "Hide outline" : "Show outline"}
+            onClick={() => setOutlineOpen((open) => !open)}
+            ref={outlineToggle}
+            size="icon"
+            type="button"
+            variant="outline"
+          >
+            <MorphIcon icon={outlineOpen ? X : Menu} reducedMotion="user" />
+          </Button>
           <div className="min-w-40 flex-1">
-            <p className="truncate font-heading text-[13px] font-semibold text-foreground">
+            <P className="truncate text-foreground">
               {fileName}
-            </p>
-            <p className="truncate text-[10px] text-muted-foreground">
+            </P>
+            <Muted className="truncate text-muted-foreground">
               {currentSection?.title ?? "Document"} · page{" "}
               {resolvedCurrentPage} of {resolvedPageCount}
-            </p>
+            </Muted>
           </div>
 
           <div className="flex h-7 items-center gap-1" aria-label="Page jump">
@@ -313,9 +416,9 @@ export function PdfViewer({
               <Plus />
             </Button>
             <Button
-              aria-label="Fit page"
+              aria-label={onExpand ? "Expand preview" : "Fit page"}
               className="size-[30px]"
-              onClick={() => (onFitPage ? onFitPage() : updateZoom(100))}
+              onClick={() => (onExpand ? onExpand() : onFitPage ? onFitPage() : updateZoom(100))}
               size="icon-xs"
               variant="outline"
             >
@@ -324,7 +427,7 @@ export function PdfViewer({
           </div>
         </div>
 
-        <div className="flex min-h-[24rem] flex-1 gap-4 overflow-hidden rounded-lg border border-border bg-muted p-4">
+        <div className={cn("flex min-h-[24rem] flex-1 gap-4 overflow-hidden rounded-lg border border-border bg-muted p-4", pages && "min-h-0")}>
           <div className="flex w-8 shrink-0 items-center justify-start overflow-visible">
             <ChapterScrubber
               chapters={pageChapters}
@@ -356,12 +459,12 @@ export function PdfViewer({
                         </>
                       )}
                     </div>
-                    <p className="truncate font-sans text-[10px] leading-[1.2] font-semibold text-on-ink">
+                    <P className="truncate text-on-ink">
                       Page {page} · {sectionAtPage(page)?.title ?? "Document"}
-                    </p>
-                    <p className="truncate font-sans text-[9px] leading-[1.2] text-on-ink-muted">
+                    </P>
+                    <P className="truncate text-on-ink-muted">
                       {pagePreviewDetail}
-                    </p>
+                    </P>
                   </div>
                 );
               }}
@@ -370,16 +473,41 @@ export function PdfViewer({
             />
           </div>
 
-          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto">
+          {pages ? (
+            <div
+              aria-label="PDF pages"
+              className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain"
+              onScroll={syncVisiblePage}
+              ref={pageViewport}
+              role="region"
+              tabIndex={0}
+            >
+              <div className="mx-auto flex flex-col gap-4" style={{ width: `${resolvedZoom}%` }}>
+                {pages.map((page) => (
+                  <div
+                    className="relative w-full shrink-0 overflow-hidden border border-input bg-card shadow-sm"
+                    key={page.pageNumber}
+                    ref={(element) => {
+                      if (element) pageElements.current.set(page.pageNumber, element);
+                      else pageElements.current.delete(page.pageNumber);
+                    }}
+                    style={{ aspectRatio: `${page.width} / ${page.height}` }}
+                  >
+                    {page.content}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : <div className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-auto">
             <div
               className="flex min-h-full w-full origin-center items-stretch justify-center transition-transform"
               style={{ transform: `scale(${resolvedZoom / 100})` }}
             >
-              <div className="flex min-h-full w-full max-w-[40rem] flex-col overflow-hidden border border-input bg-card shadow-sm">
+              <div className="flex min-h-full w-full flex-col overflow-hidden border border-input bg-card shadow-sm">
                 {children}
               </div>
             </div>
-          </div>
+          </div>}
         </div>
       </section>
     </div>

@@ -1,4 +1,8 @@
 "use client";
+import {
+  P,
+  Text,
+} from "@smarttools/ui";
 
 import type { Template } from "@pdfme/common";
 import type { AdvancedDocumentTemplate } from "@smarttools/invoice-templates";
@@ -291,20 +295,20 @@ export function AdvancedDocumentPreview({
         {isLoading ? (
           <div
             aria-live="polite"
-            className="absolute inset-0 grid place-items-center bg-background/80 text-sm font-bold text-muted-foreground"
+            className="absolute inset-0 grid place-items-center bg-background/80 text-muted-foreground"
             role="status"
-          >
+          ><Text>
             Loading PDF preview…
-          </div>
+          </Text></div>
         ) : null}
       </div>
       {error ? (
-        <p
-          className="mt-2 text-sm font-bold text-destructive"
+        <P
+          className="mt-2 text-destructive"
           role="alert"
         >
           {error}
-        </p>
+        </P>
       ) : null}
     </div>
   );

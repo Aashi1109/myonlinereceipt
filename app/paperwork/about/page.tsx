@@ -1,3 +1,7 @@
+import {
+  H2,
+  Muted,
+} from "@smarttools/ui";
 import type { Metadata } from "next";
 import InformationPage from "@/app/paperwork/components/InformationPage";
 
@@ -14,16 +18,16 @@ export default function AboutPage() {
       title="Paperwork without accounting-suite overhead"
     >
       <section className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight">Built for one job at a time</h2>
-        <p className="text-muted-foreground">
+        <H2>Built for one job at a time</H2>
+        <Muted className="text-muted-foreground">
           Paperwork provides focused generators for invoices, receipts, expense reports, mileage logs, tax estimates, W-9 requests, and 1099 tracking. Each tool keeps its primary action and output visible without requiring a complex accounting setup.
-        </p>
+        </Muted>
       </section>
       <section className="space-y-2">
-        <h2 className="text-xl font-extrabold tracking-tight">What we optimize for</h2>
-        <p className="text-muted-foreground">
+        <H2>What we optimize for</H2>
+        <Muted className="text-muted-foreground">
           Clear validation, accurate previews, dependable exports, accessible controls, and plain explanations of where your data is stored.
-        </p>
+        </Muted>
       </section>
     </InformationPage>
   );

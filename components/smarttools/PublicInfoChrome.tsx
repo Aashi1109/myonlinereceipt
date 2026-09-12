@@ -20,7 +20,7 @@ export default async function PublicInfoChrome({
         actions={
           <AccountNavigation
             returnTo="/"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         className="min-h-[88px]"

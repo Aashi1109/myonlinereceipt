@@ -1,3 +1,7 @@
+import {
+  typographyStyles,
+  Caption,
+} from "@smarttools/ui";
 import type { ToolRender } from "@/lib/tool-framework/result";
 
 export interface DiffViewProps {
@@ -6,10 +10,10 @@ export interface DiffViewProps {
 
 export function DiffView({ result }: DiffViewProps) {
   return (
-    <div className="min-h-0 flex-1 overflow-auto font-mono text-xs leading-6">
+    <div className={`${typographyStyles.codeBlock} min-h-0 flex-1 overflow-auto whitespace-normal`}>
       {result.leftLabel || result.rightLabel ? (
-        <div className="grid grid-cols-2 border-b border-border bg-muted/50 px-4 py-2 font-sans font-medium">
-          <span>{result.leftLabel ?? "Before"}</span><span>{result.rightLabel ?? "After"}</span>
+        <div className="grid grid-cols-2 border-b border-border bg-muted/50 px-4 py-2">
+          <Caption>{result.leftLabel ?? "Before"}</Caption><Caption>{result.rightLabel ?? "After"}</Caption>
         </div>
       ) : null}
       {result.lines.map((line, index) => (

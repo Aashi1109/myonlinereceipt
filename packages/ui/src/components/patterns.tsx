@@ -1,3 +1,4 @@
+import { Caption, H1, H2, H3, Metric, Muted, Overline, P, Strong } from "#components/typography";
 import {
   CircleCheck,
   Lightbulb,
@@ -72,15 +73,13 @@ function MetricCard({
       )}
       {...props}
     >
-      <span className="font-caption text-[13px] text-muted-foreground">{label}</span>
-      <strong className="font-heading text-[30px] leading-tight font-bold tracking-[-0.03125rem] text-foreground">
-        {value}
-      </strong>
+      <Caption className="text-muted-foreground">{label}</Caption>
+      <Metric className="text-foreground">{value}</Metric>
       {delta ? (
-        <span className="inline-flex items-center gap-1 font-caption text-xs font-semibold text-success [&_svg]:size-3.5">
+        <Caption className="inline-flex items-center gap-1 text-success [&_svg]:size-3.5">
           <TrendingUp aria-hidden="true" />
           {delta}
-        </span>
+        </Caption>
       ) : null}
     </div>
   )
@@ -136,15 +135,15 @@ function ToolPageIntro({
       {...props}
     >
       <div className="flex min-w-0 max-w-[880px] flex-1 flex-col gap-1.5">
-        <span className="font-caption text-xs font-semibold tracking-[0.0375rem] text-primary uppercase">
+        <Overline className="text-primary">
           {category}
-        </span>
-        <h1 className="font-heading text-[26px] leading-tight font-semibold tracking-[-0.01875rem] text-foreground">
+        </Overline>
+        <H1 className="text-foreground">
           {title}
-        </h1>
-        <p className="font-sans text-sm leading-[1.45] text-muted-foreground">
+        </H1>
+        <Muted className="text-muted-foreground">
           {description}
-        </p>
+        </Muted>
       </div>
       {badge}
     </header>
@@ -174,8 +173,8 @@ function FileUploadZone({
       {...props}
     >
       <span className="text-primary [&_svg]:size-7">{icon ?? <Upload aria-hidden="true" />}</span>
-      <strong className="font-heading text-base font-semibold text-foreground">{title}</strong>
-      <span className="font-sans text-xs text-muted-foreground">{description}</span>
+      <Strong className="text-foreground">{title}</Strong>
+      <Caption className="text-muted-foreground">{description}</Caption>
       {children}
     </button>
   )
@@ -205,8 +204,8 @@ function FileQueueItem({
     >
       <IconTile size="sm">{icon}</IconTile>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-sans text-[13px] font-semibold text-foreground">{name}</p>
-        <p className="mt-0.5 truncate font-caption text-[11px] text-muted-foreground">{metadata}</p>
+        <P className="truncate text-foreground">{name}</P>
+        <Muted className="mt-0.5 truncate text-muted-foreground">{metadata}</Muted>
       </div>
       {action}
     </div>
@@ -238,8 +237,8 @@ function ProcessingStatus({
     >
       <LoaderCircle aria-hidden="true" className="size-5 shrink-0 animate-spin" />
       <div className="min-w-0 flex-1">
-        <p className="font-heading text-[13px] font-semibold">{title}</p>
-        <p className="mt-1 font-sans text-[11px] text-on-ink-muted">{detail}</p>
+        <P className="">{title}</P>
+        <P className="mt-1 text-on-ink-muted">{detail}</P>
         {progress !== undefined ? (
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#2C313A]">
             <div
@@ -276,8 +275,8 @@ function DownloadResult({
     >
       <IconTile tone="success"><CircleCheck aria-hidden="true" /></IconTile>
       <div className="min-w-0 flex-1">
-        <p className="font-heading text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-[3px] font-sans text-xs text-muted-foreground">{metadata}</p>
+        <P className="text-foreground">{title}</P>
+        <Muted className="mt-[3px] text-muted-foreground">{metadata}</Muted>
       </div>
       {action}
     </div>
@@ -307,7 +306,7 @@ function ToolOptionsPanel({
       )}
       {...props}
     >
-      <h2 className="font-caption text-[11px] font-semibold uppercase tracking-[0.025rem] text-muted-foreground">{title}</h2>
+      <H3 className="text-muted-foreground">{title}</H3>
       {children}
       {action}
     </section>
@@ -335,12 +334,12 @@ function HowItWorks({
           className="flex items-center gap-3 px-[22px] py-5 md:border-l md:border-border md:first:border-l-0"
           key={index}
         >
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-accent font-heading text-[13px] font-bold text-primary">
+          <Caption className="grid size-7 shrink-0 place-items-center rounded-full bg-accent text-primary">
             {index + 1}
-          </span>
+          </Caption>
           <span className="min-w-0">
-            <strong className="block font-heading text-sm font-semibold text-foreground">{step.title}</strong>
-            <span className="mt-0.5 block font-sans text-xs leading-[1.45] text-muted-foreground">{step.description}</span>
+            <Strong className="block text-foreground">{step.title}</Strong>
+            <Caption className="mt-0.5 block text-muted-foreground">{step.description}</Caption>
           </span>
         </li>
       ))}
@@ -368,10 +367,10 @@ function ToolSupportSections({
       <div className="flex items-start gap-3 rounded-xl bg-success-soft p-4 text-foreground" role="status">
         <CircleCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-success" />
         <div>
-          <strong className="font-heading text-sm font-semibold">Your data stays on this device</strong>
-          <p className="mt-1 font-sans text-sm leading-5 text-muted-foreground">
+          <Strong className="">Your data stays on this device</Strong>
+          <Muted className="mt-1 text-muted-foreground">
             Nothing is uploaded. Review the result before copying or downloading it.
-          </p>
+          </Muted>
         </div>
       </div>
       <HowItWorks
@@ -393,7 +392,7 @@ function CompactAction({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { icon?: ReactNode }) {
   return (
     <Button
-      className={cn("h-8 gap-1.5 rounded-lg px-2.5 text-[11px] [&_svg]:size-3.5 [&_svg]:text-muted-foreground", className)}
+      className={cn("h-8 gap-1.5 rounded-lg px-2.5 [&_svg]:size-3.5 [&_svg]:text-muted-foreground", className)}
       size="sm"
       variant="outline"
       {...props}
@@ -411,17 +410,17 @@ function InlineGuidance({
   ...props
 }: HTMLAttributes<HTMLSpanElement> & { icon?: ReactNode }) {
   return (
-    <span
+    <Caption
       data-slot="inline-guidance"
       className={cn(
-        "inline-flex items-center gap-[7px] font-sans text-xs text-muted-foreground [&_svg]:size-[15px] [&_svg]:text-primary",
+        "inline-flex items-center gap-[7px] text-muted-foreground [&_svg]:size-[15px] [&_svg]:text-primary",
         className
       )}
       {...props}
     >
       {icon ?? <Lightbulb aria-hidden="true" />}
       {children}
-    </span>
+    </Caption>
   )
 }
 
@@ -469,8 +468,8 @@ function RightPanelResult({
           <CircleCheck aria-hidden="true" />
         </IconTile>
         <div className="min-w-0 flex-1">
-          <p className="font-heading text-sm font-semibold text-foreground">{title}</p>
-          <p className="mt-0.5 font-sans text-xs text-muted-foreground">{metadata}</p>
+          <P className="text-foreground">{title}</P>
+          <Muted className="mt-0.5 text-muted-foreground">{metadata}</Muted>
         </div>
       </div>
       {action}
@@ -505,12 +504,12 @@ function UniversalProductHeader({
         <IconTile className="size-12 rounded-xl">{icon}</IconTile>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-heading text-xl font-semibold text-foreground">{title}</h1>
-            <span className="rounded-full bg-muted px-[9px] py-[5px] font-caption text-[10px] font-semibold text-muted-foreground">
+            <H1 className="text-foreground">{title}</H1>
+            <Caption className="rounded-full bg-muted px-[9px] py-[5px] text-muted-foreground">
               {category}
-            </span>
+            </Caption>
           </div>
-          <p className="mt-1 font-sans text-[13px] text-muted-foreground">{description}</p>
+          <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         </div>
       </div>
       <div className="flex items-center gap-2">{navigation}{actions}</div>
@@ -519,11 +518,11 @@ function UniversalProductHeader({
           <span className="grid size-6 place-items-center rounded-full bg-primary text-primary-foreground">
             <Sparkles aria-hidden="true" className="size-[13px]" />
           </span>
-          <strong className="font-heading text-[15px] font-semibold text-foreground">by SmartTools</strong>
+          <Strong className="text-foreground">by SmartTools</Strong>
         </div>
-        <p className="mt-1.5 font-sans text-[11px] leading-[1.35] text-muted-foreground">
+        <Muted className="mt-1.5 text-muted-foreground">
           Free, focused tools for everyday work — private by default.
-        </p>
+        </Muted>
       </div>
     </header>
   )
@@ -544,7 +543,7 @@ function InlineProductHeader({
     <header
       data-slot="inline-product-header"
       className={cn(
-        "flex h-[104px] items-center justify-between rounded-xl border border-border bg-card px-[22px] py-4 shadow-sm",
+        "flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card px-[22px] py-4 shadow-sm",
         className
       )}
       {...props}
@@ -552,11 +551,11 @@ function InlineProductHeader({
       <div className="flex items-center gap-3.5">
         <IconTile className="size-[54px] rounded-xl [&_svg]:size-[25px]">{icon}</IconTile>
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-[9px] py-[3px] font-caption text-[10px] font-semibold tracking-[0.03125rem] text-muted-foreground">
+          <Caption className="inline-flex items-center gap-1.5 rounded-full bg-muted px-[9px] py-[3px] text-muted-foreground">
             <i className="size-1.5 rounded-full bg-primary" /> CURRENT TOOL
-          </span>
-          <h1 className="mt-1 font-heading text-[22px] font-bold tracking-[-0.01875rem] text-foreground">{title}</h1>
-          <p className="mt-1 font-sans text-xs text-muted-foreground">{description}</p>
+          </Caption>
+          <H1 className="mt-1 text-foreground">{title}</H1>
+          <Muted className="mt-1 text-muted-foreground">{description}</Muted>
         </div>
       </div>
       <div className="flex items-center gap-[18px]">
@@ -565,9 +564,9 @@ function InlineProductHeader({
           <div className="flex items-center justify-end gap-[7px]">
             <Sparkles aria-hidden="true" className="size-4 text-primary" />
             <span className="font-script -rotate-3 text-xl font-semibold text-muted-foreground">by</span>
-            <strong className="font-heading text-lg font-bold text-foreground">SmartTools</strong>
+            <Strong className="text-foreground">SmartTools</Strong>
           </div>
-          <p className="mt-1.5 font-sans text-xs text-muted-foreground">Friendly tools for getting small jobs done.</p>
+          <Muted className="mt-1.5 text-muted-foreground">Friendly tools for getting small jobs done.</Muted>
         </div>
       </div>
     </header>
@@ -605,14 +604,14 @@ function ProductFooter({
               <span className="grid size-[30px] place-items-center rounded-lg bg-on-ink text-surface-ink [&_svg]:size-[17px]">
                 {brandMark}
               </span>
-              <strong className="font-heading text-[17px] font-semibold">{brand}</strong>
+              <Strong className="">{brand}</Strong>
             </div>
-            <p className="font-sans text-sm leading-[1.55] text-on-ink-muted">{description}</p>
+            <P className="text-on-ink-muted">{description}</P>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3">
             {columns.map((column, index) => (
               <div className="flex flex-col gap-3" key={index}>
-                <h2 className="font-caption text-[13px] font-semibold text-on-ink">{column.title}</h2>
+                <Caption className="text-on-ink"><Strong>{column.title}</Strong></Caption>
                 {column.links.map((link) => (
                   <a
                     className="font-sans text-sm text-on-ink-muted outline-none hover:text-on-ink focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring"
@@ -627,7 +626,7 @@ function ProductFooter({
           </nav>
         </div>
         <div className="h-px bg-white/10" />
-        <p className="font-caption text-[13px] text-on-ink-muted">{copyright}</p>
+        <Caption className="text-on-ink-muted">{copyright}</Caption>
       </div>
     </footer>
   )

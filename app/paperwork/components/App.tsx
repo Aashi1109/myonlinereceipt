@@ -13,7 +13,6 @@ import {
   CircleX,
   Clock,
   Eye,
-  FileDown,
   Grid,
   PenLine,
   Printer,
@@ -23,11 +22,18 @@ import {
   X,
 } from "lucide-react";
 import {
+  Caption,
+  H2,
+  H3,
+  Muted,
+  P,
+  Text,
   AccountNavigation,
-  type AccountNavigationProps,
+  AccountNavigationProps,
   AlertBanner,
   AppContainer,
   Button,
+  ToolActionButton,
   Card,
   Field,
   Input,
@@ -403,10 +409,10 @@ export default function App({
           <div className="flex items-center gap-2">
             {isInvoice ? (
               <>
-                <span className="hidden items-center gap-1 text-xs text-muted-foreground 2xl:flex">
+                <Caption className="hidden items-center gap-1 text-muted-foreground 2xl:flex">
                   <Clock className="h-3.5 w-3.5" />
                   {saveStatus === "saving" ? "Saving…" : "Draft saved in browser"}
-                </span>
+                </Caption>
                 <Button
                   aria-label="Clear invoice draft"
                   onClick={() => setActiveDialog("clear")}
@@ -471,6 +477,7 @@ export default function App({
             />
 
           <div id="invoice-generator" ref={formSectionRef}>
+            <H2 className="sr-only">Invoice workspace</H2>
             <AppContainer className="py-8">
               {Object.keys(errors).length ? (
                 <AlertBanner
@@ -526,12 +533,12 @@ export default function App({
                           className="size-5 shrink-0 text-primary"
                         />
                         <div className="min-w-0">
-                          <h2 className="text-sm font-extrabold">
+                          <H3>
                             Invoice theme: {selectedTemplate.name}
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
+                          </H3>
+                          <Muted className="text-muted-foreground">
                             Published templates are managed centrally.
-                          </p>
+                          </Muted>
                         </div>
                       </div>
                       <Button
@@ -584,12 +591,12 @@ export default function App({
                       <div className="flex min-w-0 items-center gap-3">
                         <Grid aria-hidden="true" className="size-5 shrink-0 text-primary" />
                         <div className="min-w-0">
-                          <h2 className="text-sm font-extrabold">
+                          <H3>
                             Invoice theme: {selectedTemplate.name}
-                          </h2>
-                          <p className="text-xs text-muted-foreground">
+                          </H3>
+                          <Muted className="text-muted-foreground">
                             Published templates are managed centrally.
-                          </p>
+                          </Muted>
                         </div>
                       </div>
                       <Button
@@ -631,19 +638,18 @@ export default function App({
                   role="tabpanel"
                 >
                   <Card className="space-y-3 p-4 print:hidden">
-                    <div className="flex items-center justify-between border-b border-border pb-2 text-[11px] font-bold text-muted-foreground">
-                      <span>PDF ACTIONS</span>
+                    <div className="flex items-center justify-between border-b border-border pb-2 text-muted-foreground">
+                      <Text>PDF ACTIONS</Text>
                       <StatusBadge variant="success">Ready to export</StatusBadge>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button
+                      <ToolActionButton
+                        action="download"
                         disabled={pdfAction !== null}
                         onClick={() => void generateInvoicePdf("download")}
-                        variant="strong"
                       >
-                        <FileDown className="mr-1 inline h-4 w-4" />
                         {pdfAction === "download" ? "Generating…" : "Download PDF"}
-                      </Button>
+                      </ToolActionButton>
                       <Button
                         disabled={pdfAction !== null}
                         onClick={() => void generateInvoicePdf("print")}
@@ -654,13 +660,13 @@ export default function App({
                       </Button>
                     </div>
                     {pdfError ? (
-                      <p className="text-sm font-medium text-destructive" role="alert">
+                      <P className="text-destructive" role="alert">
                         {pdfError}
-                      </p>
+                      </P>
                     ) : null}
-                    <p className="text-center text-[11px] leading-4 text-muted-foreground">
+                    <Muted className="text-center text-muted-foreground">
                       Download saves a PDF. Print opens the same PDF in a new tab; allow pop-ups if prompted.
-                    </p>
+                    </Muted>
                   </Card>
                   <Card className="overflow-hidden p-0 shadow-xl">
                     <InvoicePreviewRenderer
@@ -709,15 +715,13 @@ export default function App({
             )}
             {activeMobileTab === "edit" ? "Preview invoice" : "Edit invoice"}
           </Button>
-          <Button
-            className="min-h-11"
+          <ToolActionButton
+            action="download"
             disabled={pdfAction !== null}
             onClick={() => void generateInvoicePdf("download")}
-            variant="strong"
           >
-            <FileDown aria-hidden="true" className="size-4" />
             {pdfAction === "download" ? "Generating…" : "Download PDF"}
-          </Button>
+          </ToolActionButton>
         </div>
       ) : null}
 
@@ -725,17 +729,17 @@ export default function App({
         <div
           aria-atomic="true"
           aria-live={toast.tone === "error" ? "assertive" : "polite"}
-          className="fixed right-4 bottom-24 z-50 flex max-w-sm items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] font-sans text-sm font-medium text-on-ink shadow-[0_8px_24px_#00000026] lg:bottom-6"
+          className="fixed right-4 bottom-24 z-50 flex max-w-sm items-center gap-2.5 rounded-lg bg-surface-ink px-4 py-[13px] text-on-ink shadow-[0_8px_24px_#00000026] lg:bottom-6"
           role={toast.tone === "error" ? "alert" : "status"}
         >
           {toast.tone === "error" ? (
             <CircleX aria-hidden="true" className="size-5 shrink-0 text-status-danger" />
           ) : (
-            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-ink">
+            <Text className="grid size-5 shrink-0 place-items-center rounded-full bg-success text-on-ink">
               <CheckCircle2 aria-hidden="true" className="size-[13px]" />
-            </span>
+            </Text>
           )}
-          <span>{toast.message}</span>
+          <Text>{toast.message}</Text>
         </div>
       ) : null}
 
@@ -749,13 +753,13 @@ export default function App({
             <div className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary">
               <RefreshCw aria-hidden="true" className="size-5" />
             </div>
-            <h2 className="text-lg font-extrabold" id="sample-dialog-title">
+            <H2  id="sample-dialog-title">
               Load sample invoice?
-            </h2>
+            </H2>
           </div>
-          <p className="text-sm leading-6 text-muted-foreground">
+          <Muted className="text-muted-foreground">
             This replaces every current invoice field with fictional example data. Download anything you need before continuing.
-          </p>
+          </Muted>
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={() => setActiveDialog(null)} variant="secondary">
               Keep editing
@@ -777,13 +781,13 @@ export default function App({
             <div className="grid size-10 shrink-0 place-items-center rounded-full border border-destructive/20 bg-destructive/10 text-destructive">
               <Trash2 aria-hidden="true" className="size-5" />
             </div>
-            <h2 className="text-lg font-extrabold" id="clear-dialog-title">
+            <H2  id="clear-dialog-title">
               Clear this invoice draft?
-            </h2>
+            </H2>
           </div>
-          <p className="text-sm leading-6 text-muted-foreground">
+          <Muted className="text-muted-foreground">
             This permanently removes the current invoice from this browser. There is no undo.
-          </p>
+          </Muted>
           <div className="flex flex-wrap justify-end gap-2">
             <Button onClick={() => setActiveDialog(null)} variant="secondary">
               Keep invoice
@@ -815,15 +819,15 @@ export default function App({
             <div className="grid size-11 place-items-center rounded-xl bg-foreground text-background shadow-sm">
               <Sparkles aria-hidden="true" className="size-5" />
             </div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+            <P className="text-primary">
               Paperwork Pro early access
-            </p>
-            <h2 className="text-xl font-black tracking-tight" id="upgrade-dialog-title">
+            </P>
+            <H2  id="upgrade-dialog-title">
               Join the Paperwork Pro waitlist
-            </h2>
-            <p className="text-sm leading-6 text-muted-foreground">
+            </H2>
+            <Muted className="text-muted-foreground">
               Save your interest locally for upcoming cloud backups, client delivery, and status tracking. No email is sent from this preview.
-            </p>
+            </Muted>
           </div>
           <form className="space-y-4" onSubmit={joinWaitlist}>
             <Field

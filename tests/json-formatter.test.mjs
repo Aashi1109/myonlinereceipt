@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
+import { run as runFormatter } from "../tools/json-formatter/run.worker.ts";
 
 // Behaviour lock for the shared JSON/CSV helpers themselves. Per-tool execution
 // is covered by tests/tool-execution.test.mjs against captured fixtures; these
@@ -34,6 +35,29 @@ test("formats valid JSON with the selected indentation", () => {
       value: { name: "Ada", active: true },
     },
   );
+});
+
+test("formatter keeps exact numeric tokens when a parsed tree would change them", async () => {
+  const run = (text, operation = "format") => runFormatter({
+    input: { text },
+    settings: { operation, indentation: "2" },
+    signal: new AbortController().signal,
+  });
+  for (const number of ["9007199254740993", "1.234567890123456789", "-0", "1e400", "1e3", "1.00"]) {
+    const result = await run(`{"nested":[${number}]}`);
+    assert.equal(result.render, "code", number);
+    assert.equal(result.code, `{\n  "nested": [\n    ${number}\n  ]\n}`);
+    assert.equal(result.downloadName, "smarttools-formatted.json");
+    assert.equal(result.language, "json");
+    assert.ok(result.verdict?.detail);
+  }
+  assert.equal((await run("9007199254740993")).code, "9007199254740993");
+  const ordinary = JSON.stringify({ number: -12.5, escaped: '\\"9007199254740993"', "1e400": "-0" });
+  assert.equal((await run(ordinary)).render, "json-tree");
+  const minified = await run("{\"number\": 9007199254740993}", "minify");
+  assert.equal(minified.render, "json-tree");
+  assert.equal(minified.text, '{"number":9007199254740993}');
+  assert.equal((await run("9007199254740993", "validate")).text, "Valid JSON\nRoot type: number");
 });
 
 test("supports tab indentation and Unicode values", () => {

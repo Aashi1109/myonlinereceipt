@@ -7,6 +7,7 @@
 
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
+  Caption,
   Button,
   EmptyState,
   Input,
@@ -143,27 +144,27 @@ export default function TemplateSelector({
                       </StatusBadge>
                     )}
                   </span>
-                  <span className="block text-sm font-extrabold tracking-tight text-foreground group-hover:text-primary">
+                  <span className="block text-foreground group-hover:text-primary">
                     {template.name}
                   </span>
-                  <span className="line-clamp-2 block text-xs leading-5 text-muted-foreground">
+                  <Caption className="line-clamp-2 block text-muted-foreground">
                     {template.description}
-                  </span>
+                  </Caption>
                 </span>
 
-                <span className="flex items-center justify-between gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                <Caption className="flex items-center justify-between gap-2 border-t border-border pt-3 text-muted-foreground">
                   <span>Layout: {template.layoutFamily}</span>
                   {isSelected ? (
-                    <span className="inline-flex items-center gap-1 font-extrabold text-primary">
+                    <span className="inline-flex items-center gap-1 text-primary">
                       <Check aria-hidden="true" className="size-4" />
                       Active
                     </span>
                   ) : (
-                    <span className="font-bold text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                    <span className="text-foreground opacity-0 transition-opacity group-hover:opacity-100">
                       Use style
                     </span>
                   )}
-                </span>
+                </Caption>
               </Button>
             );
           })}

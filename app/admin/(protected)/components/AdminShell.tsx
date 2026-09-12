@@ -1,10 +1,11 @@
 "use client";
 
 import {
+  Caption,
+  BrandLockup,
   AccountNavigation,
   type AccountNavigationProps,
 } from "@smarttools/ui";
-import { ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AdminNavigation } from "./AdminNavigation";
@@ -39,21 +40,22 @@ export function AdminShell({
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
       <header className="z-50 flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-surface-ink px-4 text-on-ink sm:px-6">
-        <a
-          className="inline-flex items-center gap-2.5 rounded-lg font-heading text-[15px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href="/admin/tools"
-        >
-          <span className="grid size-8 place-items-center rounded-lg bg-primary">
-            <ShieldCheck aria-hidden="true" className="size-[17px]" />
-          </span>
-          SmartTools Admin
-        </a>
+        <div className="flex shrink-0 items-center gap-3">
+          <BrandLockup
+            className="h-11 shrink-0 items-center text-on-ink hover:text-on-ink-muted focus-visible:ring-offset-surface-ink [&>img]:size-8 [&>span]:h-auto [&>span]:font-semibold"
+            href="/admin/tools"
+            name="SmartTools"
+          />
+          <Caption className="border-l border-white/15 pl-3 text-on-ink-muted">
+            Admin
+          </Caption>
+        </div>
         <div className="flex items-center gap-3">
-          <span className="hidden rounded-full bg-white/10 px-3 py-1.5 font-caption text-[10px] font-semibold tracking-[0.05em] text-on-ink-muted sm:inline-flex">
+          <Caption className="hidden rounded-full bg-white/10 px-3 py-1.5 text-on-ink-muted sm:inline-flex">
             CONTROL PLANE
-          </span>
+          </Caption>
           <AccountNavigation
-            className="[&_a]:border-white/15 [&_a]:bg-white/10 [&_a]:text-on-ink [&_a:hover]:bg-white/15"
+            className="max-sm:[&_button>.truncate]:hidden [&_a]:border-white/15 [&_a]:bg-white/10 [&_a]:text-on-ink [&_a:hover]:bg-white/15"
             returnTo="/admin"
             user={user}
           />
@@ -61,15 +63,15 @@ export function AdminShell({
       </header>
       <div className="flex min-h-0 w-full flex-1 flex-col lg:flex-row">
         <aside className="shrink-0 overflow-hidden border-b border-border bg-card px-4 py-3 lg:h-full lg:w-60 lg:border-r lg:border-b-0 lg:px-4 lg:py-6">
-          <p className="mb-3 hidden px-3 font-caption text-[10px] font-semibold tracking-[0.07em] text-muted-foreground lg:block">
+          <Caption className="block mb-3 hidden px-3 text-muted-foreground lg:block">
             WORKSPACE
-          </p>
+          </Caption>
           <AdminNavigation />
           <div className="mt-6 hidden rounded-lg bg-muted p-3 lg:block">
-            <p className="font-heading text-xs font-semibold">Code is the source</p>
-            <p className="mt-1.5 text-xs leading-[1.45] text-muted-foreground">
+            <Caption className="block">Code is the source</Caption>
+            <Caption className="block mt-1.5 text-muted-foreground">
               Routes and capabilities are registered at build time.
-            </p>
+            </Caption>
           </div>
         </aside>
         <main

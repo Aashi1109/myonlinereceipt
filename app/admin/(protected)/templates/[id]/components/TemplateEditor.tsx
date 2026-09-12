@@ -1,5 +1,7 @@
 "use client";
 
+import { SubmitButton } from "@/app/admin/(protected)/components/SubmitButton";
+
 import {
   InvoiceTemplateConfigSchema,
   InvoiceTemplateSchema,
@@ -15,6 +17,10 @@ import {
   type InvoicePreviewSampleId,
 } from "@smarttools/invoice-templates/preview";
 import {
+  Overline,
+  Caption,
+  H1,
+  Text,
   AlertBanner,
   Button,
   Checkbox,
@@ -47,7 +53,8 @@ import {
   Save,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { updateAdminQuery, useAdminQueryState } from "@/app/admin/hooks/useAdminQueryState";
+import { useActionState, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   archiveTemplateAction,
   duplicateTemplateAction,
@@ -151,14 +158,14 @@ function EditorSection({
   return (
     <section className="grid gap-2">
       <div>
-        <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+        <Overline className="block text-muted-foreground">
           {number}. {title}
-        </h2>
+        </Overline>
         {description ? (
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+          <Caption className="block mt-1 text-muted-foreground">{description}</Caption>
         ) : null}
       </div>
-      <SectionCard className="space-y-3 bg-muted/40 p-4 shadow-none [&_input:not([type=color]):not([type=checkbox]):not([type=range])]:h-8 [&_input]:text-xs [&_label]:text-xs [&_select]:h-8 [&_select]:text-xs [&_textarea]:min-h-20 [&_textarea]:text-xs">
+      <SectionCard className="space-y-3 bg-muted/40 p-4 shadow-none [&_input:not([type=color]):not([type=checkbox]):not([type=range])]:h-8 [&_select]:h-8 [&_textarea]:min-h-20">
         {children}
       </SectionCard>
     </section>
@@ -178,7 +185,7 @@ function ColorField({
 }) {
   return (
     <div className="grid gap-1.5">
-      <Label className="text-sm font-bold text-foreground" htmlFor={id}>
+      <Label className="text-foreground" htmlFor={id}>
         {label}
       </Label>
       <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
@@ -190,7 +197,7 @@ function ColorField({
           value={colorPickerValue(value)}
         />
         <Input
-          className="min-w-0 font-mono"
+          className="min-w-0"
           id={id}
           onChange={(event) => onChange(event.target.value)}
           pattern="#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?"
@@ -203,17 +210,25 @@ function ColorField({
 }
 
 export default function TemplateEditor({ template }: { template: InvoiceTemplate }) {
+  const [, saveAction, isSaving] = useActionState(
+    (_previous: void, data: FormData) => updateTemplateAction(data), undefined,
+  );
+  const [, publishAction, isPublishing] = useActionState(
+    (_previous: void, data: FormData) => updateAndPublishTemplateAction(data), undefined,
+  );
   const [name, setName] = useState(template.name);
   const slug = template.slug;
   const [description, setDescription] = useState(template.description);
   const [category, setCategory] = useState<TemplateCategory>(template.category);
   const [layoutFamily, setLayoutFamily] = useState<LayoutFamily>(template.layoutFamily);
   const [config, setConfig] = useState<InvoiceTemplateConfig>(() => structuredClone(template.config));
-  const [editorMode, setEditorMode] = useState<"fields" | "json">("fields");
-  const [previewMode, setPreviewMode] = useState<"screen" | "pdf">("screen");
-  const [mobilePane, setMobilePane] = useState<"edit" | "preview">("edit");
-  const [activeSample, setActiveSample] = useState<InvoicePreviewSampleId>("service");
-  const [jsonText, setJsonText] = useState(() => JSON.stringify(template.config, null, 2));
+  const [editorMode, setEditorMode] = useAdminQueryState("editor", "fields", ["fields", "json"]);
+  const [previewMode, setPreviewMode] = useAdminQueryState("preview", "screen", ["screen", "pdf"]);
+  const [mobilePane, setMobilePane] = useAdminQueryState("pane", "edit", ["edit", "preview"]);
+  const [activeSample, setActiveSample] = useAdminQueryState<InvoicePreviewSampleId>(
+    "sample", "service", invoicePreviewSampleOptions.map((sample) => sample.value),
+  );
+  const [jsonDraft, setJsonDraft] = useState<string | null>(null);
   const [jsonMessage, setJsonMessage] = useState<{
     text: string;
     variant: "error" | "success";
@@ -243,7 +258,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
   );
   const isDirty = serializedTemplate !== initialTemplate;
   const appliedJsonText = useMemo(() => JSON.stringify(config, null, 2), [config]);
-  const jsonDirty = editorMode === "json" && jsonText !== appliedJsonText;
+  const jsonText = jsonDraft ?? appliedJsonText;
+  const jsonDirty = jsonText !== appliedJsonText;
   const hasUnsavedChanges = isDirty || jsonDirty;
   const lowContrastColors = [
     ["Text", config.theme.textColor, config.theme.surfaceColor],
@@ -268,7 +284,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
     setCategory(template.category);
     setLayoutFamily(template.layoutFamily);
     setConfig(structuredClone(template.config));
-    setJsonText(JSON.stringify(template.config, null, 2));
+    setJsonDraft(null);
     setJsonMessage(null);
     setFormError(null);
     setShowValidation(false);
@@ -299,7 +315,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         return;
       }
       setConfig(result.data as InvoiceTemplateConfig);
-      setJsonText(JSON.stringify(result.data, null, 2));
+      setJsonDraft(null);
       setJsonMessage({ text: "Configuration applied to the live preview.", variant: "success" });
       setFormError(null);
     } catch (error) {
@@ -318,8 +334,8 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
       });
       return;
     }
-    if (mode === "json") {
-      setJsonText(JSON.stringify(config, null, 2));
+    if (mode === "json" && !jsonDirty) {
+      setJsonDraft(null);
       setJsonMessage(null);
     }
     setEditorMode(mode);
@@ -361,11 +377,11 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           </Link>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-sm font-black tracking-tight text-foreground">
+              <H1 className="truncate text-foreground">
                 Editing: {name || "Untitled template"}
-              </h1>
+              </H1>
               <StatusBadge
-                className="min-h-5 shrink-0 px-2 py-0 text-[9px] capitalize"
+                className="min-h-5 shrink-0 px-2 py-0"
                 variant={
                   template.status === "published"
                     ? "success"
@@ -377,9 +393,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                 {template.status}
               </StatusBadge>
             </div>
-            <p className="truncate text-[10px] font-medium text-muted-foreground">
+            <Caption className="block truncate text-muted-foreground">
               Layout family: {layoutFamily} · /{slug || "untitled"}
-            </p>
+            </Caption>
           </div>
         </div>
 
@@ -415,8 +431,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             </Button>
           ) : null}
           <Button
-            disabled={jsonDirty}
+            disabled={jsonDirty || isSaving || isPublishing}
             form="template-editor-form"
+            loading={isSaving}
             size="sm"
             title={jsonDirty ? "Apply or reset the JSON changes before saving." : undefined}
             type="submit"
@@ -426,9 +443,10 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             Save changes
           </Button>
           <Button
-            disabled={jsonDirty}
+            disabled={jsonDirty || isSaving || isPublishing}
             form="template-editor-form"
-            formAction={updateAndPublishTemplateAction}
+            formAction={publishAction}
+            loading={isPublishing}
             size="sm"
             title={jsonDirty ? "Apply or reset the JSON changes before publishing." : undefined}
             type="submit"
@@ -439,6 +457,15 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         </div>
       </header>
 
+      {jsonDirty && editorMode !== "json" ? (
+        <AlertBanner className="mb-4" variant="warning">
+          Apply or reset your unapplied JSON changes before saving or exporting.
+          <Button className="ml-2" onClick={() => updateAdminQuery({ editor: "json", pane: null })} size="sm" type="button" variant="secondary">
+            Return to JSON
+          </Button>
+        </AlertBanner>
+      ) : null}
+
       <div
         aria-label="Editor workspace"
         className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 lg:hidden"
@@ -446,7 +473,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
       >
         <Button
           aria-pressed={mobilePane === "edit"}
-          className={`h-8 text-xs ${
+          className={`h-8 ${
             mobilePane === "edit" ? "bg-background shadow-sm hover:bg-background" : "text-muted-foreground"
           }`}
           onClick={() => setMobilePane("edit")}
@@ -456,7 +483,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
         </Button>
         <Button
           aria-pressed={mobilePane === "preview"}
-          className={`h-8 text-xs ${
+          className={`h-8 ${
             mobilePane === "preview"
               ? "bg-background shadow-sm hover:bg-background"
               : "text-muted-foreground"
@@ -470,7 +497,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
 
       <div className="grid min-w-0 items-start gap-4 lg:grid-cols-2">
         <form
-          action={updateTemplateAction}
+          action={saveAction}
           className={`${mobilePane === "preview" ? "hidden lg:grid" : "grid"} min-w-0 gap-4`}
           id="template-editor-form"
           onSubmit={validateBeforeSubmit}
@@ -489,7 +516,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             >
             <TabsTrigger
               aria-controls="template-fields-panel"
-              className="h-8 w-full text-xs data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
+              className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
               id="template-fields-tab"
               value="fields"
             >
@@ -498,7 +525,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             </TabsTrigger>
             <TabsTrigger
               aria-controls="template-json-panel"
-              className="h-8 w-full text-xs data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
+              className="h-8 w-full data-[state=active]:bg-background data-[state=active]:ring-1 data-[state=active]:ring-border"
               id="template-json-tab"
               value="json"
             >
@@ -538,7 +565,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                   >
                     <Input
                       aria-readonly="true"
-                      className="bg-muted font-mono text-muted-foreground"
+                      className="bg-muted text-muted-foreground"
                       id="template-slug"
                       readOnly
                       value={slug}
@@ -954,9 +981,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                       >
                         <GripVertical aria-hidden="true" className="size-4" />
                       </Button>
-                      <span className="text-sm font-bold text-foreground">
+                      <Text className="text-foreground">
                         {sectionLabels[section] ?? section}
-                      </span>
+                      </Text>
                     </div>
                   )}
                 />
@@ -1002,11 +1029,11 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
                 on every write.
               </AlertBanner>
               <Field htmlFor="template-config-json" label="Config-only JSON">
-                <Textarea
-                  className="min-h-[34rem] bg-slate-950 font-mono text-xs leading-5 text-slate-100"
+                <Textarea code
+                  className="min-h-[34rem] bg-slate-950 text-slate-100"
                   maxLength={200_000}
                   onChange={(event) => {
-                    setJsonText(event.target.value);
+                    setJsonDraft(event.target.value);
                     setJsonMessage(null);
                   }}
                   spellCheck={false}
@@ -1015,7 +1042,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
               </Field>
               {jsonMessage ? (
                 <AlertBanner variant={jsonMessage.variant}>
-                  <span className="whitespace-pre-wrap font-mono text-xs">{jsonMessage.text}</span>
+                  <Caption className="whitespace-pre-wrap">{jsonMessage.text}</Caption>
                 </AlertBanner>
               ) : null}
               <Button className="w-full" onClick={applyJson} type="button" variant="strong">
@@ -1031,13 +1058,13 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-2 shadow-sm">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <Label
-                className="shrink-0 text-[10px] font-black uppercase tracking-wider text-muted-foreground"
+                className="shrink-0 text-muted-foreground"
                 htmlFor="preview-sample"
               >
                 Load client
               </Label>
               <Select
-                className="h-8 min-w-0 flex-1 text-xs font-bold"
+                className="h-8 min-w-0 flex-1"
                 id="preview-sample"
                 onChange={(event) => setActiveSample(event.target.value as InvoicePreviewSampleId)}
                 value={activeSample}
@@ -1115,7 +1142,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           </Field>
           <Field htmlFor="duplicate-slug" label="Unique slug" required>
             <Input
-              className="font-mono"
+
               defaultValue={`${template.slug}-copy`}
               name="slug"
               pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
@@ -1126,7 +1153,7 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
             <Button popoverTarget="duplicate-template" popoverTargetAction="hide" variant="ghost">
               Cancel
             </Button>
-            <Button type="submit">Create copy</Button>
+            <SubmitButton type="submit">Create copy</SubmitButton>
           </div>
         </form>
       </section>
@@ -1147,9 +1174,9 @@ export default function TemplateEditor({ template }: { template: InvoiceTemplate
           <Button popoverTarget="archive-template" popoverTargetAction="hide" variant="ghost">
             Cancel
           </Button>
-          <Button type="submit" variant="destructive">
+          <SubmitButton type="submit" variant="destructive">
             Archive template
-          </Button>
+          </SubmitButton>
         </form>
       </section>
     </>

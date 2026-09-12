@@ -10,6 +10,15 @@ import { getTools, type CatalogTool } from "@/lib/tool-framework/catalog";
 import { getOptionalSession } from "@smarttools/auth/session";
 import { getToolIcons, type ToolIconRow } from "@smarttools/database";
 import {
+  Caption,
+  Display,
+  H2,
+  Lead,
+  Muted,
+  Overline,
+  Strong,
+  Text,
+  TextLink,
   AccountNavigation,
   AppContainer,
   Button,
@@ -35,7 +44,7 @@ import { headers } from "next/headers";
 import { CategoryFilter } from "./components/CategoryFilter";
 
 const SECTION_HEADING_CLASS =
-  "mb-8 items-end [&_h2]:text-2xl [&_h2]:font-black [&_h2]:tracking-[-0.03em] sm:[&_h2]:text-3xl";
+  "mb-8 items-end";
 
 type IconRows = Readonly<Record<string, ToolIconRow>>;
 
@@ -56,7 +65,7 @@ function ToolCard({ icons, tool }: { icons: IconRows; tool: CatalogTool }) {
           <ArrowUpRight aria-hidden="true" className="size-4" />
         </>
       }
-      className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:nth-child(2)]:text-lg [&>span:nth-child(3)]:text-sm [&>span:nth-child(3)]:leading-6 [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 [&>span:last-child]:text-sm"
+      className="min-h-48 rounded-[1.25rem] p-5 shadow-none duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg [&>span:last-child]:inline-flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5"
       description={tool.description}
       href={`/devtools/${tool.slug}`}
       icon={
@@ -145,7 +154,7 @@ export default async function HomePage({
         actions={
           <AccountNavigation
             returnTo="/devtools"
-            user={session ? { name: session.user.name } : null}
+            user={session?.user ?? null}
           />
         }
         className="sticky top-0 z-50 bg-card/90 supports-[backdrop-filter]:bg-card/85 supports-[backdrop-filter]:backdrop-blur-xl"
@@ -158,12 +167,12 @@ export default async function HomePage({
           <section className="border-b border-border bg-card">
             <AppContainer className="grid gap-6 py-8 sm:py-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(26rem,1.2fr)] lg:items-end">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                <Overline className="block text-primary">
                   Devtools catalog
-                </p>
-                <h1 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+                </Overline>
+                <Display className="mt-2">
                   Find the right tool.
-                </h1>
+                </Display>
               </div>
               {searchForm}
             </AppContainer>
@@ -173,22 +182,22 @@ export default async function HomePage({
             <AppContainer className="py-12 sm:py-16 lg:py-20">
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1.12fr)_minmax(26rem,0.88fr)] lg:items-end lg:gap-16">
                 <div>
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                  <Overline className="block text-primary">
                     {tools.length} focused tools. No sign-up.
-                  </p>
-                  <h1 className="mt-5 max-w-4xl text-[clamp(3.25rem,7vw,6.75rem)] leading-[0.9] font-black tracking-[-0.065em]">
+                  </Overline>
+                  <Display className="mt-5 max-w-4xl">
                     The useful side of{" "}
                     <span className="text-primary">your browser.</span>
-                  </h1>
+                  </Display>
                 </div>
                 <div className="lg:pb-1">
-                  <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
+                  <Muted className="max-w-xl text-muted-foreground">
                     Format, convert, inspect, and generate working data without
                     accounts, uploads, or waiting.
-                  </p>
+                  </Muted>
                   <div className="mt-7">{searchForm}</div>
                   <InlineGuidance
-                    className="mt-4 text-sm font-semibold"
+                    className="mt-4"
                     icon={<ShieldCheck aria-hidden="true" />}
                   >
                     Core tools process your content locally in this browser.
@@ -201,35 +210,35 @@ export default async function HomePage({
                 className="mt-12 overflow-hidden rounded-2xl border border-border bg-border lg:mt-16"
               >
                 <div className="flex min-h-12 items-center justify-between gap-4 bg-background px-4">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-muted-foreground">
+                  <Overline className="block text-muted-foreground">
                     Popular now
-                  </p>
-                  <a
-                    className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-primary outline-none hover:underline focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  </Overline>
+                  <TextLink
+                    className="inline-flex min-h-11 items-center gap-1.5 text-primary outline-none hover:underline focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     href="/devtools?view=all"
                   >
                     All tools
                     <ArrowRight aria-hidden="true" className="size-4" />
-                  </a>
+                  </TextLink>
                 </div>
                 <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   {featuredTools.slice(0, 6).map((tool, index) => (
-                    <a
-                      className="group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                    <TextLink
+                      className="no-underline group flex min-h-24 flex-col justify-between bg-card p-4 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       href={`/devtools/${tool.slug}`}
                       key={tool.toolId}
                     >
-                      <span className="text-xs font-bold text-muted-foreground">
+                      <Caption className="text-muted-foreground">
                         {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span className="flex items-end justify-between gap-3 text-sm font-extrabold">
+                      </Caption>
+                      <Text className="flex items-end justify-between gap-3">
                         {tool.name}
                         <ArrowUpRight
                           aria-hidden="true"
                           className="size-4 shrink-0 text-primary transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                         />
-                      </span>
-                    </a>
+                      </Text>
+                    </TextLink>
                   ))}
                 </div>
               </nav>
@@ -240,8 +249,8 @@ export default async function HomePage({
         {hasFilter || showAllTools ? (
           <section className="py-12 sm:py-16">
             <AppContainer>
-              <a
-                className="mb-5 inline-flex min-h-11 items-center gap-2 text-sm font-bold text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              <TextLink
+                className="mb-5 inline-flex min-h-11 items-center gap-2 text-muted-foreground outline-none hover:text-foreground focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 href={category && !query ? "/devtools?view=all" : "/devtools"}
               >
                 <ArrowLeft aria-hidden="true" className="size-4" />
@@ -250,7 +259,7 @@ export default async function HomePage({
                   : category && !query
                     ? "All tools"
                     : "Clear search"}
-              </a>
+              </TextLink>
               <SectionHeading
                 action={
                   showAllTools || category ? (
@@ -342,8 +351,8 @@ export default async function HomePage({
                 <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
                   {availableCategories.map(
                     ({ count, description, key, label }) => (
-                      <a
-                        className="group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
+                      <TextLink
+                        className="no-underline group flex min-h-28 items-start gap-4 bg-card p-5 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset lg:last:col-span-2"
                         href={`/devtools?category=${encodeURIComponent(key)}`}
                         key={key}
                       >
@@ -354,21 +363,21 @@ export default async function HomePage({
                           <LayoutGrid aria-hidden="true" className="size-5" />
                         </IconTile>
                         <span className="min-w-0 flex-1">
-                          <strong className="block text-sm font-extrabold">
+                          <Strong className="block">
                             {label}
-                          </strong>
-                          <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                          </Strong>
+                          <Text className="mt-1 block text-muted-foreground">
                             {description}
-                          </span>
-                          <span className="mt-2 block text-xs font-bold text-primary">
+                          </Text>
+                          <Caption className="mt-2 block text-primary">
                             {count} {count === 1 ? "tool" : "tools"}
-                          </span>
+                          </Caption>
                         </span>
                         <ArrowUpRight
                           aria-hidden="true"
                           className="size-4 shrink-0 text-muted-foreground transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
                         />
-                      </a>
+                      </TextLink>
                     ),
                   )}
                 </div>
@@ -383,16 +392,16 @@ export default async function HomePage({
                       <LockKeyhole aria-hidden="true" className="size-6" />
                     </IconTile>
                     <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-primary">
+                      <Overline className="block text-primary">
                         Private by default
-                      </p>
-                      <h2 className="mt-2 text-2xl font-black tracking-[-0.03em] sm:text-3xl">
+                      </Overline>
+                      <H2 className="mt-2">
                         Your working data stays yours.
-                      </h2>
-                      <p className="mt-3 max-w-2xl text-sm leading-6 text-card/70 sm:text-base sm:leading-7">
+                      </H2>
+                      <Lead className="mt-3 max-w-2xl text-card/70">
                         Core formatting and conversion happens locally in your
                         browser. No file upload or account is required.
-                      </p>
+                      </Lead>
                     </div>
                   </div>
                   <a

@@ -8,7 +8,14 @@
 import React, { useState, useEffect } from "react";
 import type { DocumentTemplate } from "@smarttools/invoice-templates";
 import {
+  FieldError,
+  FieldDescription,
+  Caption,
+  H3,
+  Overline,
+  P,
   Button,
+  ToolActionButton,
   Card,
   Input,
   Label,
@@ -18,7 +25,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
-  ToolPageHeader
+  ToolPageHeader,
 } from "@smarttools/ui";
 import {
   FileText,
@@ -28,7 +35,6 @@ import {
   RefreshCw,
   Plus,
   Trash2,
-  Copy,
   Check,
   Sparkles,
   ArrowRight,
@@ -298,7 +304,7 @@ export default function W9RequestPage({
   };
 
   return (
-    <div className="grow w-full font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="w9-onboarding-wrapper">
+    <div className="grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="w9-onboarding-wrapper">
 
       <ToolPageHeader
         actions={(
@@ -326,7 +332,7 @@ export default function W9RequestPage({
         {/* CONTRACTOR LIST SIDEBAR ROW */}
         <div className="lg:col-span-4 space-y-4">
           <Card className="space-y-3">
-            <span className="block text-[11px] font-black text-slate-400 uppercase tracking-widest pl-1 font-sans">Active Contractor Profiles</span>
+            <Overline className="block text-slate-400 pl-1">Active Contractor Profiles</Overline>
 
             <div className="space-y-1.5 max-h-[350px] overflow-y-auto">
               {vendors.map((vend) => (
@@ -336,13 +342,13 @@ export default function W9RequestPage({
                 >
                   <Button
                     aria-pressed={selectedVendorId === vend.id}
-                    className="h-auto min-w-0 grow justify-start whitespace-normal rounded-md px-0 text-left text-xs hover:bg-transparent hover:text-primary"
+                    className="h-auto min-w-0 grow justify-start whitespace-normal rounded-md px-0 text-left hover:bg-transparent hover:text-primary"
                     onClick={() => setSelectedVendorId(vend.id)}
                     type="button"
                     variant="ghost"
                   >
-                    <span className="font-extrabold text-slate-950 block">{vend.legalName}</span>
-                    {vend.businessName && <span className="text-[10px] text-slate-500 block font-semibold">{vend.businessName}</span>}
+                    <span className="text-slate-950 block">{vend.legalName}</span>
+                    {vend.businessName && <Caption className="text-slate-500 block">{vend.businessName}</Caption>}
                   </Button>
 
                   <div className="flex gap-2 items-center shrink-0">
@@ -383,11 +389,11 @@ export default function W9RequestPage({
             value={activeTab}
           >
             <TabsList className="grid w-full grid-cols-2 border border-slate-200" id="w9-tabs" variant="segmented">
-              <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="onboarding">
+              <TabsTrigger className="whitespace-normal py-1.5" value="onboarding">
                 <UserCheck className="w-4 h-4" />
                 <span>1. Formulate Profile Metadata</span>
               </TabsTrigger>
-              <TabsTrigger className="whitespace-normal py-1.5 text-xs" value="email">
+              <TabsTrigger className="whitespace-normal py-1.5" value="email">
                 <Mail className="w-4 h-4" />
                 <span>2. Copy W-9 compliance request Email</span>
               </TabsTrigger>
@@ -396,20 +402,19 @@ export default function W9RequestPage({
 
           {activeTab === "onboarding" ? (
             <form onSubmit={handleUpdateVendorDetail} className="bg-white rounded-2xl border p-6 space-y-4 shadow-sm">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b pb-2">
+              <H3 className="text-slate-500 border-b pb-2">
                 Verification credentials formulation
-              </h3>
+              </H3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-legal-name">Contractor Legal Name *</Label>
                   <Input
                     aria-describedby={errors.formName ? undefined : "w9-legal-name-description"}
                     aria-errormessage={errors.formName ? "w9-legal-name-error" : undefined}
                     type="text"
                     required
                     aria-invalid={Boolean(errors.formName)}
-                    className="font-bold"
                     id="w9-legal-name"
                     value={formName}
                     onChange={(e) => {
@@ -418,33 +423,31 @@ export default function W9RequestPage({
                     }}
                   />
                   {errors.formName ? (
-                    <p className="mt-1 text-[10px] font-bold text-destructive" id="w9-legal-name-error" role="alert">{errors.formName}</p>
+                    <FieldError className="mt-1 text-destructive" id="w9-legal-name-error" role="alert">{errors.formName}</FieldError>
                   ) : (
-                    <span className="text-[11px] text-slate-400 block mt-0.5" id="w9-legal-name-description">As registered on their IRS filing documents.</span>
+                    <FieldDescription className="text-slate-400 block mt-0.5" id="w9-legal-name-description">As registered on their IRS filing documents.</FieldDescription>
                   )}
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-business-name">Business DBA Name (if matching)</Label>
                   <Input
                     type="text"
-                    className="font-semibold"
                     id="w9-business-name"
                     value={formBiz}
                     onChange={(e) => setFormBiz(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-email">Email Coordinates</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-email">Email Coordinates</Label>
                   <Input
                     type="email"
-                    className="font-medium"
                     id="w9-email"
                     value={formEmail}
                     onChange={(e) => setFormEmail(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-phone">Support Phone</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-phone">Support Phone</Label>
                   <Input
                     id="w9-phone"
                     type="text"
@@ -453,19 +456,17 @@ export default function W9RequestPage({
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-address">Street address</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-address">Street address</Label>
                   <Input
                     type="text"
-                    className="font-semibold"
                     id="w9-address"
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-entity">Tax Classification Entity</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-entity">Tax Classification Entity</Label>
                   <Select
-                    className="font-bold"
                     id="w9-entity"
                     value={formEntity}
                     onChange={(e) => setFormEntity(e.target.value as any)}
@@ -476,9 +477,8 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-status">W-9 Request compliance status</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-status">W-9 Request compliance status</Label>
                   <Select
-                    className="font-black"
                     id="w9-status"
                     value={formStatus}
                     onChange={(e) => setFormStatus(e.target.value as any)}
@@ -489,7 +489,7 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="block text-[10px] font-black text-slate-400 uppercase mb-1" htmlFor="w9-notes">Notes / Project association description</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-notes">Notes / Project association description</Label>
                   <Input
                     id="w9-notes"
                     type="text"
@@ -511,24 +511,22 @@ export default function W9RequestPage({
           ) : (
             <Card className="space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest leading-none">
+                <H3 className="text-slate-500">
                   Compliance email template generator
-                </h3>
-                <Button
+                </H3>
+                <ToolActionButton
+                  action="copy"
+                  icon={copiedEmail ? <Check /> : undefined}
                   onClick={handleCopyEmailText}
-                  className="select-none"
-                  size="sm"
                   type="button"
-                  variant="secondary"
                 >
-                  {copiedEmail ? <Check className="size-3.5 animate-pulse text-emerald-600" /> : <Copy className="size-3.5" />}
                   <span>{copiedEmail ? "CopiedSubjectBody!" : "Copy Subject + Body"}</span>
-                </Button>
+                </ToolActionButton>
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-[10rem_1fr]">
                 <div>
-                  <Label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-reporting-year">Reporting year</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-reporting-year">Reporting year</Label>
                   <Select
                     id="w9-reporting-year"
                     value={draft.reportingYear}
@@ -539,9 +537,9 @@ export default function W9RequestPage({
                   </Select>
                 </div>
                 <div>
-                  <Label className="block text-[11px] text-slate-400 font-black uppercase mb-1" htmlFor="w9-secure-submission">Secure submission instructions</Label>
+                  <Label className="block text-slate-400 mb-1" htmlFor="w9-secure-submission">Secure submission instructions</Label>
                   <Textarea
-                    className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-xs"
+                    className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2"
                     id="w9-secure-submission"
                     value={draft.secureSubmissionInstructions}
                     onChange={(event) => setDraft({ ...draft, secureSubmissionInstructions: event.target.value })}
@@ -549,24 +547,24 @@ export default function W9RequestPage({
                 </div>
               </div>
 
-              <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] font-bold text-amber-900">
+              <P className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
                 {W9_REQUEST_DISCLAIMER}
-              </p>
+              </P>
 
               {/* Subject block */}
-              <div className="bg-slate-50 p-3 rounded-lg border text-xs">
-                <span className="block text-[11px] text-slate-400 font-black uppercase mb-1">Email Subject Line</span>
-                <p className="font-extrabold text-slate-900 font-mono select-all">
+              <div className="bg-slate-50 p-3 rounded-lg border">
+                <Overline className="block text-slate-400 mb-1">Email Subject Line</Overline>
+                <P className="text-slate-900 select-all">
                   {getEmailSubject()}
-                </p>
+                </P>
               </div>
 
               {/* Body block */}
-              <div className="bg-slate-50 p-4 rounded-lg border text-xs leading-relaxed font-semibold">
-                <span className="block text-[11px] text-slate-400 font-black uppercase mb-1">Email Body Description</span>
-                <p className="whitespace-pre-line text-slate-700 font-mono select-all">
+              <div className="bg-slate-50 p-4 rounded-lg border">
+                <Overline className="block text-slate-400 mb-1">Email Body Description</Overline>
+                <P className="whitespace-pre-line text-slate-700 select-all">
                   {getEmailBody()}
-                </p>
+                </P>
               </div>
             </Card>
           )}

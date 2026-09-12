@@ -1,4 +1,9 @@
 import {
+  Caption,
+  InlineCode,
+  Overline,
+  Strong,
+  Text,
   EmptyState,
   Table,
   TableBody,
@@ -11,7 +16,7 @@ import {
 import { History } from "lucide-react";
 import { requirePagePermission } from "../../../../lib/admin/access";
 import { listAuditEvents } from "../../../../lib/admin/data";
-import { AuditFilters } from "./AuditFilters";
+import { AdminFilters } from "../components/AdminFilters";
 import { auditEventPresentation } from "./eventPresentation";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("en", {
@@ -35,12 +40,13 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
   const query = valueOf(params.q).trim().toLowerCase();
   const requestedAction = valueOf(params.action);
   const action = requestedAction === "all" ? "" : requestedAction;
-  const date = valueOf(params.date) || "30";
+  const actions = [...new Set([...events.map((event) => event.action), ...(action ? [action] : [])])].sort();
+  const requestedDate = valueOf(params.date);
+  const date = ["7", "30", "90", "all"].includes(requestedDate) ? requestedDate : "30";
   const days = date === "all" ? null : Number(date);
   const cutoff = days && Number.isFinite(days)
     ? new Date(Date.now() - days * 24 * 60 * 60 * 1000)
     : null;
-  const actions = [...new Set(events.map((event) => event.action))].sort();
   const filteredEvents = events.filter((event) => {
     if (action && event.action !== action) return false;
     if (cutoff && event.createdAt < cutoff) return false;
@@ -66,11 +72,20 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
         title="Audit history"
       />
       <div className="mb-5">
-        <AuditFilters
-          actions={actions}
-          defaultAction={action}
-          defaultDate={date}
-          defaultQuery={query}
+        <AdminFilters
+          search={{ key: "q", label: "Search events", placeholder: "Actor, target, or action…" }}
+          selects={[
+            { key: "action", label: "Action", options: [
+              { value: "all", label: "All actions" },
+              ...actions.map((value) => ({ value, label: auditEventPresentation(value).label })),
+            ] },
+            { key: "date", label: "Date range", defaultValue: "30", options: [
+              { value: "7", label: "Last 7 days" },
+              { value: "30", label: "Last 30 days" },
+              { value: "90", label: "Last 90 days" },
+              { value: "all", label: "All retained events" },
+            ] },
+          ]}
         />
       </div>
       {filteredEvents.length ? (
@@ -85,7 +100,7 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
                   ["Metadata", "w-[22%]"],
                   ["Time", "w-[14%]"],
                 ].map(([heading, width]) => (
-                  <TableHead className={`${width} py-3 font-caption text-[10px] font-semibold tracking-[0.05em] uppercase`} key={heading} scope="col">
+                  <TableHead className={`${width} py-3 `} key={heading} scope="col">
                     {heading}
                   </TableHead>
                 ))}
@@ -97,32 +112,32 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
                 return (
                   <TableRow className="align-top hover:bg-muted/30" key={event.id}>
                     <TableCell className="whitespace-normal py-3.5">
-                      <strong className="block font-heading text-sm font-semibold text-foreground">{event.actorName ?? "Deleted user"}</strong>
-                      <span className="mt-0.5 block break-all text-xs text-muted-foreground">{event.actorEmail ?? event.actorUserId}</span>
+                      <Strong className="block text-foreground">{event.actorName ?? "Deleted user"}</Strong>
+                      <Caption className="mt-0.5 block break-all text-muted-foreground">{event.actorEmail ?? event.actorUserId}</Caption>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5 align-middle">
-                      <span className="inline-flex items-center gap-2.5 font-heading text-sm font-semibold text-foreground">
+                      <Text className="inline-flex items-center gap-2.5 text-foreground">
                         <EventIcon aria-hidden="true" className="size-[18px] shrink-0 text-primary" strokeWidth={1.8} />
                         {label}
-                      </span>
+                      </Text>
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5">
                       {event.targetType === "user" ? (
                         <>
-                          <strong className="block text-sm font-semibold text-foreground">{event.targetUserName ?? "Deleted user"}</strong>
-                          <span className="mt-0.5 block break-all text-xs text-muted-foreground">{event.targetUserEmail ?? event.targetId}</span>
+                          <Strong className="block text-foreground">{event.targetUserName ?? "Deleted user"}</Strong>
+                          <Caption className="mt-0.5 block break-all text-muted-foreground">{event.targetUserEmail ?? event.targetId}</Caption>
                         </>
                       ) : (
                         <>
-                          <span className="block font-caption text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{event.targetType}</span>
-                          <code className="mt-1 block break-all font-mono text-xs">{event.targetId}</code>
+                          <Overline className="block text-muted-foreground">{event.targetType}</Overline>
+                          <InlineCode className="mt-1 block break-all">{event.targetId}</InlineCode>
                         </>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-normal py-3.5">
-                      <code className="block max-w-xs break-all font-mono text-[11px] leading-5 text-muted-foreground">{JSON.stringify(event.metadata)}</code>
+                      <InlineCode className="block max-w-xs break-all text-muted-foreground">{JSON.stringify(event.metadata)}</InlineCode>
                     </TableCell>
-                    <TableCell className="whitespace-normal py-3.5 text-xs leading-5 text-muted-foreground">
+                    <TableCell className="whitespace-normal py-3.5 text-muted-foreground">
                       <time dateTime={event.createdAt.toISOString()}>{dateTimeFormatter.format(event.createdAt)}</time>
                     </TableCell>
                   </TableRow>
@@ -130,9 +145,9 @@ export default async function AuditPage({ searchParams }: { searchParams: AuditS
               })}
             </TableBody>
           </Table>
-          <div className="flex items-center justify-between border-t border-border px-4 py-3 font-caption text-[11px] text-muted-foreground">
-            <span>Showing {filteredEvents.length} of {events.length} retained events</span>
-            <span>Latest 200 events</span>
+          <div className="flex items-center justify-between border-t border-border px-4 py-3 text-muted-foreground">
+            <Text>Showing {filteredEvents.length} of {events.length} retained events</Text>
+            <Text>Latest 200 events</Text>
           </div>
         </div>
       ) : (

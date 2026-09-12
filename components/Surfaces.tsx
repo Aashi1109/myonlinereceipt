@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  Strong,
+  Overline,
+  InlineCode,
+  Muted,
+  H2,
+  Caption,
   Button,
   Empty,
   EmptyContent,
@@ -24,6 +30,7 @@ import { cn } from "@smarttools/ui/lib/utils";
 import {
   CircleAlert,
   File as FileIcon,
+  GripVertical,
   Inbox,
   LoaderCircle,
   Maximize2,
@@ -129,16 +136,16 @@ function WorkspaceSurface({
         className="min-h-0 flex-1 px-4 py-3"
         data-surface-state={state}
       >
-        <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/70">
+        <Muted className="text-muted-foreground">
+          <Strong className="text-foreground/70">
             {stateTitle ?? DEFAULT_STATE_TITLES[state]}
-          </span>
+          </Strong>
           {stateDescription ? ` — ${stateDescription}` : null}
-        </p>
+        </Muted>
         <div aria-hidden="true" className="mt-3 grid gap-2">
           {Array.from({ length: 3 }, (_, index) => (
-            <div className="rounded-lg bg-muted/55 px-4 py-3 font-mono text-xs text-muted-foreground/55" key={index}>
-              –
+            <div className="rounded-lg bg-muted/55 px-4 py-3 text-muted-foreground/55" key={index}>
+              <Caption>–</Caption>
             </div>
           ))}
         </div>
@@ -169,17 +176,12 @@ function WorkspaceSurface({
       </Empty>
     );
   const heading = (
-    <h2
-      className={cn(
-        "truncate font-caption text-xs uppercase",
-        variant === "card"
-          ? "font-medium tracking-[0.04em] text-muted-foreground"
-          : "font-extrabold tracking-[0.06em]",
-      )}
+    <Overline
+      className={cn("truncate", variant === "card" && "text-muted-foreground")}
       id={headingId}
     >
       {title}
-    </h2>
+    </Overline>
   );
   const workspaceHeader = header === "visible" ? (
     <header
@@ -201,12 +203,12 @@ function WorkspaceSurface({
           </div>
         ) : heading}
         {description ? (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
+          <Muted className="mt-0.5 truncate text-muted-foreground">{description}</Muted>
         ) : null}
       </div>
       {meta !== undefined && meta !== null ? (
         <div className="ml-auto flex min-w-0 items-center gap-3">
-          <span className="min-w-0 truncate text-right font-mono text-xs text-muted-foreground">{meta}</span>
+          <Caption className="min-w-0 truncate text-right text-muted-foreground">{meta}</Caption>
           {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
         </div>
       ) : actions ? (
@@ -214,7 +216,7 @@ function WorkspaceSurface({
       ) : null}
     </header>
   ) : (
-    <h2 className="sr-only" id={headingId}>{title}</h2>
+    <H2 className="sr-only" id={headingId}>{title}</H2>
   );
 
   return (
@@ -351,24 +353,53 @@ export type FileQueueSurfaceProps<Item> = Omit<
   "children" | "purpose" | "state"
 > & {
   emptyDescription?: ReactNode;
+  disabled?: boolean;
   getIcon?: (item: Item) => ReactNode;
   getId: (item: Item) => string;
   getMetadata: (item: Item) => ReactNode;
   getName: (item: Item) => ReactNode;
   items: readonly Item[];
+  onReorder?: (items: Item[]) => void;
   renderAction?: (item: Item) => ReactNode;
 };
 
 function FileQueueSurface<Item>({
+  disabled = false,
   emptyDescription = "Add one or more files to continue.",
   getIcon,
   getId,
   getMetadata,
   getName,
   items,
+  onReorder,
   renderAction,
   ...surfaceProps
 }: FileQueueSurfaceProps<Item>) {
+  const renderFile = (item: Item, orderable?: OrderableItemState) => (
+    <div className="flex items-center gap-2 border-b border-border" key={getId(item)}>
+      {orderable ? (
+        <Button
+          {...orderable.attributes}
+          {...orderable.listeners}
+          aria-label={`Drag ${getName(item)} to reorder`}
+          className="relative size-8 shrink-0 cursor-grab touch-none text-muted-foreground before:absolute before:inset-[-6px] before:content-[''] active:cursor-grabbing"
+          disabled={orderable.disabled || items.length < 2}
+          ref={orderable.setActivatorNodeRef}
+          size="icon"
+          variant="ghost"
+        >
+          <GripVertical aria-hidden="true" className="size-4" />
+        </Button>
+      ) : null}
+      <FileQueueItem
+        action={renderAction?.(item)}
+        className="min-w-0 flex-1 border-b-0"
+        icon={getIcon?.(item) ?? <FileIcon aria-hidden="true" />}
+        metadata={getMetadata(item)}
+        name={getName(item)}
+      />
+    </div>
+  );
   return (
     <WorkspaceSurface
       purpose="source"
@@ -382,17 +413,17 @@ function FileQueueSurface<Item>({
         accessibleName="File queue"
         className="flex-1 px-4"
       >
-        <Stack>
-          {items.map((item) => (
-            <FileQueueItem
-              action={renderAction?.(item)}
-              icon={getIcon?.(item) ?? <FileIcon aria-hidden="true" />}
-              key={getId(item)}
-              metadata={getMetadata(item)}
-              name={getName(item)}
-            />
-          ))}
-        </Stack>
+        {onReorder ? (
+          <OrderableList
+            ariaLabel="Selected files in processing order"
+            disabled={disabled}
+            getId={getId}
+            getLabel={(item) => String(getName(item))}
+            items={items}
+            onReorder={onReorder}
+            renderItem={renderFile}
+          />
+        ) : <Stack>{items.map((item) => renderFile(item))}</Stack>}
       </ScrollRegion>
     </WorkspaceSurface>
   );
@@ -631,12 +662,12 @@ function CanvasSurface({
         >
           <Minus aria-hidden="true" />
         </CanvasAction>
-        <span
+        <Caption
           aria-live="polite"
-          className="min-w-11 text-center font-mono text-[11px] text-muted-foreground"
+          className="min-w-11 text-center text-muted-foreground"
         >
           {Math.round(zoom * 100)}%
-        </span>
+        </Caption>
         <CanvasAction
           label="Zoom in"
           onClick={() => updateView(zoom + zoomStep, pan)}
@@ -776,9 +807,9 @@ function NavigatorSurface<Item>({
                   <span className="min-w-0">
                     <span className="block truncate">{getLabel(item)}</span>
                     {getDescription ? (
-                      <span className="mt-0.5 block truncate text-[11px] font-normal text-muted-foreground">
+                      <Caption className="mt-0.5 block truncate text-muted-foreground">
                         {getDescription(item)}
-                      </span>
+                      </Caption>
                     ) : null}
                   </span>
                 </Button>
@@ -816,17 +847,17 @@ function GeneratedList<Item>({
             className="flex min-w-0 items-center gap-4 rounded-lg bg-muted/55 px-4 py-3"
             key={getId(item)}
           >
-            <span className="shrink-0 font-mono text-xs text-muted-foreground">
+            <Caption className="shrink-0 text-muted-foreground">
               {getLabel(item)}
-            </span>
+            </Caption>
             <div className="min-w-0 flex-1">
-              <code className="break-words font-mono text-sm [overflow-wrap:anywhere]">
+              <InlineCode className="break-words [overflow-wrap:anywhere]">
                 {getValue(item)}
-              </code>
+              </InlineCode>
               {getDescription ? (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <Muted className="mt-1 text-muted-foreground">
                   {getDescription(item)}
-                </p>
+                </Muted>
               ) : null}
             </div>
             {renderAction ? (

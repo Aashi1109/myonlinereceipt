@@ -10,7 +10,9 @@ import {
   assertCanDemoteUser,
   assertCanEditRole,
   assertCanSuspendUser,
+  assertAccessPrerequisites,
   assertValidAccess,
+  getMissingPermissionPrerequisite,
   hasPermission,
   mergeRoleAccess,
 } from "../packages/authorization/src/index.ts";
@@ -101,7 +103,7 @@ test("every supported permission has resource and action help text", () => {
 test("multiple roles combine only positive grants and missing grants deny", () => {
   const viewer = customRole({
     id: "viewer",
-    access: { tools: { view: true, edit: false } },
+    access: { admin: { enter: true }, tools: { view: true, edit: false } },
   });
   const editor = customRole({
     id: "editor",
@@ -111,6 +113,7 @@ test("multiple roles combine only positive grants and missing grants deny", () =
   const access = mergeRoleAccess([viewer, editor]);
 
   assert.deepEqual(access, {
+    admin: { enter: true },
     tools: { view: true, edit: true },
     templates: { view: true },
   });
@@ -146,6 +149,42 @@ test("access validation rejects malformed and unknown permissions", () => {
     () => mergeRoleAccess([customRole({ access: { tools: { launch: true } } })]),
     /Unknown permission: tools\.launch/,
   );
+});
+
+test("permission prerequisites apply to effective grants without silently granting access", () => {
+  assert.deepEqual(getMissingPermissionPrerequisite({}, "tools", "edit"), {
+    resource: "admin", action: "enter",
+  });
+  assert.deepEqual(getMissingPermissionPrerequisite({ admin: { enter: true } }, "tools", "edit"), {
+    resource: "tools", action: "view",
+  });
+  assert.equal(getMissingPermissionPrerequisite({}, "admin", "enter"), null);
+  for (const [resource, { actions }] of Object.entries(PERMISSION_CATALOG)) {
+    for (const action of Object.keys(actions)) {
+      assert.equal(hasPermission(ADMIN_ACCESS, resource, action), true);
+      if (resource === "admin") continue;
+      assert.equal(hasPermission({ [resource]: { view: true, [action]: true } }, resource, action), false);
+      if (action !== "view") {
+        assert.equal(hasPermission({ admin: { enter: true }, [resource]: { [action]: true } }, resource, action), false);
+      }
+    }
+  }
+  assert.throws(() => assertAccessPrerequisites({ tools: { view: true } }), /tools.view requires admin.enter/);
+  assert.throws(() => assertAccessPrerequisites({ admin: { enter: true }, tools: { edit: true } }), /tools.edit requires tools.view/);
+  assert.throws(() => assertAccessPrerequisites({ tools: { view: "true" } }), /must be boolean/);
+  assert.doesNotThrow(() => assertAccessPrerequisites({ tools: { edit: false } }));
+  assert.doesNotThrow(() => assertAccessPrerequisites({}));
+  assert.doesNotThrow(() => assertAccessPrerequisites(ADMIN_ACCESS));
+  const fragments = [
+    { access: { admin: { enter: true } } },
+    { access: { tools: { view: true } } },
+    { access: { tools: { edit: true } } },
+  ];
+  const combined = mergeRoleAccess(fragments);
+  assert.doesNotThrow(() => assertAccessPrerequisites(combined));
+  assert.equal(hasPermission(combined, "tools", "edit"), true);
+  assert.equal(hasPermission(combined, "tools", "archive"), false);
+  assert.deepEqual(fragments[2].access, { tools: { edit: true } });
 });
 
 test("protected roles cannot be edited or deleted and assigned custom roles cannot be deleted", () => {

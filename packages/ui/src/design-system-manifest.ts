@@ -65,4 +65,7 @@ export const DESIGN_SYSTEM_COMPONENTS = [
   { designId: "hGI6k", designName: "Component/Right Panel Processing Action", implementation: "RightPanelProcessing" },
   { designId: "bWOKG", designName: "Component/Right Panel Result Action", implementation: "RightPanelResult" },
   { designId: "FM7qR", designName: "Component/PDF Page Navigator — Scrubber + Outline", implementation: "PdfViewer" },
+  { designId: "mU0Eq", designName: "Component/Generated JPG Preview", implementation: "MediaOutputCard" },
+  { designId: "KEdkz", designName: "Component/Media File Actions — Integrated card footer", implementation: "MediaOutputCard" },
+  { designId: "Is1Pt", designName: "Media Preview / Full screen — Image", implementation: "MediaPreview" },
 ] as const satisfies readonly DesignSystemComponentDefinition[]
